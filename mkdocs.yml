@@ -1,0 +1,61 @@
+site_name: Azure Local Ranger
+site_description: Repository scaffold and project documentation for a future Azure Local auditing, diagramming, and reporting tool
+site_author: Azure Local Cloud
+site_url: https://azurelocal.github.io/azurelocal-ranger/
+repo_url: https://github.com/azure-local-cloud/azurelocal-ranger
+repo_name: azure-local-cloud/azurelocal-ranger
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+    - search.suggest
+  palette:
+    - scheme: default
+      primary: blue
+      accent: teal
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Product:
+    - What Ranger Is: what-ranger-is.md
+    - Ranger vs Scout: ranger-vs-scout.md
+    - Scope Boundary: scope-boundary.md
+  - Architecture:
+    - System Overview: architecture/system-overview.md
+    - Audit Manifest: architecture/audit-manifest.md
+    - Repository Design: architecture/repository-design.md
+  - Discovery Domains:
+    - Cluster and Node: discovery-domains/cluster-and-node.md
+    - Hardware: discovery-domains/hardware.md
+    - Storage: discovery-domains/storage.md
+    - Networking: discovery-domains/networking.md
+    - Virtual Machines: discovery-domains/virtual-machines.md
+    - Identity and Security: discovery-domains/identity-and-security.md
+    - Azure Integration: discovery-domains/azure-integration.md
+    - OEM Integration: discovery-domains/oem-integration.md
+    - Management Tools: discovery-domains/management-tools.md
+    - Performance Baseline: discovery-domains/performance-baseline.md
+  - Outputs:
+    - Diagrams: outputs/diagrams.md
+    - Reports: outputs/reports.md
+    - As-Built Package: outputs/as-built-package.md
+  - Project:
+    - Roadmap: project/roadmap.md
+    - Repository Structure: project/repository-structure.md
+    - Changelog: project/changelog.md
+  - Contributor:
+    - Getting Started: contributor/getting-started.md
+    - Contributing: contributor/contributing.md
