@@ -12,7 +12,7 @@ That means the runtime, manifest pipeline, grouped collectors, cached report gen
 | V1 runtime and collector implementation | Complete | Core runtime/output tracks and v1 collector tracks are implemented and locally verified |
 | Testing foundation | Complete | Fixture-backed unit and integration tests, degraded-scenario tests, and standalone manifest-schema validation are in place |
 | Product-plan richness and polish | Complete for non-live scope | Remaining implementation work is now limited to live-environment proving |
-| Post-v1 extension backlog | Defined and deferred | Future-scope items are documented explicitly and kept out of the v1 baseline |
+| Post-v1 extension backlog | Defined, documented, and deferred | Future-scope items are documented explicitly and their definition issues are complete |
 
 ## Delivered Now
 
@@ -27,9 +27,9 @@ That means the runtime, manifest pipeline, grouped collectors, cached report gen
 
 ## Remaining Open Item
 
-The only remaining implementation item still open is:
+The only remaining GitHub issue and implementation item still open is:
 
-- live environment validation beyond fixture-backed testing
+- live environment validation beyond fixture-backed testing in #34
 
 ## Explicitly Deferred To Post-V1
 

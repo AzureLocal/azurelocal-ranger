@@ -82,6 +82,8 @@ Anything intentionally pushed out of v1 should remain visible as separate issues
 
 Status: defined and deferred
 
+The planning and decision issues for this phase are complete; the future feature implementation itself remains deferred.
+
 Post-v1 extension backlog:
 
 - [Tracker: post-v1 extension backlog #13](https://github.com/AzureLocal/azurelocal-ranger/issues/13)

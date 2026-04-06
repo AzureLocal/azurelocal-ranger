@@ -26,13 +26,13 @@ Current implementation validation used for this audit:
 
 | Item | Value |
 | --- | --- |
-| Commit | `working tree after backup-4-6-2026 branch cut` |
+| Commit | `7a27ff7` |
 | Test command | `Import-Module .\AzureLocalRanger.psd1 -Force; Invoke-Pester -Path .\tests -PassThru` |
 | Latest validated result | `12 passed, 0 failed` |
-| Runtime/output issues | `#19`, `#22`, `#23`, `#24` completed locally and ready for closeout |
-| Discovery issues | `#9`, `#10`, `#11`, `#12`, `#16`, `#20`, `#21` completed locally and ready for closeout |
-| Post-v1 definition issues | `#13`, `#25`-`#33` documented and ready for closeout |
-| Live validation backlog issue | `#34` |
+| Runtime/output issues | `#19`, `#22`, `#23`, `#24` closed after local completion and verification |
+| Discovery issues | `#9`, `#10`, `#11`, `#12`, `#16`, `#20`, `#21` closed after local completion and verification |
+| Post-v1 definition issues | `#13`, `#25`-`#33` closed after decision documentation was captured |
+| Remaining open issue | `#34` |
 
 ## Overall Audit
 
