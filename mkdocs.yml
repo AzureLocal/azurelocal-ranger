@@ -65,6 +65,7 @@ nav:
     - Troubleshooting: operator/troubleshooting.md
   - Project:
     - Roadmap: project/roadmap.md
+    - Documentation Roadmap: project/documentation-roadmap.md
     - Repository Structure: project/repository-structure.md
     - Changelog: project/changelog.md
   - Contributor:

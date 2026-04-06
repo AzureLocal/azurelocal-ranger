@@ -17,6 +17,16 @@ Both modes use the same discovery engine. The difference is a parameter, not a d
 
 Ranger is designed with explicit support for the range of Azure Local operating models — hyperconverged, switchless, rack-aware, local identity with Azure Key Vault, disconnected operations, and future multi-rack scenarios. It does not silently assume one cluster shape.
 
+## Recommended Reading Flow
+
+If you are new to Ranger, the cleanest path through the docs is:
+
+1. product definition
+2. architecture and operator model
+3. discovery domains and outputs
+4. roadmap and repository structure
+5. contributor guidance
+
 ## Current Project Phase
 
 This repository is in a **documentation and planning phase**. The product definition, scope boundary, architecture model, and public documentation are being stabilised before implementation begins.
@@ -37,5 +47,8 @@ The immediate priorities are:
 | Everyone | [Deployment Variants](deployment-variants.md) |
 | Architects and operators | [Architecture Overview](architecture/system-overview.md) |
 | Architects and operators | [Discovery Domain Pages](discovery-domains/cluster-and-node.md) |
+| Project and repo readers | [Roadmap](project/roadmap.md) |
+| Project and repo readers | [Documentation Roadmap](project/documentation-roadmap.md) |
+| Project and repo readers | [Repository Structure](project/repository-structure.md) |
 | Contributors | [Getting Started](contributor/getting-started.md) |
-| All | [Roadmap](project/roadmap.md) |
+| Contributors | [Contributing](contributor/contributing.md) |

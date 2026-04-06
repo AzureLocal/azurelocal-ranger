@@ -1,34 +1,98 @@
 # Roadmap
 
-Azure Local Ranger is being built to document Azure Local environments in two ways:
+Azure Local Ranger is being built in phases so the product boundary, execution model, and module architecture are stable before broad implementation begins.
+
+Ranger supports two outcomes through one discovery engine:
 
 - recurring current-state documentation
-- formal as-built documentation for handoff after deployment
+- formal as-built documentation for customer or operational handoff
 
-## Current Roadmap Themes
+## Current Phase
 
-### Product Definition
+The repository is still in a documentation-first and architecture-first phase.
 
-The first priority is locking the product definition so the implementation does not drift away from the actual Azure Local estate boundary.
+That means the immediate priority is not adding collectors as fast as possible. The immediate priority is making sure implementation starts from a stable product definition, execution model, manifest contract, and documentation set.
 
-### Documentation And Repository Structure
+## Phase 1: Product and Architecture Foundation
 
-The second priority is making the repo and public docs reflect the product clearly, including a strong MkDocs structure for GitHub Pages publication.
+This phase locks the decisions that later implementation depends on.
 
-### Audit Model
+Focus areas:
 
-The third priority is defining the central audit model that will support discovery, reporting, and rerendering.
+- product definition and scope boundary
+- deployment-variant posture
+- manifest contract and output model
+- connectivity, authentication, and execution model
+- internal module architecture and test strategy
 
-### Core Discovery Domains
+## Phase 2: Documentation Foundation
 
-The earliest implementation work should focus on the domains most important for both ongoing documentation and as-built handoff:
+This phase makes the public documentation and repo guidance match the actual product direction.
 
-- cluster and node
-- hardware
-- storage
-- networking
-- Azure integration
+Focus areas:
 
-### Handoff-Quality Output
+- coherent site navigation and reading flow
+- product, architecture, domain, output, and operator docs
+- project roadmap and repository structure pages
+- contributor guidance aligned to the current maturity level
 
-The roadmap explicitly includes the ability to generate diagrams and documentation packages suitable for customer or operational handoff.
+Key documentation work is tracked in:
+
+- [Tracker: documentation rollout from product-direction plan #14](https://github.com/AzureLocal/azurelocal-ranger/issues/14)
+- [Publish project roadmap, repository structure, and contributor documentation #17](https://github.com/AzureLocal/azurelocal-ranger/issues/17)
+- [Align docs navigation, cross-links, and publishing flow #18](https://github.com/AzureLocal/azurelocal-ranger/issues/18)
+
+## Phase 3: V1 Runtime and Collector Delivery
+
+Once the planning and documentation gates are locked, implementation can move into the v1 runtime and collector backlog.
+
+Main v1 tracks:
+
+- orchestration and shared platform services
+- topology and cluster foundation collectors
+- Dell-first hardware collectors
+- storage and networking collectors
+- workload, identity, Azure integration, monitoring, management-tools, and performance collectors
+- report generation and output packaging from the cached manifest
+- diagram generation from the cached manifest
+
+V1 implementation is tracked in:
+
+- [Tracker: v1 discovery collector delivery #16](https://github.com/AzureLocal/azurelocal-ranger/issues/16)
+- [Implement orchestration layer and shared platform services #19](https://github.com/AzureLocal/azurelocal-ranger/issues/19)
+- [Implement topology and cluster foundation collectors #9](https://github.com/AzureLocal/azurelocal-ranger/issues/9)
+- [Implement Dell OEM hardware inventory collectors #10](https://github.com/AzureLocal/azurelocal-ranger/issues/10)
+- [Implement storage and networking collectors #11](https://github.com/AzureLocal/azurelocal-ranger/issues/11)
+- [Implement workload, identity, and Azure integration collectors #12](https://github.com/AzureLocal/azurelocal-ranger/issues/12)
+- [Implement monitoring and observability collectors #20](https://github.com/AzureLocal/azurelocal-ranger/issues/20)
+- [Implement management-tools and performance baseline collectors #21](https://github.com/AzureLocal/azurelocal-ranger/issues/21)
+- [Implement report generation and output packaging from cached manifest #22](https://github.com/AzureLocal/azurelocal-ranger/issues/22)
+- [Implement diagram generation from cached manifest #23](https://github.com/AzureLocal/azurelocal-ranger/issues/23)
+- [Tracker: core runtime and output delivery #24](https://github.com/AzureLocal/azurelocal-ranger/issues/24)
+
+## Phase 4: Post-V1 Extension Backlog
+
+Anything intentionally pushed out of v1 should remain visible as separate issues, not disappear into one umbrella bullet list.
+
+Post-v1 extension backlog:
+
+- [Tracker: post-v1 extension backlog #13](https://github.com/AzureLocal/azurelocal-ranger/issues/13)
+- [Evaluate Azure-hosted automation worker execution model #25](https://github.com/AzureLocal/azurelocal-ranger/issues/25)
+- [Investigate Azure Arc Run Command as an alternate collection transport #26](https://github.com/AzureLocal/azurelocal-ranger/issues/26)
+- [Implement direct switch interrogation collectors #27](https://github.com/AzureLocal/azurelocal-ranger/issues/27)
+- [Implement direct firewall interrogation collectors #28](https://github.com/AzureLocal/azurelocal-ranger/issues/28)
+- [Implement non-Dell OEM hardware inventory support #29](https://github.com/AzureLocal/azurelocal-ranger/issues/29)
+- [Add disconnected and limited-connectivity discovery enrichment #30](https://github.com/AzureLocal/azurelocal-ranger/issues/30)
+- [Add multi-rack and management-cluster-specific discovery enrichment #31](https://github.com/AzureLocal/azurelocal-ranger/issues/31)
+- [Add manual import workflows for externally governed environments #32](https://github.com/AzureLocal/azurelocal-ranger/issues/32)
+- [Assess Windows PowerShell 5.1 compatibility without distorting the v1 architecture #33](https://github.com/AzureLocal/azurelocal-ranger/issues/33)
+
+## Guiding Rule
+
+If a requirement is explicitly future-scope, it should stay visible in the roadmap and preferably have its own backlog item rather than surviving only as a sentence in architecture documentation.
+
+## Read Next
+
+- [Documentation Roadmap](documentation-roadmap.md)
+- [Repository Structure](repository-structure.md)
+- [Getting Started](../contributor/getting-started.md)

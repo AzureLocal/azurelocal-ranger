@@ -1,40 +1,73 @@
 # Repository Structure
 
-Azure Local Ranger is a PowerShell module repository with a MkDocs documentation site.
+Azure Local Ranger is intentionally both a public documentation site and a future PowerShell module repository.
 
-## Public Structure
+That means the repo structure has to support the current documentation-first phase without confusing that with the long-term module layout.
 
-- `docs/` holds the public documentation site content
-- `mkdocs.yml` defines site structure and navigation
-- `.github/workflows/` holds validation and GitHub Pages documentation workflows
-- `repo-management/` holds internal planning artifacts
-- `tests/` is reserved for future validation
-- `branding/` is reserved for future visual assets
-- `samples/` is reserved for future sample outputs
+## Current Top-Level Structure
 
-## Root Module Files
+| Path | Purpose | Current posture |
+|---|---|---|
+| `docs/` | Public documentation site content | Active now |
+| `mkdocs.yml` | Site navigation and publication structure | Active now |
+| `.github/workflows/` | Validation and GitHub Pages publication workflows | Active now |
+| `repo-management/` | Internal plans, checklists, and working design material | Active now |
+| `tests/` | Future automated validation and fixture tests | Reserved |
+| `samples/` | Future sample configs, manifests, and output examples | Reserved |
+| `branding/` | Shared visual assets and brand material | Reserved |
 
-The repository now also includes a root PowerShell module shell:
+## Root Module Shell
+
+The repository includes a root module shell:
 
 - `AzureLocalRanger.psd1`
 - `AzureLocalRanger.psm1`
 
-These provide a real starting point for future module implementation and validation without forcing premature collector code into the repo.
+These files exist so the repo can evolve into a real PowerShell module without forcing premature collector implementation into the public documentation phase.
 
-## Future Module Structure
+## What Contributors Should Edit Now
 
-To align more closely with Azure Scout and with eventual PSGallery publication, Ranger reserves `Modules/` as the future PowerShell implementation root.
+At the current maturity stage, most contributors should be touching:
 
-### Planned Areas
+- `docs/`
+- `mkdocs.yml`
+- `repo-management/`
 
-- `Modules/Public`
-- `Modules/Private`
-- `Modules/Collectors`
-- `Modules/Core`
-- `Modules/Outputs/Reports`
-- `Modules/Outputs/Diagrams`
-- `Modules/Internal`
+They should not create large implementation trees just to make the repo look busy.
 
-## Site Publication Model
+## Planned Module Structure
 
-This repository is intended to be a GitHub Pages-backed MkDocs site. The documentation structure should therefore remain focused, public-facing, and easy to navigate.
+The intended long-term implementation layout is module-oriented rather than a generic `src/` tree.
+
+| Planned path | Purpose |
+|---|---|
+| `Modules/Public` | Exported commands and public entry points |
+| `Modules/Private` | Internal helper functions |
+| `Modules/Core` | Orchestration, manifest assembly, and shared services |
+| `Modules/Collectors` | Discovery-domain collectors |
+| `Modules/Outputs/Reports` | Report renderers |
+| `Modules/Outputs/Diagrams` | Diagram renderers and helpers |
+| `Modules/Internal` | Shared models and non-exported utilities |
+
+That structure reflects the architecture decisions already locked in the docs.
+
+## Public Docs vs Internal Planning
+
+The split between `docs/` and `repo-management/` is intentional.
+
+- `docs/` should tell the stable public story
+- `repo-management/` can hold iterative internal planning detail
+
+Public readers should not have to read internal planning files just to understand the product.
+
+## Publication Model
+
+The documentation side of the repo should stay GitHub Pages and MkDocs friendly.
+
+The implementation side of the repo should stay publishable as a PowerShell module when collector work begins.
+
+## Read Next
+
+- [Roadmap](roadmap.md)
+- [Documentation Roadmap](documentation-roadmap.md)
+- [Getting Started](../contributor/getting-started.md)

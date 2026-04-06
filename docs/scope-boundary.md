@@ -144,3 +144,10 @@ When deciding whether something belongs in Ranger, ask:
 3. Would a receiving team need this information to understand or operate the environment?
 
 If the answer is yes, it belongs in Ranger. If the information is only about Azure tenant posture broadly or unrelated infrastructure, it belongs elsewhere.
+
+## Read Next
+
+- [Deployment Variants](deployment-variants.md)
+- [Discovery Domains](discovery-domains/cluster-and-node.md)
+- [Outputs](outputs/diagrams.md)
+- [Roadmap](project/roadmap.md)
