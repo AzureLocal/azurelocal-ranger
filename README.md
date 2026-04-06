@@ -8,6 +8,8 @@ Azure Local Ranger is the planned sister solution to Azure Scout for Azure Local
 
 Azure Scout explains an Azure tenant. Azure Local Ranger is meant to explain an Azure Local deployment end to end: the on-prem platform, the workloads running on it, and the Azure resources and Azure-connected services that exist because that Azure Local environment is registered, managed, monitored, or extended through Azure.
 
+Ranger is also being planned with explicit support for different Azure Local operating models, not just one cluster shape. That includes hyperconverged, switchless, rack-aware, local identity with Azure Key Vault, disconnected operations, and future multi-rack scenarios.
+
 Ranger is intended to support two major use cases equally well:
 
 - ongoing estate documentation for teams that need to understand what they currently have
@@ -20,6 +22,7 @@ Azure Local Ranger is intended to be a deep discovery, documentation, audit, and
 Its job is to produce a complete, structured, explainable picture of an Azure Local estate, including:
 
 - physical infrastructure and node hardware
+- deployment topology and operating variant
 - cluster and platform configuration
 - storage topology and health
 - host and logical networking
@@ -49,6 +52,7 @@ That includes three major scope areas:
 ### 1. The On-Prem Azure Local Platform
 
 - cluster identity and node state
+- deployment topology, site/rack context, and operating variant classification
 - hardware, firmware, BMC, disks, NICs, TPM, and host security settings
 - storage pools, volumes, CSVs, SOFS, and storage health
 - virtual switches, host networking, RDMA, ATC, SDN, DNS, proxy, and firewall posture
@@ -69,7 +73,11 @@ That includes three major scope areas:
 - Azure Monitor, Log Analytics, Update Manager, Policy, Backup, ASR, and similar attached services
 - Azure-side logical resources and governance objects that belong to that Azure Local environment
 
+Ranger is also expected to understand the Azure Local control plane itself, not just the workload layer. That includes components such as Azure Arc Resource Bridge, custom locations, monitoring extensions, and Azure Local VM management resources where they exist.
+
 This Azure-side scope is essential. Ranger should not stop at the edge of the datacenter. If Azure Local creates, depends on, or is governed by Azure resources, those resources are part of Ranger's system boundary.
+
+Ranger will also treat external infrastructure in a pragmatic way. Some things can be discovered directly, some can be validated from the host side, and some may need optional credentials or manual/imported evidence. That is especially true for TOR switches, firewalls, and other third-party network infrastructure.
 
 ## What Ranger Is Not
 
@@ -106,10 +114,12 @@ Ranger is expected to produce a normalized audit model first and then use that m
 The intended output story is:
 
 - structured audit data that represents the Azure Local deployment as a complete system
-- diagrams that explain physical, logical, storage, workload, and Azure integration relationships
+- diagrams that explain physical, logical, storage, workload, Azure integration, identity, monitoring, continuity, and deployment-variant relationships
 - reports for executive, management, and technical audiences
 - polished as-built documentation packages suitable for project handoff and customer delivery
 - regeneration of reports and diagrams from cached audit data without requiring live cluster access
+
+The planning model is manifest-first and modular. Ranger is intended to be delivered as one public PowerShell module, but internally built from small collector and service components so domains can be developed and tested independently.
 
 ## Current State Of This Repository
 
@@ -122,7 +132,7 @@ It contains:
 - a root PowerShell module shell and module manifest
 - GitHub Actions workflows for documentation deployment and validation
 - empty implementation directories tracked with `.gitkeep`
-- an internal restructure plan for correcting the current information architecture
+- a detailed product-direction plan covering scope, discovery domains, outputs, architecture, and documentation sequencing
 
 It intentionally does not yet contain:
 
@@ -143,8 +153,8 @@ It intentionally does not yet contain:
 - [Audit Manifest](docs/architecture/audit-manifest.md)
 - [Repository Structure](docs/project/repository-structure.md)
 - [As-Built Package](docs/outputs/as-built-package.md)
-- [Discovery Domains](docs/discovery-domains)
-- [Repo Restructure Plan](repo-management/plans/azure-local-ranger-restructure-plan.md)
+- [Discovery Domain Pages](docs/discovery-domains)
+- [Product Direction Plan](repo-management/plans/azure-local-ranger-product-direction.md)
 
 ## License
 
