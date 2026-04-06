@@ -1,60 +1,94 @@
 # As-Built Package
 
-The as-built package is one of the defining product outputs for Azure Local Ranger.
+The as-built package is one of Ranger’s defining outputs.
 
-Ranger is not only meant to help teams inspect what they currently have. It is also meant to help delivery teams hand off a newly deployed Azure Local environment in a professional, accurate, and repeatable way.
+It is not a thin export. It is a structured handoff artifact for another team, customer, or support function.
 
 ## Purpose
 
-The as-built package should capture what was delivered in a form that another team or customer can use immediately.
+The as-built package should let a receiving team understand what was delivered without rediscovering the environment from scratch.
 
-This output should be suitable for:
+Typical uses include:
 
 - customer handoff
-- internal project closure
+- project closure
 - transfer from implementation to operations
-- support onboarding
-- governance review
+- managed-service onboarding
+- support and governance readiness
 
-## What It Should Contain
+## Package Structure
 
-The exact format can evolve, but the package should be planned to include:
+The exact file names can evolve, but the logical package should include:
 
-- an environment summary
+```text
+<cluster>-as-built-<timestamp>/
+	manifest/
+		audit-manifest.json
+	reports/
+		executive-summary.html
+		management-summary.html
+		technical-deep-dive.html
+	diagrams/
+		physical-architecture.svg
+		logical-network-topology.svg
+		azure-arc-integration.svg
+		...
+	evidence/
+		optional raw evidence exports or references
+	index.html or README.md
+```
+
+## Required Content
+
+At a minimum, the package should include:
+
+- environment identity and deployment summary
 - cluster and node overview
 - hardware summary
-- storage architecture summary
-- network architecture summary
-- workload inventory and placement view
+- storage and networking architecture summaries
+- workload and service inventory
 - Azure integration summary
 - management and security posture summary
-- architecture diagrams
-- technical deep-dive appendix or linked detail
+- selected diagrams appropriate for the environment
+- technical deep-dive detail or appendix
 
-## What Makes It Different From A Raw Report
+## Conditional Content
 
-An as-built package should not feel like an unfiltered property dump.
+Some content should appear only when the environment justifies it.
 
-It should be:
+Examples:
+
+- disconnected-operations control-plane sections
+- local identity with Key Vault secret-flow sections
+- multi-rack preview topology diagrams
+- OEM-specific lifecycle sections when OEM tooling is detected
+
+## What Makes It Different From a Raw Report
+
+An as-built package should be:
 
 - accurate
 - organized
-- readable
+- narrative enough to be read by a receiving team
 - diagram-supported
-- suitable for formal delivery
+- explicit about what was discovered directly versus what was imported or inferred
 
-## Why It Is A First-Class Requirement
+## Naming and Artifact Expectations
 
-Azure Local deployments are often built by one team and then handed to another. Ranger should reduce the amount of tribal knowledge lost during that transition.
+Artifact naming should include:
 
-That means the as-built package is not a secondary feature. It is part of the product identity.
+- cluster or environment identifier
+- mode (`as-built`)
+- generation timestamp
+- artifact type
 
-## Design Implications
+Examples:
 
-Planning for the as-built package affects:
+- `azlocal-prod-01-as-built-20260406-technical-deep-dive.html`
+- `azlocal-prod-01-as-built-20260406-physical-architecture.svg`
 
-- the audit manifest shape
-- the report structure
-- the diagram model
-- how discovery domains preserve relationships and context
-- how polished the output needs to be for handoff scenarios
+## Relationship to Current-State Outputs
+
+Current-state outputs are shorter-lived operational artifacts.
+
+The as-built package is a formal delivery artifact. It should feel more curated, better structured, and more complete, even though it still depends on the same manifest contract.

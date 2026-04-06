@@ -1,0 +1,130 @@
+# How Ranger Works
+
+Azure Local Ranger runs from a management workstation or jump box, connects to the targets the operator has access to, normalizes discovery results into a cached manifest, and renders reports or diagrams from that cached data.
+
+This page explains the runtime model in plain English.
+
+## The Short Version
+
+Ranger does four things in order:
+
+1. Validates the execution environment, configuration, and credentials.
+2. Connects to each selected discovery domain by using the right protocol for that target.
+3. Normalizes the collected evidence into one audit manifest.
+4. Generates outputs from the cached manifest instead of re-querying the environment.
+
+That separation is deliberate. Collection and rendering are different phases.
+
+## Where Ranger Should Run
+
+Ranger should run from a management workstation or jump box that can reach:
+
+- the Azure Local management network
+- the out-of-band or BMC network when hardware discovery is required
+- Azure endpoints for Arc, resource discovery, monitoring, and policy
+
+Running directly on a cluster node is not the preferred model because cluster nodes do not necessarily have access to every target that Ranger needs, especially BMC endpoints and some Azure-side management paths.
+
+## Connectivity Methods
+
+Ranger uses different protocols for different domains.
+
+| Method | What it is used for | v1 posture |
+|---|---|---|
+| WinRM / PowerShell remoting | Cluster, node, storage, networking, VM, management-tool, and performance collection | Primary |
+| Redfish REST API | Dell-first OEM hardware and BMC discovery | Primary |
+| Az PowerShell / Azure CLI | Azure-side discovery for Arc, policy, monitoring, update, backup, and related services | Primary |
+| Azure Arc Run Command | Alternative path when WinRM is unavailable | Investigate, not a v1 dependency |
+| Vendor SSH / REST / SNMP | Direct switch and firewall interrogation | Optional future domain |
+
+## Credentials and Authentication
+
+Ranger is multi-target and multi-credential by design. It must treat Azure, cluster, domain, and BMC authentication as separate concerns.
+
+The planned credential resolution order is:
+
+1. parameter input
+2. Key Vault reference via `keyvault://<vault>/<secret>`
+3. interactive prompt
+
+Azure authentication can use an existing Az context, interactive login, service principal, or managed identity. Cluster and domain discovery use Windows credentials appropriate for WinRM and directory read access. Dell-first hardware discovery uses Redfish credentials for iDRAC.
+
+See [Operator Authentication](../operator/authentication.md) and [Configuration Model](configuration-model.md) for details.
+
+## Domain Selection
+
+Ranger is compartmentalized. Operators can run only the discovery domains they need.
+
+The default behavior is:
+
+- run core domains when the required credential is available
+- skip optional domains when targets or credentials are missing
+- light up variant-specific domains only when the detected topology or explicit configuration makes them relevant
+
+A skipped domain is not treated as a failed run. The manifest records why it was skipped.
+
+## Runtime Flow
+
+![Ranger runtime flow](../assets/diagrams/ranger-runtime-flow.svg)
+
+A normal run follows this sequence:
+
+1. **Load configuration**
+   Ranger loads parameters, config-file values, domain filters, output settings, and any Key Vault references.
+2. **Resolve credentials**
+   Ranger resolves Azure, cluster, domain, and BMC credentials independently.
+3. **Classify topology**
+   Ranger determines whether the environment is hyperconverged, switchless, rack-aware, local identity with Key Vault, disconnected, or multi-rack preview.
+4. **Collect by domain**
+   Each domain runs independently, records its own evidence, and reports its own status.
+5. **Normalize into the manifest**
+   Raw evidence is translated into normalized facts, relationships, findings, and run metadata.
+6. **Persist artifacts**
+   Ranger writes the manifest and any supporting evidence exports to disk.
+7. **Render outputs**
+   Reports, diagrams, and package exports consume the saved manifest rather than live targets.
+
+## Current-State and As-Built Modes
+
+Ranger supports two modes through the same runtime model.
+
+### Current-State Documentation
+
+This mode produces a leaner operational output focused on what exists now, what is healthy, what is missing, and what needs attention.
+
+### As-Built Documentation
+
+This mode produces a richer handoff package with narrative structure, diagram selection tuned for transfer-of-ownership, and a more formal output layout.
+
+The difference is in rendering and package structure, not a different discovery engine.
+
+## Graceful Degradation
+
+Ranger should still produce useful output when some targets are unreachable.
+
+Collectors report one of these states:
+
+- `success`
+- `partial`
+- `failed`
+- `skipped`
+- `not-applicable`
+
+That allows a run to document what was successfully observed without flattening every non-ideal condition into a binary success-or-failure result.
+
+## Read-Only Contract
+
+Ranger is a documentation and audit tool. It should not change cluster configuration, modify Azure resources, rotate secrets, or remediate drift.
+
+Any generated recommendation belongs in findings and documentation, not in automatic enforcement.
+
+## Operator Reading Path
+
+Operators should read these pages together:
+
+- [System Overview](system-overview.md)
+- [Configuration Model](configuration-model.md)
+- [Operator Prerequisites](../operator/prerequisites.md)
+- [Operator Authentication](../operator/authentication.md)
+- [Operator Configuration](../operator/configuration.md)
+- [Operator Troubleshooting](../operator/troubleshooting.md)

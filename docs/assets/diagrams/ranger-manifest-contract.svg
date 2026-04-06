@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="260" viewBox="0 0 1240 260">
+  <style>
+    .title { font: 700 20px Segoe UI, Arial, sans-serif; fill: #1f2937; }
+    .label { font: 600 14px Segoe UI, Arial, sans-serif; fill: #111827; }
+    .small { font: 12px Segoe UI, Arial, sans-serif; fill: #4b5563; }
+    .box { rx: 12; ry: 12; stroke-width: 2; }
+    .arrow { stroke: #6b7280; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
+  </style>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280" />
+    </marker>
+  </defs>
+  <text x="30" y="36" class="title">Azure Local Ranger Manifest Contract</text>
+  <text x="30" y="58" class="small">Collectors write evidence and normalized facts; outputs read the saved manifest only.</text>
+
+  <rect x="30" y="110" width="220" height="74" class="box" fill="#d9eaf7" stroke="#5b9bd5" />
+  <text x="72" y="145" class="label">Collectors and</text>
+  <text x="76" y="166" class="label">evidence sources</text>
+
+  <rect x="320" y="110" width="220" height="74" class="box" fill="#e2f0d9" stroke="#70ad47" />
+  <text x="353" y="145" class="label">Normalized facts</text>
+  <text x="361" y="166" class="label">and provenance</text>
+
+  <rect x="610" y="110" width="220" height="74" class="box" fill="#fce4d6" stroke="#ed7d31" />
+  <text x="655" y="145" class="label">Audit manifest</text>
+  <text x="679" y="166" class="label">contract</text>
+
+  <rect x="900" y="110" width="280" height="74" class="box" fill="#e4dfec" stroke="#8064a2" />
+  <text x="936" y="145" class="label">Reports, diagrams, and</text>
+  <text x="998" y="166" class="label">packages</text>
+
+  <line x1="250" y1="147" x2="320" y2="147" class="arrow" />
+  <line x1="540" y1="147" x2="610" y2="147" class="arrow" />
+  <line x1="830" y1="147" x2="900" y2="147" class="arrow" />
+</svg>

@@ -36,7 +36,10 @@ nav:
     - Deployment Variants: deployment-variants.md
   - Architecture:
     - System Overview: architecture/system-overview.md
+    - How Ranger Works: architecture/how-ranger-works.md
     - Audit Manifest: architecture/audit-manifest.md
+    - Implementation Architecture: architecture/implementation-architecture.md
+    - Configuration Model: architecture/configuration-model.md
     - Repository Design: architecture/repository-design.md
   - Discovery Domains:
     - Cluster and Node: discovery-domains/cluster-and-node.md
@@ -53,6 +56,11 @@ nav:
     - Diagrams: outputs/diagrams.md
     - Reports: outputs/reports.md
     - As-Built Package: outputs/as-built-package.md
+  - Operator Guide:
+    - Prerequisites: operator/prerequisites.md
+    - Authentication: operator/authentication.md
+    - Configuration: operator/configuration.md
+    - Troubleshooting: operator/troubleshooting.md
   - Project:
     - Roadmap: project/roadmap.md
     - Repository Structure: project/repository-structure.md

@@ -1,67 +1,114 @@
 # Audit Manifest
 
-The audit manifest is the central data model for Azure Local Ranger.
+The audit manifest is Ranger’s central contract between collection and rendering.
 
-It is the object that should unify all discovery domains into one representation of the Azure Local environment.
+Collectors write to it. Reports, diagrams, and package builders read from it. If this contract is unclear, the rest of the product drifts.
 
-## Why The Manifest Matters
+## Manifest Design Goals
 
-Ranger is supposed to support both recurring documentation and as-built documentation. That only works if the product has one stable internal representation of the environment.
+The manifest must:
 
-Without that, the project risks becoming a collection of unrelated collectors and report generators.
+- represent one Ranger run clearly
+- preserve raw-evidence provenance without forcing every renderer to understand raw outputs
+- distinguish facts, findings, and imported evidence
+- capture partial runs honestly
+- support current-state and as-built output generation from cached data
 
-## What The Manifest Should Do
+## Top-Level Structure
 
-The manifest should:
+The intended top-level structure is:
 
-- hold the complete discovered state of the Azure Local deployment
-- record partial success and collector failure status
-- preserve relationships between local and Azure-side components
-- support report generation from cached data
-- support diagram generation from cached data
-- support rerendering of outputs without requiring a live environment connection
+| Section | Purpose |
+|---|---|
+| `run` | Tool version, schema version, timestamps, operator context, execution mode |
+| `target` | Cluster identity, Azure context, intended deployment being documented |
+| `topology` | Deployment type, identity mode, control-plane mode, variant markers |
+| `collectors` | Per-domain execution status, timings, provenance, and messages |
+| `domains` | Normalized domain payloads |
+| `relationships` | Cross-domain joins such as node-to-VM, volume-to-CSV, resource-to-cluster |
+| `findings` | Derived observations, severity, recommendation, and affected scope |
+| `artifacts` | Generated or planned output artifacts |
+| `evidence` | Optional raw-evidence references and imported/manual evidence records |
 
-## Planned Sections
+## Manifest Flow
 
-At a high level, the manifest should include:
+![Manifest contract flow](../assets/diagrams/ranger-manifest-contract.svg)
 
-- run metadata
-- environment identity
-- collector execution status
-- discovery-domain payloads
-- findings and warnings
-- output metadata
+The intended boundary is:
 
-## Metadata Section
+1. collectors gather evidence
+2. collectors normalize facts and status
+3. the manifest preserves both normalized facts and provenance
+4. outputs consume the manifest only
 
-This should identify the audit itself.
+## Required Metadata Blocks
 
-Examples include:
+### Run Metadata
 
-- tool version
+The `run` block should include:
+
+- Ranger tool version
 - schema version
-- collection timestamp
-- operator context if appropriate
-- target cluster name
-- target Azure subscription and resource group context where applicable
+- collection start and end time
+- execution mode (`current-state` or `as-built`)
+- workstation or jump-box identity when useful
+- selected include or exclude domain filters
 
-## Collector Status Section
+### Target Metadata
 
-Each discovery domain should report its execution result independently.
+The `target` block should include:
 
-That should allow values such as:
+- cluster name and FQDN
+- Azure subscription, resource group, and region where applicable
+- node list if known at run start
+- environment label or operator-friendly identifier
 
-- success
-- partial
-- failed
-- skipped
-- not-applicable
+### Topology Metadata
 
-This is important because Ranger should tolerate incomplete visibility without losing the rest of the environment model.
+The `topology` block should include:
 
-## Discovery Payload Sections
+- deployment type (`hyperconverged`, `switchless`, `rack-aware`, `disconnected`, `multi-rack`)
+- identity mode (`ad`, `local-key-vault`)
+- control-plane mode (`connected`, `disconnected`, `mixed`)
+- variant markers such as custom location, Arc Resource Bridge, preview multi-rack indicators, or local-identity signals
 
-The manifest should reserve clear top-level sections for domains such as:
+## Collector Status Model
+
+Each collector should report status independently.
+
+| Status | Meaning |
+|---|---|
+| `success` | The collector completed and returned the expected normalized payload |
+| `partial` | The collector completed but some evidence or subtargets were missing |
+| `failed` | The collector should have run but could not complete |
+| `skipped` | The collector was intentionally not run because inputs, targets, or credentials were missing or excluded |
+| `not-applicable` | The collector does not apply to the detected environment |
+| `inconclusive` | Evidence existed but was insufficient to determine a confident result |
+
+Each collector record should also include:
+
+- start and end time
+- target scope
+- credential scope used
+- evidence source summary
+- warning or error messages
+
+## Evidence Model
+
+The manifest must distinguish four kinds of content.
+
+| Kind | Meaning |
+|---|---|
+| Raw evidence | Unshaped source output or references to saved evidence |
+| Normalized facts | Cleaned, stable data used by the rest of the product |
+| Derived findings | Severity-tagged observations inferred from facts |
+| Imported or manual evidence | User-provided data that was not machine-discovered |
+
+Imported evidence must never be disguised as machine-discovered fact. It should be labeled clearly.
+
+## Domain Payloads
+
+The `domains` section should reserve stable payload areas for:
 
 - cluster and node
 - hardware
@@ -74,37 +121,87 @@ The manifest should reserve clear top-level sections for domains such as:
 - management tools
 - performance baseline
 
-## Relationship Model
+Optional or future domains can exist as empty or skipped blocks rather than requiring schema changes later.
 
-The manifest should preserve cross-domain relationships, such as:
+## Relationships
 
-- which workloads run on which nodes
-- which CSVs and volumes back which workloads
-- which logical or Azure-side resources relate to which local platform components
-- which Azure resources represent or extend the deployment
+The `relationships` section is critical for diagrams and as-built clarity.
 
-Those relationships are essential for diagrams and as-built documentation.
+Examples include:
+
+- VM to host-node placement
+- VHD or disk to volume or CSV backing
+- Arc resource to Azure Local cluster relationship
+- BMC endpoint to physical node relationship
+- workload family to cluster or VM placement
 
 ## Findings Model
 
-The manifest should also support findings derived from discovery.
+Each finding should include:
 
-At minimum, the findings model should be able to express:
+- severity (`critical`, `warning`, `informational`, `good`)
+- title
+- description
+- affected components
+- current state
+- recommendation
+- supporting evidence references when available
 
-- informational observations
-- warnings
-- critical risks
-- recommendations
+## Artifact Contract
 
-## Why This Needs To Be Defined Early
+The `artifacts` section should describe both generated and expected outputs.
 
-The manifest is the backbone of the entire product.
+| Artifact type | Current-state expectation | As-built expectation |
+|---|---|---|
+| Manifest JSON | Required | Required |
+| Markdown report | Optional but common | Required |
+| HTML report | Common | Required |
+| SVG diagrams | Based on available data and selection rules | Required where data supports them |
+| Package index or manifest | Optional | Required |
 
-If the manifest is poorly shaped, then:
+Artifact naming should include cluster name, mode, timestamp, and artifact type.
 
-- reports will become inconsistent
-- diagrams will need special-case logic
-- cached rerendering will be unreliable
-- contributors will invent incompatible patterns across collectors
+## Representative Example
 
-That is why the manifest should be defined before large amounts of PowerShell implementation are added.
+The example below shows the intended shape for one representative hyperconverged run.
+
+```json
+{
+	"run": {
+		"toolVersion": "0.1.0",
+		"schemaVersion": "1.0.0-draft",
+		"mode": "current-state"
+	},
+	"target": {
+		"clusterName": "azlocal-prod-01",
+		"resourceGroup": "rg-azlocal-prod-01"
+	},
+	"topology": {
+		"deploymentType": "hyperconverged",
+		"identityMode": "ad",
+		"controlPlaneMode": "connected"
+	},
+	"collectors": {
+		"cluster-node": { "status": "success" },
+		"hardware": { "status": "partial", "reason": "node-02 iDRAC unreachable" },
+		"firewall": { "status": "skipped", "reason": "no targets configured" }
+	},
+	"domains": {
+		"clusterNode": {},
+		"hardware": {},
+		"storage": {},
+		"networking": {}
+	},
+	"findings": [
+		{
+			"severity": "warning",
+			"title": "One hardware endpoint unavailable",
+			"affectedComponents": ["node-02"]
+		}
+	]
+}
+```
+
+## Why This Must Stabilize Early
+
+If the manifest is unstable, reports, diagrams, and collectors all drift separately. That is why this contract should be defined before broad collector or renderer implementation begins.

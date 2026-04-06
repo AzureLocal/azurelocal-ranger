@@ -7,8 +7,10 @@ This repository is currently in a planning and documentation phase.
 - read `What Ranger Is`
 - read `Ranger vs Scout`
 - read `Scope Boundary`
-- review the grouped architecture and discovery-domain docs
-- understand that the repo is a MkDocs + PowerShell module repository intended for public GitHub Pages documentation and future PSGallery publication
+- read `Deployment Variants`
+- read the architecture pages in this order: `System Overview`, `How Ranger Works`, `Audit Manifest`, `Implementation Architecture`, `Configuration Model`
+- read the operator pages if your change affects how Ranger will be run
+- review the grouped discovery-domain and output docs only after the core architecture story is clear
 
 ## Contribution Focus Right Now
 
@@ -19,6 +21,7 @@ The highest-value contributions at this stage are:
 - refining discovery-domain definitions
 - planning the audit model and output model
 - shaping the future module layout and delivery roadmap
+- keeping public docs aligned with current Microsoft Azure Local documentation where product facts are involved
 
 ## What Not To Do Yet
 

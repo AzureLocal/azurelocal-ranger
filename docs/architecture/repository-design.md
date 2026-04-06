@@ -1,53 +1,77 @@
 # Repository Design
 
-This repository is a MkDocs-backed PowerShell module repository and should be structured accordingly.
+Azure Local Ranger is intentionally two things at once:
 
-## Documentation Site Model
+- a public MkDocs documentation site
+- a future PowerShell module repository
 
-The public documentation should be authored in `docs/` and published through MkDocs to GitHub Pages.
+The repository structure needs to support both without mixing public explanation and internal implementation concerns together.
 
-That means the repo should favor:
+## Public Documentation Structure
 
-- clean Markdown source under `docs/`
-- a clear `mkdocs.yml` navigation model
-- a structure that reads well on a public documentation site
-- public-facing pages focused on product clarity, not internal implementation clutter
+The `docs/` tree should stay concept-driven and readable as a published site.
 
-## Future PowerShell Module Layout
+| Area | Purpose |
+|---|---|
+| `docs/` | Public documentation content |
+| `docs/assets/images` | Static image assets |
+| `docs/assets/diagrams` | Diagram source and exported SVG assets |
+| `mkdocs.yml` | Site navigation and publication structure |
 
-Using Azure Scout as the reference point, Ranger should be shaped like a real PowerShell module repository, not a generic source tree.
+The public docs should explain what Ranger is, how it runs, what it discovers, and what it outputs without forcing readers into implementation details or internal planning notes.
 
-For that reason, the repo now reserves a `Modules/` layout instead of leaning on the earlier `src/` placeholder structure.
+## Internal Planning vs Public Docs
 
-## Planned Module Areas
+`repo-management/` is where planning artifacts belong.
 
-- `Modules/Public` for exported entry points and public cmdlets
-- `Modules/Private` for internal helpers
-- `Modules/Collectors` for discovery-domain logic
-- `Modules/Core` for manifest, orchestration, and shared execution flow
-- `Modules/Outputs/Reports` for report-generation logic
-- `Modules/Outputs/Diagrams` for diagram-generation logic
-- `Modules/Internal` for shared non-exported internals
+That separation matters because:
 
-## Why This Is Better Than The Earlier Placeholder
+- public docs should be stable and reader-focused
+- planning files can remain detailed, iterative, and implementation-oriented
+- contributors need one place for source planning and another for public-facing docs
 
-The earlier flat `src/` placeholder came from generic scaffolding and did not reflect the fact that this repo is being built as a PowerShell module that should eventually feel publishable and professional.
+The public site should absorb mature decisions from `repo-management/` rather than exposing the planning file as the only authoritative explanation.
 
-A module-oriented layout is clearer for:
+## Diagram Asset Model
 
-- future PSGallery packaging
-- contributor expectations
-- public repo readability
-- alignment with Azure Scout as a sister project
+When diagrams materially improve clarity, Ranger docs should use draw.io source files exported to SVG.
 
-## GitHub Pages Expectation
+The intended location is:
 
-This repository should be treated as a GitHub Pages-backed docs repo.
+- `docs/assets/diagrams/*.drawio`
+- `docs/assets/diagrams/*.svg`
 
-The repo can be prepared for that now through:
+That keeps the editable source and published asset side by side.
 
-- MkDocs navigation and site metadata
-- public-facing docs grouped by concept
-- disciplined separation between public docs and internal planning
+## Planned Module Layout
 
-Repository settings for Pages cannot be changed from documentation alone, but the repo structure should assume GitHub Pages publication as the intended outcome.
+The implementation side should remain module-oriented.
+
+| Path | Purpose |
+|---|---|
+| `Modules/Public` | Exported commands and public entry points |
+| `Modules/Private` | Internal helper functions |
+| `Modules/Core` | Orchestration, manifest assembly, and shared services |
+| `Modules/Collectors` | Domain collectors |
+| `Modules/Outputs/Reports` | Report renderers |
+| `Modules/Outputs/Diagrams` | Diagram renderers |
+| `Modules/Internal` | Shared internal models and helpers |
+
+That layout is more honest than a generic `src/` tree because Ranger is meant to become a publishable PowerShell module.
+
+## Supporting Repository Areas
+
+Other top-level areas should stay intentional.
+
+| Path | Role |
+|---|---|
+| `.github/workflows/` | Validation, automation, and publishing workflows |
+| `tests/` | Future test coverage for schema, collectors, and outputs |
+| `samples/` | Future sample manifests and output examples |
+| `branding/` | Shared visual assets |
+
+## Publication Model
+
+The docs structure should assume GitHub Pages publication, and the module structure should assume eventual PSGallery publication.
+
+That dual model is a feature of the repo, not an accidental compromise.

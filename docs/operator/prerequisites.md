@@ -1,0 +1,119 @@
+# Operator Prerequisites
+
+This page explains where Ranger should run, what it needs to reach, and what an operator should have ready before starting a run.
+
+## Recommended Execution Environment
+
+Run Ranger from a management workstation or jump box that can reach the required targets.
+
+The recommended machine should have network access to:
+
+- the Azure Local management network
+- the out-of-band or BMC network when hardware discovery is required
+- Azure endpoints used for Arc, monitoring, policy, backup, and related services
+
+Running directly on a cluster node is not the preferred operating model.
+
+## Software Prerequisites
+
+The planned runtime assumes:
+
+- PowerShell 7.x
+- the Az PowerShell modules needed for Azure discovery
+- Azure CLI when CLI-only or fallback workflows are needed
+- network access to WinRM, HTTPS Redfish endpoints, and Azure public or approved private endpoints as required by the selected domains
+
+Optional tools may be required for specific workflows later, but v1 planning assumes PowerShell plus Azure authentication tooling.
+
+## Minimum Inputs
+
+A useful Ranger run typically starts with:
+
+- a target Azure Local cluster name or node list
+- a cluster credential for WinRM
+- Azure access for Azure-side discovery when Azure integration is in scope
+
+Hardware discovery adds:
+
+- BMC target list
+- BMC or iDRAC credential
+
+## Network Reachability
+
+Different domains need different network paths.
+
+| Path | Used for |
+|---|---|
+| WinRM to cluster nodes | Cluster, storage, networking, VM, identity/security, management tools, performance |
+| HTTPS to BMC/Redfish endpoints | OEM hardware and management-layer discovery |
+| HTTPS to Azure endpoints | Azure integration, monitoring, update, policy, backup, and Arc-related discovery |
+| Optional vendor API or SSH reachability | Future direct switch or firewall interrogation |
+
+If a domain’s network path is unavailable, that domain should be skipped or marked partial instead of blocking the entire run.
+
+## Variant-Specific Prerequisites
+
+### Hyperconverged
+
+This is the baseline shape. Standard management-network, Azure, and optional BMC reachability applies.
+
+### Switchless Storage Fabric
+
+Storage-network switch interrogation is not relevant. Host-side networking evidence becomes more important than direct switch evidence.
+
+### Rack-Aware
+
+Ranger should expect rack assignments and availability-zone-style placement behavior. Operators may need to provide manual evidence if rack metadata is not discoverable from the host side.
+
+### Local Identity with Azure Key Vault
+
+Current Microsoft documentation describes these extra prerequisites:
+
+- the cluster runs without Active Directory
+- a consistent local administrator account exists across nodes
+- static IP addressing is required
+- DNS zones and host records must already be configured
+- Azure Key Vault is used for backup secrets
+- SSH access to Arc-enabled servers may be needed for some remote Azure-portal workflows
+
+Windows Admin Center is not supported in this mode, and SCVMM support is limited or unsupported.
+
+### Disconnected Operations
+
+Disconnected environments need extra planning because the local control plane consumes additional capacity and connectivity assumptions differ from connected Azure Local.
+
+Current Microsoft documentation indicates that disconnected operations require:
+
+- approved disconnected-operations eligibility
+- extra capacity for the local control plane
+- a dedicated management cluster in the current documented disconnected model
+- careful planning for PKI, identity, and local monitoring paths
+
+### Multi-Rack Preview
+
+Current Microsoft documentation describes multi-rack as a preview architecture with:
+
+- one main rack for network aggregation and SAN storage
+- several compute racks
+- managed networking exposed through Azure APIs and ARM
+- Azure ExpressRoute in the documented preview architecture
+
+This is not a standard hyperconverged deployment and should be treated as variant-specific.
+
+## Before You Run Ranger
+
+Before a meaningful run, verify:
+
+1. you are on the right workstation or jump box
+2. cluster WinRM access works
+3. Azure authentication works for the intended subscription and resource group
+4. BMC endpoints are reachable if hardware discovery is included
+5. DNS, proxy, and firewall posture allow the selected domains to communicate
+6. you understand which domains are expected to run and which should be skipped
+
+## Next Reads
+
+- [Operator Authentication](authentication.md)
+- [Operator Configuration](configuration.md)
+- [Operator Troubleshooting](troubleshooting.md)
+- [How Ranger Works](../architecture/how-ranger-works.md)

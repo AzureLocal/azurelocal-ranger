@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="540" viewBox="0 0 760 540">
+  <style>
+    .title { font: 700 20px Segoe UI, Arial, sans-serif; fill: #1f2937; }
+    .label { font: 600 15px Segoe UI, Arial, sans-serif; fill: #111827; }
+    .small { font: 12px Segoe UI, Arial, sans-serif; fill: #4b5563; }
+    .box { rx: 12; ry: 12; stroke-width: 2; }
+    .arrow { stroke: #6b7280; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
+  </style>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280" />
+    </marker>
+  </defs>
+  <text x="30" y="36" class="title">Azure Local Ranger Implementation Architecture</text>
+  <text x="30" y="58" class="small">Collectors and outputs are decoupled by the manifest contract.</text>
+
+  <rect x="50" y="90" width="240" height="74" class="box" fill="#d9eaf7" stroke="#5b9bd5" />
+  <text x="117" y="133" class="label">Orchestration</text>
+
+  <rect x="50" y="190" width="240" height="74" class="box" fill="#fff2cc" stroke="#d6b656" />
+  <text x="112" y="233" class="label">Shared services</text>
+
+  <rect x="50" y="290" width="240" height="74" class="box" fill="#e2f0d9" stroke="#70ad47" />
+  <text x="107" y="333" class="label">Domain collectors</text>
+
+  <rect x="50" y="390" width="240" height="74" class="box" fill="#e4dfec" stroke="#8064a2" />
+  <text x="124" y="433" class="label">Output layer</text>
+
+  <rect x="420" y="240" width="250" height="84" class="box" fill="#fce4d6" stroke="#ed7d31" />
+  <text x="489" y="280" class="label">Audit manifest</text>
+  <text x="482" y="302" class="small">collection/rendering boundary</text>
+
+  <line x1="290" y1="127" x2="420" y2="260" class="arrow" />
+  <line x1="290" y1="227" x2="420" y2="272" class="arrow" />
+  <line x1="290" y1="327" x2="420" y2="284" class="arrow" />
+  <line x1="420" y1="300" x2="290" y2="427" class="arrow" />
+</svg>

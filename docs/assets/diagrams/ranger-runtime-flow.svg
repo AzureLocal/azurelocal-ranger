@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="260" viewBox="0 0 1440 260">
+  <style>
+    .title { font: 700 20px Segoe UI, Arial, sans-serif; fill: #1f2937; }
+    .label { font: 600 14px Segoe UI, Arial, sans-serif; fill: #111827; }
+    .small { font: 12px Segoe UI, Arial, sans-serif; fill: #4b5563; }
+    .box { rx: 12; ry: 12; stroke-width: 2; }
+    .arrow { stroke: #6b7280; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
+  </style>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280" />
+    </marker>
+  </defs>
+  <text x="30" y="36" class="title">Azure Local Ranger Runtime Flow</text>
+  <text x="30" y="58" class="small">Collection and rendering are separate phases. Outputs consume cached manifest data.</text>
+
+  <rect x="30" y="110" width="220" height="74" class="box" fill="#d9eaf7" stroke="#5b9bd5" />
+  <text x="70" y="145" class="label">Load config and</text>
+  <text x="79" y="166" class="label">resolve credentials</text>
+
+  <rect x="300" y="110" width="220" height="74" class="box" fill="#fff2cc" stroke="#d6b656" />
+  <text x="340" y="145" class="label">Classify topology</text>
+  <text x="348" y="166" class="label">and select domains</text>
+
+  <rect x="570" y="110" width="220" height="74" class="box" fill="#e2f0d9" stroke="#70ad47" />
+  <text x="636" y="145" class="label">Collect domain</text>
+  <text x="652" y="166" class="label">evidence</text>
+
+  <rect x="840" y="110" width="220" height="74" class="box" fill="#fce4d6" stroke="#ed7d31" />
+  <text x="884" y="145" class="label">Normalize into</text>
+  <text x="897" y="166" class="label">audit manifest</text>
+
+  <rect x="1110" y="110" width="280" height="74" class="box" fill="#e4dfec" stroke="#8064a2" />
+  <text x="1145" y="145" class="label">Render reports and diagrams</text>
+  <text x="1167" y="166" class="label">from cached manifest</text>
+
+  <line x1="250" y1="147" x2="300" y2="147" class="arrow" />
+  <line x1="520" y1="147" x2="570" y2="147" class="arrow" />
+  <line x1="790" y1="147" x2="840" y2="147" class="arrow" />
+  <line x1="1060" y1="147" x2="1110" y2="147" class="arrow" />
+</svg>
