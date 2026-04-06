@@ -26,7 +26,7 @@ Current implementation validation used for this audit:
 
 | Item | Value |
 | --- | --- |
-| Commit | `7a27ff7` |
+| Commit | `907e69d` |
 | Test command | `Import-Module .\AzureLocalRanger.psd1 -Force; Invoke-Pester -Path .\tests -PassThru` |
 | Latest validated result | `12 passed, 0 failed` |
 | Runtime/output issues | `#19`, `#22`, `#23`, `#24` closed after local completion and verification |
@@ -66,12 +66,12 @@ Current implementation validation used for this audit:
 | Domain | Plan Intent | Delivered Now | Status | Gap Against Full Plan |
 | --- | --- | --- | --- | --- |
 | Deployment topology and variant classification | Detect hyperconverged, switchless, local identity, disconnected, rack-aware, multi-rack and use it to drive behavior | Topology fields exist and drive outputs | Mostly aligned | Detection is still relatively simple and partly hint-driven; deep multi-rack and disconnected behavior is not fully realized. |
-| Cluster and node foundation | Cluster identity, release, registration, node inventory, quorum, fault domains, networks, update and validation posture, events, health | Implemented in `Modules/Collectors/10-TopologyClusterCollector.ps1` | Aligned | Release, licensing, registration, lifecycle, and validation-report context are now included in the cluster payload. |
+| Cluster and node foundation | Cluster identity, release, registration, node inventory, quorum, fault domains, networks, update and validation posture, events, health | Implemented in `Modules/Collectors/10-TopologyClusterCollector.ps1` | Mostly aligned | Release, licensing, registration, lifecycle, and validation-report context are included. Events are collected and stored in `RawEvidence` but not summarized into `eventSummary`; `csvSummary` and `updatePosture` are reserved template keys that are not yet populated by the collector. |
 | Dell hardware | Redfish-based hardware inventory and OEM posture | Implemented in `Modules/Collectors/20-HardwareCollector.ps1` | Mostly aligned | Dell OEM posture now captures update-service, lifecycle-controller, support signals, and compliance hints; deeper per-vendor breadth remains future OEM work. |
 | Storage | Pools, disks, cache, virtual disks, volumes, CSVs, SOFS, QoS, replica, storage health | Implemented in `Modules/Collectors/30-StorageNetworkingCollector.ps1` | Mostly aligned | Storage tiers, resiliency defaults, jobs, and richer capacity posture are now included for non-live validation scope. |
 | Networking | Adapters, vSwitches, ATC, host vNICs, proxy, DNS, firewall, SDN, host-side validation | Implemented in `Modules/Collectors/30-StorageNetworkingCollector.ps1` | Mostly aligned | IP, route, VLAN, proxy, DNS, firewall, and SDN host-side evidence are now normalized together for report and diagram use. |
 | Virtual machines | VM inventory, placement, config, replication, guest clustering, network and storage context | Implemented in `Modules/Collectors/40-WorkloadIdentityAzureCollector.ps1` | Mostly aligned | Integration-service and deeper replication context are now included; guest-cluster enrichment remains bounded by non-live host-side evidence. |
-| Identity and security | AD-backed and local-identity posture, certificates, CredSSP, BitLocker, Defender, WDAC, secured-core, admin audit, audit policy | Implemented in `Modules/Collectors/40-WorkloadIdentityAzureCollector.ps1` | Mostly aligned | AD, AppLocker, secure boot, and Key Vault reference context are now included alongside the baseline posture. |
+| Identity and security | AD-backed and local-identity posture, certificates, CredSSP, BitLocker, Defender, WDAC, secured-core, admin audit, audit policy | Implemented in `Modules/Collectors/40-WorkloadIdentityAzureCollector.ps1` | Mostly aligned | AD, AppLocker, secure boot, and Key Vault reference context are included. Collector also emits `activeDirectory` and `keyVault` sub-domains that are not yet defined in the reserved domain template in `01-Definitions.ps1` — these keys are present in the manifest but not in the reserved payload contract. |
 | Azure integration | Arc resources, resource groups, policy, backup, update, workload families, control-plane context | Implemented in `Modules/Collectors/40-WorkloadIdentityAzureCollector.ps1` | Mostly aligned | Resource bridge, custom locations, extensions, Arc machines, and site recovery context are now modeled where retrievable. |
 | Monitoring and observability | Telemetry extension, AMA, DCR, DCE, HCI insights, alerts, health, Update Manager context | Implemented in `Modules/Collectors/50-MonitoringCollector.ps1` | Mostly aligned | Solid v1 baseline; still less rich than the full product-plan story. |
 | OEM integration | Dell management and firmware posture relevant to Azure Local | Implemented alongside hardware collector | Mostly aligned | Dell-specific management, lifecycle, firmware, and compliance-adjacent posture are now modeled for non-live scope; broader vendor depth remains post-v1. |
@@ -86,7 +86,7 @@ Current implementation validation used for this audit:
 | Report tiers | Executive, Management, Technical; rich, branded, audience-specific | Delivered in `Modules/Outputs/Reports/10-Reports.ps1` | Mostly aligned | Structure, navigation, recommendations, and audience-specific sections are materially richer now; live-estate proof remains the last unresolved question. |
 | Diagram catalog | 6 baseline plus 12 extended diagrams with variant-aware selection | Delivered in `Modules/Internal/01-Definitions.ps1` and `Modules/Outputs/Diagrams/10-Diagrams.ps1` | Aligned | Catalog, selection rules, and richer domain-specific models are implemented for cached-manifest generation. |
 | Package assembly | Manifest, reports, diagrams, package README, package index | Delivered | Aligned | This matches the runtime and output track well. |
-| As-built package depth | Formal handoff-grade package with narrative clarity and completeness | Only baseline structural support today | Partial | The pipeline can build it, but the content is not yet at full handoff-grade richness. |
+| As-built package depth | Formal handoff-grade package with narrative clarity and completeness | Only baseline structural support today | Partial | The pipeline can build it, but report content does not currently differentiate between `current-state` and `as-built` mode — both produce the same output. Mode only affects diagram selection rules. |
 
 ## Testing Audit
 
@@ -133,6 +133,44 @@ These items are intentionally deferred and were closed as planning and decision 
 | Rack-aware and management-cluster-specific enrichment beyond current baseline | `#31` | Defined and deferred |
 | Manual import workflows | `#32` | Defined and deferred |
 | Windows PowerShell 5.1 compatibility assessment | `#33` | Defined and deferred |
+
+## Deployment Verification Audit (April 2026)
+
+This section documents a line-by-line code review performed at commit `907e69d`, comparing the tracker claims against actual deployed code. All six collector files, all private and internal modules, the core runtime, output generators, tests, and the schema contract were read and cross-checked.
+
+### Confirmed Deployed and Working
+
+| Area | Evidence |
+| --- | --- |
+| All 6 collectors | `Invoke-RangerTopologyClusterCollector`, `Invoke-RangerHardwareCollector`, `Invoke-RangerStorageNetworkingCollector`, `Invoke-RangerWorkloadIdentityAzureCollector`, `Invoke-RangerMonitoringCollector`, `Invoke-RangerManagementPerformanceCollector` all present and complete |
+| Topology collector enrichment | `Get-ClusterGroup` (roles), `Win32_Processor`, `totalMemoryGiB`, `logicalProcessorCount`, `$nodeSummary`, `$faultDomainSummary`, `$networkSummary`, null-safe `$clusterSnapshot` guard, and four informational findings all confirmed |
+| Hardware collector enrichment | `processorSummary`, `memorySummary`, `ethernetSummary`, `storageSummary`, `firmwareSummary`, `securityPosture`, `lastResetTime`, Dell LC service Redfish call, TPM finding, `firmware` and `security` top-level blocks all confirmed |
+| Storage/networking collector enrichment | All flattened collections via `Get-RangerFlattenedCollection`, `$storageSummary`, `$networkSummary`, tiers, resiliency, jobs, replica, QoS, SOFS, proxy, VLAN, routes, IP addresses, SDN, firewall confirmed |
+| Workload/identity/Azure collector enrichment | `isClustered`, `diskCount`, `networkAdapterCount`, `replicationHealth`, `integrationServices`, `$vmSummary`, `$identitySummary`, `$resourceSummary`, `arcMachines`, `hciRegistrations`, VM→vSwitch relationships, policy-empty finding, cert-expiry finding, `auth` metadata, `appLocker`, `secureBoot` all confirmed |
+| Monitoring collector enrichment | `$monitoringSummary`, `updateManager`, alert-empty finding, `$CredentialMap.azure` passed to `Get-RangerAzureResources` all confirmed |
+| Management/performance collector enrichment | `$events`, full `$summary` block, `managementTools.summary`, `performance.events`, `performance.summary`, HealthService stopped finding, low-memory finding all confirmed |
+| Utility helpers | `ConvertTo-RangerGiB`, `Get-RangerFlattenedCollection`, `Get-RangerGroupedCount`, `Get-RangerAverageValue` all confirmed in `Modules/Private/10-Utilities.ps1` |
+| Azure auth methods | `existing-context`, `managed-identity` (with `AccountId`/`Subscription`), `device-code`, `service-principal` (PSCredential), Azure CLI fallback via `Test-RangerAzureCliAuthenticated` all confirmed in `Modules/Private/40-Execution.ps1` |
+| `Resolve-RangerAzureCredentialSettings` | Merges `credentials.azure` + `targets.azure`, resolves `clientSecretRef` to SecureString, sets `useAzureCliFallback` default; called by `Resolve-RangerCredentialMap` — confirmed |
+| `Test-RangerConfiguration` expansion | Output format validation, Azure auth method check, service-principal required fields, Azure CLI warning all confirmed in `Modules/Private/20-Config.ps1` |
+| Schema contract | `repo-management/contracts/manifest-schema.json` exists with `schemaVersion: 1.1.0-draft`, 9 required top-level keys, 5 required run keys, 11 reserved domains, 5 collector statuses |
+| Schema validation in runtime | `Test-RangerManifestSchema` called after collector loop, result written to `manifest.run.schemaValidation`, warning and error findings added, conditional throw on `failOnSchemaViolation` — all confirmed in `Modules/Core/20-Runtime.ps1` |
+| Reports | 3 tiers (executive, management, technical), HTML + Markdown, readiness section, topology section, domain coverage, operational risk, collector overview, schema validation status all confirmed |
+| Diagrams | 18 definitions (6 baseline + 12 extended), variant-aware selection rules, skip-with-artifact-record behavior, draw.io XML + SVG output all confirmed |
+| Tests | 12 test cases (4 Runtime + 5 Config + 2 Outputs + 1 EndToEnd), degraded fixtures for storage-networking and management-performance, schema contract test, all 12 pass at HEAD |
+
+### Discrepancies Found
+
+| Area | Claim in Tracker | Actual Code State | Impact |
+| --- | --- | --- | --- |
+| Verification commit reference | `7a27ff7` | HEAD is `907e69d` | Documentation only; updated in this audit |
+| `clusterNode` reserved template keys | `csvSummary`, `updatePosture`, `eventSummary` are reserved payload keys | Topology collector never populates these three keys; events are collected but go to `RawEvidence` only; `csvs` (raw list) is in the domain payload but no `csvSummary` object is computed | Low impact: keys exist in template as empty; no schema validation error; future work to summarize clusters events and CSVs would fill them |
+| `identitySecurity` collector vs template | Template defines `nodes`, `certificates`, `posture`, `localAdmins`, `auditPolicy`, `summary` | Collector also writes `activeDirectory` and `keyVault` sub-domains not in the reserved template definition | Low impact: extra keys are written and available; no schema violation; template is just incomplete relative to collector |
+| As-built mode report differentiation | Tracker marks as-built package depth as `Partial` with note about pipeline support | Reports generate the same content regardless of `mode = current-state` or `mode = as-built`; mode check only affects diagram selection rules | Confirms the `Partial` status is accurate; to fix this would require mode-specific report sections |
+
+### Verdict
+
+The deployed code matches the tracker claims for all core functionality. The four discrepancies above are minor documentation gaps or known shallow implementation areas already flagged correctly in the tracker as `Mostly aligned` or `Partial`. No functional regression was found. All 12 tests continue to pass at HEAD `907e69d`.
 
 ## What This Means
 
