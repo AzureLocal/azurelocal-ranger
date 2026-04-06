@@ -160,14 +160,14 @@ This section defines the specific data points each discovery domain collector mu
 
 Ranger must classify the deployment model before interpreting many of the lower-level findings. Azure Local is no longer a single-shape platform.
 
-- Deployment type: hyperconverged, rack-aware, stretched cluster, switchless storage fabric, disconnected operations, or multi-rack
-- Identity mode: Active Directory-backed, workgroup/local identity with Azure Key Vault, hybrid Entra-connected
+- Deployment type: hyperconverged, rack-aware, switchless storage fabric, disconnected operations, or multi-rack
+- Identity mode: Active Directory-backed or workgroup/local identity with Azure Key Vault
 - Control-plane mode: connected Azure control plane, disconnected local control plane, mixed/limited connectivity
 - Storage architecture: Storage Spaces Direct, SAN-backed multi-rack storage, SOFS-present, Storage Replica-present
 - Network architecture: switched ToR fabric, switchless full-mesh east-west, rack-aware, multi-rack managed networking
 - Site and rack count, rack assignments, site assignments, and whether nodes are required to be co-racked for the chosen topology
 - Azure connectivity model: public internet, proxy, ExpressRoute/VPN-assisted, disconnected
-- Variant-specific prerequisites present or absent: management cluster requirement, custom location requirement, Arc resource bridge requirement, Azure ExpressRoute requirement, Key Vault requirement
+- Variant-specific prerequisites present or absent: custom location requirement, Arc resource bridge requirement, Key Vault requirement, and preview-specific multi-rack topology or connectivity markers
 
 This topology classification should be persisted in the audit manifest and used to drive downstream validation logic, report wording, and diagram selection.
 
@@ -182,7 +182,7 @@ This topology classification should be persisted in the audit manifest and used 
 - Azure Local solution version (full build string, OEM info string)
 - Azure Local release train / feature update level
 - Azure Local license type and registration status with Azure (registered, registration date, expiration date, billing status)
-- Cluster operating model: AD-aware, local-identity/workgroup, disconnected-operations capable, rack-aware, stretched, or multi-rack
+- Cluster operating model: AD-aware, local-identity/workgroup, disconnected-operations capable, rack-aware, or multi-rack
 - Cluster validation state: last `Test-Cluster` run date, summary status, warnings/failures if retrievable
 - Post-update state: cluster functional level, storage pool version, VM configuration version upgrade posture
 
@@ -416,6 +416,7 @@ This topology classification should be persisted in the audit manifest and used 
 **Network ATC**
 - Network ATC feature installed and operational (yes/no)
 - Per intent: intent name, intent type(s) (Management, Compute, Storage, StretchedCluster — can be combined)
+- Per intent: intent name, intent type(s) (Management, Compute, Storage — can be combined)
 - Per intent: assigned physical adapters, provisioning status, configuration status (Success, InProgress, Failed, Retrying)
 - Per intent override values:
   - VLAN IDs
@@ -1326,7 +1327,7 @@ This phase establishes the public definition of the product before architecture 
   - Separate direct discovery, host-side validation, optional direct third-party device discovery, and manual/imported evidence.
   - This page becomes the guardrail for future implementation decisions.
 5. **Create `docs/deployment-variants.md`**
-  - Explain the supported and planned Azure Local operating models: hyperconverged, switchless, rack-aware, stretched, local identity with Key Vault, disconnected operations, and multi-rack.
+  - Explain the supported and planned Azure Local operating models: hyperconverged, switchless, rack-aware, local identity with Key Vault, disconnected operations, and multi-rack.
   - Call out why these variants materially change discovery and documentation behavior.
   - This page ensures the rest of the docs do not silently assume one cluster shape.
 
@@ -1516,7 +1517,7 @@ The following diagrams should be added to the catalog for larger, more complex, 
 
 ### Diagram 7: Topology & Deployment Variant Map
 
-Show the Azure Local operating model clearly: hyperconverged, switchless, rack-aware, stretched, local identity with Key Vault, disconnected operations, or multi-rack. Include site boundaries, rack boundaries, management cluster relationships, switchless/full-mesh indicators, and whether the control plane is connected or disconnected.
+Show the Azure Local operating model clearly: hyperconverged, switchless, rack-aware, local identity with Key Vault, disconnected operations, or multi-rack. Include site boundaries, rack boundaries, preview-specific multi-rack topology relationships where relevant, switchless/full-mesh indicators, and whether the control plane is connected or disconnected.
 
 ### Diagram 8: Identity, Trust & Secret Flow
 

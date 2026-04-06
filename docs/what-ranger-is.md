@@ -49,7 +49,6 @@ Azure Local is not a single-shape platform. Ranger is designed with explicit sup
 - hyperconverged
 - switchless storage fabric
 - rack-aware
-- stretched cluster
 - local identity with Azure Key Vault (no Active Directory)
 - disconnected operations
 - multi-rack
