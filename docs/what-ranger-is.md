@@ -1,292 +1,111 @@
 # What Ranger Is
 
-Azure Local Ranger is the planned sister product to Azure Scout for Azure Local environments.
-
-This page defines the intended product clearly, because the success of the repository depends on getting the boundary right before implementation starts.
+This page is the canonical product definition for Azure Local Ranger. If anything elsewhere conflicts with this page, this page wins.
 
 ## Core Definition
 
 Azure Local Ranger is a discovery, documentation, audit, and reporting solution for Azure Local.
 
-Its purpose is to produce a complete picture of an Azure Local deployment as a single connected system.
-
-That system includes:
+It documents an Azure Local deployment as a complete system. That system includes:
 
 - the on-prem infrastructure and Azure Local platform
 - the workloads and platform services running on it
-- the Azure resources and Azure services that exist because that Azure Local deployment is connected to Azure
+- the Azure resources and Azure services that exist because that deployment is connected to Azure
 
-That full scope is the point of Ranger.
+Ranger is deployment-first. It starts from the physical and logical reality of the Azure Local environment and follows every connection outward — into Azure, into identity, into networking, into the workloads the platform hosts.
 
-## Two Primary Product Uses
+## Two Primary Modes
 
-Ranger should be designed to serve two closely related but distinct use cases.
+Ranger serves two closely related but distinct use cases through the same discovery engine.
 
-### 1. Ongoing Environment Documentation
+### 1. Current-State Documentation
 
-An operations, engineering, governance, or support team should be able to run Ranger at any time to document what currently exists.
+Run Ranger at any time to document what currently exists.
 
-This use case is about understanding the present state of the environment:
+This mode supports assessment, troubleshooting, operational understanding, governance review, and drift analysis. It answers:
 
-- what has been deployed
+- what the environment is
 - how it is configured
-- what is running
-- what Azure resources are attached to it
+- what it is hosting
+- what Azure resources are connected to it
 - what its current health and risk posture look like
 
-This is the recurring documentation and assessment use case.
+The output is a structured discovery report and optional diagrams.
 
 ### 2. As-Built Handoff Documentation
 
-Ranger should also support a deployment completion and handoff scenario.
+Run Ranger after a deployment to produce a formal documentation package.
 
-After a new Azure Local environment is deployed, the delivery team should be able to run Ranger and produce a complete as-built documentation package for handoff to:
+This mode supports project closure, customer handoff, operations onboarding, managed-service transition, and support readiness. The output is a polished as-built package that includes narrative summaries, architecture diagrams, configuration deep-dives, and enough clarity that the receiving team does not need to rediscover the environment manually.
 
-- a customer
-- another internal department
-- an operations team
-- a managed services team
-- a support or governance function
+### Same Discovery, Different Output
 
-That package should be accurate, structured, and ready to explain what was delivered.
+Both modes run the same collectors against the same targets. The as-built mode produces a richer, more formal artifact. The current-state mode produces a leaner operational report. The difference is a parameter, not a different product.
 
-It should not feel like a raw inventory export. It should feel like proper as-built documentation backed by discovery.
+## Deployment-Variant Awareness
 
-## What As-Built Means For Ranger
+Azure Local is not a single-shape platform. Ranger is designed with explicit support for the range of Azure Local operating models:
 
-For Ranger, as-built documentation should mean more than a dump of technical properties.
+- hyperconverged
+- switchless storage fabric
+- rack-aware
+- stretched cluster
+- local identity with Azure Key Vault (no Active Directory)
+- disconnected operations
+- multi-rack
 
-It should aim to provide:
+The deployment variant materially changes what Ranger discovers, how it interprets findings, and what it includes in reports and diagrams. Ranger classifies the deployment model before interpreting lower-level data. See [Deployment Variants](deployment-variants.md) for details.
 
-- a documented statement of what was deployed
-- clear architecture diagrams
-- workload and service placement views
-- Azure integration and dependency views
-- configuration summaries suitable for future operations teams
-- enough technical depth that someone inheriting the solution does not need to rediscover the platform manually
+## Workload-Family Awareness
 
-This is one of the most important product intents for Ranger, because Azure Local deployments are often handed from build teams to operational ownership shortly after implementation.
+Ranger identifies the major workload families running on or through the Azure Local platform, including:
 
-## Ranger Is Not Just "Azure Scout For On-Prem"
+- Azure Virtual Desktop on Azure Local
+- AKS hybrid
+- Arc VMs
+- Arc Data Services
+- traditional Hyper-V virtual machines
+- guest-clustered services
 
-That description is too small and it misses the most important part of the product.
+Deep workload-specific inspection is phased, but Ranger must identify whether each major workload family is present even in early releases.
 
-Ranger is not only about servers, clusters, switches, or storage inside the datacenter. It must also understand the Azure representation of that environment. If Azure Local is registered in Azure, managed through Arc, monitored through Azure Monitor, governed by Policy, updated through Azure Update Manager, or connected to services like AKS hybrid or AVD, those Azure resources belong to Ranger's discovery boundary.
+## The System Boundary
 
-So Ranger is not only local discovery. It is Azure Local estate discovery.
+Ranger discovers everything that makes up, runs on, secures, manages, monitors, or represents an Azure Local deployment. That spans several layers:
+
+| Layer | What Ranger Covers |
+|-------|-------------------|
+| Physical platform | Nodes, hardware, firmware, BMC, NICs, disks, GPUs, TPM |
+| Cluster and fabric | Cluster identity, quorum, fault domains, update posture, registration |
+| Storage | S2D, pools, volumes, CSVs, SOFS, storage health and replication |
+| Networking | Virtual switches, host vNICs, RDMA, ATC, SDN, DNS, proxy, firewall posture |
+| Workloads | VM inventory, placement, density, Arc VM overlays, workload families |
+| Identity and security | AD or local identity, certificates, BitLocker, WDAC, Defender, audit posture |
+| Azure resources | Arc registration, resource bridge, custom location, policy, monitoring, update, backup |
+| Azure services | AKS hybrid, AVD, Arc Data Services, HCI Insights, and related integrations |
+| OEM and management | Dell/HPE/Lenovo tooling, WAC, SCVMM, SCOM, operational agents |
+| Operational state | Health, performance baseline, event patterns, maintenance posture |
+
+If the Azure Local deployment creates, depends on, or is governed by a resource, that resource is inside Ranger's boundary.
+
+## Ranger Is Not
+
+- a tenant-wide Azure inventory replacement for Azure Scout
+- a basic host inventory utility
+- a reporting-only layer without deep discovery
+- a local-only datacenter tool that ignores Azure integration
+- a generic Azure Arc browser with no platform understanding
+- a tool that modifies or remediates the environment — Ranger is read-only
 
 ## Relationship To Azure Scout
 
-Azure Scout and Azure Local Ranger should be sister products, but they do different jobs.
+Azure Scout explains an Azure tenant. Azure Local Ranger explains an Azure Local deployment.
 
-### Azure Scout
+They are sister solutions with different scopes. See [Ranger vs Scout](ranger-vs-scout.md) for the full comparison.
 
-Azure Scout is cloud-first. It inventories Azure tenant resources, Entra ID objects, permissions, policy, cost, and related cloud services across the tenant scope.
+## What Ranger Lets Someone Answer
 
-### Azure Local Ranger
-
-Azure Local Ranger is deployment-first. It inventories one Azure Local environment in depth, including both its on-prem reality and its Azure-connected footprint.
-
-### Together
-
-Together the two products should provide a full estate story:
-
-- Azure Scout explains the Azure tenant and cloud-side posture.
-- Azure Local Ranger explains the Azure Local deployment and the Azure-side resources attached to that deployment.
-
-That is why Ranger is a sister solution, not a duplicate solution.
-
-## The Correct System Boundary
-
-The cleanest way to describe Ranger's scope is this:
-
-Ranger should discover everything that makes up, runs on, secures, manages, monitors, or represents an Azure Local deployment.
-
-That breaks down into several layers.
-
-## 1. Physical Platform Discovery
-
-Ranger should be able to explain what the environment physically is.
-
-That means discovering and documenting:
-
-- nodes
-- manufacturer and model
-- serial numbers and asset data
-- BIOS and firmware
-- BMC management interfaces
-- processors and memory topology
-- GPUs when present
-- physical NICs and their capabilities
-- physical disks and their role in the platform
-- TPM and host security hardware state
-
-This is the physical truth of the environment.
-
-## 2. Azure Local Cluster And Fabric Discovery
-
-Ranger should be able to explain how the Azure Local platform is built.
-
-That means discovering and documenting:
-
-- cluster identity
-- domain and naming context
-- node state and membership
-- cluster version and release train
-- quorum design and witness details
-- fault domains
-- update posture and maintenance history
-- platform registration state
-
-This is the platform truth of the environment.
-
-## 3. Storage Discovery
-
-Ranger should be able to explain how storage is assembled, presented, and operating.
-
-That means discovering and documenting:
-
-- S2D state and health
-- pool composition and media distribution
-- cache and capacity relationships
-- virtual disks and resiliency model
-- CSV layout and ownership
-- SOFS where present
-- repair jobs, alerts, and storage health signals
-- QoS and replication features where configured
-
-This is the storage truth of the environment.
-
-## 4. Networking Discovery
-
-Ranger should be able to explain how the environment is wired and logically segmented.
-
-That means discovering and documenting:
-
-- physical and virtual networking relationships
-- virtual switches and SET
-- host vNICs
-- management, storage, and compute networks
-- RDMA and DCB-related posture
-- Network ATC intents and compliance
-- SDN components and overlays where deployed
-- logical networks, policy objects, and related constructs
-- DNS, proxy, and firewall context
-
-This is the network truth of the environment.
-
-## 5. Workload Discovery
-
-Ranger should be able to explain what the Azure Local platform is hosting.
-
-That means discovering and documenting:
-
-- VM inventory
-- compute and memory allocation
-- disk and network configuration
-- placement and anti-affinity
-- replication and checkpoints
-- Arc-managed VM context where applicable
-- guest cluster hints when discoverable
-- aggregate workload density and overcommit posture
-
-This is the workload truth of the environment.
-
-## 6. Identity And Security Discovery
-
-Ranger should be able to explain who and what the environment trusts, how it is secured, and where risk may exist.
-
-That means discovering and documenting:
-
-- AD and cluster object placement
-- cluster identity model
-- Entra and Arc identity relationships
-- Azure RBAC tied to the environment
-- certificates and TLS-related posture
-- BitLocker and secured-core signals
-- WDAC, Defender, audit policy, and local admin posture
-
-This is the security truth of the environment.
-
-## 7. Azure Resource Discovery For Azure Local
-
-This is the part that differentiates Ranger from a generic datacenter inventory tool.
-
-Ranger should discover the Azure resources that exist because this Azure Local environment is connected to Azure.
-
-That includes:
-
-- Arc resource identity
-- subscription, resource group, and region context
-- custom location and resource bridge
-- Arc extensions
-- Azure Policy assignments tied to the environment
-- Azure Monitor and Log Analytics resources used by the environment
-- Update Manager, backup, DR, and related service attachments
-- resource providers, logical networks, images, or similar Azure-side objects specific to the deployment
-
-This is the Azure truth of the environment as it relates to Azure Local.
-
-## 8. Azure Services Running On Or Through Azure Local
-
-Ranger should also explain Azure-connected services that are deployed on top of or tightly bound to the Azure Local platform.
-
-That includes examples such as:
-
-- AKS hybrid
-- Azure Virtual Desktop on Azure Local
-- Arc VMs
-- Arc Data Services
-- Azure Monitor integrations
-- HCI Insights
-- Update, backup, and disaster recovery integrations
-
-These are not just optional extras. In many environments, they are a major part of why Azure Local exists.
-
-## 9. OEM And Operational Tooling
-
-Ranger should describe how the platform is actually managed in practice.
-
-That means documenting:
-
-- OEM integrations such as Dell, Lenovo, HPE, or DataON management tooling
-- Windows Admin Center
-- SCVMM and SCOM where present
-- third-party operational agents and tools when they are relevant to supportability or governance
-
-This is the management truth of the environment.
-
-## 10. Operational State And Health
-
-Ranger should not stop at static inventory.
-
-It should also establish an operational baseline that helps answer:
-
-- how busy the hosts are
-- whether storage is healthy or degraded
-- whether network issues are visible
-- whether important faults or event patterns are active
-- whether update or maintenance posture is lagging
-
-This is the operational truth of the environment.
-
-## What Ranger Will Eventually Produce
-
-Ranger is not just about discovery. It is about usable understanding.
-
-The future product should produce:
-
-- normalized audit data describing the full Azure Local environment
-- diagrams that explain physical, logical, storage, workload, and Azure relationships
-- reports for executive, management, and technical audiences
-- findings that help teams prioritize risk, drift, and remediation
-- as-built documentation outputs suitable for handoff after a deployment
-
-## What Ranger Should Let Someone Answer
-
-When mature, Ranger should let someone answer all of the following without manually piecing together data from many tools:
-
-- What exactly is this Azure Local environment?
+- What exactly is this Azure Local deployment?
 - How is it physically built?
 - How is it configured?
 - What is it hosting?
@@ -296,27 +115,6 @@ When mature, Ranger should let someone answer all of the following without manua
 - Which Azure services are attached to it?
 - What are the top operational and architectural risks?
 
-If the product cannot answer those questions, then the scope has drifted away from what Ranger is supposed to be.
-
-## What Ranger Is Not
-
-Ranger is not:
-
-- a tenant-wide Azure inventory replacement for Azure Scout
-- a basic host inventory utility
-- a reporting-only layer without deep discovery
-- a local-only datacenter tool that ignores Azure integration
-- a generic Azure Arc browser with no platform understanding
-
-## What This Means For The Repository
-
-The repository should be organized around this exact product identity.
-
-That means the repo should prioritize:
-
-- a clear product definition
-- a clear scope boundary
-- a documentation model that explains why Azure Local and Azure-side discovery both belong here
-- a repository structure that supports implementation later without confusing the current design phase
+If Ranger cannot answer those questions, the scope has drifted.
 
 The repo should not pretend implementation is the main story yet. Right now, the main story is defining Ranger correctly so implementation starts from the right foundation.

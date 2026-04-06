@@ -1,47 +1,37 @@
 # Azure Local Ranger
 
-Azure Local Ranger is the planned discovery and documentation solution for Azure Local estates.
+Azure Local Ranger is a discovery, documentation, audit, and reporting solution for Azure Local.
 
-Its purpose is to explain an Azure Local deployment as one connected system, including the local platform, the workloads running on it, and the Azure resources that represent, manage, monitor, or extend that deployment.
+Its purpose is to document an Azure Local deployment as a complete system — the on-prem platform, the workloads running on it, and the Azure resources that represent, manage, monitor, or extend that deployment.
 
-## The Short Version
+Ranger supports two primary modes of use:
 
-Azure Scout explains Azure.
+- **Current-state documentation** — run at any time to document what exists, how something is configured, and what its current health and risk posture looks like.
+- **As-built handoff documentation** — run after a deployment to produce a structured documentation package suitable for customer handoff, operations onboarding, or managed-service transition.
 
-Azure Local Ranger should explain Azure Local in full, which means:
+Both modes use the same discovery engine. The difference is a parameter, not a different product.
 
-- the on-prem platform
-- the workloads hosted on that platform
-- the Azure resources and Azure-connected services attached to that platform
+Ranger is designed with explicit support for the range of Azure Local operating models — hyperconverged, switchless, rack-aware, local identity with Azure Key Vault, disconnected operations, and future multi-rack scenarios. It does not silently assume one cluster shape.
 
-That is the core purpose of this repo.
+## Current Project Phase
 
-## Why This Matters
+This repository is in a **documentation and planning phase**. The product definition, scope boundary, architecture model, and public documentation are being stabilised before implementation begins.
 
-An Azure Local environment is not just a cluster and not just a set of Azure Arc resources. It is a connected estate.
+The immediate priorities are:
 
-To understand it properly, a team needs one product that can document:
+1. Lock the product definition and scope boundary.
+2. Publish the architecture and execution model.
+3. Begin collector implementation once the manifest schema is stable.
 
-- how the environment is physically built
-- how the cluster is configured
-- how storage and networking are designed
-- what is running on the platform
-- what security and operational posture looks like
-- how the deployment is represented and managed in Azure
+## Where To Start
 
-## What To Read First
-
-- [What Ranger Is](what-ranger-is.md)
-- [Ranger vs Scout](ranger-vs-scout.md)
-- [Scope Boundary](scope-boundary.md)
-- [Roadmap](project/roadmap.md)
-- [Architecture](architecture/system-overview.md)
-- the discovery-domain pages under `docs/discovery-domains/`
-- [Diagrams](outputs/diagrams.md)
-- [Reports](outputs/reports.md)
-
-## Current Repository State
-
-This repository is currently in a design and documentation phase. The structure is present, but implementation has not started yet.
-
-The immediate goal is to define the product clearly enough that future implementation work can be organized around the right scope and the right repository layout.
+| Audience | Start Here |
+|----------|------------|
+| Everyone | [What Ranger Is](what-ranger-is.md) |
+| Everyone | [Ranger vs Scout](ranger-vs-scout.md) |
+| Everyone | [Scope Boundary](scope-boundary.md) |
+| Everyone | [Deployment Variants](deployment-variants.md) |
+| Architects and operators | [Architecture Overview](architecture/system-overview.md) |
+| Architects and operators | [Discovery Domain Pages](discovery-domains/cluster-and-node.md) |
+| Contributors | [Getting Started](contributor/getting-started.md) |
+| All | [Roadmap](project/roadmap.md) |

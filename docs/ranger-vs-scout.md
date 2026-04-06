@@ -1,111 +1,67 @@
 # Ranger vs Scout
 
-Azure Local Ranger and Azure Scout are sister solutions, but they are not interchangeable and they should not be documented as if they solve the same problem.
+Azure Local Ranger and Azure Scout are sister solutions. They complement each other, but they solve different problems at different scopes.
 
-## The Short Difference
+This page exists to prevent scope confusion before contributors start writing design or code.
 
-- Azure Scout explains an Azure tenant.
-- Azure Local Ranger explains an Azure Local deployment.
+## The Core Distinction
 
-That sounds simple, but it matters because the scope, depth, and system boundary are different.
+| | Azure Scout | Azure Local Ranger |
+|---|---|---|
+| **Scope** | Azure tenant — broad and cloud-centric | Azure Local deployment — deep and deployment-centric |
+| **Starting point** | The Azure control plane | The physical Azure Local environment |
+| **Covers** | ARM resources, Entra ID, permissions, policy, cost, cloud services across the tenant | On-prem platform, workloads, Azure resources tied to one Azure Local deployment |
+| **Boundary** | Tenant-wide | Deployment-wide (local + Azure-side) |
 
 ## Azure Scout
 
-Azure Scout is cloud-first.
+Azure Scout inventories an Azure tenant. It is broad by design:
 
-Its job is to discover and report on Azure and Entra ID at the tenant level. It is broad in scope and designed to inventory resources, identities, permissions, policies, and related cloud-side posture across Azure.
+- Azure resource inventory across subscriptions and resource groups
+- Entra ID objects, identity controls, and permissions
+- Azure Policy, governance, and compliance signals
+- cost and consumption data
+- cloud-side service posture
 
-Azure Scout answers questions like:
-
-- What exists in this Azure tenant?
-- What ARM resources are deployed?
-- What Entra ID objects and identity controls exist?
-- What permissions, governance, policy, and cost signals are visible?
+Scout answers: *What exists in this Azure tenant and what does its posture look like?*
 
 ## Azure Local Ranger
 
-Azure Local Ranger is deployment-first.
+Azure Local Ranger inventories one Azure Local deployment in depth:
 
-Its job is to discover and document one Azure Local environment in depth, including:
+- physical infrastructure and node hardware
+- cluster configuration and platform state
+- storage, networking, and compute fabric
+- workloads and their placement
+- identity, security, and operational posture
+- Azure resources that represent, manage, monitor, or extend that specific deployment
+- Azure services running on or through that deployment (AKS hybrid, AVD, Arc VMs, etc.)
 
-- the local platform itself
-- the workloads hosted on it
-- the Azure resources tied to that deployment
-
-Azure Local Ranger answers questions like:
-
-- What exactly is this Azure Local environment?
-- How is it built and configured?
-- What is it hosting?
-- How healthy and secure is it?
-- Which Azure resources represent, manage, or extend it?
-
-## Scope Comparison
-
-### Azure Scout Scope
-
-Azure Scout is broad across the tenant.
-
-It covers:
-
-- Azure resource inventory
-- Entra ID inventory
-- governance and permissions
-- policy and posture
-- cloud-side reporting across many Azure categories
-
-### Ranger Scope
-
-Ranger is deep within a deployment boundary.
-
-It covers:
-
-- physical hardware and node inventory
-- cluster and platform configuration
-- storage and network architecture
-- workload and virtualization inventory
-- host and platform security posture
-- OEM and management tooling
-- Azure resources attached to the Azure Local deployment
-- Azure-connected services running on or through that deployment
+Ranger answers: *What exactly is this Azure Local deployment, how is it built, what is it hosting, and what Azure resources are attached to it?*
 
 ## How They Work Together
 
-These tools should be complementary.
+Together the two products provide a full estate story:
 
-Azure Scout provides the wide tenant view.
-Azure Local Ranger provides the deep Azure Local estate view.
+- **Azure Scout** explains the Azure tenant and cloud-side posture.
+- **Azure Local Ranger** explains the Azure Local deployment and its Azure-connected footprint.
 
-Together they allow teams to understand both:
+There is an intentional overlap zone: the Azure resources that belong to an Azure Local deployment (Arc registration, resource bridge, policy assignments, monitoring resources, etc.) are visible to both tools. Scout sees them as part of the tenant. Ranger sees them as part of the deployment.
 
-- the Azure environment at large
-- the Azure Local deployment in full detail
-
-## Why The Difference Matters
-
-If Ranger is described too loosely, it risks becoming either:
-
-- a weak copy of Azure Scout
-- a local-only inventory tool that ignores the Azure side of Azure Local
-
-Both would be wrong.
-
-Ranger must sit in the middle: deeply local, but Azure-aware wherever Azure is part of the Azure Local deployment story.
-
-## Shared Design Philosophy
-
-Although their scopes differ, Ranger should align with Azure Scout in several ways:
-
-- strong documentation-first product framing
-- normalized output model
-- useful reports rather than raw dumps only
-- diagrams as part of understanding, not just decoration
-- clear audience targeting for outputs
-- professional public docs via MkDocs and GitHub Pages
+That overlap is by design — the same resources need to appear in both contexts to tell a complete story from either direction.
 
 ## Practical Rule
 
-A good rule of thumb is:
+- If the question is about the Azure tenant broadly → Azure Scout.
+- If the question is about a specific Azure Local deployment and anything attached to it → Ranger.
 
-- If the question is about the Azure tenant broadly, it belongs to Azure Scout.
-- If the question is about a specific Azure Local deployment and anything attached to it, it belongs to Ranger.
+## Shared Design Philosophy
+
+Although their scopes differ, the two products align on:
+
+- documentation-first product framing
+- normalized output model
+- reports designed for understanding, not just raw data export
+- diagrams as a core part of the product
+- clear audience targeting for outputs
+- public docs via MkDocs and GitHub Pages

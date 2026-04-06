@@ -4,157 +4,118 @@
 [![Docs: MkDocs Material](https://img.shields.io/badge/docs-MkDocs%20Material-0f766e)](docs/index.md)
 [![PowerShell: 7.x](https://img.shields.io/badge/PowerShell-7.x-3b82f6)](https://github.com/PowerShell/PowerShell)
 
-Azure Local Ranger is the planned sister solution to Azure Scout for Azure Local environments.
+Azure Local Ranger is a discovery, documentation, audit, and reporting solution for Azure Local.
 
-Azure Scout explains an Azure tenant. Azure Local Ranger is meant to explain an Azure Local deployment end to end: the on-prem platform, the workloads running on it, and the Azure resources and Azure-connected services that exist because that Azure Local environment is registered, managed, monitored, or extended through Azure.
+It documents an Azure Local deployment as a complete system — the on-prem platform, the workloads running on it, and the Azure resources and Azure-connected services that exist because that deployment is registered, managed, monitored, or extended through Azure.
 
-Ranger is also being planned with explicit support for different Azure Local operating models, not just one cluster shape. That includes hyperconverged, switchless, rack-aware, local identity with Azure Key Vault, disconnected operations, and future multi-rack scenarios.
+Ranger supports the range of Azure Local operating models: hyperconverged, switchless, rack-aware, local identity with Azure Key Vault, disconnected operations, and multi-rack deployments.
 
-Ranger is intended to support two major use cases equally well:
+Ranger serves two primary use cases through the same discovery engine:
 
-- ongoing estate documentation for teams that need to understand what they currently have
-- high-quality as-built documentation for teams handing a newly deployed Azure Local environment to another team, customer, or managed service owner
+- **Current-state documentation** — run at any time to document the environment, its configuration, health, and risk posture.
+- **As-built handoff documentation** — run after a deployment to produce a structured documentation package for customer handoff, operations onboarding, or managed-service transition.
 
 ## What Ranger Is
 
-Azure Local Ranger is intended to be a deep discovery, documentation, audit, and reporting product for Azure Local.
+Azure Local Ranger is a deep discovery, documentation, audit, and reporting solution for Azure Local.
 
-Its job is to produce a complete, structured, explainable picture of an Azure Local estate, including:
+It produces a complete, structured picture of an Azure Local estate:
 
-- physical infrastructure and node hardware
-- deployment topology and operating variant
-- cluster and platform configuration
-- storage topology and health
-- host and logical networking
-- virtual machines and workload placement
-- identity, certificates, and security posture
-- Arc, Azure integration, and Azure-side resource relationships
-- OEM tooling and operational management platforms
-- performance baseline and operational state
+| Layer | What Ranger Covers |
+|-------|-------------------|
+| Physical platform | Nodes, hardware, firmware, BMC, NICs, disks, GPUs, TPM |
+| Cluster and fabric | Cluster identity, quorum, fault domains, update posture, registration |
+| Storage | S2D, pools, volumes, CSVs, SOFS, storage health and replication |
+| Networking | Virtual switches, host vNICs, RDMA, ATC, SDN, DNS, proxy, firewall posture |
+| Workloads | VM inventory, placement, density, Arc VM overlays, workload families |
+| Identity and security | AD or local identity, certificates, BitLocker, WDAC, Defender, audit posture |
+| Azure resources | Arc registration, resource bridge, custom location, policy, monitoring, update, backup |
+| Azure services | AKS hybrid, AVD, Arc Data Services, HCI Insights, and related integrations |
+| OEM and management | Dell/HPE/Lenovo tooling, WAC, SCVMM, SCOM, operational agents |
+| Operational state | Health, performance baseline, event patterns, maintenance posture |
 
-That means Ranger is not just an on-prem inventory tool and not just an Azure inventory tool. It is the product that connects both sides into one Azure Local system view.
+Ranger is not just an on-prem inventory tool and not just an Azure inventory tool. It connects both sides into one Azure Local system view.
 
 ## Relationship To Azure Scout
 
 Azure Local Ranger complements [Azure Scout](https://github.com/thisismydemo/azure-scout), but it does not duplicate it.
 
-- Azure Scout is broad and cloud-centric. It inventories Azure tenant resources, Entra ID, permissions, cost, policy, and related cloud services.
-- Azure Local Ranger is deep and deployment-centric. It inventories the Azure Local platform itself, the workloads running on it, and the Azure resources directly tied to that Azure Local deployment.
+- **Azure Scout** is broad and cloud-centric — it inventories Azure tenant resources, Entra ID, permissions, cost, policy, and related cloud services.
+- **Azure Local Ranger** is deep and deployment-centric — it inventories the Azure Local platform itself, the workloads running on it, and the Azure resources directly tied to that deployment.
 
-The two products should feel related in quality, tone, structure, and output philosophy, but their scopes are different.
+See [Ranger vs Scout](docs/ranger-vs-scout.md) for the full comparison.
 
-## The Core Scope Boundary
+## Scope Boundary
 
-Ranger should discover everything that makes up, runs on, secures, manages, monitors, or represents an Azure Local deployment.
+Ranger discovers everything that makes up, runs on, secures, manages, monitors, or represents an Azure Local deployment.
 
-That includes three major scope areas:
+Evidence is classified into four tiers:
 
-### 1. The On-Prem Azure Local Platform
+1. **Direct discovery** — Ranger connects to the target and collects data (cluster nodes, OEM hardware, Azure resources).
+2. **Host-side validation** — Ranger validates external posture from the node (switch link state, firewall endpoint reachability, DNS resolution).
+3. **Optional direct device discovery** — user provides targets and credentials for third-party devices (TOR switches, firewalls).
+4. **Manual or imported evidence** — user provides data Ranger cannot discover automatically (network designs, firewall exports, rack assignments).
 
-- cluster identity and node state
-- deployment topology, site/rack context, and operating variant classification
-- hardware, firmware, BMC, disks, NICs, TPM, and host security settings
-- storage pools, volumes, CSVs, SOFS, and storage health
-- virtual switches, host networking, RDMA, ATC, SDN, DNS, proxy, and firewall posture
-
-### 2. The Workloads And Services Running On It
-
-- virtual machine inventory and placement
-- VM storage and networking configuration
-- workload density and overcommit posture
-- guest clustering and platform services running on the estate
-- operational tooling such as WAC, SCVMM, SCOM, backup agents, and OEM management products
-
-### 3. The Azure Resources Tied To That Azure Local Deployment
-
-- Arc registration and cluster resource identity
-- resource group, subscription, region, custom location, and resource bridge context
-- Arc extensions and Azure management integrations
-- Azure Monitor, Log Analytics, Update Manager, Policy, Backup, ASR, and similar attached services
-- Azure-side logical resources and governance objects that belong to that Azure Local environment
-
-Ranger is also expected to understand the Azure Local control plane itself, not just the workload layer. That includes components such as Azure Arc Resource Bridge, custom locations, monitoring extensions, and Azure Local VM management resources where they exist.
-
-This Azure-side scope is essential. Ranger should not stop at the edge of the datacenter. If Azure Local creates, depends on, or is governed by Azure resources, those resources are part of Ranger's system boundary.
-
-Ranger will also treat external infrastructure in a pragmatic way. Some things can be discovered directly, some can be validated from the host side, and some may need optional credentials or manual/imported evidence. That is especially true for TOR switches, firewalls, and other third-party network infrastructure.
+See [Scope Boundary](docs/scope-boundary.md) for the full breakdown.
 
 ## What Ranger Is Not
 
-Ranger is not:
+- a tenant-wide Azure inventory replacement for Azure Scout
+- a basic host inventory utility
+- a reporting-only layer without deep discovery
+- a local-only datacenter tool that ignores Azure integration
+- a generic Azure Arc browser with no platform understanding
+- a tool that modifies or remediates the environment — Ranger is read-only
 
-- a generic Azure tenant crawler
-- a copy of Azure Scout with different branding
-- a node-local script collection with no normalized output model
-- a reports-only project
-- a diagrams-only project
-- an Azure-only inventory solution that ignores the local fabric
-
-## Product Intent
-
-The target product should allow an engineer, architect, operator, or assessor to answer questions like:
+## What Ranger Lets Someone Answer
 
 - What exactly is this Azure Local deployment?
 - How is it physically built?
-- How is the cluster configured?
-- How is storage designed and how healthy is it?
-- How is networking structured across host, storage, compute, and SDN layers?
-- What workloads are running here and where are they placed?
-- What is the security posture of the hosts and cluster?
-- Which Azure resources represent, govern, monitor, or extend this deployment?
-- Which Azure-connected services are running on or through this environment?
-- What risks, drift, or operational issues are visible right now?
+- How is it configured?
+- What is it hosting?
+- How healthy is it?
+- How secure is it?
+- Which Azure resources represent or govern it?
+- Which Azure services are attached to it?
+- What are the top operational and architectural risks?
 
-If Ranger cannot answer those questions, it is not fulfilling its purpose.
+## Output Model
 
-## Planned Output Model
+Ranger produces a normalized audit manifest first and generates all outputs from that cached data:
 
-Ranger is expected to produce a normalized audit model first and then use that model for output generation.
-
-The intended output story is:
-
-- structured audit data that represents the Azure Local deployment as a complete system
-- diagrams that explain physical, logical, storage, workload, Azure integration, identity, monitoring, continuity, and deployment-variant relationships
+- structured audit data describing the complete Azure Local system
+- diagrams covering physical, logical, storage, workload, Azure integration, and deployment-variant relationships
 - reports for executive, management, and technical audiences
-- polished as-built documentation packages suitable for project handoff and customer delivery
-- regeneration of reports and diagrams from cached audit data without requiring live cluster access
+- as-built documentation packages for project handoff and customer delivery
+- regeneration of reports and diagrams from cached data without live cluster access
 
-The planning model is manifest-first and modular. Ranger is intended to be delivered as one public PowerShell module, but internally built from small collector and service components so domains can be developed and tested independently.
+The model is manifest-first and modular. Ranger ships as one PowerShell module, internally built from small collector and service components.
 
-## Current State Of This Repository
+## Current Project Phase
 
-This repository is currently in a planning and documentation stage.
+This repository is in a **documentation and planning phase**. The product definition, scope boundary, architecture model, and public documentation are being stabilised before implementation begins.
 
-It contains:
+The repo currently contains:
 
-- the initial repository skeleton
-- public project documentation
+- public project documentation aligned to the product-direction plan
 - a root PowerShell module shell and module manifest
 - GitHub Actions workflows for documentation deployment and validation
-- empty implementation directories tracked with `.gitkeep`
 - a detailed product-direction plan covering scope, discovery domains, outputs, architecture, and documentation sequencing
 
-It intentionally does not yet contain:
-
-- functional collector implementations
-- collectors
-- report templates
-- diagram builders
-- sample audit payloads
+Implementation (collectors, report templates, diagram builders) has not started yet.
 
 ## Start Here
 
-- [Project Overview](docs/index.md)
-- [What Ranger Is](docs/what-ranger-is.md)
-- [Ranger vs Scout](docs/ranger-vs-scout.md)
-- [Scope Boundary](docs/scope-boundary.md)
-- [Roadmap](docs/project/roadmap.md)
-- [Architecture](docs/architecture/system-overview.md)
-- [Audit Manifest](docs/architecture/audit-manifest.md)
-- [Repository Structure](docs/project/repository-structure.md)
-- [As-Built Package](docs/outputs/as-built-package.md)
-- [Discovery Domain Pages](docs/discovery-domains)
-- [Product Direction Plan](repo-management/plans/azure-local-ranger-product-direction.md)
+| Audience | Start Here |
+|----------|------------|
+| Everyone | [What Ranger Is](docs/what-ranger-is.md) |
+| Everyone | [Ranger vs Scout](docs/ranger-vs-scout.md) |
+| Everyone | [Scope Boundary](docs/scope-boundary.md) |
+| Everyone | [Deployment Variants](docs/deployment-variants.md) |
+| Architects and operators | [Architecture Overview](docs/architecture/system-overview.md) |
+| Architects and operators | [Discovery Domain Pages](docs/discovery-domains/cluster-and-node.md) |
+| Contributors | [Getting Started](docs/contributor/getting-started.md) |
+| All | [Roadmap](docs/project/roadmap.md) |
 
 ## License
 

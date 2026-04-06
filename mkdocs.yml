@@ -33,6 +33,7 @@ nav:
     - What Ranger Is: what-ranger-is.md
     - Ranger vs Scout: ranger-vs-scout.md
     - Scope Boundary: scope-boundary.md
+    - Deployment Variants: deployment-variants.md
   - Architecture:
     - System Overview: architecture/system-overview.md
     - Audit Manifest: architecture/audit-manifest.md

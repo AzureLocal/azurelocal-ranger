@@ -1,131 +1,146 @@
 # Scope Boundary
 
-This page defines what belongs inside Azure Local Ranger's discovery and documentation boundary.
+This page defines what belongs inside Azure Local Ranger's discovery and documentation boundary and how different kinds of evidence are classified.
 
-The goal is to keep the product focused and prevent scope drift in either direction.
+It is the guardrail for future implementation decisions. If a proposed feature does not fit the boundary described here, it does not belong in Ranger.
 
 ## Core Rule
 
-Azure Local Ranger should discover everything that makes up, runs on, secures, manages, monitors, or represents an Azure Local deployment.
+Azure Local Ranger discovers everything that makes up, runs on, secures, manages, monitors, or represents an Azure Local deployment.
 
 That includes both local and Azure-side components when they are part of the same Azure Local system story.
 
+## Discovery Tiers
+
+Not all discovery targets are reached the same way. Ranger classifies evidence into four tiers based on how data is obtained.
+
+### Tier 1 — Direct Discovery
+
+Ranger connects to the target and collects data directly.
+
+This is the primary discovery method for:
+
+- cluster nodes via PowerShell remoting (WinRM)
+- OEM hardware via Redfish REST API (iDRAC, iLO, XCC)
+- Azure resources via Az PowerShell or Azure CLI
+
+Direct discovery produces authoritative, machine-collected evidence.
+
+### Tier 2 — Host-Side Validation
+
+Ranger cannot connect to the external device directly, but it validates the posture from the cluster-node perspective.
+
+This applies to:
+
+- TOR switch connectivity verified from the host (link state, LLDP neighbour data)
+- firewall and proxy posture validated by testing required endpoints from the node
+- DNS resolution and reachability tested from the host
+
+Host-side validation produces indirect but useful evidence about infrastructure Ranger cannot interrogate directly.
+
+### Tier 3 — Optional Direct Device Discovery
+
+When the user explicitly provides targets and credentials, Ranger can interrogate third-party devices directly.
+
+This applies to:
+
+- TOR switches (vendor-specific REST, SSH, or NX-API)
+- firewalls (PAN-OS API, FortiOS REST, etc.)
+- other network or infrastructure devices the user opts into
+
+This tier is always opt-in, never assumed. Each vendor requires its own collector module.
+
+### Tier 4 — Manual or Imported Evidence
+
+For infrastructure that cannot be discovered automatically, Ranger accepts manually provided data or structured imports.
+
+This applies to:
+
+- network designs from the network team
+- firewall rule sets provided as exports
+- site or rack assignment data when physical topology is not discoverable
+- any other evidence the user provides that Ranger should include in the audit
+
+Manual evidence is included in the manifest and marked as imported so it is distinguishable from machine-collected data.
+
 ## In Scope
 
-## 1. Physical Platform
+### 1. Physical Platform
 
-In scope:
-
-- node hardware
-- system manufacturer and model
-- BIOS and firmware details
-- BMC and out-of-band management context
+- node hardware, manufacturer, model, serial number, asset data
+- BIOS, firmware, BMC, out-of-band management interfaces
 - processors, memory, disks, NICs, GPUs, TPM
 - Secure Boot and host hardware-backed security state
 
-## 2. Azure Local Cluster And Fabric
+### 2. Azure Local Cluster and Fabric
 
-In scope:
+- cluster identity, node membership, quorum, witness, fault domains
+- cluster networking, CSV state, version, release train, registration
+- update posture and maintenance history
 
-- cluster identity and node membership
-- quorum and witness design
-- fault domains
-- cluster networking
-- CSV and platform state
-- version, release train, registration, update posture
+### 3. Storage, Networking, and Virtualization
 
-## 3. Storage, Networking, And Virtualization
+- S2D, pools, volumes, CSVs, SOFS, storage health, replication
+- virtual switches, SET, host vNICs, RDMA, ATC, SDN, logical networks
+- VM inventory, placement, disks, networking, workload density
 
-In scope:
+### 4. Identity, Security, and Operations
 
-- S2D, pools, volumes, CSVs, SOFS
-- virtual switches, SET, host vNICs, RDMA, ATC, SDN
-- VM inventory, placement, disks, networking, replication, and platform service relationships
+- AD or local identity model, cluster identity mode
+- certificates, TLS posture, BitLocker, secured-core, WDAC, Defender
+- WAC, OEM tooling, SCVMM, SCOM, operational agents
+- health, performance baseline, event patterns
 
-## 4. Identity, Security, And Operations
+### 5. Azure Resources Attached to Azure Local
 
-In scope:
+- Arc registration, cluster resource identity
+- resource group, subscription, region, custom location, resource bridge
+- Arc extensions, Azure Policy, RBAC specific to the deployment
+- Azure Monitor, Log Analytics, Update Manager, Backup, ASR
+- Azure logical resources that exist because of the Azure Local deployment
 
-- AD and identity placement
-- certificates and TLS posture
-- BitLocker, secured-core, WDAC, Defender, audit posture
-- operational management tooling such as WAC, OEM tooling, SCVMM, SCOM, and relevant third-party agents
-- health, performance, and operational event signals
+### 6. Azure Services Running On or Through Azure Local
 
-## 5. Azure Resources Attached To Azure Local
-
-In scope:
-
-- Arc registration and cluster resource identity
-- resource group, subscription, and regional placement for the Azure Local deployment
-- Arc Resource Bridge and custom location
-- Arc extensions
-- Azure Policy assignments and role assignments specific to that deployment
-- Azure Monitor, Log Analytics, Update Manager, Backup, ASR, and similar services tied to the environment
-- Azure logical resources that exist specifically because of the Azure Local deployment
-
-## 6. Azure Services Running On Or Through Azure Local
-
-In scope:
-
-- AKS hybrid
-- AVD on Azure Local
-- Arc VMs
-- Arc Data Services
+- AKS hybrid, AVD on Azure Local, Arc VMs, Arc Data Services
 - Azure-connected monitoring and update services
-- Azure-side service context that is part of the Azure Local platform story
+- HCI Insights and related integrations
 
-## Out Of Scope
+## Out of Scope
 
-The following areas are outside Ranger's intended boundary unless they are directly part of the Azure Local deployment being documented.
+### 1. Tenant-Wide Azure Discovery
 
-## 1. Tenant-Wide Azure Discovery
-
-Out of scope:
-
-- unrelated subscriptions
-- unrelated resource groups
+- unrelated subscriptions and resource groups
 - generic tenant-wide Azure inventory
-- broad Entra ID discovery not tied to the Azure Local deployment
+- broad Entra ID discovery not tied to the deployment
 
 That belongs to Azure Scout.
 
-## 2. Generic Datacenter Discovery Unrelated To Azure Local
+### 2. Generic Datacenter Discovery
 
-Out of scope:
-
-- standalone virtualization platforms not part of the Azure Local deployment
+- standalone virtualization platforms not part of Azure Local
 - unrelated physical infrastructure in the same datacenter
-- adjacent systems that do not participate in the Azure Local platform or its managed service boundary
+- adjacent systems outside the Azure Local deployment boundary
 
-## 3. Non-Documentation Change Automation
+### 3. Change Automation
 
-Out of scope:
-
-- changing cluster configuration
+- modifying cluster configuration
 - remediation or drift correction
-- patching systems
-- reconfiguring Azure resources
-- lifecycle actions that modify the platform
+- patching, reconfiguration, or lifecycle actions
 
-Ranger should remain read-only.
+Ranger is read-only.
 
-## 4. Full CMDB Replacement
+### 4. Full CMDB Replacement
 
-Out of scope:
-
-- acting as the system of record for every operational object in the organization
+- acting as the system of record for every operational object in the organisation
 - replacing enterprise CMDB processes
-- becoming a general-purpose inventory platform for unrelated systems
+- general-purpose inventory for unrelated systems
 
 ## Decision Test
 
 When deciding whether something belongs in Ranger, ask:
 
-- Is it part of the Azure Local deployment?
-- Does it run on, manage, secure, monitor, or represent that deployment?
-- Would a receiving team need this information to understand or operate the environment?
+1. Is it part of the Azure Local deployment?
+2. Does it run on, manage, secure, monitor, or represent that deployment?
+3. Would a receiving team need this information to understand or operate the environment?
 
-If the answer is yes, it likely belongs in Ranger.
-
-If the information is only broadly about Azure tenant posture or unrelated infrastructure, it likely belongs elsewhere.
+If the answer is yes, it belongs in Ranger. If the information is only about Azure tenant posture broadly or unrelated infrastructure, it belongs elsewhere.
