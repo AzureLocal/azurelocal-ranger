@@ -8,9 +8,27 @@ Documents every GitHub Actions workflow in this repository.
 
 | File | Name | Trigger | Purpose |
 |------|------|---------|---------|
+| `add-to-project.yml` | Add to Project | Issues/PRs opened or labeled | Adds Ranger issues/PRs to the shared AzureLocal project and sets custom fields |
 | `deploy-docs.yml` | Deploy Documentation | Push to `main` touching `docs/**` or `mkdocs.yml` | Builds MkDocs site and deploys to GitHub Pages |
 | `validate.yml` | Validate | Pull requests, non-`main` pushes, manual run | Validates MkDocs and the PowerShell module shell before merge |
 | `release-please.yml` | Release Please | Push to `main` | Automates CHANGELOG and releases |
+
+---
+
+## add-to-project.yml
+
+**Trigger:** `issues` (opened, labeled) and `pull_request` (opened, labeled)  
+**Permissions required:** `ADD_TO_PROJECT_PAT` — classic PAT with `project` scope
+
+**What it does:**
+
+1. Adds new Ranger issues and PRs to `AzureLocal/projects/3`
+2. Sets the `ID` field to `RANGER-{number}`
+3. Maps `solution/ranger` to the `Ranger` solution option
+4. Maps `priority/*` labels to the shared Priority field
+5. Maps `type/*` labels to the shared Category field
+
+This is the Ranger copy of the canonical AzureLocal project integration workflow. Ranger keeps its own repo structure, but its project automation follows the shared AzureLocal model.
 
 ---
 

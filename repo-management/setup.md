@@ -24,15 +24,78 @@ Documents how this repository is configured. Use this as the reference when sett
 
 Labels are defined in `azurelocal.github.io/.github/labels.yml` — that is the source of truth for all repos. Labels are applied here when they change in the source repo or manually via `workflow_dispatch` on `sync-labels.yml` in `azurelocal.github.io`.
 
+Ranger uses the shared `type/*`, `priority/*`, and `status/*` labels plus `solution/ranger` for Ranger-specific work. GitHub default labels may still exist in the repo, but they are not the primary planning model.
+
 ---
 
 ## Secrets
 
 | Secret | Used By | Description |
 |--------|---------|-------------|
-| `GITHUB_TOKEN` | All workflows | Built-in GitHub token. |
+| `ADD_TO_PROJECT_PAT` | `add-to-project.yml` | Classic PAT with `project` scope. Required for org project integration and field updates. |
+| `GITHUB_TOKEN` | All other workflows | Built-in GitHub token. |
 
-This repo has no `ADD_TO_PROJECT_PAT` — it does not use the `add-to-project.yml` workflow.
+If `ADD_TO_PROJECT_PAT` is missing, the project integration workflow will not be able to add or update project items.
+
+---
+
+## Issue Intake
+
+Issue intake is standardized with repo-local templates under `.github/ISSUE_TEMPLATE/`:
+
+- `bug_report.md`
+- `feature_request.md`
+- `docs_issue.md`
+- `config.yml`
+
+These templates align Ranger with the shared AzureLocal intake model while still allowing Ranger-specific issue content.
+
+---
+
+## Project Board
+
+Ranger participates in the shared org-level project board: [AzureLocal Projects #3](https://github.com/orgs/AzureLocal/projects/3).
+
+| Setting | Value |
+|---------|-------|
+| Project | `AzureLocal/projects/3` |
+| Project ID | `PVT_kwDOCxeiOM4BR2KZ` |
+| Integration | `.github/workflows/add-to-project.yml` |
+| Ranger Solution Option | `Ranger` |
+
+### Custom Fields
+
+| Field | Type | Field ID | Ranger Use |
+|-------|------|----------|------------|
+| ID | Text | `PVTF_lADOCxeiOM4BR2KZzhADImQ` | Auto-set to `RANGER-{issueNumber}` |
+| Solution | Single Select | `PVTSSF_lADOCxeiOM4BR2KZzg_jXuY` | Set from `solution/ranger` |
+| Priority | Single Select | `PVTSSF_lADOCxeiOM4BR2KZzg_jXvs` | Set from `priority/*` |
+| Category | Single Select | `PVTSSF_lADOCxeiOM4BR2KZzg_jXxA` | Set from `type/*` |
+
+---
+
+## Milestones
+
+Ranger uses milestones for delivery-phase grouping rather than overloading labels:
+
+- `Planning`
+- `Documentation Foundation`
+- `V1`
+- `Post-V1`
+
+Issue grouping should be milestone-first, with labels and tracker issues used for classification and rollup.
+
+---
+
+## Issue Metadata Requirements
+
+Every Ranger issue should have at minimum:
+
+- one `type/*` label
+- one `priority/*` label
+- `solution/ranger`
+- a milestone if it represents planned delivery work
+- explicit dependency notes where sequencing matters
 
 ---
 
@@ -64,7 +127,13 @@ This repo uses an explicit `config-file` and `manifest-file` in `release-please.
 - [ ] Enable branch protection on `main` per settings above
 - [ ] Add `.github/CODEOWNERS`
 - [ ] Add `.github/PULL_REQUEST_TEMPLATE.md`
+- [ ] Add `.github/ISSUE_TEMPLATE/` files for bug, feature, and docs intake
+- [ ] Add `solution/ranger` label from the central label source
+- [ ] Add `.github/workflows/add-to-project.yml` and confirm `RANGER-` ID prefix
+- [ ] Add `ADD_TO_PROJECT_PAT`
 - [ ] Copy `release-please.yml` and create `release-please-config.json` + `.release-please-manifest.json`
 - [ ] Copy `deploy-docs.yml`
 - [ ] Keep `validate.yml` aligned with docs dependency and module validation standards
 - [ ] Enable GitHub Pages (Settings → Pages → Source: GitHub Actions)
+- [ ] Create milestones for `Planning`, `Documentation Foundation`, `V1`, and `Post-V1`
+- [ ] Add Ranger issues to the shared project board and ensure fields are populated
