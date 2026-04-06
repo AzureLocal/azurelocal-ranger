@@ -5,9 +5,11 @@ This folder documents how this repository is configured and how its automation w
 ## Contents
 
 | File | Purpose |
-|------|---------|
+| --- | --- |
 | [`setup.md`](setup.md) | Branch protection, labels, secrets, CODEOWNERS, and replication guide |
 | [`automation.md`](automation.md) | Every GitHub Actions workflow — what it does, when it runs, secrets required |
+| [`plans/`](plans/) | Working product plans and planning source material |
+| [`reports/`](reports/) | Canonical internal trackers, audits, and implementation status material |
 | `scripts/` | Repo-management helper scripts |
 
 ## Canonical References

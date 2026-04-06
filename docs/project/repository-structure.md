@@ -7,40 +7,48 @@ That means the repo structure has to support the current documentation-first pha
 ## Current Top-Level Structure
 
 | Path | Purpose | Current posture |
-|---|---|---|
+| --- | --- | --- |
 | `docs/` | Public documentation site content | Active now |
 | `mkdocs.yml` | Site navigation and publication structure | Active now |
 | `.github/workflows/` | Validation and GitHub Pages publication workflows | Active now |
 | `repo-management/` | Internal plans, checklists, and working design material | Active now |
-| `tests/` | Future automated validation and fixture tests | Reserved |
+| `repo-management/reports/` | Canonical internal audit and implementation trackers | Active now |
+| `Modules/` | PowerShell implementation tree | Active now |
+| `tests/` | Automated validation and fixture-backed tests | Active now |
 | `samples/` | Future sample configs, manifests, and output examples | Reserved |
 | `branding/` | Shared visual assets and brand material | Reserved |
 
-## Root Module Shell
+## PowerShell Module Surface
 
-The repository includes a root module shell:
+The repository includes a real root module plus the module-oriented implementation tree:
 
 - `AzureLocalRanger.psd1`
 - `AzureLocalRanger.psm1`
 
-These files exist so the repo can evolve into a real PowerShell module without forcing premature collector implementation into the public documentation phase.
+The main implementation surface now lives under `Modules/` and follows the layered architecture defined in the product plan.
 
 ## What Contributors Should Edit Now
 
-At the current maturity stage, most contributors should be touching:
+Most contributors will now be touching one or more of these areas:
 
 - `docs/`
 - `mkdocs.yml`
 - `repo-management/`
+- `Modules/`
+- `tests/`
 
-They should not create large implementation trees just to make the repo look busy.
+The split still matters:
 
-## Planned Module Structure
+- `docs/` carries the public story
+- `repo-management/` carries internal planning and audit detail
+- `Modules/` and `tests/` carry the implementation itself
 
-The intended long-term implementation layout is module-oriented rather than a generic `src/` tree.
+## Module Structure
+
+The implementation layout is module-oriented rather than a generic `src/` tree.
 
 | Planned path | Purpose |
-|---|---|
+| --- | --- |
 | `Modules/Public` | Exported commands and public entry points |
 | `Modules/Private` | Internal helper functions |
 | `Modules/Core` | Orchestration, manifest assembly, and shared services |
@@ -49,7 +57,7 @@ The intended long-term implementation layout is module-oriented rather than a ge
 | `Modules/Outputs/Diagrams` | Diagram renderers and helpers |
 | `Modules/Internal` | Shared models and non-exported utilities |
 
-That structure reflects the architecture decisions already locked in the docs.
+That structure reflects the architecture decisions already locked in the docs and now implemented in the repository.
 
 ## Public Docs vs Internal Planning
 
@@ -60,6 +68,8 @@ The split between `docs/` and `repo-management/` is intentional.
 
 Public readers should not have to read internal planning files just to understand the product.
 
+The new canonical implementation audit lives under `repo-management/reports/`, while public-facing delivery summaries live under `docs/project/`.
+
 ## Publication Model
 
 The documentation side of the repo should stay GitHub Pages and MkDocs friendly.
@@ -68,6 +78,7 @@ The implementation side of the repo should stay publishable as a PowerShell modu
 
 ## Read Next
 
+- [Status](status.md)
 - [Roadmap](roadmap.md)
 - [Documentation Roadmap](documentation-roadmap.md)
 - [Getting Started](../contributor/getting-started.md)

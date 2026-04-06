@@ -9,13 +9,15 @@ Ranger supports two outcomes through one discovery engine:
 
 ## Current Phase
 
-The repository is still in a documentation-first and architecture-first phase.
+The repository has completed its documentation and architecture foundation phase and now has the v1 implementation foundation committed in-repo.
 
-That means the immediate priority is not adding collectors as fast as possible. The immediate priority is making sure implementation starts from a stable product definition, execution model, manifest contract, and documentation set.
+That means the immediate priority is no longer proving that Ranger can exist structurally. The immediate priority is validating the implementation against real environments, deepening the remaining non-post-v1 gaps from the product plan, and keeping post-v1 work explicitly separated.
 
 ## Phase 1: Product and Architecture Foundation
 
 This phase locks the decisions that later implementation depends on.
+
+Status: complete
 
 Focus areas:
 
@@ -28,6 +30,8 @@ Focus areas:
 ## Phase 2: Documentation Foundation
 
 This phase makes the public documentation and repo guidance match the actual product direction.
+
+Status: complete
 
 Focus areas:
 
@@ -46,6 +50,8 @@ Key documentation work is tracked in:
 
 Once the planning and documentation gates are locked, implementation can move into the v1 runtime and collector backlog.
 
+Status: core implementation complete in-repo; further depth, polish, and live-environment validation still remain.
+
 Main v1 tracks:
 
 - orchestration and shared platform services
@@ -56,7 +62,7 @@ Main v1 tracks:
 - report generation and output packaging from the cached manifest
 - diagram generation from the cached manifest
 
-V1 implementation is tracked in:
+The completed v1 implementation tracks were:
 
 - [Tracker: v1 discovery collector delivery #16](https://github.com/AzureLocal/azurelocal-ranger/issues/16)
 - [Implement orchestration layer and shared platform services #19](https://github.com/AzureLocal/azurelocal-ranger/issues/19)
@@ -73,6 +79,8 @@ V1 implementation is tracked in:
 ## Phase 4: Post-V1 Extension Backlog
 
 Anything intentionally pushed out of v1 should remain visible as separate issues, not disappear into one umbrella bullet list.
+
+Status: active backlog
 
 Post-v1 extension backlog:
 
@@ -93,6 +101,7 @@ If a requirement is explicitly future-scope, it should stay visible in the roadm
 
 ## Read Next
 
+- [Status](status.md)
 - [Documentation Roadmap](documentation-roadmap.md)
 - [Repository Structure](repository-structure.md)
 - [Getting Started](../contributor/getting-started.md)
