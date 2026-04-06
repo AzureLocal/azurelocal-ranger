@@ -14,6 +14,20 @@ Azure Local Ranger is multi-target and multi-credential by design. Operators sho
 
 A valid Azure login does not imply valid WinRM access. A valid cluster credential does not imply BMC access.
 
+## Domain-To-Credential Routing
+
+Operators should expect Ranger to route credentials according to the domains being run.
+
+| Domain area | Required credential posture |
+|---|---|
+| Cluster, storage, networking, virtual machines, management tools, performance | Cluster WinRM credential |
+| Identity and security | Cluster WinRM credential and, when AD discovery is needed, domain read credential |
+| Azure integration and Azure-side monitoring or policy overlays | Azure credential |
+| Hardware and OEM integration | BMC / Redfish credential |
+| Future switch or firewall interrogation | Device-specific credential supplied explicitly by the operator |
+
+If a domain can run with one credential and enrich with another, Ranger should run the base domain first and mark the enrichment layer `partial` or `skipped` when the supporting credential is absent.
+
 ## Credential Resolution Order
 
 Ranger should resolve credentials in this order:
@@ -52,6 +66,14 @@ keyvault://kv-ranger/azure-sp-client-secret
 ```
 
 Ranger should resolve these through Az.KeyVault first and fall back to Azure CLI if required.
+
+If the secret reference includes a version, Ranger should resolve that exact version. If the version is omitted, Ranger should resolve the latest enabled version.
+
+If Key Vault resolution fails:
+
+- required core domains should fail clearly when prompting is disabled
+- optional domains should be skipped with a reason when prompting is disabled
+- interactive runs may prompt for replacement credentials when prompting is enabled
 
 ## Local Identity with Azure Key Vault
 

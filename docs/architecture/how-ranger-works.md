@@ -25,6 +25,16 @@ Ranger should run from a management workstation or jump box that can reach:
 
 Running directly on a cluster node is not the preferred model because cluster nodes do not necessarily have access to every target that Ranger needs, especially BMC endpoints and some Azure-side management paths.
 
+## Runner Posture
+
+Ranger should treat runner locations in three tiers.
+
+| Runner location | Posture | Why |
+|---|---|---|
+| Management workstation or jump box | Preferred | Best chance of reaching WinRM, Redfish, and Azure from one place |
+| Azure-hosted automation worker with approved network reach | Supported future posture | Useful for scheduled Azure-side and hybrid runs when the worker can still reach cluster targets |
+| Cluster node | Avoid by default | Usually has the wrong trust and reachability boundaries for full-estate discovery |
+
 ## Connectivity Methods
 
 Ranger uses different protocols for different domains.
@@ -36,6 +46,21 @@ Ranger uses different protocols for different domains.
 | Az PowerShell / Azure CLI | Azure-side discovery for Arc, policy, monitoring, update, backup, and related services | Primary |
 | Azure Arc Run Command | Alternative path when WinRM is unavailable | Investigate, not a v1 dependency |
 | Vendor SSH / REST / SNMP | Direct switch and firewall interrogation | Optional future domain |
+
+## Target Addressing and Credential Routing
+
+Ranger should route credentials by target type and domain intent, not by one global login.
+
+| Domain or target area | Primary addressing model | Primary credential | Optional supporting credential | Default posture |
+|---|---|---|---|---|
+| Cluster, storage, networking, VMs, management tools, performance | Cluster FQDN and node names | Cluster WinRM credential | Azure credential for Azure overlays | Core |
+| Identity and security | Cluster nodes plus AD domain context when applicable | Cluster credential and, when needed, domain read credential | Azure credential for RBAC, policy, or Key Vault context | Core |
+| Hardware and OEM integration | Explicit BMC or iDRAC endpoints | BMC / Redfish credential | Cluster credential for limited host-side corroboration | Optional |
+| Azure integration and monitoring overlays | Subscription, resource group, Azure Local instance, custom location, related Azure resources | Azure credential | Cluster credential for local corroboration | Core when Azure target is configured |
+| Direct switch or firewall interrogation | Explicit operator-supplied device endpoints | Vendor-specific device credential | None by default | Optional future |
+| Manual or imported evidence | Operator-supplied files or metadata | None | None | Optional |
+
+That routing model is important because a valid Azure login does not imply WinRM access, and a valid cluster credential does not imply BMC or network-device access.
 
 ## Credentials and Authentication
 
@@ -62,6 +87,24 @@ The default behavior is:
 - light up variant-specific domains only when the detected topology or explicit configuration makes them relevant
 
 A skipped domain is not treated as a failed run. The manifest records why it was skipped.
+
+## Domain Classes
+
+Ranger should classify domains in four buckets so execution behavior is predictable.
+
+| Domain class | Meaning | Default behavior |
+|---|---|---|
+| Core | Main Azure Local platform domains needed for a meaningful run | Run when required targets and credentials exist |
+| Optional | Valuable but not required to understand the estate | Skip unless the needed targets and credentials are configured |
+| Variant-specific | Applies only to certain topologies or identity modes | Run only when the detected or hinted variant justifies it |
+| Future-only | Not part of the current supported release | Do not run in v1 |
+
+Examples:
+
+- cluster, storage, networking, workload, identity, and Azure-integration domains are core
+- BMC, OEM, and direct network-device interrogation are optional
+- disconnected or multi-rack deep inspection is variant-specific
+- Arc Run Command-based collection remains an investigation item and not a v1 dependency
 
 ## Runtime Flow
 
@@ -111,6 +154,8 @@ Collectors report one of these states:
 - `not-applicable`
 
 That allows a run to document what was successfully observed without flattening every non-ideal condition into a binary success-or-failure result.
+
+Unavailable required targets should mark the affected core domain as `failed` or `partial`. Missing optional targets or credentials should result in `skipped`, not in a global run failure.
 
 ## Read-Only Contract
 

@@ -34,6 +34,19 @@ A configuration file should be organized around these blocks:
 | `output` | Current-state vs as-built, formats, paths, branding, and package settings |
 | `behavior` | Timeouts, retry posture, strictness, and logging preferences |
 
+## Target Addressing Model
+
+Targets should be explicit rather than inferred from one overloaded cluster setting.
+
+| Target type | Minimum addressing shape |
+|---|---|
+| Cluster | cluster FQDN and, optionally, explicit node list |
+| Azure | subscription ID, resource group, tenant ID, and where useful the Azure Local instance name |
+| BMC | explicit endpoint list by host name or IP |
+| Switch or firewall | explicit endpoint list plus protocol metadata when those future domains are enabled |
+
+Switch and firewall targets should remain absent by default. Ranger should not assume that every environment wants direct network-device interrogation.
+
 ## Representative Example
 
 ```yaml
@@ -119,6 +132,18 @@ keyvault://<vault-name>/<secret-name>[/<version>]
 
 Secrets should not be stored inline in committed configuration files.
 
+## Key Vault Resolution Rules
+
+Key Vault lookup should follow these rules:
+
+1. if a version is supplied, Ranger resolves that exact secret version
+2. if no version is supplied, Ranger resolves the latest enabled version
+3. Ranger uses the current Azure authentication context to resolve the secret
+4. if Key Vault resolution fails and prompting is allowed, Ranger can prompt for the missing secret interactively
+5. if Key Vault resolution fails and prompting is not allowed, dependent domains should fail or skip according to whether the credential was required or optional
+
+Ranger should not introduce a separate Key Vault-only credential model. Secret lookup should rely on the Azure identity already in use for the run.
+
 ## Domain Selection
 
 The configuration model should support both `include` and `exclude` lists.
@@ -129,6 +154,13 @@ The rules are:
 - if `exclude` is present, those domains are removed from the candidate set
 - if neither is present, Ranger runs all domains for which it has the required targets and credentials
 - optional future domains remain skipped unless explicitly configured and supported
+
+Domain selection should also respect the domain classes defined in the execution model:
+
+- core domains are candidates by default
+- optional domains stay off unless their targets and credentials are configured
+- variant-specific domains require detected or explicitly hinted variants
+- future-only domains remain unavailable in the current release
 
 ## Variant-Specific Settings
 
