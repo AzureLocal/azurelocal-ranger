@@ -2,41 +2,38 @@
 
 Azure Local Ranger now has its v1 implementation foundation committed in the repository.
 
-That means the runtime, manifest pipeline, grouped collectors, cached report generation, cached diagram generation, and fixture-backed tests are all present. It does **not** mean every detail from the long-form product-direction plan is fully realized yet.
+That means the runtime, manifest pipeline, grouped collectors, cached report generation, cached diagram generation, schema-validation boundary, and fixture-backed tests are all present. The only remaining open implementation item is validation against a real Azure Local environment.
 
 ## Current Position
 
 | Area | Status | Summary |
 | --- | --- | --- |
 | Architecture and documentation foundation | Complete | Product, architecture, operator, output, contributor, and domain docs are in place |
-| V1 runtime and collector implementation | Complete | Core runtime/output tracks and v1 collector tracks are implemented and closed in the backlog |
-| Testing foundation | Complete | Fixture-backed unit and integration tests are in place for runtime and cached outputs |
-| Product-plan richness and polish | In progress | Several plan areas still need deeper data depth, richer reports, richer diagrams, and live-environment proving |
-| Post-v1 extension backlog | Deferred by design | Future-scope items remain tracked separately and are not part of the current implementation baseline |
+| V1 runtime and collector implementation | Complete | Core runtime/output tracks and v1 collector tracks are implemented and locally verified |
+| Testing foundation | Complete | Fixture-backed unit and integration tests, degraded-scenario tests, and standalone manifest-schema validation are in place |
+| Product-plan richness and polish | Complete for non-live scope | Remaining implementation work is now limited to live-environment proving |
+| Post-v1 extension backlog | Defined and deferred | Future-scope items are documented explicitly and kept out of the v1 baseline |
 
 ## Delivered Now
 
 - One public PowerShell module with layered internal architecture
 - Manifest-first runtime with cached output generation
 - V1 collectors for topology/cluster, hardware, storage/networking, workload/identity/Azure, monitoring, and management/performance
-- HTML and Markdown report generation from saved manifests
-- Draw.io-compatible diagram generation from saved manifests
+- HTML and Markdown report generation from saved manifests with richer audience-specific sections
+- Draw.io-compatible diagram generation from saved manifests with deeper domain modeling
+- Standalone manifest schema contract and runtime validation against that contract
 - Public docs and contributor/operator guidance aligned to the current architecture
-- Fixture-backed Pester coverage for config, runtime, outputs, and end-to-end package generation
+- Fixture-backed Pester coverage for config, runtime, outputs, degraded scenarios, and end-to-end package generation
 
-## Still Being Refined
+## Remaining Open Item
 
-These areas are inside the product plan but still not at full intended depth:
+The only remaining implementation item still open is:
 
-- richer report content and handoff polish
-- richer diagram semantics and environment-specific detail
-- deeper collector payload coverage in several domains
-- broader Azure authentication support
 - live environment validation beyond fixture-backed testing
 
 ## Explicitly Deferred To Post-V1
 
-The following areas are intentionally tracked outside the current implementation baseline:
+The following areas are intentionally defined and deferred outside the current implementation baseline:
 
 - direct switch interrogation
 - direct firewall interrogation

@@ -9,9 +9,9 @@ Ranger supports two outcomes through one discovery engine:
 
 ## Current Phase
 
-The repository has completed its documentation and architecture foundation phase and now has the v1 implementation foundation committed in-repo.
+The repository has completed its documentation and architecture foundation phase and now has the non-live v1 implementation backlog completed in-repo.
 
-That means the immediate priority is no longer proving that Ranger can exist structurally. The immediate priority is validating the implementation against real environments, deepening the remaining non-post-v1 gaps from the product plan, and keeping post-v1 work explicitly separated.
+That means the immediate priority is no longer proving that Ranger can exist structurally or filling in the remaining local implementation gaps. The immediate priority is validating the implementation against real environments and keeping post-v1 work explicitly separated.
 
 ## Phase 1: Product and Architecture Foundation
 
@@ -50,7 +50,7 @@ Key documentation work is tracked in:
 
 Once the planning and documentation gates are locked, implementation can move into the v1 runtime and collector backlog.
 
-Status: core implementation complete in-repo; further depth, polish, and live-environment validation still remain.
+Status: non-live implementation complete in-repo; live-environment validation still remains.
 
 Main v1 tracks:
 
@@ -62,7 +62,7 @@ Main v1 tracks:
 - report generation and output packaging from the cached manifest
 - diagram generation from the cached manifest
 
-The completed v1 implementation tracks were:
+The completed v1 implementation tracks are:
 
 - [Tracker: v1 discovery collector delivery #16](https://github.com/AzureLocal/azurelocal-ranger/issues/16)
 - [Implement orchestration layer and shared platform services #19](https://github.com/AzureLocal/azurelocal-ranger/issues/19)
@@ -80,7 +80,7 @@ The completed v1 implementation tracks were:
 
 Anything intentionally pushed out of v1 should remain visible as separate issues, not disappear into one umbrella bullet list.
 
-Status: active backlog
+Status: defined and deferred
 
 Post-v1 extension backlog:
 
@@ -94,6 +94,14 @@ Post-v1 extension backlog:
 - [Add multi-rack and management-cluster-specific discovery enrichment #31](https://github.com/AzureLocal/azurelocal-ranger/issues/31)
 - [Add manual import workflows for externally governed environments #32](https://github.com/AzureLocal/azurelocal-ranger/issues/32)
 - [Assess Windows PowerShell 5.1 compatibility without distorting the v1 architecture #33](https://github.com/AzureLocal/azurelocal-ranger/issues/33)
+
+These items are now bounded by the decisions recorded in `repo-management/plans/post-v1-extension-decisions.md` and remain intentionally outside the v1 delivery baseline.
+
+## Phase 5: Live-Estate Validation
+
+Status: remaining open item
+
+The final remaining implementation task is to run Ranger against a real Azure Local environment and reconcile the generated package against known environment facts.
 
 ## Guiding Rule
 

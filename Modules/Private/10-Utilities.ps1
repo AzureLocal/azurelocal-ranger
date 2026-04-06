@@ -184,3 +184,88 @@ function ConvertTo-RangerPlainText {
 
     return [string]$Value
 }
+
+function ConvertTo-RangerGiB {
+    param(
+        [AllowNull()]
+        $Value
+    )
+
+    if ($null -eq $Value -or [string]::IsNullOrWhiteSpace([string]$Value)) {
+        return $null
+    }
+
+    try {
+        return [math]::Round(([double]$Value / 1GB), 2)
+    }
+    catch {
+        return $null
+    }
+}
+
+function Get-RangerFlattenedCollection {
+    param(
+        [AllowNull()]
+        $Items
+    )
+
+    $results = New-Object System.Collections.ArrayList
+    foreach ($item in @($Items)) {
+        if ($null -eq $item) {
+            continue
+        }
+
+        if ($item -is [System.Collections.IEnumerable] -and $item -isnot [string] -and $item -isnot [System.Collections.IDictionary]) {
+            foreach ($child in $item) {
+                if ($null -ne $child) {
+                    [void]$results.Add($child)
+                }
+            }
+
+            continue
+        }
+
+        [void]$results.Add($item)
+    }
+
+    return @($results)
+}
+
+function Get-RangerGroupedCount {
+    param(
+        [AllowNull()]
+        $Items,
+
+        [Parameter(Mandatory = $true)]
+        [string]$PropertyName
+    )
+
+    return @(
+        @($Items | Where-Object { $null -ne $_ -and -not [string]::IsNullOrWhiteSpace([string]$_.($PropertyName)) }) |
+            Group-Object -Property $PropertyName |
+            Sort-Object -Property @(
+                @{ Expression = 'Count'; Descending = $true },
+                @{ Expression = 'Name'; Descending = $false }
+            ) |
+            ForEach-Object {
+                [ordered]@{
+                    name  = $_.Name
+                    count = $_.Count
+                }
+            }
+    )
+}
+
+function Get-RangerAverageValue {
+    param(
+        [AllowNull()]
+        $Values
+    )
+
+    $numbers = @($Values | Where-Object { $null -ne $_ } | ForEach-Object { [double]$_ })
+    if ($numbers.Count -eq 0) {
+        return $null
+    }
+
+    return [math]::Round((($numbers | Measure-Object -Average).Average), 2)
+}

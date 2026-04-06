@@ -1,7 +1,7 @@
 {
   "run": {
     "toolVersion": "0.2.0",
-    "schemaVersion": "1.0.0-draft",
+    "schemaVersion": "1.1.0-draft",
     "startTimeUtc": "2026-04-06T12:00:00Z",
     "endTimeUtc": "2026-04-06T12:05:00Z",
     "mode": "current-state",
@@ -15,7 +15,12 @@
       "workload-identity-azure",
       "monitoring-observability",
       "management-performance"
-    ]
+    ],
+    "schemaValidation": {
+      "isValid": true,
+      "errors": [],
+      "warnings": []
+    }
   },
   "target": {
     "environmentLabel": "prod-azlocal-01",
@@ -57,17 +62,23 @@
       "quorum": { "quorumType": "CloudWitness" },
       "faultDomains": [ { "name": "Rack01" } ],
       "networks": [ { "name": "Management", "role": 3 } ],
+      "roles": [ { "name": "Cluster Group", "groupType": "ClusterGroup", "state": "Online" } ],
       "csvSummary": { "count": 1 },
       "updatePosture": { "clusterAwareUpdating": { "requireAllNodesOnline": true } },
       "eventSummary": [],
-      "healthSummary": { "totalNodes": 2, "healthyNodes": 2, "unhealthy": 0 }
+      "healthSummary": { "totalNodes": 2, "healthyNodes": 2, "unhealthy": 0 },
+      "nodeSummary": { "manufacturers": [ { "name": "Dell Inc.", "count": 2 } ], "models": [ { "name": "PowerEdge R760xs", "count": 2 } ], "totalMemoryGiB": 1024, "totalLogicalCpu": 192, "domainJoinedNodes": 2, "localIdentityNodes": 0 },
+      "faultDomainSummary": { "count": 1, "byType": [ { "name": "Site", "count": 1 } ], "locations": [ { "name": "Rack 01", "count": 1 } ] },
+      "networkSummary": { "clusterNetworkCount": 1, "byRole": [ { "name": "3", "count": 1 } ], "switched": true }
     },
     "hardware": {
       "nodes": [
         { "node": "azl-node-01", "model": "PowerEdge R760xs" },
         { "node": "azl-node-02", "model": "PowerEdge R760xs" }
       ],
-      "summary": { "nodeCount": 2 }
+      "summary": { "nodeCount": 2, "manufacturers": [ { "name": "Dell Inc.", "count": 2 } ], "models": [ { "name": "PowerEdge R760xs", "count": 2 } ], "firmwareNodes": 2, "totalMemoryGiB": 1024, "totalProcessors": 4 },
+      "firmware": { "managedNodes": 2, "versions": [ { "name": "7.00.00.00", "count": 2 } ] },
+      "security": { "trustedModuleNodes": 2, "secureBootEnabledNodes": 2 }
     },
     "storage": {
       "pools": [ { "friendlyName": "S2D on azlocal-prod-01", "healthStatus": "Healthy" } ],
@@ -77,7 +88,8 @@
       "csvs": [ { "name": "Cluster Virtual Disk (Volume1)" } ],
       "qos": [],
       "sofs": [],
-      "replica": []
+      "replica": [],
+      "summary": { "poolCount": 1, "physicalDiskCount": 1, "virtualDiskCount": 1, "volumeCount": 1, "csvCount": 1, "totalPoolCapacityGiB": 8192, "allocatedPoolCapacityGiB": 4096, "diskMediaTypes": [ { "name": "SSD", "count": 1 } ], "unhealthyDisks": 0 }
     },
     "networking": {
       "nodes": [ { "node": "azl-node-01" } ],
@@ -89,19 +101,23 @@
       "dns": [],
       "proxy": [],
       "firewall": [],
-      "sdn": []
+      "sdn": [],
+      "summary": { "nodeCount": 1, "clusterNetworkCount": 1, "adapterCount": 0, "adapterStates": [], "vSwitchCount": 0, "intentCount": 0, "dnsServers": [], "proxyConfiguredNodes": 0, "sdnControllerCount": 0 }
     },
     "virtualMachines": {
       "inventory": [ { "name": "avd-sessionhost-01", "hostNode": "azl-node-01", "state": "Running" } ],
       "placement": [ { "vm": "avd-sessionhost-01", "hostNode": "azl-node-01" } ],
-      "workloadFamilies": [ { "name": "AVD", "count": 1 } ]
+      "workloadFamilies": [ { "name": "AVD", "count": 1 } ],
+      "replication": [],
+      "summary": { "totalVms": 1, "runningVms": 1, "clusteredVms": 1, "totalAssignedMemoryGb": 16, "byGeneration": [ { "name": "2", "count": 1 } ], "byState": [ { "name": "Running", "count": 1 } ] }
     },
     "identitySecurity": {
       "nodes": [ { "node": "azl-node-01", "partOfDomain": true } ],
       "certificates": [ { "node": "azl-node-01", "items": [] } ],
       "posture": [ { "node": "azl-node-01", "defender": { "antivirusEnabled": true } } ],
       "localAdmins": [ { "node": "azl-node-01", "members": [] } ],
-      "auditPolicy": [ { "node": "azl-node-01", "values": [] } ]
+      "auditPolicy": [ { "node": "azl-node-01", "values": [] } ],
+      "summary": { "nodeCount": 1, "domainJoinedNodes": 1, "credSspEnabledNodes": 0, "defenderProtectedNodes": 1, "bitLockerProtectedNodes": 1, "certificateCount": 0, "certificateExpiringWithin90Days": 0 }
     },
     "azureIntegration": {
       "context": { "subscriptionId": "00000000-0000-0000-0000-000000000000", "resourceGroup": "rg-azlocal-prod-01" },
@@ -113,7 +129,11 @@
       "policy": [ { "name": "audit-tagging" } ],
       "backup": [ { "name": "rsv-azlocal-prod-01" } ],
       "update": [ { "name": "update-manager-prod" } ],
-      "cost": []
+      "cost": [],
+      "resourceSummary": { "totalResources": 2, "byType": [ { "name": "Microsoft.AzureStackHCI/clusters", "count": 1 }, { "name": "Microsoft.DesktopVirtualization/hostPools", "count": 1 } ], "byLocation": [ { "name": "eastus", "count": 2 } ], "azureArcMachines": 0, "hciClusterRegistrations": 1, "backupResources": 1, "updateResources": 1 },
+      "resourceLocations": [ { "name": "eastus", "count": 2 } ],
+      "policySummary": { "assignmentCount": 1, "enforcementModes": [ { "name": "Default", "count": 1 } ] },
+      "auth": { "method": "existing-context", "tenantId": "11111111-1111-1111-1111-111111111111", "subscriptionId": "00000000-0000-0000-0000-000000000000", "azureCliFallback": true }
     },
     "monitoring": {
       "telemetry": [ { "name": "AzureEdgeTelemetryAndDiagnostics" } ],
@@ -122,18 +142,23 @@
       "dce": [ { "name": "dce-azlocal-prod-01" } ],
       "insights": [ { "name": "law-azlocal-prod-01" } ],
       "alerts": [ { "name": "critical-capacity-alert" } ],
-      "health": [ { "node": "azl-node-01" } ]
+      "health": [ { "node": "azl-node-01" } ],
+      "updateManager": [ { "name": "update-manager-prod" } ],
+      "summary": { "telemetryCount": 1, "amaCount": 1, "dcrCount": 1, "dceCount": 1, "alertCount": 1, "updateManagerCount": 1, "healthServiceRunningNodes": 1 }
     },
     "managementTools": {
       "tools": [ { "name": "ServerManagementGateway", "status": "Running" } ],
-      "agents": [ { "name": "HealthService", "status": "Running" } ]
+      "agents": [ { "name": "HealthService", "status": "Running" } ],
+      "summary": { "totalServices": 2, "runningServices": 2, "serviceNames": [ { "name": "ServerManagementGateway", "count": 1 }, { "name": "HealthService", "count": 1 } ] }
     },
     "performance": {
       "nodes": [ "azl-node-01", "azl-node-02" ],
       "compute": [ { "node": "azl-node-01", "metrics": { "cpuUtilizationPercent": 41 } } ],
       "storage": [ { "node": "azl-node-01", "metrics": [] } ],
       "networking": [ { "node": "azl-node-01", "metrics": [] } ],
-      "outliers": []
+      "outliers": [],
+      "events": [ { "node": "azl-node-01", "values": [] } ],
+      "summary": { "averageCpuUtilizationPercent": 41, "averageAvailableMemoryMb": 131072, "runningManagementServices": 2, "toolNames": [ { "name": "ServerManagementGateway", "count": 1 }, { "name": "HealthService", "count": 1 } ], "highCpuNodes": 0, "eventSeverities": [] }
     },
     "oemIntegration": {
       "endpoints": [ { "host": "idrac-node-01.contoso.com", "node": "azl-node-01" } ],

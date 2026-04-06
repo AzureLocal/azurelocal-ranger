@@ -21,6 +21,7 @@ function New-RangerManifest {
             includeDomains       = @($Config.domains.include)
             excludeDomains       = @($Config.domains.exclude)
             selectedCollectors   = @($SelectedCollectors | ForEach-Object { $_.Id })
+            schemaValidation     = [ordered]@{ isValid = $null; errors = @(); warnings = @() }
         }
         target = [ordered]@{
             environmentLabel = $Config.environment.name
@@ -38,6 +39,83 @@ function New-RangerManifest {
         findings      = @()
         artifacts     = @()
         evidence      = @()
+    }
+}
+
+function Get-RangerManifestSchemaContract {
+    $schemaPath = Join-Path -Path $PSScriptRoot -ChildPath '..\..\repo-management\contracts\manifest-schema.json'
+    $resolvedPath = [System.IO.Path]::GetFullPath($schemaPath)
+    if (-not (Test-Path -Path $resolvedPath)) {
+        throw "Manifest schema contract file was not found: $resolvedPath"
+    }
+
+    return Get-Content -Path $resolvedPath -Raw | ConvertFrom-Json -Depth 50
+}
+
+function Test-RangerManifestSchema {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Manifest,
+
+        [object[]]$SelectedCollectors
+    )
+
+    $errors = New-Object System.Collections.Generic.List[string]
+    $warnings = New-Object System.Collections.Generic.List[string]
+    $schemaContract = Get-RangerManifestSchemaContract
+
+    foreach ($requiredKey in @($schemaContract.requiredTopLevelKeys)) {
+        if (-not $Manifest.Contains($requiredKey)) {
+            $errors.Add("Manifest is missing required top-level key '$requiredKey'.")
+        }
+    }
+
+    if ($Manifest.run.schemaVersion -ne $schemaContract.schemaVersion) {
+        $warnings.Add("Manifest schemaVersion '$($Manifest.run.schemaVersion)' does not match schema contract version '$($schemaContract.schemaVersion)'.")
+    }
+
+    foreach ($runKey in @($schemaContract.requiredRunKeys)) {
+        if (-not $Manifest.run.Contains($runKey) -or $null -eq $Manifest.run[$runKey] -or [string]::IsNullOrWhiteSpace([string]$Manifest.run[$runKey])) {
+            $errors.Add("Manifest.run is missing required value '$runKey'.")
+        }
+    }
+
+    foreach ($reservedDomain in @($schemaContract.reservedDomains)) {
+        if (-not $Manifest.domains.Contains($reservedDomain)) {
+            $errors.Add("Manifest.domains is missing reserved payload '$reservedDomain'.")
+        }
+    }
+
+    foreach ($collectorId in @($Manifest.run.selectedCollectors)) {
+        if (-not $Manifest.collectors.Contains($collectorId)) {
+            $errors.Add("Manifest.collectors is missing selected collector '$collectorId'.")
+        }
+    }
+
+    foreach ($collectorEntry in @($Manifest.collectors.GetEnumerator())) {
+        if ($collectorEntry.Value.status -notin @($schemaContract.collectorStatuses)) {
+            $errors.Add("Collector '$($collectorEntry.Key)' has unsupported status '$($collectorEntry.Value.status)'.")
+        }
+    }
+
+    $artifactPaths = @($Manifest.artifacts | Where-Object { -not [string]::IsNullOrWhiteSpace($_.relativePath) } | ForEach-Object { $_.relativePath })
+    $duplicateArtifacts = @($artifactPaths | Group-Object | Where-Object { $_.Count -gt 1 })
+    foreach ($duplicateArtifact in $duplicateArtifacts) {
+        $warnings.Add("Manifest.artifacts contains duplicate relativePath '$($duplicateArtifact.Name)'.")
+    }
+
+    if ($SelectedCollectors) {
+        foreach ($collector in $SelectedCollectors) {
+            if ($collector.Id -notin @($Manifest.run.selectedCollectors)) {
+                $warnings.Add("Selected collector '$($collector.Id)' was not recorded in manifest.run.selectedCollectors.")
+            }
+        }
+    }
+
+    return [ordered]@{
+        IsValid  = $errors.Count -eq 0
+        Errors   = @($errors)
+        Warnings = @($warnings)
     }
 }
 

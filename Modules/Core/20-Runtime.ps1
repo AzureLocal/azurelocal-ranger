@@ -127,8 +127,32 @@ function Invoke-RangerDiscoveryRuntime {
         Add-RangerCollectorToManifest -Manifest ([ref]$manifest) -CollectorResult $collectorResult -EvidenceRoot $evidenceRoot -KeepRawEvidence ([bool]$config.output.keepRawEvidence)
     }
 
+    $manifestValidation = Test-RangerManifestSchema -Manifest $manifest -SelectedCollectors $selectedCollectors
+    $manifest.run.schemaValidation = [ordered]@{
+        isValid  = $manifestValidation.IsValid
+        errors   = @($manifestValidation.Errors)
+        warnings = @($manifestValidation.Warnings)
+    }
+
+    if ($manifestValidation.Warnings.Count -gt 0) {
+        $manifest.findings += @(
+            New-RangerFinding -Severity informational -Title 'Manifest schema warnings were recorded' -Description 'The generated manifest passed core validation but recorded schema warnings that should be reviewed before handoff.' -CurrentState ($manifestValidation.Warnings -join '; ') -Recommendation 'Review duplicate artifact paths or incomplete metadata before packaging the deliverable.'
+        )
+    }
+
+    if (-not $manifestValidation.IsValid) {
+        $manifest.findings += @(
+            New-RangerFinding -Severity warning -Title 'Manifest schema validation failed' -Description 'The generated manifest did not satisfy the minimum schema contract for Ranger outputs.' -CurrentState ($manifestValidation.Errors -join '; ') -Recommendation 'Correct the collector payload or manifest contract before treating this package as a handoff-ready deliverable.'
+        )
+    }
+
     Save-RangerManifest -Manifest $manifest -Path $manifestPath
     $manifest.artifacts += @(New-RangerArtifactRecord -Type 'manifest-json' -RelativePath ([System.IO.Path]::GetRelativePath($packageRoot, $manifestPath)) -Status generated -Audience 'all')
+
+    if (-not $manifestValidation.IsValid -and [bool]$config.behavior.failOnSchemaViolation) {
+        Save-RangerManifest -Manifest $manifest -Path $manifestPath
+        throw ($manifestValidation.Errors -join [Environment]::NewLine)
+    }
 
     if (-not $NoRender -and [bool]$config.behavior.continueToRendering) {
         $renderResult = Invoke-RangerOutputGeneration -Manifest $manifest -PackageRoot $packageRoot -Formats @($config.output.formats) -Mode $config.output.mode
@@ -148,5 +172,6 @@ function Invoke-RangerDiscoveryRuntime {
         ManifestPath = $manifestPath
         PackageRoot  = $packageRoot
         Validation   = $validation
+        ManifestSchema = $manifestValidation
     }
 }

@@ -16,6 +16,17 @@ Describe 'Azure Local Ranger cached outputs' {
         (Get-ChildItem -Path (Join-Path $outputRoot 'diagrams') -Filter '*.drawio').Count | Should -BeGreaterThan 0
         (Get-ChildItem -Path (Join-Path $outputRoot 'diagrams') -Filter '*.svg').Count | Should -BeGreaterThan 0
         Test-Path -Path (Join-Path $outputRoot 'README.md') | Should -BeTrue
+
+        $technicalMarkdown = Get-ChildItem -Path (Join-Path $outputRoot 'reports') -Filter '*Technical-Deep-Dive.md' | Select-Object -First 1
+        $htmlReport = Get-ChildItem -Path (Join-Path $outputRoot 'reports') -Filter '*.html' | Select-Object -First 1
+        $technicalMarkdownContent = Get-Content -Path $technicalMarkdown.FullName -Raw
+        $htmlReportContent = Get-Content -Path $htmlReport.FullName -Raw
+
+        $technicalMarkdownContent | Should -Match 'Table of Contents'
+        $technicalMarkdownContent | Should -Match 'Priority Recommendations'
+        $technicalMarkdownContent | Should -Match 'Technical Domain Deep Dive'
+        $htmlReportContent | Should -Match 'Collector Overview'
+        $htmlReportContent | Should -Match 'Priority Recommendations'
     }
 
     It 'records skipped diagram artifacts when required data is absent' {

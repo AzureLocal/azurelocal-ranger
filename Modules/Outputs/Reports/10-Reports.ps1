@@ -92,6 +92,76 @@ function New-RangerReportPayload {
         default { $allFindings }
     }
 
+    $recommendations = @(
+        $findings |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_.recommendation) } |
+            Select-Object -First 8 |
+            ForEach-Object {
+                [ordered]@{
+                    title          = $_.title
+                    severity       = $_.severity
+                    recommendation = $_.recommendation
+                }
+            }
+    )
+
+    $collectorCards = @(
+        $Manifest.collectors.Keys |
+            Sort-Object |
+            ForEach-Object {
+                [ordered]@{
+                    collector = $_
+                    status    = $Manifest.collectors[$_].status
+                    targets   = @($Manifest.collectors[$_].targetScope) -join ', '
+                }
+            }
+    )
+
+    $topologyBody = @(
+        "Deployment type: $($summary.DeploymentType)",
+        "Identity mode: $($summary.IdentityMode)",
+        "Connectivity mode: $($summary.ControlPlaneMode)",
+        "Storage architecture: $($Manifest.topology.storageArchitecture)",
+        "Network architecture: $($Manifest.topology.networkArchitecture)",
+        "Variant markers: $((@($Manifest.topology.variantMarkers) -join ', '))"
+    )
+
+    $collectorStatusLines = @(
+        $collectorCards | ForEach-Object {
+            '{0}: {1} ({2})' -f $_.collector, $_.status, $_.targets
+        }
+    )
+
+    $readinessBody = @(
+        "Schema validation: $(if ($Manifest.run.schemaValidation.isValid) { 'passed' } elseif ($null -eq $Manifest.run.schemaValidation.isValid) { 'not recorded' } else { 'failed' })",
+        "Critical findings: $($summary.FindingsBySeverity.critical)",
+        "Warning findings: $($summary.FindingsBySeverity.warning)",
+        "Informational findings: $($summary.FindingsBySeverity.informational)",
+        "Successful collectors: $($summary.SuccessfulCollectors) of $($summary.TotalCollectors)",
+        "Partial or failed collectors: $($summary.PartialCollectors + $summary.FailedCollectors)"
+    )
+
+    $domainCoverageBody = @(
+        "Cluster nodes: $($summary.NodeCount)",
+        "Cluster roles: $(@($Manifest.domains.clusterNode.roles).Count)",
+        "Storage pools: $(@($Manifest.domains.storage.pools).Count)",
+        "Physical disks: $(@($Manifest.domains.storage.physicalDisks).Count)",
+        "Network adapters: $(@($Manifest.domains.networking.adapters).Count)",
+        "VMs discovered: $($summary.VmCount)",
+        "Azure resources: $($summary.AzureResourceCount)",
+        "Alerting resources: $(@($Manifest.domains.monitoring.alerts).Count)",
+        "Management services: $(@($Manifest.domains.managementTools.tools).Count)"
+    )
+
+    $operationalRiskBody = @(
+        "Nodes not healthy: $($Manifest.domains.clusterNode.healthSummary.unhealthy)",
+        "Unhealthy disks: $($Manifest.domains.storage.summary.unhealthyDisks)",
+        "High CPU nodes: $($Manifest.domains.performance.summary.highCpuNodes)",
+        "Certificates expiring within 90 days: $($Manifest.domains.identitySecurity.summary.certificateExpiringWithin90Days)",
+        "Azure Policy assignments: $($Manifest.domains.azureIntegration.policySummary.assignmentCount)",
+        "Schema warnings: $(@($Manifest.run.schemaValidation.warnings).Count)"
+    )
+
     $sections = New-Object System.Collections.ArrayList
     [void]$sections.Add([ordered]@{
         heading = 'Run Summary'
@@ -100,27 +170,60 @@ function New-RangerReportPayload {
             "Generated: $($Manifest.run.endTimeUtc)",
             "Cluster: $($summary.ClusterName)",
             "Nodes: $($summary.NodeCount)",
-            "Collectors: $($summary.SuccessfulCollectors)/$($summary.TotalCollectors) successful"
+            "Collectors: $($summary.SuccessfulCollectors)/$($summary.TotalCollectors) successful",
+            "Artifacts currently recorded: $(@($Manifest.artifacts).Count)"
         )
+    })
+
+    [void]$sections.Add([ordered]@{
+        heading = 'Readiness Snapshot'
+        body    = $readinessBody
     })
 
     [void]$sections.Add([ordered]@{
         heading = 'Environment Overview'
         body    = @(
-            "Deployment type: $($summary.DeploymentType)",
-            "Identity mode: $($summary.IdentityMode)",
-            "Connectivity mode: $($summary.ControlPlaneMode)",
             "VMs discovered: $($summary.VmCount)",
-            "Azure resources discovered: $($summary.AzureResourceCount)"
+            "Azure resources discovered: $($summary.AzureResourceCount)",
+            "Connected Azure auth method: $($Manifest.domains.azureIntegration.auth.method)",
+            "Monitoring resources: $(@($Manifest.domains.monitoring.telemetry).Count + @($Manifest.domains.monitoring.ama).Count + @($Manifest.domains.monitoring.dcr).Count)",
+            "Management services running: $($Manifest.domains.managementTools.summary.runningServices)"
         )
+    })
+
+    [void]$sections.Add([ordered]@{
+        heading = 'Topology and Operating Model'
+        body    = $topologyBody
+    })
+
+    [void]$sections.Add([ordered]@{
+        heading = 'Domain Coverage'
+        body    = $domainCoverageBody
     })
 
     if ($Tier -ne 'executive') {
         [void]$sections.Add([ordered]@{
             heading = 'Collector Status'
+            body    = $collectorStatusLines
+        })
+    }
+
+    [void]$sections.Add([ordered]@{
+        heading = 'Operational Risk Summary'
+        body    = $operationalRiskBody
+    })
+
+    if ($Tier -eq 'management' -or $Tier -eq 'technical') {
+        [void]$sections.Add([ordered]@{
+            heading = 'Priority Recommendations'
             body    = @(
-                $Manifest.collectors.Keys | Sort-Object | ForEach-Object {
-                    "{0}: {1}" -f $_, $Manifest.collectors[$_].status
+                if ($recommendations.Count -gt 0) {
+                    $recommendations | ForEach-Object {
+                        '[{0}] {1}: {2}' -f $_.severity.ToUpperInvariant(), $_.title, $_.recommendation
+                    }
+                }
+                else {
+                    'No recommendation-bearing findings were recorded for this manifest.'
                 }
             )
         })
@@ -134,7 +237,23 @@ function New-RangerReportPayload {
                 "Virtual disks: $(@($Manifest.domains.storage.virtualDisks).Count)",
                 "Cluster networks: $(@($Manifest.domains.clusterNode.networks).Count)",
                 "Management tools: $(@($Manifest.domains.managementTools.tools).Count)",
-                "Monitoring components: $(@($Manifest.domains.monitoring.telemetry).Count + @($Manifest.domains.monitoring.ama).Count + @($Manifest.domains.monitoring.dcr).Count)"
+                "Monitoring components: $(@($Manifest.domains.monitoring.telemetry).Count + @($Manifest.domains.monitoring.ama).Count + @($Manifest.domains.monitoring.dcr).Count)",
+                "Cluster roles: $(@($Manifest.domains.clusterNode.roles).Count)",
+                "Replication entries: $(@($Manifest.domains.virtualMachines.replication).Count)",
+                "Update resources: $(@($Manifest.domains.azureIntegration.update).Count)"
+            )
+        })
+
+        [void]$sections.Add([ordered]@{
+            heading = 'Technical Domain Deep Dive'
+            body    = @(
+                "Node manufacturers: $((@($Manifest.domains.clusterNode.nodeSummary.manufacturers | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', '))",
+                "Storage media types: $((@($Manifest.domains.storage.summary.diskMediaTypes | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', '))",
+                "Adapter states: $((@($Manifest.domains.networking.summary.adapterStates | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', '))",
+                "VM generations: $((@($Manifest.domains.virtualMachines.summary.byGeneration | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', '))",
+                "Azure resource types: $((@($Manifest.domains.azureIntegration.resourceSummary.byType | Select-Object -First 6 | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', '))",
+                "Monitoring summary: telemetry=$($Manifest.domains.monitoring.summary.telemetryCount), ama=$($Manifest.domains.monitoring.summary.amaCount), dcr=$($Manifest.domains.monitoring.summary.dcrCount)",
+                "Performance summary: avg CPU=$($Manifest.domains.performance.summary.averageCpuUtilizationPercent), avg available memory MB=$($Manifest.domains.performance.summary.averageAvailableMemoryMb)"
             )
         })
     }
@@ -146,6 +265,9 @@ function New-RangerReportPayload {
         Mode        = $Mode
         Summary     = $summary
         Findings    = @($findings)
+        Recommendations = @($recommendations)
+        CollectorCards = @($collectorCards)
+        TableOfContents = @($sections | ForEach-Object { $_.heading })
         Sections    = @($sections)
         Version     = $Manifest.run.toolVersion
         GeneratedAt = $Manifest.run.endTimeUtc
@@ -169,6 +291,8 @@ function Get-RangerManifestSummary {
         ControlPlaneMode     = $Manifest.topology.controlPlaneMode
         TotalCollectors      = $collectorStatuses.Count
         SuccessfulCollectors = @($collectorStatuses | Where-Object { $_.status -eq 'success' }).Count
+        PartialCollectors    = @($collectorStatuses | Where-Object { $_.status -eq 'partial' }).Count
+        FailedCollectors     = @($collectorStatuses | Where-Object { $_.status -eq 'failed' }).Count
         FindingsBySeverity   = [ordered]@{
             critical      = @($Manifest.findings | Where-Object { $_.severity -eq 'critical' }).Count
             warning       = @($Manifest.findings | Where-Object { $_.severity -eq 'warning' }).Count
@@ -191,6 +315,14 @@ function ConvertTo-RangerMarkdownReport {
     $lines.Add("- Mode: $($Report.Mode)")
     $lines.Add("- Ranger Version: $($Report.Version)")
     $lines.Add("- Generated: $($Report.GeneratedAt)")
+    $lines.Add("- Schema validation: $(if ($Report.Summary -and $Report.Summary.Contains('FindingsBySeverity')) { if ($Report.Findings | Where-Object { $_.title -eq 'Manifest schema validation failed' }) { 'failed' } else { 'passed or warnings only' } } else { 'unknown' })")
+    $lines.Add('')
+
+    $lines.Add('## Table of Contents')
+    $lines.Add('')
+    foreach ($heading in @($Report.TableOfContents)) {
+        $lines.Add("- $heading")
+    }
     $lines.Add('')
 
     foreach ($section in $Report.Sections) {
@@ -202,6 +334,18 @@ function ConvertTo-RangerMarkdownReport {
         $lines.Add('')
     }
 
+
+    $lines.Add('## Recommendations')
+    $lines.Add('')
+    if (@($Report.Recommendations).Count -eq 0) {
+        $lines.Add('- No recommendations were surfaced for this output tier.')
+    }
+    else {
+        foreach ($recommendation in @($Report.Recommendations)) {
+            $lines.Add(('- [{0}] {1}: {2}' -f $recommendation.severity.ToUpperInvariant(), $recommendation.title, $recommendation.recommendation))
+        }
+    }
+    $lines.Add('')
     $lines.Add('## Findings')
     $lines.Add('')
     if (@($Report.Findings).Count -eq 0) {
@@ -234,6 +378,24 @@ function ConvertTo-RangerHtmlReport {
         [System.Collections.IDictionary]$Report
     )
 
+    $tocHtml = @(
+        foreach ($heading in @($Report.TableOfContents)) {
+            '<li>{0}</li>' -f ([System.Net.WebUtility]::HtmlEncode([string]$heading))
+        }
+    ) -join [Environment]::NewLine
+
+    $cardHtml = @(
+        foreach ($card in @($Report.CollectorCards)) {
+            @"
+<article class="collector-card status-$($card.status)">
+  <h3>$([System.Net.WebUtility]::HtmlEncode($card.collector))</h3>
+  <p><strong>Status:</strong> $([System.Net.WebUtility]::HtmlEncode($card.status))</p>
+  <p><strong>Targets:</strong> $([System.Net.WebUtility]::HtmlEncode([string]$card.targets))</p>
+</article>
+"@
+        }
+    ) -join [Environment]::NewLine
+
     $sectionHtml = @(
         foreach ($section in $Report.Sections) {
             $items = @(
@@ -252,6 +414,19 @@ $items
 "@
         }
     ) -join [Environment]::NewLine
+
+    $recommendationHtml = if (@($Report.Recommendations).Count -eq 0) {
+        '<p>No recommendations were surfaced for this output tier.</p>'
+    }
+    else {
+        @(
+            foreach ($recommendation in @($Report.Recommendations)) {
+                @"
+<li><strong>[$([System.Net.WebUtility]::HtmlEncode($recommendation.severity.ToUpperInvariant()))]</strong> $([System.Net.WebUtility]::HtmlEncode($recommendation.title))<br />$([System.Net.WebUtility]::HtmlEncode($recommendation.recommendation))</li>
+"@
+            }
+        ) -join [Environment]::NewLine
+    }
 
     $findingHtml = if (@($Report.Findings).Count -eq 0) {
         '<p>No findings were recorded for this output tier.</p>'
@@ -278,28 +453,63 @@ $items
   <meta charset="utf-8" />
   <title>$([System.Net.WebUtility]::HtmlEncode($Report.Title))</title>
   <style>
-    body { font-family: Segoe UI, Arial, sans-serif; margin: 2rem; color: #16202a; }
-    header { border-bottom: 2px solid #0e7490; margin-bottom: 1.5rem; padding-bottom: 1rem; }
+        :root { color-scheme: light; }
+        body { font-family: Segoe UI, Arial, sans-serif; margin: 0; color: #16202a; background: linear-gradient(180deg, #f8fbff 0%, #eef6fb 100%); }
+        .shell { max-width: 1280px; margin: 0 auto; padding: 2rem; }
+        header { border-bottom: 2px solid #0e7490; margin-bottom: 1.5rem; padding-bottom: 1rem; }
     h1, h2, h3 { color: #0f172a; }
     .meta { color: #475569; }
+        .hero { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; align-items: start; }
+        .panel { background: rgba(255,255,255,0.92); border: 1px solid #dbe7ef; border-radius: 16px; padding: 1rem 1.25rem; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06); }
+        .toc ul, .recommendations ul { margin: 0.5rem 0 0 1rem; }
+        .collector-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin: 1rem 0 1.5rem; }
+        .collector-card { border-radius: 14px; padding: 0.85rem 1rem; background: #ffffff; border: 1px solid #d7e3ed; }
+        .collector-card.status-success { border-color: #86efac; }
+        .collector-card.status-partial { border-color: #fbbf24; }
+        .collector-card.status-failed { border-color: #fca5a5; }
+        .collector-card.status-skipped { border-color: #cbd5e1; }
     .finding { border-left: 4px solid #94a3b8; padding: 0.75rem 1rem; margin: 1rem 0; background: #f8fafc; }
     .finding-critical { border-left-color: #b91c1c; }
     .finding-warning { border-left-color: #d97706; }
     .finding-good { border-left-color: #15803d; }
     .finding-informational { border-left-color: #2563eb; }
+        section { margin: 1rem 0; background: rgba(255,255,255,0.92); border: 1px solid #dbe7ef; border-radius: 16px; padding: 1rem 1.25rem; }
+        @media (max-width: 900px) { .hero { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-  <header>
-    <h1>$([System.Net.WebUtility]::HtmlEncode($Report.Title))</h1>
-    <p class="meta">Cluster: $([System.Net.WebUtility]::HtmlEncode($Report.ClusterName))</p>
-    <p class="meta">Mode: $([System.Net.WebUtility]::HtmlEncode($Report.Mode)) | Ranger Version: $([System.Net.WebUtility]::HtmlEncode($Report.Version)) | Generated: $([System.Net.WebUtility]::HtmlEncode($Report.GeneratedAt))</p>
-  </header>
-  $sectionHtml
-  <section>
-    <h2>Findings</h2>
-    $findingHtml
-  </section>
+    <div class="shell">
+        <header>
+            <h1>$([System.Net.WebUtility]::HtmlEncode($Report.Title))</h1>
+            <p class="meta">Cluster: $([System.Net.WebUtility]::HtmlEncode($Report.ClusterName))</p>
+            <p class="meta">Mode: $([System.Net.WebUtility]::HtmlEncode($Report.Mode)) | Ranger Version: $([System.Net.WebUtility]::HtmlEncode($Report.Version)) | Generated: $([System.Net.WebUtility]::HtmlEncode($Report.GeneratedAt))</p>
+        </header>
+        <div class="hero">
+            <section class="panel toc">
+                <h2>Table of Contents</h2>
+                <ul>
+                    $tocHtml
+                </ul>
+            </section>
+            <section class="panel recommendations">
+                <h2>Priority Recommendations</h2>
+                <ul>
+                    $recommendationHtml
+                </ul>
+            </section>
+        </div>
+        <section>
+            <h2>Collector Overview</h2>
+            <div class="collector-grid">
+                $cardHtml
+            </div>
+        </section>
+        $sectionHtml
+        <section>
+            <h2>Findings</h2>
+            $findingHtml
+        </section>
+    </div>
 </body>
 </html>
 "@
@@ -324,6 +534,15 @@ function Write-RangerPackageReadme {
         "- Generated: $($Manifest.run.endTimeUtc)",
         "- Nodes: $($summary.NodeCount)",
         "- VMs: $($summary.VmCount)",
+        "- Azure resources: $($summary.AzureResourceCount)",
+        "- Collectors: $($summary.SuccessfulCollectors)/$($summary.TotalCollectors) successful, $($summary.PartialCollectors) partial, $($summary.FailedCollectors) failed",
+        "- Schema validation: $(if ($Manifest.run.schemaValidation.isValid) { 'passed' } elseif ($null -eq $Manifest.run.schemaValidation.isValid) { 'not recorded' } else { 'failed' })",
+        '',
+        '## Top Recommendations',
+        '',
+        $(if (@($Manifest.findings).Count -gt 0) { @($Manifest.findings | Where-Object { -not [string]::IsNullOrWhiteSpace($_.recommendation) } | Select-Object -First 5 | ForEach-Object { "- [$($_.severity.ToUpperInvariant())] $($_.title): $($_.recommendation)" }) } else { '- No recommendations were recorded.' }),
+        '',
+        '## Package Notes',
         '',
         'Artifacts in this package were rendered from the saved Ranger manifest. No live discovery is required to rerender reports or diagrams.'
     ) -join [Environment]::NewLine | Set-Content -Path $path -Encoding UTF8

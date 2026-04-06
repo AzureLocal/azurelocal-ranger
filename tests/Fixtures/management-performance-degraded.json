@@ -1,0 +1,147 @@
+{
+  "Status": "partial",
+  "Domains": {
+    "managementTools": {
+      "tools": [
+        {
+          "name": "ServerManagementGateway",
+          "displayName": "Windows Admin Center",
+          "status": "Running",
+          "startType": "Automatic"
+        },
+        {
+          "name": "HealthService",
+          "displayName": "Microsoft Monitoring Agent",
+          "status": "Stopped",
+          "startType": "Automatic"
+        }
+      ],
+      "agents": [
+        {
+          "name": "ServerManagementGateway",
+          "displayName": "Windows Admin Center",
+          "status": "Running",
+          "startType": "Automatic"
+        }
+      ],
+      "summary": {
+        "totalServices": 2,
+        "runningServices": 1,
+        "serviceNames": [
+          {
+            "name": "HealthService",
+            "count": 1
+          },
+          {
+            "name": "ServerManagementGateway",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "performance": {
+      "nodes": [
+        "azl-node-01"
+      ],
+      "compute": [
+        {
+          "node": "azl-node-01",
+          "metrics": {
+            "cpuUtilizationPercent": 92,
+            "availableMemoryMb": 32768,
+            "totalMemoryMb": 524288
+          }
+        }
+      ],
+      "storage": [
+        {
+          "node": "azl-node-01",
+          "metrics": [
+            {
+              "name": "C:",
+              "percentFreeSpace": 17,
+              "avgDiskSecPerTransfer": 14,
+              "diskTransfersPerSec": 740
+            }
+          ]
+        }
+      ],
+      "networking": [
+        {
+          "node": "azl-node-01",
+          "metrics": [
+            {
+              "name": "Mellanox ConnectX",
+              "bytesTotalPersec": 31457280,
+              "currentBandwidth": 100000000000
+            }
+          ]
+        }
+      ],
+      "outliers": [
+        {
+          "node": "azl-node-01",
+          "cpuUtilizationPercent": 92
+        }
+      ],
+      "events": [
+        {
+          "node": "azl-node-01",
+          "values": [
+            {
+              "timeCreated": "2026-04-06T12:03:00Z",
+              "id": 7036,
+              "levelDisplayName": "Warning",
+              "providerName": "Service Control Manager"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "averageCpuUtilizationPercent": 92,
+        "averageAvailableMemoryMb": 32768,
+        "runningManagementServices": 1,
+        "toolNames": [
+          {
+            "name": "HealthService",
+            "count": 1
+          },
+          {
+            "name": "ServerManagementGateway",
+            "count": 1
+          }
+        ],
+        "highCpuNodes": 1,
+        "eventSeverities": [
+          {
+            "name": "Warning",
+            "count": 1
+          }
+        ]
+      }
+    }
+  },
+  "Findings": [
+    {
+      "severity": "warning",
+      "title": "Compute baseline indicates high sustained CPU on one or more nodes",
+      "description": "The performance baseline returned total CPU values above 85 percent for at least one node.",
+      "affectedComponents": [
+        "azl-node-01"
+      ],
+      "currentState": "performance outlier",
+      "recommendation": "Validate whether the baseline was captured during an expected workload peak or whether capacity and placement need review."
+    },
+    {
+      "severity": "warning",
+      "title": "HealthService is not running on one or more nodes",
+      "description": "Management tooling inventory found the Windows Admin Center or Azure Local health service stopped on at least one node.",
+      "affectedComponents": [
+        "Microsoft Monitoring Agent"
+      ],
+      "currentState": "management service stopped",
+      "recommendation": "Review service health, dependent agents, and management-plane readiness before using the environment for operational handoff."
+    }
+  ],
+  "Relationships": []
+}

@@ -137,6 +137,43 @@ function Resolve-RangerCredentialDefinition {
     return $null
 }
 
+function Resolve-RangerAzureCredentialSettings {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Config,
+
+        [switch]$SkipSecretResolution
+    )
+
+    $settings = if ($Config.credentials.azure) { ConvertTo-RangerHashtable -InputObject $Config.credentials.azure } else { [ordered]@{} }
+    if (-not $settings.method) {
+        $settings.method = 'existing-context'
+    }
+
+    if (-not $settings.Contains('tenantId') -and -not [string]::IsNullOrWhiteSpace($Config.targets.azure.tenantId)) {
+        $settings.tenantId = $Config.targets.azure.tenantId
+    }
+
+    if (-not $settings.Contains('subscriptionId') -and -not [string]::IsNullOrWhiteSpace($Config.targets.azure.subscriptionId)) {
+        $settings.subscriptionId = $Config.targets.azure.subscriptionId
+    }
+
+    if (-not $settings.Contains('useAzureCliFallback')) {
+        $settings.useAzureCliFallback = $true
+    }
+
+    if (-not $SkipSecretResolution) {
+        if ($settings.clientSecretRef) {
+            $settings.clientSecretSecureString = Get-RangerSecretFromUri -Uri $settings.clientSecretRef
+        }
+        elseif ($settings.clientSecret) {
+            $settings.clientSecretSecureString = ConvertTo-SecureString -String ([string]$settings.clientSecret) -AsPlainText -Force
+        }
+    }
+
+    return $settings
+}
+
 function Resolve-RangerCredentialMap {
     param(
         [Parameter(Mandatory = $true)]
@@ -148,7 +185,7 @@ function Resolve-RangerCredentialMap {
     $allowPrompt = [bool]$Config.behavior.promptForMissingCredentials
     $overrides = if ($Overrides) { $Overrides } else { @{} }
     [ordered]@{
-        azure    = ConvertTo-RangerHashtable -InputObject $Config.credentials.azure
+        azure    = Resolve-RangerAzureCredentialSettings -Config $Config
         cluster  = Resolve-RangerCredentialDefinition -Name 'cluster' -CredentialBlock $Config.credentials.cluster -OverrideCredential $overrides.cluster -AllowPrompt $allowPrompt
         domain   = Resolve-RangerCredentialDefinition -Name 'domain' -CredentialBlock $Config.credentials.domain -OverrideCredential $overrides.domain -AllowPrompt $allowPrompt
         bmc      = Resolve-RangerCredentialDefinition -Name 'bmc' -CredentialBlock $Config.credentials.bmc -OverrideCredential $overrides.bmc -AllowPrompt $allowPrompt

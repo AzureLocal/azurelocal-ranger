@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "1.1.0-draft",
+  "requiredTopLevelKeys": [
+    "run",
+    "target",
+    "topology",
+    "collectors",
+    "domains",
+    "relationships",
+    "findings",
+    "artifacts",
+    "evidence"
+  ],
+  "requiredRunKeys": [
+    "toolVersion",
+    "schemaVersion",
+    "startTimeUtc",
+    "mode",
+    "selectedCollectors"
+  ],
+  "collectorStatuses": [
+    "success",
+    "partial",
+    "failed",
+    "skipped",
+    "not-applicable"
+  ],
+  "reservedDomains": [
+    "clusterNode",
+    "hardware",
+    "storage",
+    "networking",
+    "virtualMachines",
+    "identitySecurity",
+    "azureIntegration",
+    "monitoring",
+    "managementTools",
+    "performance",
+    "oemIntegration"
+  ]
+}

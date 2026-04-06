@@ -19,7 +19,7 @@ function Invoke-RangerMonitoringCollector {
     }
 
     $azureResources = @(
-        Get-RangerAzureResources -Config $Config
+        Get-RangerAzureResources -Config $Config -AzureCredentialSettings $CredentialMap.azure
     )
 
     $healthSnapshots = @(
@@ -40,10 +40,23 @@ function Invoke-RangerMonitoringCollector {
     $telemetry = @($azureResources | Where-Object { $_.Name -match 'Telemetry|Diagnostics|HCIInsights' -or $_.ResourceType -match 'insights|operationalinsights' })
     $alerts = @($azureResources | Where-Object { $_.ResourceType -match 'actionGroups|scheduledQueryRules|alertrules' })
     $updateManager = @($azureResources | Where-Object { $_.ResourceType -match 'maintenance|update' })
+    $monitoringSummary = [ordered]@{
+        telemetryCount    = @($telemetry).Count
+        amaCount          = @($ama).Count
+        dcrCount          = @($dcr).Count
+        dceCount          = @($dce).Count
+        alertCount        = @($alerts).Count
+        updateManagerCount = @($updateManager).Count
+        healthServiceRunningNodes = @($healthSnapshots | Where-Object { $_.healthService.Status -eq 'Running' }).Count
+    }
 
     $findings = New-Object System.Collections.ArrayList
     if ($ama.Count -eq 0 -and $dcr.Count -eq 0) {
         [void]$findings.Add((New-RangerFinding -Severity warning -Title 'Minimal Azure monitoring evidence detected' -Description 'The monitoring collector did not find Azure Monitor Agent or Data Collection Rule resources in the configured resource group.' -CurrentState 'monitoring partially configured' -Recommendation 'Review Azure Monitor onboarding, DCR assignments, and resource-group scoping for the Azure Local environment.'))
+    }
+
+    if ($alerts.Count -eq 0) {
+        [void]$findings.Add((New-RangerFinding -Severity informational -Title 'No alerting artifacts were discovered in the scoped Azure resources' -Description 'The monitoring collector found no Azure Monitor alert rule or action group resources for the configured resource group.' -CurrentState 'alert inventory empty' -Recommendation 'Confirm whether alerting is intentionally managed elsewhere or whether resource-group scoping needs to be widened.'))
     }
 
     return @{
@@ -57,6 +70,8 @@ function Invoke-RangerMonitoringCollector {
                 insights  = ConvertTo-RangerHashtable -InputObject @($azureResources | Where-Object { $_.ResourceType -match 'operationalinsights|insights' })
                 alerts    = ConvertTo-RangerHashtable -InputObject $alerts
                 health    = ConvertTo-RangerHashtable -InputObject $healthSnapshots
+                updateManager = ConvertTo-RangerHashtable -InputObject $updateManager
+                summary   = $monitoringSummary
             }
         }
         Findings      = @($findings)

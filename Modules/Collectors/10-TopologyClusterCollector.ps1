@@ -54,6 +54,13 @@ function Invoke-RangerTopologyClusterCollector {
                 @()
             }
 
+            $groups = if (Get-Command -Name Get-ClusterGroup -ErrorAction SilentlyContinue) {
+                Get-ClusterGroup | Select-Object Name, GroupType, State, OwnerNode
+            }
+            else {
+                @()
+            }
+
             $cau = if (Get-Command -Name Get-CauClusterRole -ErrorAction SilentlyContinue) {
                 Get-CauClusterRole | Select-Object ClusterName, MaxRetriesPerNode, RequireAllNodesOnline, StartDate, DaysOfWeek
             }
@@ -66,14 +73,32 @@ function Invoke-RangerTopologyClusterCollector {
                 @()
             }
 
+            $release = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -ErrorAction SilentlyContinue
+            $licensing = Get-CimInstance -ClassName SoftwareLicensingProduct -ErrorAction SilentlyContinue |
+                Where-Object { $_.PartialProductKey -and $_.Name -match 'Windows' } |
+                Select-Object -First 5 Name, Description, LicenseStatus, GracePeriodRemaining
+            $validationReports = Get-ChildItem -Path (Join-Path $env:SystemRoot 'Cluster\Reports') -Filter '*Test*.htm*' -ErrorAction SilentlyContinue |
+                Sort-Object -Property LastWriteTime -Descending |
+                Select-Object -First 5 Name, FullName, LastWriteTime, Length
+            $lifecycleServices = @(
+                foreach ($serviceName in @('CauService', '*Lifecycle*', '*LCM*')) {
+                    Get-Service -Name $serviceName -ErrorAction SilentlyContinue | Select-Object Name, DisplayName, Status, StartType
+                }
+            )
+
             [ordered]@{
                 cluster      = $cluster
                 quorum       = $quorum
                 faultDomains = @($faultDomains)
                 networks     = @($networks)
                 csvs         = @($csvs)
+                groups       = @($groups)
                 cau          = $cau
                 events       = @($events)
+                release      = $release
+                licensing    = @($licensing)
+                validationReports = @($validationReports)
+                lifecycleServices = @($lifecycleServices)
             }
         }
     }
@@ -84,6 +109,7 @@ function Invoke-RangerTopologyClusterCollector {
                 $operatingSystem = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue
                 $computerSystem = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue
                 $bios = Get-CimInstance -ClassName Win32_BIOS -ErrorAction SilentlyContinue
+                $processors = Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue
                 $clusterNodeState = if (Get-Command -Name Get-ClusterNode -ErrorAction SilentlyContinue) {
                     (Get-ClusterNode -Name $env:COMPUTERNAME -ErrorAction SilentlyContinue).State
                 }
@@ -98,6 +124,8 @@ function Invoke-RangerTopologyClusterCollector {
                     lastBootUpTime = $operatingSystem.LastBootUpTime
                     manufacturer   = $computerSystem.Manufacturer
                     model          = $computerSystem.Model
+                    totalMemoryGiB = if ($computerSystem.TotalPhysicalMemory) { ConvertTo-RangerGiB -Value $computerSystem.TotalPhysicalMemory } else { $null }
+                    logicalProcessorCount = @($processors | ForEach-Object { $_.NumberOfLogicalProcessors } | Measure-Object -Sum).Sum
                     partOfDomain   = [bool]$computerSystem.PartOfDomain
                     domain         = $computerSystem.Domain
                     biosVersion    = if ($bios) { @($bios.SMBIOSBIOSVersion) -join ', ' } else { $null }
@@ -110,11 +138,28 @@ function Invoke-RangerTopologyClusterCollector {
         throw 'Cluster topology collector could not gather any usable data.'
     }
 
-    $deploymentType = if (-not [string]::IsNullOrWhiteSpace((Get-RangerHintValue -Config $Config -Name 'deploymentType'))) { [string](Get-RangerHintValue -Config $Config -Name 'deploymentType') } elseif ($clusterSnapshot.networks.Count -le 1) { 'switchless' } else { 'hyperconverged' }
+    if (-not $clusterSnapshot) {
+        $clusterSnapshot = [ordered]@{
+            cluster      = [ordered]@{}
+            quorum       = [ordered]@{}
+            faultDomains = @()
+            networks     = @()
+            csvs         = @()
+            groups       = @()
+            cau          = $null
+            events       = @()
+            release      = [ordered]@{}
+            licensing    = @()
+            validationReports = @()
+            lifecycleServices = @()
+        }
+    }
+
+    $deploymentType = if (-not [string]::IsNullOrWhiteSpace((Get-RangerHintValue -Config $Config -Name 'deploymentType'))) { [string](Get-RangerHintValue -Config $Config -Name 'deploymentType') } elseif (@($clusterSnapshot.networks).Count -le 1) { 'switchless' } else { 'hyperconverged' }
     $identityMode = if (-not [string]::IsNullOrWhiteSpace((Get-RangerHintValue -Config $Config -Name 'identityMode'))) { [string](Get-RangerHintValue -Config $Config -Name 'identityMode') } elseif (@($nodeSnapshots | Where-Object { -not $_.partOfDomain }).Count -gt 0) { 'local-key-vault' } else { 'ad' }
     $controlPlaneMode = if (-not [string]::IsNullOrWhiteSpace((Get-RangerHintValue -Config $Config -Name 'controlPlaneMode'))) { [string](Get-RangerHintValue -Config $Config -Name 'controlPlaneMode') } elseif ([string]::IsNullOrWhiteSpace($Config.targets.azure.subscriptionId)) { 'disconnected' } else { 'connected' }
     $storageArchitecture = if ($clusterSnapshot.cluster.S2DEnabled) { 'storage-spaces-direct' } else { 'shared-storage' }
-    $networkArchitecture = if ($clusterSnapshot.networks.Count -le 1) { 'switchless' } else { 'switched' }
+    $networkArchitecture = if (@($clusterSnapshot.networks).Count -le 1) { 'switchless' } else { 'switched' }
     $variantMarkers = @()
     if ($deploymentType -eq 'switchless') { $variantMarkers += 'switchless' }
     if ($identityMode -eq 'local-key-vault') { $variantMarkers += 'local-identity' }
@@ -126,9 +171,42 @@ function Invoke-RangerTopologyClusterCollector {
         unhealthy    = @($nodeSnapshots | Where-Object { $_.state -ne 'Up' }).Count
     }
 
+    $nodeSummary = [ordered]@{
+        manufacturers       = @(Get-RangerGroupedCount -Items $nodeSnapshots -PropertyName 'manufacturer')
+        models              = @(Get-RangerGroupedCount -Items $nodeSnapshots -PropertyName 'model')
+        totalMemoryGiB      = [math]::Round((@($nodeSnapshots | Where-Object { $null -ne $_.totalMemoryGiB } | Measure-Object -Property totalMemoryGiB -Sum).Sum), 2)
+        totalLogicalCpu     = @($nodeSnapshots | Where-Object { $null -ne $_.logicalProcessorCount } | Measure-Object -Property logicalProcessorCount -Sum).Sum
+        domainJoinedNodes   = @($nodeSnapshots | Where-Object { $_.partOfDomain }).Count
+        localIdentityNodes  = @($nodeSnapshots | Where-Object { -not $_.partOfDomain }).Count
+    }
+
+    $faultDomainSummary = [ordered]@{
+        count     = @($clusterSnapshot.faultDomains).Count
+        byType    = @(Get-RangerGroupedCount -Items $clusterSnapshot.faultDomains -PropertyName 'FaultDomainType')
+        locations = @(Get-RangerGroupedCount -Items $clusterSnapshot.faultDomains -PropertyName 'Location')
+    }
+
+    $networkSummary = [ordered]@{
+        clusterNetworkCount = @($clusterSnapshot.networks).Count
+        byRole              = @(Get-RangerGroupedCount -Items $clusterSnapshot.networks -PropertyName 'Role')
+        switched            = @($clusterSnapshot.networks).Count -gt 1
+    }
+
     $findings = New-Object System.Collections.ArrayList
     if ($healthSummary.unhealthy -gt 0) {
         [void]$findings.Add((New-RangerFinding -Severity warning -Title 'One or more cluster nodes are not up' -Description 'The cluster foundation collector detected nodes that were not in the Up state.' -AffectedComponents (@($nodeSnapshots | Where-Object { $_.state -ne 'Up' } | ForEach-Object { $_.name })) -CurrentState "$($healthSummary.unhealthy) nodes not up" -Recommendation 'Review cluster membership, maintenance state, and failover clustering health.'))
+    }
+
+    if (@($clusterSnapshot.faultDomains).Count -eq 0) {
+        [void]$findings.Add((New-RangerFinding -Severity informational -Title 'No cluster fault domains were discovered' -Description 'Ranger did not find rack or site-oriented fault domain metadata in the cluster snapshot.' -CurrentState 'fault-domain metadata absent' -Recommendation 'Confirm whether fault domains are intentionally not modeled or whether additional cluster foundation metadata should be configured.'))
+    }
+
+    if (-not $clusterSnapshot.cau) {
+        [void]$findings.Add((New-RangerFinding -Severity informational -Title 'Cluster-Aware Updating role was not detected' -Description 'The collector did not find a Cluster-Aware Updating role in the sampled cluster state.' -CurrentState 'cau not detected' -Recommendation 'Confirm whether Cluster-Aware Updating is intentionally unmanaged or whether update orchestration data needs to be collected another way.'))
+    }
+
+    if (@($clusterSnapshot.validationReports).Count -eq 0) {
+        [void]$findings.Add((New-RangerFinding -Severity informational -Title 'No recent cluster validation reports were discovered' -Description 'The collector did not find recent Test-Cluster style report artifacts in the cluster reports folder.' -CurrentState 'validation history not discovered' -Recommendation 'If validation reports exist elsewhere, record that evidence path; otherwise consider capturing a fresh validation run for formal handoff material.'))
     }
 
     if ($controlPlaneMode -eq 'disconnected') {
@@ -155,15 +233,28 @@ function Invoke-RangerTopologyClusterCollector {
                     s2dEnabled            = $clusterSnapshot.cluster.S2DEnabled
                     dynamicQuorum         = $clusterSnapshot.cluster.DynamicQuorum
                     registrationConfigured = -not [string]::IsNullOrWhiteSpace($Config.targets.azure.subscriptionId)
+                    productName           = $clusterSnapshot.release.ProductName
+                    displayVersion        = $clusterSnapshot.release.DisplayVersion
+                    releaseId             = $clusterSnapshot.release.ReleaseId
+                    currentBuild          = $clusterSnapshot.release.CurrentBuild
+                    editionId             = $clusterSnapshot.release.EditionID
+                    installationType      = $clusterSnapshot.release.InstallationType
+                    operatingModel        = [ordered]@{ deploymentType = $deploymentType; identityMode = $identityMode; controlPlaneMode = $controlPlaneMode }
+                    registration          = [ordered]@{ subscriptionId = $Config.targets.azure.subscriptionId; resourceGroup = $Config.targets.azure.resourceGroup; tenantId = $Config.targets.azure.tenantId }
+                    licensing             = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.licensing
                 }
                 nodes         = @($nodeSnapshots)
                 quorum        = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.quorum
                 faultDomains  = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.faultDomains
                 networks      = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.networks
+                roles         = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.groups
                 csvSummary    = [ordered]@{ count = @($clusterSnapshot.csvs).Count; items = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.csvs }
-                updatePosture = [ordered]@{ clusterAwareUpdating = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.cau }
+                updatePosture = [ordered]@{ clusterAwareUpdating = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.cau; lifecycleServices = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.lifecycleServices; validationReports = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.validationReports }
                 eventSummary  = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.events
                 healthSummary = $healthSummary
+                nodeSummary   = $nodeSummary
+                faultDomainSummary = $faultDomainSummary
+                networkSummary = $networkSummary
             }
         }
         Findings      = @($findings)

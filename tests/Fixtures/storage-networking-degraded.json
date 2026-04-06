@@ -1,0 +1,222 @@
+{
+  "Status": "partial",
+  "Domains": {
+    "storage": {
+      "pools": [
+        {
+          "friendlyName": "S2D on azlocal-prod-01",
+          "healthStatus": "Warning",
+          "operationalStatus": "Degraded",
+          "size": 8796093022208,
+          "allocatedSize": 6597069766656,
+          "isPrimordial": false
+        }
+      ],
+      "physicalDisks": [
+        {
+          "friendlyName": "Disk01",
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "mediaType": "SSD",
+          "size": 1920397905920,
+          "usage": "AutoSelect"
+        },
+        {
+          "friendlyName": "Disk02",
+          "healthStatus": "Warning",
+          "operationalStatus": "Lost Communication",
+          "mediaType": "SSD",
+          "size": 1920397905920,
+          "usage": "Retired"
+        }
+      ],
+      "virtualDisks": [
+        {
+          "friendlyName": "Volume1",
+          "healthStatus": "Warning",
+          "operationalStatus": "Degraded",
+          "resiliencySettingName": "Mirror",
+          "size": 2199023255552
+        }
+      ],
+      "volumes": [
+        {
+          "driveLetter": "C",
+          "fileSystemLabel": "System",
+          "fileSystem": "NTFS",
+          "healthStatus": "Healthy",
+          "sizeRemaining": 268435456000,
+          "size": 1073741824000
+        }
+      ],
+      "csvs": [
+        {
+          "name": "Cluster Virtual Disk (Volume1)",
+          "state": "RedirectedAccess",
+          "ownerNode": "azl-node-01"
+        }
+      ],
+      "qos": [],
+      "sofs": [],
+      "replica": [],
+      "summary": {
+        "poolCount": 1,
+        "physicalDiskCount": 2,
+        "virtualDiskCount": 1,
+        "volumeCount": 1,
+        "csvCount": 1,
+        "totalPoolCapacityGiB": 8192,
+        "allocatedPoolCapacityGiB": 6144,
+        "diskMediaTypes": [
+          {
+            "name": "SSD",
+            "count": 2
+          }
+        ],
+        "unhealthyDisks": 1
+      }
+    },
+    "networking": {
+      "nodes": [
+        {
+          "node": "azl-node-01",
+          "adapters": [
+            {
+              "name": "NIC1",
+              "interfaceDescription": "Mellanox ConnectX",
+              "status": "Down",
+              "linkSpeed": "100 Gbps"
+            }
+          ],
+          "vSwitches": [
+            {
+              "name": "ConvergedSwitch",
+              "switchType": "External",
+              "allowManagementOS": true
+            }
+          ],
+          "hostVirtualNics": [
+            {
+              "name": "vNIC-Management",
+              "switchName": "ConvergedSwitch",
+              "status": "Degraded"
+            }
+          ],
+          "intents": [],
+          "dns": [
+            {
+              "interfaceAlias": "vNIC-Management",
+              "serverAddresses": [
+                "10.10.10.10"
+              ]
+            }
+          ],
+          "proxy": "http://proxy.contoso.com:8080",
+          "firewall": [
+            {
+              "name": "Public",
+              "enabled": true,
+              "defaultInboundAction": "Block"
+            }
+          ],
+          "sdn": []
+        }
+      ],
+      "clusterNetworks": [
+        {
+          "name": "Management",
+          "role": 3,
+          "address": "10.10.10.0",
+          "addressMask": "255.255.255.0",
+          "state": 2
+        }
+      ],
+      "adapters": [
+        {
+          "name": "NIC1",
+          "status": "Down",
+          "linkSpeed": "100 Gbps"
+        }
+      ],
+      "vSwitches": [
+        {
+          "name": "ConvergedSwitch",
+          "switchType": "External"
+        }
+      ],
+      "hostVirtualNics": [
+        {
+          "name": "vNIC-Management",
+          "switchName": "ConvergedSwitch",
+          "status": "Degraded"
+        }
+      ],
+      "intents": [],
+      "dns": [
+        {
+          "interfaceAlias": "vNIC-Management",
+          "serverAddresses": [
+            "10.10.10.10"
+          ]
+        }
+      ],
+      "proxy": [
+        {
+          "node": "azl-node-01",
+          "value": "http://proxy.contoso.com:8080"
+        }
+      ],
+      "firewall": [
+        {
+          "node": "azl-node-01",
+          "profiles": [
+            {
+              "name": "Public",
+              "enabled": true,
+              "defaultInboundAction": "Block"
+            }
+          ]
+        }
+      ],
+      "sdn": [],
+      "summary": {
+        "nodeCount": 1,
+        "clusterNetworkCount": 1,
+        "adapterCount": 1,
+        "adapterStates": [
+          {
+            "name": "Down",
+            "count": 1
+          }
+        ],
+        "vSwitchCount": 1,
+        "intentCount": 0,
+        "dnsServers": [
+          "10.10.10.10"
+        ],
+        "proxyConfiguredNodes": 1,
+        "sdnControllerCount": 0
+      }
+    }
+  },
+  "Findings": [
+    {
+      "severity": "warning",
+      "title": "Physical disks report a non-healthy state",
+      "description": "The storage collector found one or more disks that were not healthy.",
+      "affectedComponents": [
+        "Disk02"
+      ],
+      "currentState": "1 unhealthy disks",
+      "recommendation": "Inspect failed or degraded disks and review Storage Spaces Direct health before generating an as-built handoff."
+    },
+    {
+      "severity": "informational",
+      "title": "No Network ATC intents were detected",
+      "description": "The networking collector did not find Network ATC intent metadata in the sampled node inventory.",
+      "currentState": "network intent metadata absent",
+      "recommendation": "Confirm whether Network ATC is intentionally unused or whether the networking inventory needs additional permissions or modules."
+    }
+  ],
+  "Relationships": []
+}

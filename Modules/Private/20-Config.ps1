@@ -29,7 +29,8 @@ function Get-RangerDefaultConfig {
         }
         credentials = [ordered]@{
             azure = [ordered]@{
-                method = 'existing-context'
+                method             = 'existing-context'
+                useAzureCliFallback = $true
             }
             cluster = [ordered]@{
                 username    = 'CONTOSO\ranger-read'
@@ -305,6 +306,33 @@ function Test-RangerConfiguration {
         $errors.Add("Output mode '$($Config.output.mode)' is not supported.")
     }
 
+    $supportedFormats = @('html', 'markdown', 'md', 'svg', 'drawio', 'xml', 'json')
+    foreach ($format in @($Config.output.formats)) {
+        if ($format -notin $supportedFormats) {
+            $errors.Add("Output format '$format' is not supported.")
+        }
+    }
+
+    $azureSettings = Resolve-RangerAzureCredentialSettings -Config $Config -SkipSecretResolution
+    $supportedAzureMethods = @('existing-context', 'managed-identity', 'device-code', 'service-principal', 'azure-cli')
+    if ($azureSettings.method -notin $supportedAzureMethods) {
+        $errors.Add("Azure credential method '$($azureSettings.method)' is not supported.")
+    }
+
+    if ($azureSettings.method -eq 'service-principal') {
+        if ([string]::IsNullOrWhiteSpace($azureSettings.clientId)) {
+            $errors.Add('Azure service-principal authentication requires credentials.azure.clientId.')
+        }
+
+        if ([string]::IsNullOrWhiteSpace($azureSettings.tenantId)) {
+            $errors.Add('Azure service-principal authentication requires a tenantId in targets.azure or credentials.azure.')
+        }
+
+        if ([string]::IsNullOrWhiteSpace($Config.credentials.azure.clientSecret) -and [string]::IsNullOrWhiteSpace($Config.credentials.azure.clientSecretRef)) {
+            $errors.Add('Azure service-principal authentication requires credentials.azure.clientSecret or credentials.azure.clientSecretRef.')
+        }
+    }
+
     foreach ($credentialName in @('cluster', 'domain', 'bmc', 'firewall', 'switch')) {
         $credentialBlock = $Config.credentials[$credentialName]
         if ($credentialBlock -and $credentialBlock.passwordRef) {
@@ -329,6 +357,10 @@ function Test-RangerConfiguration {
                 }
             }
         }
+    }
+
+    if ($azureSettings.method -eq 'azure-cli' -and -not [bool]$Config.credentials.azure.useAzureCliFallback) {
+        $warnings.Add('Azure CLI authentication was selected without CLI fallback enabled; Azure resource enumeration may be incomplete.')
     }
 
     $result = [ordered]@{

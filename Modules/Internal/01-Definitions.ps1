@@ -1,5 +1,5 @@
 function Get-RangerManifestSchemaVersion {
-    '1.0.0-draft'
+    '1.1.0-draft'
 }
 
 function Get-RangerCollectorDefinitions {
@@ -92,14 +92,20 @@ function Get-RangerReservedDomainPayloads {
             quorum        = [ordered]@{}
             faultDomains  = @()
             networks      = @()
+            roles         = @()
             csvSummary    = [ordered]@{}
             updatePosture = [ordered]@{}
             eventSummary  = @()
             healthSummary = [ordered]@{}
+            nodeSummary   = [ordered]@{}
+            faultDomainSummary = [ordered]@{}
+            networkSummary = [ordered]@{}
         }
         hardware = [ordered]@{
             nodes   = @()
             summary = [ordered]@{}
+            firmware = [ordered]@{}
+            security = [ordered]@{}
         }
         storage = [ordered]@{
             pools         = @()
@@ -110,6 +116,7 @@ function Get-RangerReservedDomainPayloads {
             qos           = @()
             sofs          = @()
             replica       = @()
+            summary       = [ordered]@{}
         }
         networking = [ordered]@{
             nodes           = @()
@@ -122,11 +129,14 @@ function Get-RangerReservedDomainPayloads {
             proxy           = @()
             firewall        = @()
             sdn             = @()
+            summary         = [ordered]@{}
         }
         virtualMachines = [ordered]@{
             inventory       = @()
             placement       = @()
             workloadFamilies = @()
+            replication     = @()
+            summary         = [ordered]@{}
         }
         identitySecurity = [ordered]@{
             nodes        = @()
@@ -134,6 +144,7 @@ function Get-RangerReservedDomainPayloads {
             posture      = @()
             localAdmins  = @()
             auditPolicy  = @()
+            summary      = [ordered]@{}
         }
         azureIntegration = [ordered]@{
             context   = [ordered]@{}
@@ -143,6 +154,10 @@ function Get-RangerReservedDomainPayloads {
             backup    = @()
             update    = @()
             cost      = @()
+            resourceSummary = [ordered]@{}
+            resourceLocations = @()
+            policySummary = [ordered]@{}
+            auth = [ordered]@{}
         }
         monitoring = [ordered]@{
             telemetry = @()
@@ -152,10 +167,13 @@ function Get-RangerReservedDomainPayloads {
             insights  = @()
             alerts    = @()
             health    = @()
+            updateManager = @()
+            summary   = [ordered]@{}
         }
         managementTools = [ordered]@{
             tools  = @()
             agents = @()
+            summary = [ordered]@{}
         }
         performance = [ordered]@{
             nodes      = @()
@@ -163,6 +181,8 @@ function Get-RangerReservedDomainPayloads {
             storage    = @()
             networking = @()
             outliers   = @()
+            events     = @()
+            summary    = [ordered]@{}
         }
         oemIntegration = [ordered]@{
             endpoints         = @()
@@ -197,7 +217,7 @@ function Get-RangerDiagramDefinitions {
         [pscustomobject][ordered]@{ Name = 'backup-recovery-map'; Title = 'Backup, Recovery, and Continuity Map'; Tier = 'extended'; Required = @('azureIntegration'); Audience = @('executive', 'management', 'technical') }
         [pscustomobject][ordered]@{ Name = 'management-plane-tooling'; Title = 'Management Plane and Tooling Map'; Tier = 'extended'; Required = @('managementTools'); Audience = @('management', 'technical') }
         [pscustomobject][ordered]@{ Name = 'workload-family-placement'; Title = 'Workload Family Placement Map'; Tier = 'extended'; Required = @('virtualMachines'); Audience = @('management', 'technical') }
-        [pscustomobject][ordered]@{ Name = 'fabric-map'; Title = 'Multi-Rack or Rack-Aware Fabric Map'; Tier = 'extended'; Required = @('clusterNode', 'networking'); Audience = @('management', 'technical') }
+        [pscustomobject][ordered]@{ Name = 'fabric-map'; Title = 'Rack-Aware Fabric Map'; Tier = 'extended'; Required = @('clusterNode', 'networking'); Audience = @('management', 'technical') }
         [pscustomobject][ordered]@{ Name = 'disconnected-control-plane'; Title = 'Disconnected Operations Control Plane Map'; Tier = 'extended'; Required = @('azureIntegration', 'identitySecurity'); Audience = @('management', 'technical') }
     )
 }

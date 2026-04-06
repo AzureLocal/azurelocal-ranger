@@ -36,4 +36,38 @@ Describe 'Azure Local Ranger configuration helpers' {
         $created.FullName | Should -Be $path
         Test-Path -Path $path | Should -BeTrue
     }
+
+    It 'rejects incomplete Azure service principal configuration' {
+        $config = InModuleScope AzureLocalRanger {
+            Get-RangerDefaultConfig
+        }
+
+        $config.credentials.azure.method = 'service-principal'
+        $config.credentials.azure.clientId = '11111111-1111-1111-1111-111111111111'
+        $config.targets.azure.tenantId = ''
+        $config.credentials.azure.clientSecret = ''
+
+        InModuleScope AzureLocalRanger {
+            param($TestConfig)
+
+            $result = Test-RangerConfiguration -Config $TestConfig -PassThru
+            $result.IsValid | Should -BeFalse
+            ($result.Errors -join ' ') | Should -Match 'service-principal authentication requires'
+        } -Parameters @{ TestConfig = $config }
+    }
+
+    It 'resolves Azure credential settings from config defaults' {
+        $config = InModuleScope AzureLocalRanger {
+            Get-RangerDefaultConfig
+        }
+
+        InModuleScope AzureLocalRanger {
+            param($TestConfig)
+
+            $settings = Resolve-RangerAzureCredentialSettings -Config $TestConfig -SkipSecretResolution
+            $settings.method | Should -Be 'existing-context'
+            $settings.subscriptionId | Should -Be $TestConfig.targets.azure.subscriptionId
+            $settings.useAzureCliFallback | Should -BeTrue
+        } -Parameters @{ TestConfig = $config }
+    }
 }

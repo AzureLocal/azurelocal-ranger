@@ -52,4 +52,61 @@ Describe 'Azure Local Ranger runtime' {
         $result.SelectedCollectors | Should -Contain 'monitoring-observability'
         $result.SelectedCollectors | Should -Contain 'management-performance'
     }
+
+    It 'validates manifests against the standalone schema contract' {
+        $config = InModuleScope AzureLocalRanger {
+            Get-RangerDefaultConfig
+        }
+
+        $config.output.rootPath = Join-Path $TestDrive 'schema-artifacts'
+        $config.behavior.promptForMissingCredentials = $false
+        $config.behavior.continueToRendering = $false
+        $config.credentials.cluster = $null
+        $config.credentials.domain = $null
+        $config.credentials.bmc = $null
+        $config.domains.hints.fixtures = [ordered]@{
+            'topology-cluster' = (Join-Path $fixtureRoot 'topology-cluster.json')
+            'hardware' = (Join-Path $fixtureRoot 'hardware.json')
+            'storage-networking' = (Join-Path $fixtureRoot 'storage-networking.json')
+            'workload-identity-azure' = (Join-Path $fixtureRoot 'workload-identity-azure.json')
+            'monitoring-observability' = (Join-Path $fixtureRoot 'monitoring-observability.json')
+            'management-performance' = (Join-Path $fixtureRoot 'management-performance.json')
+        }
+
+        $result = Invoke-AzureLocalRanger -ConfigObject $config -OutputPath (Join-Path $TestDrive 'schema-output') -NoRender
+        $result.ManifestSchema.IsValid | Should -BeTrue
+
+        InModuleScope AzureLocalRanger {
+            $contract = Get-RangerManifestSchemaContract
+            $contract.schemaVersion | Should -Be '1.1.0-draft'
+            @($contract.requiredTopLevelKeys).Count | Should -BeGreaterThan 5
+        }
+    }
+
+    It 'continues packaging when collectors return degraded fixture results' {
+        $config = InModuleScope AzureLocalRanger {
+            Get-RangerDefaultConfig
+        }
+
+        $config.output.rootPath = Join-Path $TestDrive 'degraded-artifacts'
+        $config.behavior.promptForMissingCredentials = $false
+        $config.behavior.continueToRendering = $false
+        $config.credentials.cluster = $null
+        $config.credentials.domain = $null
+        $config.credentials.bmc = $null
+        $config.domains.hints.fixtures = [ordered]@{
+            'topology-cluster' = (Join-Path $fixtureRoot 'topology-cluster.json')
+            'hardware' = (Join-Path $fixtureRoot 'hardware.json')
+            'storage-networking' = (Join-Path $fixtureRoot 'storage-networking-degraded.json')
+            'workload-identity-azure' = (Join-Path $fixtureRoot 'workload-identity-azure.json')
+            'monitoring-observability' = (Join-Path $fixtureRoot 'monitoring-observability.json')
+            'management-performance' = (Join-Path $fixtureRoot 'management-performance-degraded.json')
+        }
+
+        $result = Invoke-AzureLocalRanger -ConfigObject $config -OutputPath (Join-Path $TestDrive 'degraded-output') -NoRender
+        $result.Manifest.collectors['storage-networking'].status | Should -Be 'partial'
+        $result.Manifest.collectors['management-performance'].status | Should -Be 'partial'
+        @($result.Manifest.findings).Count | Should -BeGreaterThan 1
+        $result.ManifestSchema.IsValid | Should -BeTrue
+    }
 }

@@ -169,11 +169,14 @@ function Get-RangerAzureResources {
         [Parameter(Mandatory = $true)]
         [System.Collections.IDictionary]$Config,
 
+        $AzureCredentialSettings,
+
         [string[]]$ResourceTypes = @()
     )
 
     $resourceGroup = $Config.targets.azure.resourceGroup
-    $result = Invoke-RangerAzureQuery -AzureCredentialSettings $Config.credentials.azure -ArgumentList @($resourceGroup) -ScriptBlock {
+    $effectiveAzureSettings = if ($AzureCredentialSettings) { $AzureCredentialSettings } else { Resolve-RangerAzureCredentialSettings -Config $Config }
+    $result = Invoke-RangerAzureQuery -AzureCredentialSettings $effectiveAzureSettings -ArgumentList @($resourceGroup) -ScriptBlock {
         param($Rg)
 
         if (-not (Get-Command -Name Get-AzResource -ErrorAction SilentlyContinue)) {
@@ -189,6 +192,29 @@ function Get-RangerAzureResources {
     }
 
     $resources = @($result)
+    if ($resources.Count -eq 0 -and [bool]$effectiveAzureSettings.useAzureCliFallback -and -not [string]::IsNullOrWhiteSpace($resourceGroup) -and (Test-RangerAzureCliAuthenticated)) {
+        $cliArgs = @('resource', 'list', '--resource-group', $resourceGroup, '--output', 'json')
+        if ($effectiveAzureSettings.subscriptionId) {
+            $cliArgs += @('--subscription', $effectiveAzureSettings.subscriptionId)
+        }
+
+        $cliResult = & az @cliArgs 2>$null
+        if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace([string]$cliResult)) {
+            $resources = @(
+                ($cliResult | ConvertFrom-Json -Depth 100) | ForEach-Object {
+                    [ordered]@{
+                        Name              = $_.name
+                        ResourceType      = $_.type
+                        ResourceGroupName = $_.resourceGroup
+                        Location          = $_.location
+                        ResourceId        = $_.id
+                        Tags              = ConvertTo-RangerHashtable -InputObject $_.tags
+                    }
+                }
+            )
+        }
+    }
+
     if ($ResourceTypes.Count -eq 0) {
         return $resources
     }

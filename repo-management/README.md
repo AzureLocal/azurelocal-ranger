@@ -9,6 +9,7 @@ This folder documents how this repository is configured and how its automation w
 | [`setup.md`](setup.md) | Branch protection, labels, secrets, CODEOWNERS, and replication guide |
 | [`automation.md`](automation.md) | Every GitHub Actions workflow — what it does, when it runs, secrets required |
 | [`plans/`](plans/) | Working product plans and planning source material |
+| [`contracts/`](contracts/) | Machine-readable manifest and delivery contracts used by runtime validation |
 | [`reports/`](reports/) | Canonical internal trackers, audits, and implementation status material |
 | `scripts/` | Repo-management helper scripts |
 
@@ -18,3 +19,4 @@ This folder documents how this repository is configured and how its automation w
 - Repository standard: `azurelocal.github.io/.github/repo-standard.md`
 - Standards source: `azurelocal.github.io/standards/`
 - Repository management model: `azurelocal.github.io/standards/repository-management.mdx`
+- Post-v1 extension decisions: `repo-management/plans/post-v1-extension-decisions.md`
