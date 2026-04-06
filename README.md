@@ -1,8 +1,12 @@
 # Azure Local Ranger
 
+![Azure Local Ranger — Know your ground truth.](docs/assets/images/azurelocalranger-banner.svg)
+
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Docs: MkDocs Material](https://img.shields.io/badge/docs-MkDocs%20Material-0f766e)](docs/index.md)
 [![PowerShell: 7.x](https://img.shields.io/badge/PowerShell-7.x-3b82f6)](https://github.com/PowerShell/PowerShell)
+
+> *Know your ground truth.*
 
 Azure Local Ranger is a discovery, documentation, audit, and reporting solution for Azure Local.
 

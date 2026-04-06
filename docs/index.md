@@ -1,5 +1,9 @@
 # Azure Local Ranger
 
+![Azure Local Ranger — Know your ground truth.](assets/images/azurelocalranger-banner.svg)
+
+> *Know your ground truth.*
+
 Azure Local Ranger is a discovery, documentation, audit, and reporting solution for Azure Local.
 
 Its purpose is to document an Azure Local deployment as a complete system — the on-prem platform, the workloads running on it, and the Azure resources that represent, manage, monitor, or extend that deployment.
