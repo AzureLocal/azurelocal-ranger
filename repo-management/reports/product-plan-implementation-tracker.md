@@ -26,13 +26,13 @@ Current implementation validation used for this audit:
 
 | Item | Value |
 | --- | --- |
-| Commit | `907e69d` |
+| Commit | `a328016` (post-simulation) |
 | Test command | `Import-Module .\AzureLocalRanger.psd1 -Force; Invoke-Pester -Path .\tests -PassThru` |
-| Latest validated result | `12 passed, 0 failed` |
+| Latest validated result | `18 passed, 0 failed` |
 | Runtime/output issues | `#19`, `#22`, `#23`, `#24` closed after local completion and verification |
 | Discovery issues | `#9`, `#10`, `#11`, `#12`, `#16`, `#20`, `#21` closed after local completion and verification |
 | Post-v1 definition issues | `#13`, `#25`-`#33` closed after decision documentation was captured |
-| Remaining open issue | `#34` |
+| Remaining open issues | `#34` (live validation), `#36` (network device config import), `#37` (docs audit), `#38` (output templates) |
 
 ## Current Backlog State
 
@@ -40,7 +40,9 @@ Current implementation validation used for this audit:
 | --- | --- |
 | Non-live v1 implementation backlog | Complete and closed |
 | Post-v1 definition backlog | Documented, deferred, and closed as planning issues |
+| Simulation testing framework | Complete — 18/18 tests passing, IIC synthetic fixture committed |
 | Live validation backlog | Open in `#34` |
+| New feature backlog | `#36` network device config import, `#37` docs audit, `#38` output templates |
 
 ## Overall Audit
 
@@ -57,7 +59,7 @@ Current implementation validation used for this audit:
 | As-built mode | Richer formal handoff package from same discovery engine | Delivered for non-live scope | Mostly aligned | The shared pipeline and richer cached outputs are in place; live-estate proof still remains in `#34`. |
 | Report generation | 3 tiers, self-contained HTML and Markdown, findings, branding, TOC, deep audience-specific content | Delivered for non-live scope | Aligned | Reports now include richer readiness, topology, recommendation, and technical depth sections from cached manifests only; the remaining question is live-estate fidelity in `#34`. |
 | Diagram generation | Baseline plus extended catalog, selection rules, skip behavior, draw.io XML, richer environment diagrams | Delivered for non-live scope | Aligned | Diagram models now include richer domain-specific nodes, relationships, details, and extended output selection while remaining cached-manifest driven; live-estate correctness is still tracked in `#34`. |
-| Testing strategy | Collector isolation, integration coverage, cached-manifest output tests, schema boundary, degraded and skip behavior | Delivered for non-live scope | Aligned | The suite now covers standalone schema validation, degraded collector scenarios, cached outputs, and end-to-end fixture packaging. |
+| Testing strategy | Collector isolation, integration coverage, cached-manifest output tests, schema boundary, degraded and skip behavior | Delivered for non-live scope | Aligned | Suite now at 18 tests: schema validation, degraded scenarios, cached outputs, end-to-end fixture packaging, and 7 simulation tests against the IIC synthetic 3-node manifest in `as-built` mode. |
 | Documentation workstream | Public docs, operator docs, contributor docs, architecture docs, domain docs, output docs, diagrams | Delivered | Aligned | The docs foundation is present under `docs/`, including architecture, operator, contributor, outputs, and domain pages. |
 | Live environment proof | Real Azure Local validation, not just mocked and fixture validation | Not done in this session | Partial | Current validation is strong fixture-backed testing, but not live-estate execution. |
 
@@ -66,13 +68,13 @@ Current implementation validation used for this audit:
 | Domain | Plan Intent | Delivered Now | Status | Gap Against Full Plan |
 | --- | --- | --- | --- | --- |
 | Deployment topology and variant classification | Detect hyperconverged, switchless, local identity, disconnected, rack-aware, multi-rack and use it to drive behavior | Topology fields exist and drive outputs | Mostly aligned | Detection is still relatively simple and partly hint-driven; deep multi-rack and disconnected behavior is not fully realized. |
-| Cluster and node foundation | Cluster identity, release, registration, node inventory, quorum, fault domains, networks, update and validation posture, events, health | Implemented in `Modules/Collectors/10-TopologyClusterCollector.ps1` | Mostly aligned | Release, licensing, registration, lifecycle, and validation-report context are included. Events are collected and stored in `RawEvidence` but not summarized into `eventSummary`; `csvSummary` and `updatePosture` are reserved template keys that are not yet populated by the collector. |
+| Cluster and node foundation | Cluster identity, release, registration, node inventory, quorum, fault domains, networks, update and validation posture, events, health | Implemented in `Modules/Collectors/10-TopologyClusterCollector.ps1` | Mostly aligned | Release, licensing, registration, lifecycle, and validation-report context are included. `csvSummary`, `updatePosture`, and `eventSummary` are all populated by the collector and declared in the reserved template. |
 | Dell hardware | Redfish-based hardware inventory and OEM posture | Implemented in `Modules/Collectors/20-HardwareCollector.ps1` | Mostly aligned | Dell OEM posture now captures update-service, lifecycle-controller, support signals, and compliance hints; deeper per-vendor breadth remains future OEM work. |
 | Storage | Pools, disks, cache, virtual disks, volumes, CSVs, SOFS, QoS, replica, storage health | Implemented in `Modules/Collectors/30-StorageNetworkingCollector.ps1` | Mostly aligned | Storage tiers, resiliency defaults, jobs, and richer capacity posture are now included for non-live validation scope. |
 | Networking | Adapters, vSwitches, ATC, host vNICs, proxy, DNS, firewall, SDN, host-side validation | Implemented in `Modules/Collectors/30-StorageNetworkingCollector.ps1` | Mostly aligned | IP, route, VLAN, proxy, DNS, firewall, and SDN host-side evidence are now normalized together for report and diagram use. |
 | Virtual machines | VM inventory, placement, config, replication, guest clustering, network and storage context | Implemented in `Modules/Collectors/40-WorkloadIdentityAzureCollector.ps1` | Mostly aligned | Integration-service and deeper replication context are now included; guest-cluster enrichment remains bounded by non-live host-side evidence. |
-| Identity and security | AD-backed and local-identity posture, certificates, CredSSP, BitLocker, Defender, WDAC, secured-core, admin audit, audit policy | Implemented in `Modules/Collectors/40-WorkloadIdentityAzureCollector.ps1` | Mostly aligned | AD, AppLocker, secure boot, and Key Vault reference context are included. Collector also emits `activeDirectory` and `keyVault` sub-domains that are not yet defined in the reserved domain template in `01-Definitions.ps1` — these keys are present in the manifest but not in the reserved payload contract. |
-| Azure integration | Arc resources, resource groups, policy, backup, update, workload families, control-plane context | Implemented in `Modules/Collectors/40-WorkloadIdentityAzureCollector.ps1` | Mostly aligned | Resource bridge, custom locations, extensions, Arc machines, and site recovery context are now modeled where retrievable. |
+| Identity and security | AD-backed and local-identity posture, certificates, CredSSP, BitLocker, Defender, WDAC, secured-core, admin audit, audit policy | Implemented in `Modules/Collectors/40-WorkloadIdentityAzureCollector.ps1` | Mostly aligned | AD, AppLocker, secure boot, and Key Vault reference context are included. `activeDirectory` and `keyVault` sub-domains are now declared in the reserved template in `01-Definitions.ps1` and populated by the collector. |
+| Azure integration | Arc resources, resource groups, policy, backup, update, workload families, control-plane context | Implemented in `Modules/Collectors/40-WorkloadIdentityAzureCollector.ps1` | Mostly aligned | Resource bridge, custom locations, extensions, Arc machines, and site recovery context are now modeled where retrievable. These five fields are now declared in the reserved template in `01-Definitions.ps1`. |
 | Monitoring and observability | Telemetry extension, AMA, DCR, DCE, HCI insights, alerts, health, Update Manager context | Implemented in `Modules/Collectors/50-MonitoringCollector.ps1` | Mostly aligned | Solid v1 baseline; still less rich than the full product-plan story. |
 | OEM integration | Dell management and firmware posture relevant to Azure Local | Implemented alongside hardware collector | Mostly aligned | Dell-specific management, lifecycle, firmware, and compliance-adjacent posture are now modeled for non-live scope; broader vendor depth remains post-v1. |
 | Management tools | WAC, SCVMM, SCOM, OEM tools, third-party agents | Implemented in `Modules/Collectors/60-ManagementPerformanceCollector.ps1` | Mostly aligned | Tool-state discovery, summary shaping, and management-plane interpretation are in place for non-live reporting and handoff. |
@@ -98,6 +100,30 @@ Current implementation validation used for this audit:
 | Reports and diagrams tested from saved manifests only | Delivered in `tests/unit/Outputs.Tests.ps1` | Aligned |
 | Schema validation as its own test boundary | Standalone manifest schema contract plus runtime and test validation | Aligned |
 | Failed and skipped collectors do not break successful ones | Runtime status model supports this in `Modules/Core/20-Runtime.ps1` | Mostly aligned |
+| Simulation testing without live connections | IIC synthetic 3-node manifest in `as-built` mode; 7 simulation tests in `tests/unit/Simulation.Tests.ps1` | Aligned |
+
+## Simulation Testing Framework
+
+A Scout-style simulation testing layer was added to allow full output validation without any Azure or WinRM connections.
+
+| File | Purpose |
+| --- | --- |
+| `tests/New-RangerSyntheticManifest.ps1` | Generator script — builds a complete `1.1.0-draft` manifest from IIC canonical data pools, no live connections needed |
+| `tests/Fixtures/synthetic-manifest.json` | Pre-generated IIC 3-node fixture (`as-built` mode) committed to the repo |
+| `tests/unit/Simulation.Tests.ps1` | 7 Pester tests validating report/diagram rendering from the synthetic fixture |
+| `tests/Test-RangerFromSyntheticManifest.ps1` | Standalone visual inspection script — renders all formats and prints a summary |
+
+**IIC Canonical Data:** All synthetic data uses the mandatory Infinite Improbability Corp (IIC) fictional company standard per `azurelocal.github.io/standards/examples`. Domain: `iic.local`, NetBIOS: `IMPROBABLE`, cluster: `azlocal-iic-01`, nodes: `azl-iic-n01/02/03`.
+
+**To regenerate the fixture:**
+```powershell
+.\tests\New-RangerSyntheticManifest.ps1
+```
+
+**To run a visual inspection:**
+```powershell
+.\tests\Test-RangerFromSyntheticManifest.ps1 -Open
+```
 
 ## Documentation And Project-State Audit
 

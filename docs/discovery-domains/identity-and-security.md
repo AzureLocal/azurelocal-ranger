@@ -16,6 +16,22 @@ The identity-and-security domain should document:
 - local-administrator and drift-control signals
 - Azure RBAC or policy context that directly affects the Azure Local deployment
 
+## Manifest Sub-Domains
+
+The v1 collector writes to these named sections of the `identitySecurity` manifest domain:
+
+| Sub-domain | Content |
+|---|---|
+| `activeDirectory` | Domain name, forest, domain-functional level, OU placement, CNO/VCO context, and AD health signals |
+| `certificates` | Certificate inventory, expiry posture, TLS bindings, and secret-backup dependency signals |
+| `keyVault` | Key Vault name, secret-backup extension state, required role assignments, and managed identity binding for local-identity deployments |
+| `bitLocker` | Volume encryption state, recovery key backup posture, and compliance signal |
+| `defender` | Defender AV status, real-time protection, signature currency, and exclusion posture |
+| `auditPolicy` | Relevant audit categories enabled or disabled at the host level |
+
+In AD-backed deployments the `activeDirectory` section is populated from the domain collector.
+In local-identity deployments where no AD is present, `activeDirectory` records a `not-applicable` reason and the `keyVault` section carries the primary secret and trust signals.
+
 ## Why It Matters
 
 Security and trust posture are part of both operational understanding and handoff-quality documentation. This domain should explain not only what is enabled, but also what identity model the environment actually relies on.

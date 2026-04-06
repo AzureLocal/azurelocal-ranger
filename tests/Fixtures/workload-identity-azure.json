@@ -91,6 +91,24 @@
             "Logon/Logoff Success and Failure"
           ]
         }
+      ],
+      "activeDirectory": [
+        {
+          "node": "azl-node-01",
+          "domain": {
+            "DNSRoot": "contoso.com",
+            "NetBIOSName": "CONTOSO",
+            "DomainMode": "Windows2016Domain",
+            "DistinguishedName": "DC=contoso,DC=com"
+          },
+          "forest": null
+        }
+      ],
+      "keyVault": [
+        {
+          "node": "azl-node-01",
+          "references": []
+        }
       ]
     },
     "azureIntegration": {

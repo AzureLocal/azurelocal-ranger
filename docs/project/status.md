@@ -10,7 +10,7 @@ That means the runtime, manifest pipeline, grouped collectors, cached report gen
 | --- | --- | --- |
 | Architecture and documentation foundation | Complete | Product, architecture, operator, output, contributor, and domain docs are in place |
 | V1 runtime and collector implementation | Complete | Core runtime/output tracks and v1 collector tracks are implemented and locally verified |
-| Testing foundation | Complete | Fixture-backed unit and integration tests, degraded-scenario tests, and standalone manifest-schema validation are in place |
+| Testing foundation | Complete | Fixture-backed unit and integration tests, degraded-scenario tests, standalone manifest-schema validation, and simulation testing framework are in place (18 passing tests) |
 | Product-plan richness and polish | Complete for non-live scope | Remaining implementation work is now limited to live-environment proving |
 | Post-v1 extension backlog | Defined, documented, and deferred | Future-scope items are documented explicitly and their definition issues are complete |
 
@@ -20,10 +20,11 @@ That means the runtime, manifest pipeline, grouped collectors, cached report gen
 - Manifest-first runtime with cached output generation
 - V1 collectors for topology/cluster, hardware, storage/networking, workload/identity/Azure, monitoring, and management/performance
 - HTML and Markdown report generation from saved manifests with richer audience-specific sections
-- Draw.io-compatible diagram generation from saved manifests with deeper domain modeling
+- Draw.io-compatible diagram generation from saved manifests with deeper domain modeling (18 defined diagrams across baseline and extended tiers)
 - Standalone manifest schema contract and runtime validation against that contract
 - Public docs and contributor/operator guidance aligned to the current architecture
-- Fixture-backed Pester coverage for config, runtime, outputs, degraded scenarios, and end-to-end package generation
+- Fixture-backed Pester coverage for config, runtime, outputs, degraded scenarios, and end-to-end package generation (18 passing tests)
+- Scout-style simulation testing framework driven by a pre-committed IIC synthetic manifest — full render pipeline validated without any live connections
 
 ## Remaining Open Item
 

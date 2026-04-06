@@ -1,0 +1,2208 @@
+{
+  "run": {
+    "toolVersion": "0.2.0",
+    "schemaVersion": "1.1.0-draft",
+    "startTimeUtc": "2026-04-06T12:00:00Z",
+    "endTimeUtc": "2026-04-06T12:08:32Z",
+    "mode": "as-built",
+    "runner": "RANGER-SYNTH",
+    "includeDomains": [],
+    "excludeDomains": [],
+    "selectedCollectors": [
+      "topology-cluster",
+      "hardware",
+      "storage-networking",
+      "workload-identity-azure",
+      "monitoring-observability",
+      "management-performance"
+    ],
+    "schemaValidation": {
+      "isValid": true,
+      "errors": [],
+      "warnings": []
+    }
+  },
+  "target": {
+    "environmentLabel": "iic-azlocal-01",
+    "clusterName": "azlocal-iic-01",
+    "clusterFqdn": "azlocal-iic-01.iic.local",
+    "resourceGroup": "rg-iic-compute-01",
+    "subscriptionId": "33333333-3333-3333-3333-333333333333",
+    "tenantId": "00000000-0000-0000-0000-000000000000",
+    "nodeList": [
+      "azl-iic-n01.iic.local",
+      "azl-iic-n02.iic.local",
+      "azl-iic-n03.iic.local"
+    ]
+  },
+  "topology": {
+    "deploymentType": "hyperconverged",
+    "identityMode": "ad",
+    "controlPlaneMode": "connected",
+    "storageArchitecture": "storage-spaces-direct",
+    "networkArchitecture": "switched",
+    "variantMarkers": [
+      "connected"
+    ]
+  },
+  "collectors": {
+    "topology-cluster": {
+      "status": "success"
+    },
+    "hardware": {
+      "status": "success"
+    },
+    "storage-networking": {
+      "status": "success"
+    },
+    "workload-identity-azure": {
+      "status": "success"
+    },
+    "monitoring-observability": {
+      "status": "success"
+    },
+    "management-performance": {
+      "status": "success"
+    }
+  },
+  "domains": {
+    "clusterNode": {
+      "cluster": {
+        "name": "azlocal-iic-01",
+        "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        "domain": "iic.local",
+        "clusterFunctionalLevel": 11,
+        "s2dEnabled": true,
+        "dynamicQuorum": true,
+        "registrationConfigured": true,
+        "productName": "Microsoft Azure Stack HCI",
+        "displayVersion": "23H2",
+        "releaseId": "2311",
+        "currentBuild": "25398",
+        "editionId": "ServerAzureStackHCICor",
+        "installationType": "Server Core",
+        "operatingModel": {
+          "deploymentType": "hyperconverged",
+          "identityMode": "ad",
+          "controlPlaneMode": "connected"
+        },
+        "registration": {
+          "subscriptionId": "33333333-3333-3333-3333-333333333333",
+          "resourceGroup": "rg-iic-compute-01",
+          "tenantId": "00000000-0000-0000-0000-000000000000"
+        },
+        "licensing": []
+      },
+      "nodes": [
+        {
+          "name": "azl-iic-n01",
+          "fqdn": "azl-iic-n01.iic.local",
+          "state": "Up",
+          "uptimeHours": 312.5,
+          "osCaption": "Microsoft Azure Stack HCI",
+          "osVersion": "10.0.25398.1189",
+          "manufacturer": "Dell Inc.",
+          "model": "PowerEdge R760",
+          "totalMemoryGiB": 512,
+          "logicalProcessorCount": 64,
+          "partOfDomain": true,
+          "domain": "iic.local",
+          "biosVersion": "2.10.0.0"
+        },
+        {
+          "name": "azl-iic-n02",
+          "fqdn": "azl-iic-n02.iic.local",
+          "state": "Up",
+          "uptimeHours": 311.8,
+          "osCaption": "Microsoft Azure Stack HCI",
+          "osVersion": "10.0.25398.1189",
+          "manufacturer": "Dell Inc.",
+          "model": "PowerEdge R760",
+          "totalMemoryGiB": 512,
+          "logicalProcessorCount": 64,
+          "partOfDomain": true,
+          "domain": "iic.local",
+          "biosVersion": "2.10.0.0"
+        },
+        {
+          "name": "azl-iic-n03",
+          "fqdn": "azl-iic-n03.iic.local",
+          "state": "Up",
+          "uptimeHours": 310.2,
+          "osCaption": "Microsoft Azure Stack HCI",
+          "osVersion": "10.0.25398.1189",
+          "manufacturer": "Dell Inc.",
+          "model": "PowerEdge R760",
+          "totalMemoryGiB": 512,
+          "logicalProcessorCount": 64,
+          "partOfDomain": true,
+          "domain": "iic.local",
+          "biosVersion": "2.10.0.0"
+        }
+      ],
+      "quorum": {
+        "quorumType": "CloudWitness",
+        "quorumResource": "Cloud Witness",
+        "quorumResourcePath": "iic-witness.blob.core.windows.net"
+      },
+      "faultDomains": [
+        {
+          "name": "Rack-IIC-01",
+          "faultDomainType": "Rack",
+          "location": "IIC Primary DC Rack 01"
+        }
+      ],
+      "networks": [
+        {
+          "name": "Management",
+          "role": 1,
+          "address": "10.0.0.0",
+          "addressMask": "255.255.255.0",
+          "state": "Up",
+          "metric": 100
+        },
+        {
+          "name": "Storage-1",
+          "role": 2,
+          "address": "10.0.1.0",
+          "addressMask": "255.255.255.0",
+          "state": "Up",
+          "metric": 200
+        },
+        {
+          "name": "Storage-2",
+          "role": 2,
+          "address": "10.0.1.128",
+          "addressMask": "255.255.255.128",
+          "state": "Up",
+          "metric": 200
+        },
+        {
+          "name": "Workload",
+          "role": 3,
+          "address": "10.0.2.0",
+          "addressMask": "255.255.255.0",
+          "state": "Up",
+          "metric": 300
+        }
+      ],
+      "roles": [
+        {
+          "name": "Cluster Group",
+          "groupType": "ClusterGroup",
+          "state": "Online",
+          "ownerNode": "azl-iic-n01"
+        },
+        {
+          "name": "Available Storage",
+          "groupType": "ClusterGroup",
+          "state": "Online",
+          "ownerNode": "azl-iic-n02"
+        },
+        {
+          "name": "csv-iic-azlocal-01-vmstore-01",
+          "groupType": "ClusterSharedVolume",
+          "state": "Online",
+          "ownerNode": "azl-iic-n01"
+        },
+        {
+          "name": "csv-iic-azlocal-01-vmstore-02",
+          "groupType": "ClusterSharedVolume",
+          "state": "Online",
+          "ownerNode": "azl-iic-n02"
+        },
+        {
+          "name": "csv-iic-azlocal-01-vmstore-03",
+          "groupType": "ClusterSharedVolume",
+          "state": "Online",
+          "ownerNode": "azl-iic-n03"
+        }
+      ],
+      "csvSummary": {
+        "count": 3,
+        "items": [
+          {
+            "name": "csv-iic-azlocal-01-vmstore-01",
+            "state": "Online",
+            "ownerNode": "azl-iic-n01"
+          },
+          {
+            "name": "csv-iic-azlocal-01-vmstore-02",
+            "state": "Online",
+            "ownerNode": "azl-iic-n01"
+          },
+          {
+            "name": "csv-iic-azlocal-01-vmstore-03",
+            "state": "Online",
+            "ownerNode": "azl-iic-n01"
+          }
+        ]
+      },
+      "updatePosture": {
+        "clusterAwareUpdating": {
+          "clusterName": "azlocal-iic-01",
+          "maxRetriesPerNode": 3,
+          "requireAllNodesOnline": true,
+          "startDate": "2026-04-01T02:00:00Z",
+          "daysOfWeek": "Tuesday"
+        },
+        "lifecycleServices": [
+          {
+            "name": "ClusSvc",
+            "displayName": "Cluster Service",
+            "status": "Running",
+            "startType": "Automatic"
+          },
+          {
+            "name": "CauService",
+            "displayName": "Cluster-Aware Updating",
+            "status": "Running",
+            "startType": "Manual"
+          }
+        ],
+        "validationReports": [
+          {
+            "name": "Test-Cluster-2026-03-28.htm",
+            "lastWriteTime": "2026-03-28T04:12:00Z",
+            "length": 245760
+          }
+        ]
+      },
+      "eventSummary": [
+        {
+          "timeCreated": "2026-04-06T08:14:32Z",
+          "id": 1135,
+          "levelDisplayName": "Warning",
+          "providerName": "Microsoft-Windows-FailoverClustering",
+          "message": "Cluster network Management lost quorum."
+        },
+        {
+          "timeCreated": "2026-04-06T07:02:11Z",
+          "id": 1064,
+          "levelDisplayName": "Information",
+          "providerName": "Microsoft-Windows-FailoverClustering",
+          "message": "Cluster network connection restored."
+        },
+        {
+          "timeCreated": "2026-04-05T22:00:05Z",
+          "id": 1656,
+          "levelDisplayName": "Information",
+          "providerName": "Microsoft-Windows-FailoverClustering",
+          "message": "CAU update pass completed successfully."
+        }
+      ],
+      "healthSummary": {
+        "totalNodes": 3,
+        "healthyNodes": 3,
+        "unhealthy": 0
+      },
+      "nodeSummary": {
+        "manufacturers": [
+          {
+            "name": "Dell Inc.",
+            "count": 3
+          }
+        ],
+        "models": [
+          {
+            "name": "PowerEdge R760",
+            "count": 3
+          }
+        ],
+        "totalMemoryGiB": 1536,
+        "totalLogicalCpu": 192,
+        "domainJoinedNodes": 3,
+        "localIdentityNodes": 0
+      },
+      "faultDomainSummary": {
+        "count": 1,
+        "byType": [
+          {
+            "name": "Rack",
+            "count": 1
+          }
+        ],
+        "locations": [
+          {
+            "name": "IIC Primary DC Rack 01",
+            "count": 1
+          }
+        ]
+      },
+      "networkSummary": {
+        "clusterNetworkCount": 4,
+        "byRole": [
+          {
+            "name": "1",
+            "count": 1
+          },
+          {
+            "name": "2",
+            "count": 2
+          },
+          {
+            "name": "3",
+            "count": 1
+          }
+        ],
+        "switched": true
+      }
+    },
+    "hardware": {
+      "nodes": [
+        {
+          "node": "azl-iic-n01",
+          "model": "PowerEdge R760",
+          "manufacturer": "Dell Inc.",
+          "serviceTag": "ABC1234",
+          "ipmiAddress": "10.245.64.11",
+          "firmwareVersion": "2.10.0.0",
+          "biosVersion": "2.10.0.0",
+          "secureBoot": true,
+          "tpmPresent": true,
+          "tpmVersion": "2.0",
+          "totalMemoryGiB": 512,
+          "processorCount": 2,
+          "processorSockets": 2,
+          "processorModel": "Intel Xeon Gold 6448Y",
+          "logicalCoreCount": 64
+        },
+        {
+          "node": "azl-iic-n02",
+          "model": "PowerEdge R760",
+          "manufacturer": "Dell Inc.",
+          "serviceTag": "ABC1235",
+          "ipmiAddress": "10.245.64.12",
+          "firmwareVersion": "2.10.0.0",
+          "biosVersion": "2.10.0.0",
+          "secureBoot": true,
+          "tpmPresent": true,
+          "tpmVersion": "2.0",
+          "totalMemoryGiB": 512,
+          "processorCount": 2,
+          "processorSockets": 2,
+          "processorModel": "Intel Xeon Gold 6448Y",
+          "logicalCoreCount": 64
+        },
+        {
+          "node": "azl-iic-n03",
+          "model": "PowerEdge R760",
+          "manufacturer": "Dell Inc.",
+          "serviceTag": "ABC1236",
+          "ipmiAddress": "10.245.64.13",
+          "firmwareVersion": "2.10.0.0",
+          "biosVersion": "2.10.0.0",
+          "secureBoot": true,
+          "tpmPresent": true,
+          "tpmVersion": "2.0",
+          "totalMemoryGiB": 512,
+          "processorCount": 2,
+          "processorSockets": 2,
+          "processorModel": "Intel Xeon Gold 6448Y",
+          "logicalCoreCount": 64
+        }
+      ],
+      "summary": {
+        "nodeCount": 3,
+        "manufacturers": [
+          {
+            "name": "Dell Inc.",
+            "count": 3
+          }
+        ],
+        "models": [
+          {
+            "name": "PowerEdge R760",
+            "count": 3
+          }
+        ],
+        "firmwareNodes": 3,
+        "totalMemoryGiB": 1536,
+        "totalProcessors": 6
+      },
+      "firmware": {
+        "managedNodes": 3,
+        "versions": [
+          {
+            "name": "2.10.0.0",
+            "count": 3
+          }
+        ]
+      },
+      "security": {
+        "trustedModuleNodes": 3,
+        "secureBootEnabledNodes": 3
+      }
+    },
+    "storage": {
+      "pools": [
+        {
+          "friendlyName": "S2D on azlocal-iic-01",
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "size": 46244158668800,
+          "allocatedSize": 6442450944000,
+          "isReadOnly": false,
+          "isPrimordial": false
+        }
+      ],
+      "physicalDisks": [
+        {
+          "friendlyName": "PhysicalDisk 001",
+          "serialNumber": "IIC-SN-ABC1234-D00",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n01"
+        },
+        {
+          "friendlyName": "PhysicalDisk 002",
+          "serialNumber": "IIC-SN-ABC1234-D01",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n01"
+        },
+        {
+          "friendlyName": "PhysicalDisk 003",
+          "serialNumber": "IIC-SN-ABC1234-D02",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n01"
+        },
+        {
+          "friendlyName": "PhysicalDisk 004",
+          "serialNumber": "IIC-SN-ABC1234-D03",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n01"
+        },
+        {
+          "friendlyName": "PhysicalDisk 005",
+          "serialNumber": "IIC-SN-ABC1234-D04",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n01"
+        },
+        {
+          "friendlyName": "PhysicalDisk 006",
+          "serialNumber": "IIC-SN-ABC1234-D05",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n01"
+        },
+        {
+          "friendlyName": "PhysicalDisk 007",
+          "serialNumber": "IIC-SN-ABC1234-D06",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n01"
+        },
+        {
+          "friendlyName": "PhysicalDisk 008",
+          "serialNumber": "IIC-SN-ABC1234-D07",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n01"
+        },
+        {
+          "friendlyName": "PhysicalDisk 009",
+          "serialNumber": "IIC-SN-ABC1235-D00",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n02"
+        },
+        {
+          "friendlyName": "PhysicalDisk 010",
+          "serialNumber": "IIC-SN-ABC1235-D01",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n02"
+        },
+        {
+          "friendlyName": "PhysicalDisk 011",
+          "serialNumber": "IIC-SN-ABC1235-D02",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n02"
+        },
+        {
+          "friendlyName": "PhysicalDisk 012",
+          "serialNumber": "IIC-SN-ABC1235-D03",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n02"
+        },
+        {
+          "friendlyName": "PhysicalDisk 013",
+          "serialNumber": "IIC-SN-ABC1235-D04",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n02"
+        },
+        {
+          "friendlyName": "PhysicalDisk 014",
+          "serialNumber": "IIC-SN-ABC1235-D05",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n02"
+        },
+        {
+          "friendlyName": "PhysicalDisk 015",
+          "serialNumber": "IIC-SN-ABC1235-D06",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n02"
+        },
+        {
+          "friendlyName": "PhysicalDisk 016",
+          "serialNumber": "IIC-SN-ABC1235-D07",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n02"
+        },
+        {
+          "friendlyName": "PhysicalDisk 017",
+          "serialNumber": "IIC-SN-ABC1236-D00",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n03"
+        },
+        {
+          "friendlyName": "PhysicalDisk 018",
+          "serialNumber": "IIC-SN-ABC1236-D01",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n03"
+        },
+        {
+          "friendlyName": "PhysicalDisk 019",
+          "serialNumber": "IIC-SN-ABC1236-D02",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n03"
+        },
+        {
+          "friendlyName": "PhysicalDisk 020",
+          "serialNumber": "IIC-SN-ABC1236-D03",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n03"
+        },
+        {
+          "friendlyName": "PhysicalDisk 021",
+          "serialNumber": "IIC-SN-ABC1236-D04",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n03"
+        },
+        {
+          "friendlyName": "PhysicalDisk 022",
+          "serialNumber": "IIC-SN-ABC1236-D05",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n03"
+        },
+        {
+          "friendlyName": "PhysicalDisk 023",
+          "serialNumber": "IIC-SN-ABC1236-D06",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n03"
+        },
+        {
+          "friendlyName": "PhysicalDisk 024",
+          "serialNumber": "IIC-SN-ABC1236-D07",
+          "mediaType": "NVMe",
+          "size": 1920396288000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "canPool": false,
+          "usage": "Auto-Select",
+          "node": "azl-iic-n03"
+        }
+      ],
+      "virtualDisks": [
+        {
+          "friendlyName": "csv-iic-azlocal-01-vmstore-01",
+          "resiliencyName": "Mirror",
+          "size": 2147483648000,
+          "allocatedSize": 2000000000000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "numberOfColumns": 3,
+          "interleave": 65536
+        },
+        {
+          "friendlyName": "csv-iic-azlocal-01-vmstore-02",
+          "resiliencyName": "Mirror",
+          "size": 2147483648000,
+          "allocatedSize": 2000000000000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "numberOfColumns": 3,
+          "interleave": 65536
+        },
+        {
+          "friendlyName": "csv-iic-azlocal-01-vmstore-03",
+          "resiliencyName": "Mirror",
+          "size": 2147483648000,
+          "allocatedSize": 2000000000000,
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "numberOfColumns": 3,
+          "interleave": 65536
+        }
+      ],
+      "volumes": [
+        {
+          "driveLetter": "C",
+          "fileSystemLabel": "OS",
+          "sizeGB": 128,
+          "freeSpaceGB": 62
+        },
+        {
+          "driveLetter": null,
+          "fileSystemLabel": "csv-iic-azlocal-01-vmstore-01",
+          "sizeGB": 2000,
+          "freeSpaceGB": 1480
+        },
+        {
+          "driveLetter": null,
+          "fileSystemLabel": "csv-iic-azlocal-01-vmstore-02",
+          "sizeGB": 2000,
+          "freeSpaceGB": 1620
+        },
+        {
+          "driveLetter": null,
+          "fileSystemLabel": "csv-iic-azlocal-01-vmstore-03",
+          "sizeGB": 2000,
+          "freeSpaceGB": 1710
+        }
+      ],
+      "csvs": [
+        {
+          "name": "Cluster Virtual Disk (csv-iic-azlocal-01-vmstore-01)",
+          "state": "Online",
+          "ownerNode": "azl-iic-n01",
+          "path": "C:\\ClusterStorage\\csv-iic-azlocal-01-vmstore-01"
+        },
+        {
+          "name": "Cluster Virtual Disk (csv-iic-azlocal-01-vmstore-02)",
+          "state": "Online",
+          "ownerNode": "azl-iic-n01",
+          "path": "C:\\ClusterStorage\\csv-iic-azlocal-01-vmstore-02"
+        },
+        {
+          "name": "Cluster Virtual Disk (csv-iic-azlocal-01-vmstore-03)",
+          "state": "Online",
+          "ownerNode": "azl-iic-n01",
+          "path": "C:\\ClusterStorage\\csv-iic-azlocal-01-vmstore-03"
+        }
+      ],
+      "qos": [],
+      "sofs": [],
+      "replica": [],
+      "summary": {
+        "poolCount": 1,
+        "physicalDiskCount": 24,
+        "virtualDiskCount": 3,
+        "volumeCount": 4,
+        "csvCount": 3,
+        "totalPoolCapacityGiB": 43008,
+        "allocatedPoolCapacityGiB": 6144,
+        "diskMediaTypes": [
+          {
+            "name": "NVMe",
+            "count": 24
+          }
+        ],
+        "unhealthyDisks": 0
+      }
+    },
+    "networking": {
+      "nodes": [
+        {
+          "node": "azl-iic-n01"
+        },
+        {
+          "node": "azl-iic-n02"
+        },
+        {
+          "node": "azl-iic-n03"
+        }
+      ],
+      "clusterNetworks": [
+        {
+          "name": "Management",
+          "address": "10.0.0.0",
+          "subnetMask": "255.255.255.0",
+          "role": 1,
+          "state": "Up"
+        },
+        {
+          "name": "Storage-1",
+          "address": "10.0.1.0",
+          "subnetMask": "255.255.255.0",
+          "role": 2,
+          "state": "Up"
+        },
+        {
+          "name": "Storage-2",
+          "address": "10.0.1.128",
+          "subnetMask": "255.255.255.128",
+          "role": 2,
+          "state": "Up"
+        },
+        {
+          "name": "Workload",
+          "address": "10.0.2.0",
+          "subnetMask": "255.255.255.0",
+          "role": 3,
+          "state": "Up"
+        }
+      ],
+      "adapters": [
+        {
+          "node": "azl-iic-n01",
+          "name": "NIC1",
+          "speed": 25000000000,
+          "mediaType": "Ethernet",
+          "status": "Up",
+          "macAddress": "00:50:56:IIC:0:00",
+          "vlanId": 2203,
+          "ipAddress": "10.0.0.11"
+        },
+        {
+          "node": "azl-iic-n01",
+          "name": "NIC2",
+          "speed": 25000000000,
+          "mediaType": "Ethernet",
+          "status": "Up",
+          "macAddress": "00:50:56:IIC:0:01",
+          "vlanId": 2203,
+          "ipAddress": null
+        },
+        {
+          "node": "azl-iic-n01",
+          "name": "NIC3",
+          "speed": 25000000000,
+          "mediaType": "Ethernet",
+          "status": "Up",
+          "macAddress": "00:50:56:IIC:0:02",
+          "vlanId": 2204,
+          "ipAddress": null
+        },
+        {
+          "node": "azl-iic-n01",
+          "name": "NIC4",
+          "speed": 25000000000,
+          "mediaType": "Ethernet",
+          "status": "Up",
+          "macAddress": "00:50:56:IIC:0:03",
+          "vlanId": 2205,
+          "ipAddress": null
+        },
+        {
+          "node": "azl-iic-n02",
+          "name": "NIC1",
+          "speed": 25000000000,
+          "mediaType": "Ethernet",
+          "status": "Up",
+          "macAddress": "00:50:56:IIC:1:00",
+          "vlanId": 2203,
+          "ipAddress": "10.0.0.12"
+        },
+        {
+          "node": "azl-iic-n02",
+          "name": "NIC2",
+          "speed": 25000000000,
+          "mediaType": "Ethernet",
+          "status": "Up",
+          "macAddress": "00:50:56:IIC:1:01",
+          "vlanId": 2203,
+          "ipAddress": null
+        },
+        {
+          "node": "azl-iic-n02",
+          "name": "NIC3",
+          "speed": 25000000000,
+          "mediaType": "Ethernet",
+          "status": "Up",
+          "macAddress": "00:50:56:IIC:1:02",
+          "vlanId": 2204,
+          "ipAddress": null
+        },
+        {
+          "node": "azl-iic-n02",
+          "name": "NIC4",
+          "speed": 25000000000,
+          "mediaType": "Ethernet",
+          "status": "Up",
+          "macAddress": "00:50:56:IIC:1:03",
+          "vlanId": 2205,
+          "ipAddress": null
+        },
+        {
+          "node": "azl-iic-n03",
+          "name": "NIC1",
+          "speed": 25000000000,
+          "mediaType": "Ethernet",
+          "status": "Up",
+          "macAddress": "00:50:56:IIC:2:00",
+          "vlanId": 2203,
+          "ipAddress": "10.0.0.13"
+        },
+        {
+          "node": "azl-iic-n03",
+          "name": "NIC2",
+          "speed": 25000000000,
+          "mediaType": "Ethernet",
+          "status": "Up",
+          "macAddress": "00:50:56:IIC:2:01",
+          "vlanId": 2203,
+          "ipAddress": null
+        },
+        {
+          "node": "azl-iic-n03",
+          "name": "NIC3",
+          "speed": 25000000000,
+          "mediaType": "Ethernet",
+          "status": "Up",
+          "macAddress": "00:50:56:IIC:2:02",
+          "vlanId": 2204,
+          "ipAddress": null
+        },
+        {
+          "node": "azl-iic-n03",
+          "name": "NIC4",
+          "speed": 25000000000,
+          "mediaType": "Ethernet",
+          "status": "Up",
+          "macAddress": "00:50:56:IIC:2:03",
+          "vlanId": 2205,
+          "ipAddress": null
+        }
+      ],
+      "vSwitches": [
+        {
+          "name": "ConvergedSwitch",
+          "switchType": "External",
+          "allowManagementOS": true,
+          "embeddedTeaming": true
+        },
+        {
+          "name": "StorageSwitch",
+          "switchType": "External",
+          "allowManagementOS": false,
+          "embeddedTeaming": true
+        }
+      ],
+      "hostVirtualNics": [
+        {
+          "name": "vManagement",
+          "switchName": "ConvergedSwitch",
+          "vlanId": 2203,
+          "ipAddress": "10.0.0.11"
+        }
+      ],
+      "intents": [
+        {
+          "name": "ManagementCompute",
+          "trafficType": [
+            "Management",
+            "Compute"
+          ],
+          "overrideAdapterProperty": true
+        },
+        {
+          "name": "StorageIntent",
+          "trafficType": [
+            "Storage"
+          ],
+          "overrideAdapterProperty": true
+        }
+      ],
+      "dns": [
+        {
+          "server": "192.168.10.10",
+          "reachable": true
+        },
+        {
+          "server": "192.168.10.11",
+          "reachable": true
+        }
+      ],
+      "proxy": [],
+      "firewall": [],
+      "sdn": [],
+      "summary": {
+        "nodeCount": 3,
+        "clusterNetworkCount": 4,
+        "adapterCount": 12,
+        "adapterStates": [
+          {
+            "name": "Up",
+            "count": 12
+          }
+        ],
+        "vSwitchCount": 2,
+        "intentCount": 2,
+        "dnsServers": [
+          "192.168.10.10",
+          "192.168.10.11"
+        ],
+        "proxyConfiguredNodes": 0,
+        "sdnControllerCount": 0
+      }
+    },
+    "virtualMachines": {
+      "inventory": [
+        {
+          "name": "avd-iic-sh01",
+          "hostNode": "azl-iic-n01",
+          "state": "Running",
+          "isClustered": true,
+          "generation": 2,
+          "processorCount": 8,
+          "memoryAssignedMb": 16384,
+          "dynamicMemory": true,
+          "diskCount": 2,
+          "networkAdapterCount": 1,
+          "storagePaths": [
+            "C:\\ClusterStorage\\csv-iic-azlocal-01-vmstore-01\\VMs\\avd-iic-sh01\\avd-iic-sh01.vhdx"
+          ],
+          "switchNames": [
+            "ConvergedSwitch"
+          ],
+          "replicationMode": null,
+          "replicationHealth": null,
+          "workloadFamily": "AVD"
+        },
+        {
+          "name": "avd-iic-sh02",
+          "hostNode": "azl-iic-n02",
+          "state": "Running",
+          "isClustered": true,
+          "generation": 2,
+          "processorCount": 8,
+          "memoryAssignedMb": 16384,
+          "dynamicMemory": true,
+          "diskCount": 2,
+          "networkAdapterCount": 1,
+          "storagePaths": [
+            "C:\\ClusterStorage\\csv-iic-azlocal-01-vmstore-02\\VMs\\avd-iic-sh02\\avd-iic-sh02.vhdx"
+          ],
+          "switchNames": [
+            "ConvergedSwitch"
+          ],
+          "replicationMode": null,
+          "replicationHealth": null,
+          "workloadFamily": "AVD"
+        },
+        {
+          "name": "avd-iic-sh03",
+          "hostNode": "azl-iic-n03",
+          "state": "Running",
+          "isClustered": true,
+          "generation": 2,
+          "processorCount": 8,
+          "memoryAssignedMb": 16384,
+          "dynamicMemory": true,
+          "diskCount": 2,
+          "networkAdapterCount": 1,
+          "storagePaths": [
+            "C:\\ClusterStorage\\csv-iic-azlocal-01-vmstore-03\\VMs\\avd-iic-sh03\\avd-iic-sh03.vhdx"
+          ],
+          "switchNames": [
+            "ConvergedSwitch"
+          ],
+          "replicationMode": null,
+          "replicationHealth": null,
+          "workloadFamily": "AVD"
+        },
+        {
+          "name": "arc-iic-vm01",
+          "hostNode": "azl-iic-n01",
+          "state": "Running",
+          "isClustered": true,
+          "generation": 2,
+          "processorCount": 4,
+          "memoryAssignedMb": 8192,
+          "dynamicMemory": false,
+          "diskCount": 1,
+          "networkAdapterCount": 1,
+          "storagePaths": [
+            "C:\\ClusterStorage\\csv-iic-azlocal-01-vmstore-01\\VMs\\arc-iic-vm01\\arc-iic-vm01.vhdx"
+          ],
+          "switchNames": [
+            "ConvergedSwitch"
+          ],
+          "replicationMode": null,
+          "replicationHealth": null,
+          "workloadFamily": "Arc VMs"
+        },
+        {
+          "name": "arc-iic-vm02",
+          "hostNode": "azl-iic-n02",
+          "state": "Running",
+          "isClustered": true,
+          "generation": 2,
+          "processorCount": 4,
+          "memoryAssignedMb": 8192,
+          "dynamicMemory": false,
+          "diskCount": 1,
+          "networkAdapterCount": 1,
+          "storagePaths": [
+            "C:\\ClusterStorage\\csv-iic-azlocal-01-vmstore-02\\VMs\\arc-iic-vm02\\arc-iic-vm02.vhdx"
+          ],
+          "switchNames": [
+            "ConvergedSwitch"
+          ],
+          "replicationMode": null,
+          "replicationHealth": null,
+          "workloadFamily": "Arc VMs"
+        }
+      ],
+      "placement": [
+        {
+          "vm": "avd-iic-sh01",
+          "hostNode": "azl-iic-n01",
+          "state": "Running"
+        },
+        {
+          "vm": "avd-iic-sh02",
+          "hostNode": "azl-iic-n02",
+          "state": "Running"
+        },
+        {
+          "vm": "avd-iic-sh03",
+          "hostNode": "azl-iic-n03",
+          "state": "Running"
+        },
+        {
+          "vm": "arc-iic-vm01",
+          "hostNode": "azl-iic-n01",
+          "state": "Running"
+        },
+        {
+          "vm": "arc-iic-vm02",
+          "hostNode": "azl-iic-n02",
+          "state": "Running"
+        }
+      ],
+      "workloadFamilies": [
+        {
+          "name": "AVD",
+          "count": 3
+        },
+        {
+          "name": "Arc VMs",
+          "count": 2
+        }
+      ],
+      "replication": [],
+      "summary": {
+        "totalVms": 5,
+        "runningVms": 5,
+        "clusteredVms": 5,
+        "totalAssignedMemoryGb": 80,
+        "byGeneration": [
+          {
+            "name": "2",
+            "count": 5
+          }
+        ],
+        "byState": [
+          {
+            "name": "Running",
+            "count": 5
+          }
+        ]
+      }
+    },
+    "identitySecurity": {
+      "nodes": [
+        {
+          "node": "azl-iic-n01",
+          "partOfDomain": true,
+          "domain": "iic.local",
+          "credSsp": false
+        },
+        {
+          "node": "azl-iic-n02",
+          "partOfDomain": true,
+          "domain": "iic.local",
+          "credSsp": false
+        },
+        {
+          "node": "azl-iic-n03",
+          "partOfDomain": true,
+          "domain": "iic.local",
+          "credSsp": false
+        }
+      ],
+      "certificates": [
+        {
+          "node": "azl-iic-n01",
+          "items": [
+            {
+              "subject": "CN=azl-iic-n01.iic.local",
+              "thumbprint": "AAABBB001",
+              "notAfter": "2026-06-05T23:24:21Z"
+            },
+            {
+              "subject": "CN=azlocal-iic-01.iic.local",
+              "thumbprint": "AAABBB002",
+              "notAfter": "2028-04-05T23:24:21Z"
+            }
+          ]
+        },
+        {
+          "node": "azl-iic-n02",
+          "items": {
+            "subject": "CN=azl-iic-n02.iic.local",
+            "thumbprint": "AAABBB101",
+            "notAfter": "2028-04-05T23:24:21Z"
+          }
+        },
+        {
+          "node": "azl-iic-n03",
+          "items": {
+            "subject": "CN=azl-iic-n03.iic.local",
+            "thumbprint": "AAABBB201",
+            "notAfter": "2028-04-05T23:24:21Z"
+          }
+        }
+      ],
+      "posture": [
+        {
+          "node": "azl-iic-n01",
+          "defender": {
+            "antivirusEnabled": true,
+            "realTimeProtectionEnabled": true,
+            "aMRunningMode": "Normal"
+          },
+          "deviceGuard": {
+            "virtualizationBasedSecurityStatus": 2
+          },
+          "bitlocker": [
+            {
+              "mountPoint": "C:",
+              "protectionStatus": "On"
+            }
+          ],
+          "secureBoot": true,
+          "appLocker": []
+        },
+        {
+          "node": "azl-iic-n02",
+          "defender": {
+            "antivirusEnabled": true,
+            "realTimeProtectionEnabled": true,
+            "aMRunningMode": "Normal"
+          },
+          "deviceGuard": {
+            "virtualizationBasedSecurityStatus": 2
+          },
+          "bitlocker": [
+            {
+              "mountPoint": "C:",
+              "protectionStatus": "On"
+            }
+          ],
+          "secureBoot": true,
+          "appLocker": []
+        },
+        {
+          "node": "azl-iic-n03",
+          "defender": {
+            "antivirusEnabled": true,
+            "realTimeProtectionEnabled": true,
+            "aMRunningMode": "Normal"
+          },
+          "deviceGuard": {
+            "virtualizationBasedSecurityStatus": 2
+          },
+          "bitlocker": [
+            {
+              "mountPoint": "C:",
+              "protectionStatus": "On"
+            }
+          ],
+          "secureBoot": true,
+          "appLocker": []
+        }
+      ],
+      "localAdmins": [
+        {
+          "node": "azl-iic-n01",
+          "members": [
+            {
+              "name": "IMPROBABLE\\Domain Admins",
+              "objectClass": "Group"
+            },
+            {
+              "name": "IMPROBABLE\\lcm-iic-azl-clus01",
+              "objectClass": "User"
+            }
+          ]
+        },
+        {
+          "node": "azl-iic-n02",
+          "members": [
+            {
+              "name": "IMPROBABLE\\Domain Admins",
+              "objectClass": "Group"
+            },
+            {
+              "name": "IMPROBABLE\\lcm-iic-azl-clus01",
+              "objectClass": "User"
+            }
+          ]
+        },
+        {
+          "node": "azl-iic-n03",
+          "members": [
+            {
+              "name": "IMPROBABLE\\Domain Admins",
+              "objectClass": "Group"
+            },
+            {
+              "name": "IMPROBABLE\\lcm-iic-azl-clus01",
+              "objectClass": "User"
+            }
+          ]
+        }
+      ],
+      "auditPolicy": [
+        {
+          "node": "azl-iic-n01",
+          "values": [
+            "Logon/Logoff Success and Failure",
+            "Account Management Success and Failure",
+            "Privilege Use Success"
+          ]
+        },
+        {
+          "node": "azl-iic-n02",
+          "values": [
+            "Logon/Logoff Success and Failure",
+            "Account Management Success and Failure",
+            "Privilege Use Success"
+          ]
+        },
+        {
+          "node": "azl-iic-n03",
+          "values": [
+            "Logon/Logoff Success and Failure",
+            "Account Management Success and Failure",
+            "Privilege Use Success"
+          ]
+        }
+      ],
+      "activeDirectory": [
+        {
+          "node": "azl-iic-n01",
+          "domain": {
+            "DNSRoot": "iic.local",
+            "NetBIOSName": "IMPROBABLE",
+            "DomainMode": "Windows2016Domain",
+            "DistinguishedName": "DC=iic,DC=local",
+            "ParentDomain": null
+          },
+          "forest": {
+            "Name": "iic.local",
+            "ForestMode": "Windows2016Forest",
+            "RootDomain": "iic.local"
+          }
+        },
+        {
+          "node": "azl-iic-n02",
+          "domain": {
+            "DNSRoot": "iic.local",
+            "NetBIOSName": "IMPROBABLE",
+            "DomainMode": "Windows2016Domain",
+            "DistinguishedName": "DC=iic,DC=local",
+            "ParentDomain": null
+          },
+          "forest": {
+            "Name": "iic.local",
+            "ForestMode": "Windows2016Forest",
+            "RootDomain": "iic.local"
+          }
+        },
+        {
+          "node": "azl-iic-n03",
+          "domain": {
+            "DNSRoot": "iic.local",
+            "NetBIOSName": "IMPROBABLE",
+            "DomainMode": "Windows2016Domain",
+            "DistinguishedName": "DC=iic,DC=local",
+            "ParentDomain": null
+          },
+          "forest": {
+            "Name": "iic.local",
+            "ForestMode": "Windows2016Forest",
+            "RootDomain": "iic.local"
+          }
+        }
+      ],
+      "keyVault": [
+        {
+          "node": "azl-iic-n01",
+          "references": [
+            "keyvault://kv-iic-platform/local-admin-password",
+            "keyvault://kv-iic-platform/domain-join-password"
+          ]
+        },
+        {
+          "node": "azl-iic-n02",
+          "references": [
+            "keyvault://kv-iic-platform/local-admin-password",
+            "keyvault://kv-iic-platform/domain-join-password"
+          ]
+        },
+        {
+          "node": "azl-iic-n03",
+          "references": [
+            "keyvault://kv-iic-platform/local-admin-password",
+            "keyvault://kv-iic-platform/domain-join-password"
+          ]
+        }
+      ],
+      "summary": {
+        "nodeCount": 3,
+        "domainJoinedNodes": 3,
+        "credSspEnabledNodes": 0,
+        "defenderProtectedNodes": 3,
+        "bitLockerProtectedNodes": 3,
+        "certificateCount": 4,
+        "certificateExpiringWithin90Days": 1,
+        "appLockerNodes": 0,
+        "secureBootEnabledNodes": 3
+      }
+    },
+    "azureIntegration": {
+      "context": {
+        "subscriptionId": "33333333-3333-3333-3333-333333333333",
+        "resourceGroup": "rg-iic-compute-01",
+        "tenantId": "00000000-0000-0000-0000-000000000000"
+      },
+      "resources": [
+        {
+          "name": "azlocal-iic-01",
+          "resourceType": "Microsoft.AzureStackHCI/clusters",
+          "resourceGroupName": "rg-iic-compute-01",
+          "location": "eastus"
+        },
+        {
+          "name": "avd-iic-hostpool-01",
+          "resourceType": "Microsoft.DesktopVirtualization/hostPools",
+          "resourceGroupName": "rg-iic-compute-01",
+          "location": "eastus"
+        },
+        {
+          "name": "rb-iic-azlocal-01",
+          "resourceType": "Microsoft.ResourceConnector/appliances",
+          "resourceGroupName": "rg-iic-arc-01",
+          "location": "eastus"
+        },
+        {
+          "name": "cl-iic-azlocal-01",
+          "resourceType": "Microsoft.ExtendedLocation/customLocations",
+          "resourceGroupName": "rg-iic-arc-01",
+          "location": "eastus"
+        },
+        {
+          "name": "rsv-iic-azlocal-01",
+          "resourceType": "Microsoft.RecoveryServices/vaults",
+          "resourceGroupName": "rg-iic-compute-01",
+          "location": "eastus"
+        },
+        {
+          "name": "aum-iic-azlocal-01",
+          "resourceType": "Microsoft.Maintenance/configurationAssignments",
+          "resourceGroupName": "rg-iic-compute-01",
+          "location": "eastus"
+        },
+        {
+          "name": "law-iic-monitor-01",
+          "resourceType": "Microsoft.OperationalInsights/workspaces",
+          "resourceGroupName": "rg-iic-monitor-01",
+          "location": "eastus"
+        },
+        {
+          "name": "azl-iic-n01",
+          "resourceType": "Microsoft.HybridCompute/machines",
+          "resourceGroupName": "rg-iic-arc-01",
+          "location": "eastus"
+        },
+        {
+          "name": "azl-iic-n02",
+          "resourceType": "Microsoft.HybridCompute/machines",
+          "resourceGroupName": "rg-iic-arc-01",
+          "location": "eastus"
+        },
+        {
+          "name": "azl-iic-n03",
+          "resourceType": "Microsoft.HybridCompute/machines",
+          "resourceGroupName": "rg-iic-arc-01",
+          "location": "eastus"
+        }
+      ],
+      "services": [
+        {
+          "category": "Microsoft.AzureStackHCI/clusters",
+          "count": 1,
+          "name": "Microsoft.AzureStackHCI/clusters"
+        },
+        {
+          "category": "Microsoft.DesktopVirtualization/hostPools",
+          "count": 1,
+          "name": "Microsoft.DesktopVirtualization/hostPools"
+        },
+        {
+          "category": "Microsoft.HybridCompute/machines",
+          "count": 3,
+          "name": "Microsoft.HybridCompute/machines"
+        },
+        {
+          "category": "Microsoft.ResourceConnector/appliances",
+          "count": 1,
+          "name": "Microsoft.ResourceConnector/appliances"
+        },
+        {
+          "category": "Microsoft.ExtendedLocation/customLocations",
+          "count": 1,
+          "name": "Microsoft.ExtendedLocation/customLocations"
+        },
+        {
+          "category": "Microsoft.RecoveryServices/vaults",
+          "count": 1,
+          "name": "Microsoft.RecoveryServices/vaults"
+        },
+        {
+          "category": "Microsoft.OperationalInsights/workspaces",
+          "count": 1,
+          "name": "Microsoft.OperationalInsights/workspaces"
+        }
+      ],
+      "policy": [
+        {
+          "name": "iic-tagging-policy",
+          "displayName": "IIC: Enforce resource tags",
+          "scope": "/subscriptions/33333333-3333-3333-3333-333333333333/resourceGroups/rg-iic-compute-01",
+          "enforcementMode": "Default"
+        },
+        {
+          "name": "iic-audit-policy",
+          "displayName": "IIC: Audit security controls",
+          "scope": "/subscriptions/33333333-3333-3333-3333-333333333333/resourceGroups/rg-iic-compute-01",
+          "enforcementMode": "Default"
+        }
+      ],
+      "backup": [
+        {
+          "name": "rsv-iic-azlocal-01",
+          "resourceType": "Microsoft.RecoveryServices/vaults"
+        }
+      ],
+      "update": [
+        {
+          "name": "aum-iic-azlocal-01",
+          "resourceType": "Microsoft.Maintenance/configurationAssignments"
+        }
+      ],
+      "cost": [],
+      "resourceBridge": [
+        {
+          "name": "rb-iic-azlocal-01",
+          "resourceType": "Microsoft.ResourceConnector/appliances",
+          "resourceGroupName": "rg-iic-arc-01",
+          "location": "eastus"
+        }
+      ],
+      "customLocations": [
+        {
+          "name": "cl-iic-azlocal-01",
+          "resourceType": "Microsoft.ExtendedLocation/customLocations",
+          "resourceGroupName": "rg-iic-arc-01",
+          "location": "eastus"
+        }
+      ],
+      "extensions": [
+        {
+          "name": "AzureMonitorWindowsAgent",
+          "resourceType": "Microsoft.AzureStackHCI/clusters/extensions"
+        },
+        {
+          "name": "AzureEdgeTelemetryAndDiagnostics",
+          "resourceType": "Microsoft.AzureStackHCI/clusters/extensions"
+        }
+      ],
+      "arcMachines": [
+        {
+          "name": "azl-iic-n01",
+          "resourceType": "Microsoft.HybridCompute/machines",
+          "resourceGroupName": "rg-iic-arc-01",
+          "location": "eastus"
+        },
+        {
+          "name": "azl-iic-n02",
+          "resourceType": "Microsoft.HybridCompute/machines",
+          "resourceGroupName": "rg-iic-arc-01",
+          "location": "eastus"
+        },
+        {
+          "name": "azl-iic-n03",
+          "resourceType": "Microsoft.HybridCompute/machines",
+          "resourceGroupName": "rg-iic-arc-01",
+          "location": "eastus"
+        }
+      ],
+      "siteRecovery": [],
+      "resourceSummary": {
+        "totalResources": 10,
+        "byType": [
+          {
+            "name": "Microsoft.AzureStackHCI/clusters",
+            "count": 1
+          },
+          {
+            "name": "Microsoft.DesktopVirtualization/hostPools",
+            "count": 1
+          },
+          {
+            "name": "Microsoft.HybridCompute/machines",
+            "count": 3
+          },
+          {
+            "name": "Microsoft.ResourceConnector/appliances",
+            "count": 1
+          },
+          {
+            "name": "Microsoft.ExtendedLocation/customLocations",
+            "count": 1
+          },
+          {
+            "name": "Microsoft.RecoveryServices/vaults",
+            "count": 1
+          },
+          {
+            "name": "Microsoft.OperationalInsights/workspaces",
+            "count": 1
+          }
+        ],
+        "byLocation": [
+          {
+            "name": "eastus",
+            "count": 10
+          }
+        ],
+        "azureArcMachines": 3,
+        "hciClusterRegistrations": 1,
+        "backupResources": 1,
+        "updateResources": 1,
+        "resourceBridgeCount": 1,
+        "customLocationCount": 1,
+        "extensionCount": 2
+      },
+      "resourceLocations": [
+        {
+          "name": "eastus",
+          "count": 10
+        }
+      ],
+      "policySummary": {
+        "assignmentCount": 2,
+        "enforcementModes": [
+          {
+            "name": "Default",
+            "count": 2
+          }
+        ]
+      },
+      "auth": {
+        "method": "service-principal",
+        "tenantId": "00000000-0000-0000-0000-000000000000",
+        "subscriptionId": "33333333-3333-3333-3333-333333333333",
+        "azureCliFallback": false
+      }
+    },
+    "monitoring": {
+      "telemetry": [
+        {
+          "name": "AzureEdgeTelemetryAndDiagnostics",
+          "status": "Succeeded",
+          "version": "1.0.6"
+        }
+      ],
+      "ama": [
+        {
+          "name": "AzureMonitorWindowsAgent",
+          "node": "azl-iic-n01",
+          "status": "Running",
+          "version": "1.22.2.0"
+        },
+        {
+          "name": "AzureMonitorWindowsAgent",
+          "node": "azl-iic-n02",
+          "status": "Running",
+          "version": "1.22.2.0"
+        },
+        {
+          "name": "AzureMonitorWindowsAgent",
+          "node": "azl-iic-n03",
+          "status": "Running",
+          "version": "1.22.2.0"
+        }
+      ],
+      "dcr": [
+        {
+          "name": "dcr-iic-azl-01",
+          "resourceGroup": "rg-iic-monitor-01",
+          "location": "eastus",
+          "dataFlows": [
+            "Windows Event Log",
+            "Performance Counters"
+          ]
+        }
+      ],
+      "dce": [
+        {
+          "name": "dce-iic-azl-01",
+          "resourceGroup": "rg-iic-monitor-01",
+          "location": "eastus",
+          "endpoint": "https://dce-iic-azl-01.eastus-1.ingest.monitor.azure.com"
+        }
+      ],
+      "insights": [
+        {
+          "name": "law-iic-monitor-01",
+          "resourceGroup": "rg-iic-monitor-01",
+          "location": "eastus",
+          "workspaceId": "/subscriptions/55555555-5555-5555-5555-555555555555/resourceGroups/rg-iic-monitor-01/providers/Microsoft.OperationalInsights/workspaces/law-iic-monitor-01",
+          "retentionDays": 90
+        }
+      ],
+      "alerts": [
+        {
+          "name": "alert-iic-azl-critical-cpu",
+          "severity": 0,
+          "state": "Enabled",
+          "condition": "CPU > 85%"
+        },
+        {
+          "name": "alert-iic-azl-storage-capacity",
+          "severity": 1,
+          "state": "Enabled",
+          "condition": "Used capacity > 80%"
+        }
+      ],
+      "health": [
+        {
+          "node": "azl-iic-n01",
+          "healthServiceRunning": true,
+          "reportCount": 12
+        },
+        {
+          "node": "azl-iic-n02",
+          "healthServiceRunning": true,
+          "reportCount": 12
+        },
+        {
+          "node": "azl-iic-n03",
+          "healthServiceRunning": true,
+          "reportCount": 12
+        }
+      ],
+      "updateManager": [
+        {
+          "name": "aum-iic-azlocal-01",
+          "resourceType": "Microsoft.Maintenance/configurationAssignments"
+        }
+      ],
+      "summary": {
+        "telemetryCount": 1,
+        "amaCount": 3,
+        "dcrCount": 1,
+        "dceCount": 1,
+        "alertCount": 2,
+        "updateManagerCount": 1,
+        "healthServiceRunningNodes": 3
+      }
+    },
+    "managementTools": {
+      "tools": [
+        {
+          "name": "ServerManagementGateway",
+          "status": "Running"
+        },
+        {
+          "name": "HealthService",
+          "status": "Running"
+        },
+        {
+          "name": "WinRM",
+          "status": "Running"
+        },
+        {
+          "name": "MicrosoftMonitoringAgent",
+          "status": "Running"
+        }
+      ],
+      "agents": [
+        {
+          "name": "HealthService",
+          "node": "azl-iic-n01",
+          "status": "Running"
+        },
+        {
+          "name": "HealthService",
+          "node": "azl-iic-n02",
+          "status": "Running"
+        },
+        {
+          "name": "HealthService",
+          "node": "azl-iic-n03",
+          "status": "Running"
+        }
+      ],
+      "summary": {
+        "totalServices": 4,
+        "runningServices": 4,
+        "serviceNames": [
+          {
+            "name": "ServerManagementGateway",
+            "count": 1
+          },
+          {
+            "name": "HealthService",
+            "count": 1
+          },
+          {
+            "name": "WinRM",
+            "count": 1
+          },
+          {
+            "name": "MicrosoftMonitoringAgent",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "performance": {
+      "nodes": [
+        "azl-iic-n01",
+        "azl-iic-n02",
+        "azl-iic-n03"
+      ],
+      "compute": [
+        {
+          "node": "azl-iic-n01",
+          "metrics": {
+            "cpuUtilizationPercent": 35,
+            "availableMemoryMb": 180224
+          }
+        },
+        {
+          "node": "azl-iic-n02",
+          "metrics": {
+            "cpuUtilizationPercent": 42,
+            "availableMemoryMb": 180224
+          }
+        },
+        {
+          "node": "azl-iic-n03",
+          "metrics": {
+            "cpuUtilizationPercent": 38,
+            "availableMemoryMb": 180224
+          }
+        }
+      ],
+      "storage": [
+        {
+          "node": "azl-iic-n01",
+          "metrics": []
+        },
+        {
+          "node": "azl-iic-n02",
+          "metrics": []
+        },
+        {
+          "node": "azl-iic-n03",
+          "metrics": []
+        }
+      ],
+      "networking": [
+        {
+          "node": "azl-iic-n01",
+          "metrics": []
+        },
+        {
+          "node": "azl-iic-n02",
+          "metrics": []
+        },
+        {
+          "node": "azl-iic-n03",
+          "metrics": []
+        }
+      ],
+      "outliers": [],
+      "events": [
+        {
+          "node": "azl-iic-n01",
+          "values": []
+        },
+        {
+          "node": "azl-iic-n02",
+          "values": []
+        },
+        {
+          "node": "azl-iic-n03",
+          "values": []
+        }
+      ],
+      "summary": {
+        "averageCpuUtilizationPercent": 38.3,
+        "averageAvailableMemoryMb": 180224,
+        "runningManagementServices": 4,
+        "toolNames": [
+          {
+            "name": "ServerManagementGateway",
+            "count": 1
+          },
+          {
+            "name": "HealthService",
+            "count": 1
+          },
+          {
+            "name": "WinRM",
+            "count": 1
+          },
+          {
+            "name": "MicrosoftMonitoringAgent",
+            "count": 1
+          }
+        ],
+        "highCpuNodes": 0,
+        "eventSeverities": []
+      }
+    },
+    "oemIntegration": {
+      "endpoints": [
+        {
+          "host": "idrac-azl-iic-n01.iic.local",
+          "node": "azl-iic-n01",
+          "ip": "10.245.64.11",
+          "port": 443,
+          "reachable": true
+        },
+        {
+          "host": "idrac-azl-iic-n02.iic.local",
+          "node": "azl-iic-n02",
+          "ip": "10.245.64.12",
+          "port": 443,
+          "reachable": true
+        },
+        {
+          "host": "idrac-azl-iic-n03.iic.local",
+          "node": "azl-iic-n03",
+          "ip": "10.245.64.13",
+          "port": 443,
+          "reachable": true
+        }
+      ],
+      "managementPosture": [
+        {
+          "node": "azl-iic-n01",
+          "managerModel": "iDRAC9",
+          "firmwareVersion": "7.10.30.00",
+          "serviceTag": "ABC1234"
+        },
+        {
+          "node": "azl-iic-n02",
+          "managerModel": "iDRAC9",
+          "firmwareVersion": "7.10.30.00",
+          "serviceTag": "ABC1235"
+        },
+        {
+          "node": "azl-iic-n03",
+          "managerModel": "iDRAC9",
+          "firmwareVersion": "7.10.30.00",
+          "serviceTag": "ABC1236"
+        }
+      ]
+    }
+  },
+  "relationships": [
+    {
+      "source": {
+        "type": "cluster-node",
+        "id": "azl-iic-n01"
+      },
+      "target": {
+        "type": "virtual-machine",
+        "id": "avd-iic-sh01"
+      },
+      "relationshipType": "hosts",
+      "properties": {
+        "state": "Running",
+        "workloadFamily": "AVD"
+      }
+    },
+    {
+      "source": {
+        "type": "cluster-node",
+        "id": "azl-iic-n02"
+      },
+      "target": {
+        "type": "virtual-machine",
+        "id": "avd-iic-sh02"
+      },
+      "relationshipType": "hosts",
+      "properties": {
+        "state": "Running",
+        "workloadFamily": "AVD"
+      }
+    },
+    {
+      "source": {
+        "type": "cluster-node",
+        "id": "azl-iic-n03"
+      },
+      "target": {
+        "type": "virtual-machine",
+        "id": "avd-iic-sh03"
+      },
+      "relationshipType": "hosts",
+      "properties": {
+        "state": "Running",
+        "workloadFamily": "AVD"
+      }
+    },
+    {
+      "source": {
+        "type": "cluster-node",
+        "id": "azl-iic-n01"
+      },
+      "target": {
+        "type": "virtual-machine",
+        "id": "arc-iic-vm01"
+      },
+      "relationshipType": "hosts",
+      "properties": {
+        "state": "Running",
+        "workloadFamily": "Arc VMs"
+      }
+    },
+    {
+      "source": {
+        "type": "cluster-node",
+        "id": "azl-iic-n02"
+      },
+      "target": {
+        "type": "virtual-machine",
+        "id": "arc-iic-vm02"
+      },
+      "relationshipType": "hosts",
+      "properties": {
+        "state": "Running",
+        "workloadFamily": "Arc VMs"
+      }
+    },
+    {
+      "source": {
+        "type": "cluster-node",
+        "id": "azl-iic-n01"
+      },
+      "target": {
+        "type": "arc-machine",
+        "id": "azl-iic-n01"
+      },
+      "relationshipType": "registered-as",
+      "properties": {
+        "resourceGroup": "rg-iic-arc-01"
+      }
+    },
+    {
+      "source": {
+        "type": "cluster-node",
+        "id": "azl-iic-n02"
+      },
+      "target": {
+        "type": "arc-machine",
+        "id": "azl-iic-n02"
+      },
+      "relationshipType": "registered-as",
+      "properties": {
+        "resourceGroup": "rg-iic-arc-01"
+      }
+    },
+    {
+      "source": {
+        "type": "cluster-node",
+        "id": "azl-iic-n03"
+      },
+      "target": {
+        "type": "arc-machine",
+        "id": "azl-iic-n03"
+      },
+      "relationshipType": "registered-as",
+      "properties": {
+        "resourceGroup": "rg-iic-arc-01"
+      }
+    },
+    {
+      "source": {
+        "type": "cluster",
+        "id": "azlocal-iic-01"
+      },
+      "target": {
+        "type": "log-analytics-workspace",
+        "id": "law-iic-monitor-01"
+      },
+      "relationshipType": "monitored-by",
+      "properties": {
+        "dcrName": "dcr-iic-azl-01"
+      }
+    }
+  ],
+  "findings": [
+    {
+      "severity": "warning",
+      "title": "One or more node certificates expire within 90 days",
+      "description": "Identity posture data indicates certificate on azl-iic-n01 expires within 90 days.",
+      "affectedComponents": [
+        "azl-iic-n01"
+      ],
+      "currentState": "1 certificate expiring within 90 days",
+      "recommendation": "Review certificate ownership and renew expiring node certificates before handoff."
+    },
+    {
+      "severity": "warning",
+      "title": "iDRAC firmware below recommended baseline on all nodes",
+      "description": "OEM integration data shows iDRAC firmware at 7.10.30.00. The recommended baseline is 7.20 or later.",
+      "affectedComponents": [
+        "azl-iic-n01",
+        "azl-iic-n02",
+        "azl-iic-n03"
+      ],
+      "currentState": "iDRAC firmware 7.10.30.00",
+      "recommendation": "Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window."
+    },
+    {
+      "severity": "informational",
+      "title": "Azure Policy assignments discovered at resource group scope",
+      "description": "2 policy assignments are enforcing tagging and security control auditing.",
+      "affectedComponents": [
+        "rg-iic-compute-01"
+      ],
+      "currentState": "2 policy assignments active",
+      "recommendation": "Verify policy scope extends to arc resource group and monitor for compliance drift."
+    },
+    {
+      "severity": "informational",
+      "title": "Cluster event history includes a transient network quorum warning",
+      "description": "A Management network quorum warning event was recorded on 2026-04-06. Cluster recovered automatically.",
+      "affectedComponents": [
+        "azlocal-iic-01"
+      ],
+      "currentState": "single event logged; cluster healthy",
+      "recommendation": "Review switch port configuration to confirm management NICs are on dedicated VLANs and bonded correctly."
+    }
+  ],
+  "artifacts": [],
+  "evidence": []
+}
