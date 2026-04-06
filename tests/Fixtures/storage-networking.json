@@ -1,0 +1,128 @@
+{
+  "Status": "success",
+  "Domains": {
+    "storage": {
+      "pools": [
+        {
+          "friendlyName": "S2D on azlocal-prod-01",
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "size": 8796093022208,
+          "allocatedSize": 4398046511104,
+          "isPrimordial": false
+        }
+      ],
+      "physicalDisks": [
+        {
+          "friendlyName": "Disk01",
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "mediaType": "SSD",
+          "size": 1920397905920,
+          "usage": "AutoSelect"
+        }
+      ],
+      "virtualDisks": [
+        {
+          "friendlyName": "Volume1",
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "resiliencySettingName": "Mirror",
+          "size": 2199023255552
+        }
+      ],
+      "volumes": [
+        {
+          "driveLetter": "C",
+          "fileSystemLabel": "System",
+          "fileSystem": "NTFS",
+          "healthStatus": "Healthy",
+          "sizeRemaining": 536870912000,
+          "size": 1073741824000
+        }
+      ],
+      "csvs": [
+        {
+          "name": "Cluster Virtual Disk (Volume1)",
+          "state": "Online",
+          "ownerNode": "azl-node-01"
+        }
+      ],
+      "qos": [],
+      "sofs": [],
+      "replica": []
+    },
+    "networking": {
+      "nodes": [
+        {
+          "node": "azl-node-01",
+          "adapters": [
+            {
+              "name": "NIC1",
+              "interfaceDescription": "Mellanox ConnectX",
+              "status": "Up",
+              "linkSpeed": "100 Gbps"
+            }
+          ],
+          "vSwitches": [
+            {
+              "name": "ConvergedSwitch",
+              "switchType": "External",
+              "allowManagementOS": true
+            }
+          ],
+          "hostVirtualNics": [
+            {
+              "name": "vNIC-Management",
+              "switchName": "ConvergedSwitch",
+              "status": "Up"
+            }
+          ],
+          "intents": [
+            {
+              "name": "Compute_Management",
+              "clusterName": "azlocal-prod-01"
+            }
+          ],
+          "dns": [
+            {
+              "interfaceAlias": "vNIC-Management",
+              "serverAddresses": [
+                "10.10.10.10",
+                "10.10.10.11"
+              ]
+            }
+          ],
+          "proxy": "Direct access",
+          "firewall": [
+            {
+              "name": "Domain",
+              "enabled": true,
+              "defaultInboundAction": "Allow"
+            }
+          ],
+          "sdn": []
+        }
+      ],
+      "clusterNetworks": [
+        {
+          "name": "Management",
+          "role": 3,
+          "address": "10.10.10.0",
+          "addressMask": "255.255.255.0",
+          "state": 2
+        }
+      ],
+      "adapters": [],
+      "vSwitches": [],
+      "hostVirtualNics": [],
+      "intents": [],
+      "dns": [],
+      "proxy": [],
+      "firewall": [],
+      "sdn": []
+    }
+  },
+  "Findings": [],
+  "Relationships": []
+}

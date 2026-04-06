@@ -1,0 +1,163 @@
+{
+  "Status": "success",
+  "Domains": {
+    "virtualMachines": {
+      "inventory": [
+        {
+          "name": "avd-sessionhost-01",
+          "hostNode": "azl-node-01",
+          "state": "Running",
+          "generation": 2,
+          "processorCount": 8,
+          "memoryAssignedMb": 16384,
+          "dynamicMemory": true,
+          "switchNames": [
+            "ConvergedSwitch"
+          ]
+        }
+      ],
+      "placement": [
+        {
+          "vm": "avd-sessionhost-01",
+          "hostNode": "azl-node-01",
+          "state": "Running"
+        }
+      ],
+      "workloadFamilies": [
+        {
+          "name": "AVD",
+          "count": 1
+        },
+        {
+          "name": "Arc VMs",
+          "count": 1
+        }
+      ]
+    },
+    "identitySecurity": {
+      "nodes": [
+        {
+          "node": "azl-node-01",
+          "partOfDomain": true,
+          "domain": "contoso.com",
+          "credSsp": false
+        }
+      ],
+      "certificates": [
+        {
+          "node": "azl-node-01",
+          "items": [
+            {
+              "subject": "CN=azlocal-prod-01",
+              "thumbprint": "AAA111",
+              "notAfter": "2027-05-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "posture": [
+        {
+          "node": "azl-node-01",
+          "defender": {
+            "antivirusEnabled": true,
+            "realTimeProtectionEnabled": true
+          },
+          "deviceGuard": {
+            "virtualizationBasedSecurityStatus": 2
+          },
+          "bitlocker": [
+            {
+              "mountPoint": "C:",
+              "protectionStatus": "On"
+            }
+          ]
+        }
+      ],
+      "localAdmins": [
+        {
+          "node": "azl-node-01",
+          "members": [
+            {
+              "name": "CONTOSO\\RangerAdmins",
+              "objectClass": "Group"
+            }
+          ]
+        }
+      ],
+      "auditPolicy": [
+        {
+          "node": "azl-node-01",
+          "values": [
+            "Logon/Logoff Success and Failure"
+          ]
+        }
+      ]
+    },
+    "azureIntegration": {
+      "context": {
+        "subscriptionId": "00000000-0000-0000-0000-000000000000",
+        "resourceGroup": "rg-azlocal-prod-01",
+        "tenantId": "11111111-1111-1111-1111-111111111111"
+      },
+      "resources": [
+        {
+          "name": "azlocal-prod-01",
+          "resourceType": "Microsoft.AzureStackHCI/clusters",
+          "resourceGroupName": "rg-azlocal-prod-01",
+          "location": "eastus"
+        },
+        {
+          "name": "avd-hostpool-prod",
+          "resourceType": "Microsoft.DesktopVirtualization/hostPools",
+          "resourceGroupName": "rg-azlocal-prod-01",
+          "location": "eastus"
+        }
+      ],
+      "services": [
+        {
+          "category": "Microsoft.AzureStackHCI/clusters",
+          "count": 1,
+          "name": "Microsoft.AzureStackHCI/clusters"
+        }
+      ],
+      "policy": [
+        {
+          "name": "audit-tagging",
+          "displayName": "Audit tag usage",
+          "scope": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-azlocal-prod-01",
+          "enforcementMode": "Default"
+        }
+      ],
+      "backup": [
+        {
+          "name": "rsv-azlocal-prod-01",
+          "resourceType": "Microsoft.RecoveryServices/vaults"
+        }
+      ],
+      "update": [
+        {
+          "name": "update-manager-prod",
+          "resourceType": "Microsoft.Maintenance/configurationAssignments"
+        }
+      ],
+      "cost": []
+    }
+  },
+  "Findings": [],
+  "Relationships": [
+    {
+      "source": {
+        "type": "cluster-node",
+        "id": "azl-node-01"
+      },
+      "target": {
+        "type": "virtual-machine",
+        "id": "avd-sessionhost-01"
+      },
+      "relationshipType": "hosts",
+      "properties": {
+        "state": "Running"
+      }
+    }
+  ]
+}

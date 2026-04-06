@@ -1,0 +1,67 @@
+{
+  "Status": "success",
+  "Domains": {
+    "managementTools": {
+      "tools": [
+        {
+          "name": "ServerManagementGateway",
+          "displayName": "Windows Admin Center",
+          "status": "Running",
+          "startType": "Automatic"
+        }
+      ],
+      "agents": [
+        {
+          "name": "HealthService",
+          "displayName": "Microsoft Monitoring Agent",
+          "status": "Running",
+          "startType": "Automatic"
+        }
+      ]
+    },
+    "performance": {
+      "nodes": [
+        "azl-node-01",
+        "azl-node-02"
+      ],
+      "compute": [
+        {
+          "node": "azl-node-01",
+          "metrics": {
+            "cpuUtilizationPercent": 41,
+            "availableMemoryMb": 131072,
+            "totalMemoryMb": 524288
+          }
+        }
+      ],
+      "storage": [
+        {
+          "node": "azl-node-01",
+          "metrics": [
+            {
+              "name": "C:",
+              "percentFreeSpace": 52,
+              "avgDiskSecPerTransfer": 3,
+              "diskTransfersPerSec": 230
+            }
+          ]
+        }
+      ],
+      "networking": [
+        {
+          "node": "azl-node-01",
+          "metrics": [
+            {
+              "name": "Mellanox ConnectX",
+              "bytesTotalPersec": 10485760,
+              "currentBandwidth": 100000000000
+            }
+          ]
+        }
+      ],
+      "outliers": []
+    }
+  },
+  "Findings": [],
+  "Relationships": []
+}

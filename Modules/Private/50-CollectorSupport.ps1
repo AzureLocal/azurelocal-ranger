@@ -1,0 +1,213 @@
+function Get-RangerHintValue {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Config,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Name
+    )
+
+    $hints = $Config.domains.hints
+    if ($hints -and $hints.Contains($Name)) {
+        return $hints[$Name]
+    }
+
+    return $null
+}
+
+function Get-RangerCollectorFixtureData {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Config,
+
+        [Parameter(Mandatory = $true)]
+        [string]$CollectorId
+    )
+
+    $fixtures = Get-RangerHintValue -Config $Config -Name 'fixtures'
+    if ($fixtures -and $fixtures.Contains($CollectorId) -and -not [string]::IsNullOrWhiteSpace([string]$fixtures[$CollectorId])) {
+        return Get-RangerFixtureData -Path ([string]$fixtures[$CollectorId])
+    }
+
+    return $null
+}
+
+function Get-RangerClusterTargets {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Config,
+
+        [switch]$SingleTarget
+    )
+
+    $targets = @($Config.targets.cluster.nodes | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($targets.Count -eq 0 -and -not [string]::IsNullOrWhiteSpace($Config.targets.cluster.fqdn)) {
+        $targets = @($Config.targets.cluster.fqdn)
+    }
+
+    if ($targets.Count -eq 0) {
+        $targets = @($env:COMPUTERNAME)
+    }
+
+    if ($SingleTarget) {
+        return @($targets | Select-Object -First 1)
+    }
+
+    return @($targets)
+}
+
+function Invoke-RangerClusterCommand {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Config,
+
+        [Parameter(Mandatory = $true)]
+        [scriptblock]$ScriptBlock,
+
+        [PSCredential]$Credential,
+        [object[]]$ArgumentList,
+        [switch]$SingleTarget
+    )
+
+    $targets = Get-RangerClusterTargets -Config $Config -SingleTarget:$SingleTarget
+    $currentNames = @($env:COMPUTERNAME, [System.Net.Dns]::GetHostName()) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    if ($targets.Count -eq 1 -and $targets[0] -in $currentNames -and -not $Credential) {
+        return & $ScriptBlock @ArgumentList
+    }
+
+    return Invoke-RangerRemoteCommand -ComputerName $targets -Credential $Credential -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList -RetryCount 1
+}
+
+function Invoke-RangerSafeAction {
+    param(
+        [Parameter(Mandatory = $true)]
+        [scriptblock]$ScriptBlock,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Label,
+
+        [AllowNull()]
+        $DefaultValue = $null
+    )
+
+    try {
+        return & $ScriptBlock
+    }
+    catch {
+        Write-RangerLog -Level warn -Message "$Label failed: $($_.Exception.Message)"
+        return $DefaultValue
+    }
+}
+
+function New-RangerRelationship {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourceType,
+
+        [Parameter(Mandatory = $true)]
+        [string]$SourceId,
+
+        [Parameter(Mandatory = $true)]
+        [string]$TargetType,
+
+        [Parameter(Mandatory = $true)]
+        [string]$TargetId,
+
+        [Parameter(Mandatory = $true)]
+        [string]$RelationshipType,
+
+        [System.Collections.IDictionary]$Properties
+    )
+
+    [ordered]@{
+        source           = [ordered]@{ type = $SourceType; id = $SourceId }
+        target           = [ordered]@{ type = $TargetType; id = $TargetId }
+        relationshipType = $RelationshipType
+        properties       = if ($Properties) { ConvertTo-RangerHashtable -InputObject $Properties } else { [ordered]@{} }
+    }
+}
+
+function Test-RangerDomainPopulated {
+    param(
+        [AllowNull()]
+        $Value
+    )
+
+    if ($null -eq $Value) {
+        return $false
+    }
+
+    if ($Value -is [string]) {
+        return -not [string]::IsNullOrWhiteSpace($Value)
+    }
+
+    if ($Value -is [System.Collections.IDictionary]) {
+        foreach ($key in $Value.Keys) {
+            if (Test-RangerDomainPopulated -Value $Value[$key]) {
+                return $true
+            }
+        }
+
+        return $false
+    }
+
+    if ($Value -is [System.Collections.IEnumerable]) {
+        foreach ($item in $Value) {
+            if (Test-RangerDomainPopulated -Value $item) {
+                return $true
+            }
+        }
+
+        return $false
+    }
+
+    return $true
+}
+
+function Get-RangerAzureResources {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Config,
+
+        [string[]]$ResourceTypes = @()
+    )
+
+    $resourceGroup = $Config.targets.azure.resourceGroup
+    $result = Invoke-RangerAzureQuery -AzureCredentialSettings $Config.credentials.azure -ArgumentList @($resourceGroup) -ScriptBlock {
+        param($Rg)
+
+        if (-not (Get-Command -Name Get-AzResource -ErrorAction SilentlyContinue)) {
+            return @()
+        }
+
+        if ([string]::IsNullOrWhiteSpace($Rg)) {
+            return @()
+        }
+
+        Get-AzResource -ResourceGroupName $Rg -ErrorAction Stop |
+            Select-Object Name, ResourceType, ResourceGroupName, Location, ResourceId, Tags
+    }
+
+    $resources = @($result)
+    if ($ResourceTypes.Count -eq 0) {
+        return $resources
+    }
+
+    return @(
+        $resources | Where-Object {
+            $_.ResourceType -in $ResourceTypes
+        }
+    )
+}
+
+function Get-RangerArtifactPrefix {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Manifest
+    )
+
+    $clusterName = if (-not [string]::IsNullOrWhiteSpace($Manifest.target.clusterName)) { $Manifest.target.clusterName } else { $Manifest.target.environmentLabel }
+    $timestamp = if ($Manifest.run.endTimeUtc) { $Manifest.run.endTimeUtc } else { $Manifest.run.startTimeUtc }
+    $parsedTimestamp = [datetime]::Parse($timestamp).ToUniversalTime().ToString('yyyyMMddTHHmmssZ')
+    '{0}-{1}-{2}' -f (Get-RangerSafeName -Value $clusterName), (Get-RangerSafeName -Value $Manifest.run.mode), $parsedTimestamp
+}

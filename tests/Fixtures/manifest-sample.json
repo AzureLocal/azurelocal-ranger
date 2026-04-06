@@ -1,0 +1,163 @@
+{
+  "run": {
+    "toolVersion": "0.2.0",
+    "schemaVersion": "1.0.0-draft",
+    "startTimeUtc": "2026-04-06T12:00:00Z",
+    "endTimeUtc": "2026-04-06T12:05:00Z",
+    "mode": "current-state",
+    "runner": "RANGER-TEST",
+    "includeDomains": [],
+    "excludeDomains": [],
+    "selectedCollectors": [
+      "topology-cluster",
+      "hardware",
+      "storage-networking",
+      "workload-identity-azure",
+      "monitoring-observability",
+      "management-performance"
+    ]
+  },
+  "target": {
+    "environmentLabel": "prod-azlocal-01",
+    "clusterName": "azlocal-prod-01",
+    "clusterFqdn": "azlocal-prod-01.contoso.com",
+    "resourceGroup": "rg-azlocal-prod-01",
+    "subscriptionId": "00000000-0000-0000-0000-000000000000",
+    "tenantId": "11111111-1111-1111-1111-111111111111",
+    "nodeList": [
+      "azl-node-01.contoso.com",
+      "azl-node-02.contoso.com"
+    ]
+  },
+  "topology": {
+    "deploymentType": "hyperconverged",
+    "identityMode": "ad",
+    "controlPlaneMode": "connected",
+    "storageArchitecture": "storage-spaces-direct",
+    "networkArchitecture": "switched",
+    "variantMarkers": [
+      "connected"
+    ]
+  },
+  "collectors": {
+    "topology-cluster": { "status": "success" },
+    "hardware": { "status": "success" },
+    "storage-networking": { "status": "success" },
+    "workload-identity-azure": { "status": "success" },
+    "monitoring-observability": { "status": "success" },
+    "management-performance": { "status": "success" }
+  },
+  "domains": {
+    "clusterNode": {
+      "cluster": { "name": "azlocal-prod-01", "s2dEnabled": true },
+      "nodes": [
+        { "name": "azl-node-01", "state": "Up" },
+        { "name": "azl-node-02", "state": "Up" }
+      ],
+      "quorum": { "quorumType": "CloudWitness" },
+      "faultDomains": [ { "name": "Rack01" } ],
+      "networks": [ { "name": "Management", "role": 3 } ],
+      "csvSummary": { "count": 1 },
+      "updatePosture": { "clusterAwareUpdating": { "requireAllNodesOnline": true } },
+      "eventSummary": [],
+      "healthSummary": { "totalNodes": 2, "healthyNodes": 2, "unhealthy": 0 }
+    },
+    "hardware": {
+      "nodes": [
+        { "node": "azl-node-01", "model": "PowerEdge R760xs" },
+        { "node": "azl-node-02", "model": "PowerEdge R760xs" }
+      ],
+      "summary": { "nodeCount": 2 }
+    },
+    "storage": {
+      "pools": [ { "friendlyName": "S2D on azlocal-prod-01", "healthStatus": "Healthy" } ],
+      "physicalDisks": [ { "friendlyName": "Disk01", "healthStatus": "Healthy" } ],
+      "virtualDisks": [ { "friendlyName": "Volume1" } ],
+      "volumes": [ { "driveLetter": "C" } ],
+      "csvs": [ { "name": "Cluster Virtual Disk (Volume1)" } ],
+      "qos": [],
+      "sofs": [],
+      "replica": []
+    },
+    "networking": {
+      "nodes": [ { "node": "azl-node-01" } ],
+      "clusterNetworks": [ { "name": "Management" } ],
+      "adapters": [],
+      "vSwitches": [],
+      "hostVirtualNics": [],
+      "intents": [],
+      "dns": [],
+      "proxy": [],
+      "firewall": [],
+      "sdn": []
+    },
+    "virtualMachines": {
+      "inventory": [ { "name": "avd-sessionhost-01", "hostNode": "azl-node-01", "state": "Running" } ],
+      "placement": [ { "vm": "avd-sessionhost-01", "hostNode": "azl-node-01" } ],
+      "workloadFamilies": [ { "name": "AVD", "count": 1 } ]
+    },
+    "identitySecurity": {
+      "nodes": [ { "node": "azl-node-01", "partOfDomain": true } ],
+      "certificates": [ { "node": "azl-node-01", "items": [] } ],
+      "posture": [ { "node": "azl-node-01", "defender": { "antivirusEnabled": true } } ],
+      "localAdmins": [ { "node": "azl-node-01", "members": [] } ],
+      "auditPolicy": [ { "node": "azl-node-01", "values": [] } ]
+    },
+    "azureIntegration": {
+      "context": { "subscriptionId": "00000000-0000-0000-0000-000000000000", "resourceGroup": "rg-azlocal-prod-01" },
+      "resources": [
+        { "name": "azlocal-prod-01", "resourceType": "Microsoft.AzureStackHCI/clusters" },
+        { "name": "avd-hostpool-prod", "resourceType": "Microsoft.DesktopVirtualization/hostPools" }
+      ],
+      "services": [ { "category": "Microsoft.AzureStackHCI/clusters", "count": 1, "name": "Microsoft.AzureStackHCI/clusters" } ],
+      "policy": [ { "name": "audit-tagging" } ],
+      "backup": [ { "name": "rsv-azlocal-prod-01" } ],
+      "update": [ { "name": "update-manager-prod" } ],
+      "cost": []
+    },
+    "monitoring": {
+      "telemetry": [ { "name": "AzureEdgeTelemetryAndDiagnostics" } ],
+      "ama": [ { "name": "AzureMonitorWindowsAgent" } ],
+      "dcr": [ { "name": "dcr-azlocal-prod-01" } ],
+      "dce": [ { "name": "dce-azlocal-prod-01" } ],
+      "insights": [ { "name": "law-azlocal-prod-01" } ],
+      "alerts": [ { "name": "critical-capacity-alert" } ],
+      "health": [ { "node": "azl-node-01" } ]
+    },
+    "managementTools": {
+      "tools": [ { "name": "ServerManagementGateway", "status": "Running" } ],
+      "agents": [ { "name": "HealthService", "status": "Running" } ]
+    },
+    "performance": {
+      "nodes": [ "azl-node-01", "azl-node-02" ],
+      "compute": [ { "node": "azl-node-01", "metrics": { "cpuUtilizationPercent": 41 } } ],
+      "storage": [ { "node": "azl-node-01", "metrics": [] } ],
+      "networking": [ { "node": "azl-node-01", "metrics": [] } ],
+      "outliers": []
+    },
+    "oemIntegration": {
+      "endpoints": [ { "host": "idrac-node-01.contoso.com", "node": "azl-node-01" } ],
+      "managementPosture": [ { "node": "azl-node-01", "managerModel": "iDRAC9" } ]
+    }
+  },
+  "relationships": [
+    {
+      "source": { "type": "cluster-node", "id": "azl-node-01" },
+      "target": { "type": "virtual-machine", "id": "avd-sessionhost-01" },
+      "relationshipType": "hosts",
+      "properties": { "state": "Running" }
+    }
+  ],
+  "findings": [
+    {
+      "severity": "warning",
+      "title": "Example warning finding",
+      "description": "Representative finding for report rendering.",
+      "affectedComponents": [ "azl-node-01" ],
+      "currentState": "sample",
+      "recommendation": "Validate the example finding path."
+    }
+  ],
+  "artifacts": [],
+  "evidence": []
+}

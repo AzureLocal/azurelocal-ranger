@@ -1,0 +1,91 @@
+{
+  "Status": "success",
+  "Domains": {
+    "hardware": {
+      "nodes": [
+        {
+          "node": "azl-node-01",
+          "endpoint": "idrac-node-01.contoso.com",
+          "manufacturer": "Dell Inc.",
+          "model": "PowerEdge R760xs",
+          "serviceTag": "ABC1234",
+          "serialNumber": "SN-001",
+          "powerState": "On",
+          "biosVersion": "1.5.2",
+          "bmcFirmware": "7.00.00.00",
+          "cpuCount": 2,
+          "memoryDeviceCount": 16,
+          "memoryGiB": 512,
+          "nicCount": 6,
+          "storageControllerCount": 2,
+          "firmwareCount": 14
+        },
+        {
+          "node": "azl-node-02",
+          "endpoint": "idrac-node-02.contoso.com",
+          "manufacturer": "Dell Inc.",
+          "model": "PowerEdge R760xs",
+          "serviceTag": "ABC5678",
+          "serialNumber": "SN-002",
+          "powerState": "On",
+          "biosVersion": "1.5.2",
+          "bmcFirmware": "7.00.00.00",
+          "cpuCount": 2,
+          "memoryDeviceCount": 16,
+          "memoryGiB": 512,
+          "nicCount": 6,
+          "storageControllerCount": 2,
+          "firmwareCount": 14
+        }
+      ],
+      "summary": {
+        "nodeCount": 2,
+        "manufacturers": [
+          {
+            "name": "Dell Inc.",
+            "count": 2
+          }
+        ],
+        "firmwareNodes": 2
+      }
+    },
+    "oemIntegration": {
+      "endpoints": [
+        {
+          "host": "idrac-node-01.contoso.com",
+          "node": "azl-node-01"
+        },
+        {
+          "host": "idrac-node-02.contoso.com",
+          "node": "azl-node-02"
+        }
+      ],
+      "managementPosture": [
+        {
+          "node": "azl-node-01",
+          "endpoint": "idrac-node-01.contoso.com",
+          "managerModel": "iDRAC9",
+          "managerFirmwareVersion": "7.00.00.00",
+          "lifecycleController": "iDRAC"
+        }
+      ]
+    }
+  },
+  "Findings": [],
+  "Relationships": [
+    {
+      "source": {
+        "type": "bmc-endpoint",
+        "id": "idrac-node-01.contoso.com"
+      },
+      "target": {
+        "type": "cluster-node",
+        "id": "azl-node-01"
+      },
+      "relationshipType": "manages",
+      "properties": {
+        "manufacturer": "Dell Inc."
+      }
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "Status": "success",
+  "Topology": {
+    "deploymentType": "hyperconverged",
+    "identityMode": "ad",
+    "controlPlaneMode": "connected",
+    "storageArchitecture": "storage-spaces-direct",
+    "networkArchitecture": "switched",
+    "variantMarkers": [
+      "connected"
+    ]
+  },
+  "Domains": {
+    "clusterNode": {
+      "cluster": {
+        "name": "azlocal-prod-01",
+        "id": "cluster-001",
+        "domain": "contoso.com",
+        "clusterFunctionalLevel": 11,
+        "s2dEnabled": true,
+        "dynamicQuorum": true,
+        "registrationConfigured": true
+      },
+      "nodes": [
+        {
+          "name": "azl-node-01",
+          "fqdn": "azl-node-01.contoso.com",
+          "state": "Up",
+          "uptimeHours": 144.2,
+          "osCaption": "Microsoft Azure Stack HCI",
+          "osVersion": "10.0.25398",
+          "partOfDomain": true,
+          "domain": "contoso.com"
+        },
+        {
+          "name": "azl-node-02",
+          "fqdn": "azl-node-02.contoso.com",
+          "state": "Up",
+          "uptimeHours": 141.8,
+          "osCaption": "Microsoft Azure Stack HCI",
+          "osVersion": "10.0.25398",
+          "partOfDomain": true,
+          "domain": "contoso.com"
+        }
+      ],
+      "quorum": {
+        "quorumType": "CloudWitness",
+        "quorumResource": "Cloud Witness"
+      },
+      "faultDomains": [
+        {
+          "name": "Rack01",
+          "faultDomainType": "Site",
+          "location": "Rack 01"
+        }
+      ],
+      "networks": [
+        {
+          "name": "Management",
+          "role": 3,
+          "address": "10.10.10.0",
+          "addressMask": "255.255.255.0",
+          "state": 2,
+          "metric": 1000
+        },
+        {
+          "name": "Storage",
+          "role": 1,
+          "address": "172.16.0.0",
+          "addressMask": "255.255.255.0",
+          "state": 2,
+          "metric": 900
+        }
+      ],
+      "csvSummary": {
+        "count": 2,
+        "items": [
+          {
+            "name": "Cluster Virtual Disk (Volume1)",
+            "state": "Online",
+            "ownerNode": "azl-node-01"
+          }
+        ]
+      },
+      "updatePosture": {
+        "clusterAwareUpdating": {
+          "clusterName": "azlocal-prod-01",
+          "maxRetriesPerNode": 2,
+          "requireAllNodesOnline": true
+        }
+      },
+      "eventSummary": [
+        {
+          "timeCreated": "2026-04-06T12:00:00Z",
+          "id": 1561,
+          "levelDisplayName": "Information",
+          "providerName": "Microsoft-Windows-FailoverClustering"
+        }
+      ],
+      "healthSummary": {
+        "totalNodes": 2,
+        "healthyNodes": 2,
+        "unhealthy": 0
+      }
+    }
+  },
+  "Findings": [],
+  "Relationships": []
+}

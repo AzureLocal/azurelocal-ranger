@@ -1,0 +1,55 @@
+{
+  "Status": "success",
+  "Domains": {
+    "monitoring": {
+      "telemetry": [
+        {
+          "name": "AzureEdgeTelemetryAndDiagnostics",
+          "resourceType": "Microsoft.AzureStackHCI/clusters/extensions"
+        }
+      ],
+      "ama": [
+        {
+          "name": "AzureMonitorWindowsAgent",
+          "resourceType": "Microsoft.HybridCompute/machines/extensions"
+        }
+      ],
+      "dcr": [
+        {
+          "name": "dcr-azlocal-prod-01",
+          "resourceType": "Microsoft.Insights/dataCollectionRules"
+        }
+      ],
+      "dce": [
+        {
+          "name": "dce-azlocal-prod-01",
+          "resourceType": "Microsoft.Insights/dataCollectionEndpoints"
+        }
+      ],
+      "insights": [
+        {
+          "name": "law-azlocal-prod-01",
+          "resourceType": "Microsoft.OperationalInsights/workspaces"
+        }
+      ],
+      "alerts": [
+        {
+          "name": "critical-capacity-alert",
+          "resourceType": "Microsoft.Insights/scheduledQueryRules"
+        }
+      ],
+      "health": [
+        {
+          "node": "azl-node-01",
+          "healthService": {
+            "name": "HealthService",
+            "status": "Running"
+          },
+          "diagnostics": []
+        }
+      ]
+    }
+  },
+  "Findings": [],
+  "Relationships": []
+}

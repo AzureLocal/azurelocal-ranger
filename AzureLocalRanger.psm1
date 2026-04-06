@@ -2,9 +2,9 @@
 
 $moduleRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $moduleFolders = @(
-    (Join-Path $moduleRoot 'Modules\Core'),
     (Join-Path $moduleRoot 'Modules\Internal'),
     (Join-Path $moduleRoot 'Modules\Private'),
+    (Join-Path $moduleRoot 'Modules\Core'),
     (Join-Path $moduleRoot 'Modules\Collectors'),
     (Join-Path $moduleRoot 'Modules\Outputs\Reports'),
     (Join-Path $moduleRoot 'Modules\Outputs\Diagrams'),
@@ -18,3 +18,10 @@ foreach ($folder in $moduleFolders) {
             ForEach-Object { . $_.FullName }
     }
 }
+
+Export-ModuleMember -Function @(
+    'Invoke-AzureLocalRanger',
+    'New-AzureLocalRangerConfig',
+    'Export-AzureLocalRangerReport',
+    'Test-AzureLocalRangerPrerequisites'
+)
