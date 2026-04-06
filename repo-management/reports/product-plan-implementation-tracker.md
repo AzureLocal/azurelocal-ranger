@@ -29,8 +29,10 @@ Current implementation validation used for this audit:
 | Commit | `e294211` |
 | Test command | `Import-Module .\AzureLocalRanger.psd1 -Force; Invoke-Pester -Path .\tests -PassThru` |
 | Latest validated result | `8 passed, 0 failed` |
-| Runtime/output issues closed | `#19`, `#22`, `#23`, `#24` |
-| Discovery issues closed | `#9`, `#10`, `#11`, `#12`, `#20`, `#21`, `#16` |
+| Runtime/output baseline issues reopened for remaining work | `#19`, `#22`, `#23`, `#24` |
+| Discovery baseline issues reopened for remaining work | `#9`, `#10`, `#11`, `#12`, `#16`, `#21` |
+| Discovery issue completed and still closed | `#20` |
+| Live validation backlog issue | `#34` |
 
 ## Overall Audit
 
@@ -38,7 +40,7 @@ Current implementation validation used for this audit:
 | --- | --- | --- | --- | --- |
 | Product architecture | One public module with orchestration, shared services, collectors, and output layers | Delivered in `AzureLocalRanger.psd1`, `AzureLocalRanger.psm1`, `Modules/Core/20-Runtime.ps1`, `Modules/Private/10-Utilities.ps1`, `Modules/Public/10-Commands.ps1`, `Modules/Internal/01-Definitions.ps1` | Aligned | This is one of the strongest matches to the plan. |
 | Manifest-first design | Collect once, render later from cached manifest only | Delivered | Aligned | Runtime saves `manifest/audit-manifest.json` via `Modules/Core/10-Manifest.ps1`; reports and diagrams consume cached manifest only. |
-| Runtime/orchestration | Config loading, validation, credential resolution, domain selection, execution ordering, manifest assembly, persistence | Delivered | Aligned | This is the core of closed issue `#19`. |
+| Runtime/orchestration | Config loading, validation, credential resolution, domain selection, execution ordering, manifest assembly, persistence | Delivered | Aligned | This is the core of issue `#19`, which has been reopened for remaining runtime hardening work. |
 | Selective domain execution | Include/exclude support; optional domains skipped by default; per-collector status in manifest | Delivered | Mostly aligned | Include/exclude and optional-skip behavior exist; variant-specific deep lighting is still fairly lightweight. |
 | Connectivity model | WinRM, Redfish, Az/CLI for v1; Arc Run Command investigated later | Delivered for v1 basics | Mostly aligned | WinRM, Redfish, and Azure context/CLI paths exist. Arc Run Command is still not implemented, which is acceptable because the plan marks it as investigation rather than v1 dependency. |
 | Authentication strategy | Parameter, Key Vault URI, interactive prompt; Azure support for interactive, service principal, managed identity, existing context | Partially delivered | Partial | Parameter override, Key Vault URI, and prompt flow exist. Azure auth breadth is thinner than the plan: existing context and managed identity are present, but service principal and explicit interactive `Connect-AzAccount` flow are not fully implemented. |
@@ -117,7 +119,7 @@ These items are still inside the product plan and are not part of the explicit p
 | 11 | Broaden Azure authentication support | Existing context and managed identity exist | Not completed | Add first-class service principal and explicit interactive Azure login flow. |
 | 12 | Formalize schema validation boundary | Manifest contract is draft and implicit in code | Not completed | Create a stronger standalone schema and test asset and validate payload contracts independently. |
 | 13 | Add broader degraded-scenario test coverage | Fixtures exist, but scenario breadth is still limited | Not completed | Add dedicated tests for partial, failed, skipped, and degraded collector states across more domains. |
-| 14 | Validate against a real Azure Local environment | Not done in this session | Not completed | Run Ranger against a live estate and compare collected output to the plan and expected docs package. |
+| 14 | Validate against a real Azure Local environment | Not done in this session; now tracked in `#34` | Not completed | Run Ranger against a live estate and compare collected output to the plan and expected docs package. |
 
 ## Explicit Post-V1 Items
 
@@ -137,7 +139,7 @@ These items are intentionally deferred and should stay tracked through the separ
 
 ## What This Means
 
-If the benchmark is the issues that were explicitly targeted for the v1 runtime and discovery delivery tracks, the work is complete.
+If the benchmark is the baseline implementation targeted by the original v1 runtime and discovery delivery tracks, that baseline exists in the repo.
 
 If the benchmark is the full long-form product-direction plan, the correct reading is:
 
