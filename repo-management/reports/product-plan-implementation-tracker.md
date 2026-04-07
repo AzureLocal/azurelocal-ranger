@@ -26,23 +26,27 @@ Current implementation validation used for this audit:
 
 | Item | Value |
 | --- | --- |
-| Commit | `a328016` (post-simulation) |
+| Commit | `7832892` (post #36/#37/#38) |
 | Test command | `Import-Module .\AzureLocalRanger.psd1 -Force; Invoke-Pester -Path .\tests -PassThru` |
-| Latest validated result | `18 passed, 0 failed` |
+| Latest validated result | `27 passed, 0 failed` |
 | Runtime/output issues | `#19`, `#22`, `#23`, `#24` closed after local completion and verification |
 | Discovery issues | `#9`, `#10`, `#11`, `#12`, `#16`, `#20`, `#21` closed after local completion and verification |
 | Post-v1 definition issues | `#13`, `#25`-`#33` closed after decision documentation was captured |
-| Remaining open issues | `#34` (live validation) |
+| Feature depth issues (#37 audit) | `#37` closed — docs audit complete; `#36` closed — offline NX-OS parser; `#38` closed — as-built templates |
+| Remaining open issues | `#34` (live validation), `#40`-`#52` (collector and docs depth gaps from product-direction audit) |
 
 ## Current Backlog State
 
 | Scope | State |
 | --- | --- |
-| Non-live v1 implementation backlog | Complete and closed |
+| Non-live v1 implementation backlog (original) | Complete — all issues through #38 closed |
 | Post-v1 definition backlog | Documented, deferred, and closed as planning issues |
 | Simulation testing framework | Complete — 27/27 tests passing, IIC synthetic fixture committed |
 | Live validation backlog | Open in `#34` |
-| New feature backlog | — all closed; `#34` live validation remains |
+| Collector depth gap backlog | Open — 10 collector depth issues `#41`–`#50` from product-direction full audit |
+| Diagram depth gap backlog | Open — `#51` (extended diagram catalog, Diagrams 7–18) |
+| Documentation gap backlog | Open — `#40` (missing documentation-roadmap.md) |
+| Scope boundary decision backlog | Open — `#52` (#36 vs #32 boundary decision) |
 
 ## Overall Audit
 
@@ -140,9 +144,22 @@ All non-live work from the previously open backlog has been completed locally an
 
 The only remaining item is live-estate validation.
 
-| Priority | Item | Current State | Status | Suggested Next Move |
+| Priority | Item | Issue | Current State | Status |
 | --- | --- | --- | --- | --- |
-| 1 | Validate against a real Azure Local environment | Not done in this session; tracked in `#34` | Not completed | Run Ranger against a live estate and compare collected output to the plan and expected docs package. |
+| 1 | Validate against a real Azure Local environment | `#34` | Not started | Not completed |
+| 2 | Decision: #36 vs #32 scope boundary | `#52` | Gray area documented in issue body | Needs decision |
+| 3 | Create docs/project/documentation-roadmap.md | `#40` | Page does not exist | Not started |
+| 4 | Deepen Cluster/Node collector | `#41` | CAU, LCM, update history, Test-Cluster state missing | Not started |
+| 4 | Deepen Hardware collector | `#42` | Per-DIMM detail, GPU, VBS subcomponents, BMC cert missing | Not started |
+| 4 | Deepen Storage collector | `#43` | SOFS ACLs, Health fault list, scrub schedule, QoS flow missing | Not started |
+| 4 | Deepen Networking collector | `#44` | DCB/PFC/ETS, SDN full detail, firewall port audit, LLDP TLV missing | Not started |
+| 4 | Deepen Virtual Machines collector | `#45` | Checkpoint tree, IS upgrade status, Arc extensions, VM image gallery missing | Not started |
+| 4 | Deepen Identity and Security collector | `#46` | CNO/VCO SPNs, AADKERB, BitLocker protector types, WDAC policy ID missing | Not started |
+| 4 | Deepen Azure Integration collector | `#47` | ARB K8s version, AKS CNI/add-ons, AVD scaling, Policy compliance, ASR/Backup detail missing | Not started |
+| 4 | Deepen Monitoring collector | `#48` | DCR transform KQL, HCI Insights stale signals, Health Service fault list missing | Not started |
+| 4 | Deepen Management Tools collector | `#49` | WAC extensions+TLS, SCVMM templates, SCOM alerts, third-party agents missing | Not started |
+| 4 | Deepen Performance Baseline collector | `#50` | RDMA stats, S2D cache ratios, event log analysis (8 sources) missing | Not started |
+| 5 | Implement extended diagram catalog (Diagrams 7–18) | `#51` | Catalog specified, generators not yet implemented | Not started |
 
 ## Explicit Post-V1 Items
 
@@ -192,7 +209,7 @@ This section documents a line-by-line code review performed at commit `907e69d`,
 | Verification commit reference | `7a27ff7` | HEAD is `907e69d` | Documentation only; updated in this audit |
 | `clusterNode` reserved template keys | `csvSummary`, `updatePosture`, `eventSummary` are reserved payload keys | Topology collector never populates these three keys; events are collected but go to `RawEvidence` only; `csvs` (raw list) is in the domain payload but no `csvSummary` object is computed | Low impact: keys exist in template as empty; no schema validation error; future work to summarize clusters events and CSVs would fill them |
 | `identitySecurity` collector vs template | Template defines `nodes`, `certificates`, `posture`, `localAdmins`, `auditPolicy`, `summary` | Collector also writes `activeDirectory` and `keyVault` sub-domains not in the reserved template definition | Low impact: extra keys are written and available; no schema violation; template is just incomplete relative to collector |
-| As-built mode report differentiation | Tracker marks as-built package depth as `Partial` with note about pipeline support | Reports generate the same content regardless of `mode = current-state` or `mode = as-built`; mode check only affects diagram selection rules | Confirms the `Partial` status is accurate; to fix this would require mode-specific report sections |
+| As-built mode report differentiation | Tracker marks as-built package depth as `Partial` with note about pipeline support | **Fixed in issue #38**: `New-RangerReportPayload` now injects Document Control block (prepended), Installation Register (non-executive tiers), and Sign-Off table when `$Mode -eq 'as-built'`. Template functions in `Modules/Outputs/Templates/10-AsBuilt.ps1`. Simulation tests confirm differentiation. | Status updated to `Aligned` in tracker above |
 
 ### Verdict
 
