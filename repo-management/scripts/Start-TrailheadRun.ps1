@@ -1,0 +1,167 @@
+<#
+.SYNOPSIS
+    Initialises a new Operation TRAILHEAD test run.
+
+.DESCRIPTION
+    Creates two artefacts for a test run:
+      1. A date-stamped Markdown run log under repo-management/logs/trailhead/
+      2. A GitHub issue that acts as a live commentary feed for the run
+
+    After calling this script, dot-source the companion helper to get Write-TH*
+    logging functions in your session:
+
+        . .\repo-management\scripts\TrailheadLog-Helpers.ps1
+
+    Then use:
+        Write-THPass   "P0.1" "PowerShell 7.6.0"
+        Write-THFail   "P0.8" "ICMP to ndm timed out"
+        Write-THFix    "P0.8" "Added 10.250.1.39 to hosts file; retry passed"
+        Write-THNote   "Starting P1 — auth checks"
+        Write-THSkip   "P2.3" "WinRM to utility not applicable yet"
+
+    At the end of a session, call:
+        Close-THRun -Passed $n -Failed $m
+
+.PARAMETER Version
+    Ranger version under test (default: read from AzureLocalRanger.psd1).
+
+.PARAMETER Environment
+    Target environment label (default: tplabs).
+
+.PARAMETER Phase
+    Which phase to start at (0–7). Purely informational in the log header.
+
+.PARAMETER RepoRoot
+    Path to the azurelocal-ranger repo root. Defaults to the directory
+    containing this script's parent (repo-management/).
+
+.EXAMPLE
+    .\repo-management\scripts\Start-TrailheadRun.ps1
+    .\repo-management\scripts\Start-TrailheadRun.ps1 -Version "0.5.0" -Phase 0
+#>
+[CmdletBinding()]
+param(
+    [string]$Version,
+    [string]$Environment = "tplabs",
+    [ValidateRange(0,7)]
+    [int]$Phase = 0,
+    [string]$RepoRoot
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+# ── Resolve paths ──────────────────────────────────────────────────────────────
+if (-not $RepoRoot) {
+    $RepoRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+}
+$logsDir  = Join-Path $RepoRoot "repo-management\logs\trailhead"
+$helpersPs = Join-Path $RepoRoot "repo-management\scripts\TrailheadLog-Helpers.ps1"
+
+# ── Resolve version if not supplied ───────────────────────────────────────────
+if (-not $Version) {
+    $psdPath = Join-Path $RepoRoot "AzureLocalRanger.psd1"
+    if (Test-Path $psdPath) {
+        $psdContent = Get-Content $psdPath -Raw
+        if ($psdContent -match "ModuleVersion\s*=\s*'([^']+)'") {
+            $Version = $Matches[1]
+        }
+    }
+    if (-not $Version) { $Version = "unknown" }
+}
+
+# ── Generate run ID ───────────────────────────────────────────────────────────
+$runStamp = Get-Date -Format "yyyyMMdd-HHmm"
+$runId    = "TRAILHEAD-$runStamp"
+$logFile  = Join-Path $logsDir "run-$runStamp.md"
+
+# ── Build log file ────────────────────────────────────────────────────────────
+$header = @"
+# Operation TRAILHEAD — Run Log
+
+| Field | Value |
+|---|---|
+| Run ID | ``$runId`` |
+| Version | v$Version |
+| Environment | $Environment |
+| Starting Phase | P$Phase |
+| Tester | $(whoami) |
+| Started | $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") UTC$(([System.TimeZoneInfo]::Local.BaseUtcOffset).ToString('+hh\:mm')) |
+| Log file | ``repo-management/logs/trailhead/run-$runStamp.md`` |
+
+---
+
+## Legend
+
+| Mark | Meaning |
+|---|---|
+| ✅ PASS | Check passed — no action required |
+| ❌ FAIL | Check failed — see Fix entry |
+| 🔧 FIX | Remediation applied after a failure |
+| ℹ️ NOTE | Context, observation, or next-step annotation |
+| ⏭️ SKIP | Check intentionally skipped — reason noted |
+
+---
+
+## Run Entries
+
+"@
+
+New-Item -ItemType File -Path $logFile -Value $header -Force | Out-Null
+Write-Host "✅ Log file created: $logFile" -ForegroundColor Green
+
+# ── Create GitHub run-log issue ───────────────────────────────────────────────
+$issueBody = @"
+## Operation TRAILHEAD — Live Run Log
+
+| Field | Value |
+|---|---|
+| Run ID | \`$runId\` |
+| Version | v$Version |
+| Environment | $Environment |
+| Starting Phase | P$Phase |
+| Log file | \`repo-management/logs/trailhead/run-$runStamp.md\` |
+
+This issue is the live commentary feed for this test run.
+Results are also written to the log file above, which will be committed at end of session.
+
+**Phase issues:** #82 #83 #84 #85 #86 #87 #88 #89
+
+---
+
+_Run started: $(Get-Date -Format "yyyy-MM-dd HH:mm") — entries follow as comments_
+"@
+
+Write-Host "Creating GitHub run-log issue..." -ForegroundColor Cyan
+$issueUrl = gh issue create `
+    --title "[TRAILHEAD RUN] $runId — v$Version on $Environment" `
+    --body $issueBody `
+    --label "type/infra" `
+    --label "solution/ranger"
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "✅ Run-log issue: $issueUrl" -ForegroundColor Green
+    $issueNumber = ($issueUrl -split '/')[-1]
+} else {
+    Write-Warning "Could not create GitHub issue — run will log to file only."
+    $issueNumber = $null
+}
+
+# ── Write env vars for helpers ────────────────────────────────────────────────
+$env:TH_LOG_FILE      = $logFile
+$env:TH_ISSUE_NUMBER  = $issueNumber
+$env:TH_RUN_ID        = $runId
+$env:TH_REPO_ROOT     = $RepoRoot
+
+Write-Host ""
+Write-Host "──────────────────────────────────────────────" -ForegroundColor DarkGray
+Write-Host " Run ID  : $runId" -ForegroundColor White
+Write-Host " Log     : $logFile" -ForegroundColor White
+if ($issueNumber) {
+Write-Host " Issue   : $issueUrl" -ForegroundColor White
+}
+Write-Host "──────────────────────────────────────────────" -ForegroundColor DarkGray
+Write-Host ""
+Write-Host "Next: dot-source the helpers into your session:" -ForegroundColor Yellow
+Write-Host "  . '$helpersPs'" -ForegroundColor Cyan
+Write-Host ""
