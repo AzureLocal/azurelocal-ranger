@@ -10,29 +10,38 @@ This repository is currently in a planning and documentation phase.
 - read `Deployment Variants`
 - read the architecture pages in this order: `System Overview`, `How Ranger Works`, `Audit Manifest`, `Implementation Architecture`, `Configuration Model`
 - read the operator pages if your change affects how Ranger will be run
-- read `Roadmap`, `Documentation Roadmap`, and `Repository Structure` before proposing structural changes
+- read the [Roadmap](../project/roadmap.md) before proposing structural or scope changes
 - review the grouped discovery-domain and output docs only after the core architecture story is clear
 
 ## Contribution Focus Right Now
 
 The highest-value contributions at this stage are:
 
-- clarifying product scope
-- improving documentation flow
-- refining discovery-domain definitions
-- planning the audit model and output model
-- shaping the future module layout and delivery roadmap
+- implementing and testing collectors and output generators
+- refining discovery-domain definitions and evidence boundaries
+- keeping docs aligned with current collector and manifest reality
+- writing Pester tests — unit, fixture-based, and simulation
 - keeping public docs aligned with current Microsoft Azure Local documentation where product facts are involved
 - making future-scope items visible as roadmap entries or separate issues instead of leaving them buried in planning prose
 
-## What Not To Do Yet
+## Testing Your Changes
 
-Avoid adding placeholder implementation just to make the repo look more complete. The design should be stable before code begins to accumulate.
+Ranger uses Pester 5 for all tests. Run the full suite from the repo root:
 
-Avoid hiding non-v1 requirements inside umbrella planning text. If work is intentionally future-scope, it should stay visible in the roadmap and preferably exist as its own backlog item.
+```powershell
+Invoke-Pester -Path .\tests -Output Detailed
+```
+
+For simulation testing (full pipeline validation without live connections), use the IIC synthetic manifest:
+
+```powershell
+Invoke-Pester -Path .\tests\unit\Simulation.Tests.ps1 -Output Detailed
+```
+
+See [Simulation Testing](simulation-testing.md) for a detailed guide to the simulation framework, the IIC canonical data standard, and how to regenerate the synthetic manifest fixture.
 
 ## Read Next
 
 - [Roadmap](../project/roadmap.md)
-- [Documentation Roadmap](../project/documentation-roadmap.md)
+- [Simulation Testing](simulation-testing.md)
 - [Contributing](contributing.md)

@@ -17,6 +17,26 @@ The cluster-and-node domain should document:
 - recent critical and error event summary
 - Azure registration state where it directly describes the cluster itself
 
+## Manifest Sub-Domains
+
+The v1 collector writes to these named sections of the `clusterNode` manifest domain:
+
+| Sub-domain | Content |
+|---|---|
+| `cluster` | Cluster identity, FQDN, domain posture, domain functional level, and operating system |
+| `nodes` | Node inventory — name, state, uptime, OS version, role posture, and site membership |
+| `quorum` | Quorum configuration, witness type, and witness path or resource |
+| `faultDomains` | Rack or fault-domain assignments when configured |
+| `networks` | Cluster network objects and role summary |
+| `roles` | Cluster roles and their owner node assignments |
+| `csvSummary` | Cluster shared volume count, state, and owning nodes |
+| `updatePosture` | Node patch compliance, pending updates, and last assessment timestamp |
+| `eventSummary` | Recent critical and error event digest from cluster and node event logs |
+| `healthSummary` | Cluster and node health roll-up — node counts by state |
+| `nodeSummary` | Aggregate node count, OS version spread, and uptime range |
+| `faultDomainSummary` | Rack count and node distribution across fault domains |
+| `networkSummary` | Cluster network count and role breakdown |
+
 ## Why It Matters
 
 This domain is the control point for:

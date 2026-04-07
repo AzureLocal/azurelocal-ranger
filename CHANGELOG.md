@@ -8,6 +8,19 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+### Added
+
+- **Issue #36** — Offline network device config import via `domains.hints.networkDeviceConfigs` hints: Cisco NX-OS and IOS parser extracting VLANs, port-channels/LAGs, interfaces, and ACLs. New `switchConfig` and `firewallConfig` keys added to the `networking` manifest domain. New private module `Modules/Private/60-NetworkDeviceParser.ps1`. 7 new Pester tests in `tests/unit/NetworkDevice.Tests.ps1` including IIC NX-OS fixture at `tests/Fixtures/network-configs/switch-nxos-sample.txt`.
+- **Issue #38** — As-built mode now produces differentiated report content: Document Control block, Installation Register, and Sign-Off table injected into each tier report when `mode = as-built`. New `Modules/Outputs/Templates/10-AsBuilt.ps1` with three template section functions. `Modules/Outputs/Templates/` added to module load path in `AzureLocalRanger.psm1`. 2 new simulation tests covering as-built document control and sign-off content.
+- **Issue #37** — Full documentation audit: Manifest Sub-Domains tables added to all 8 domain pages that were missing them (`networking`, `cluster-and-node`, `storage`, `hardware`, `virtual-machines`, `management-tools`, `performance-baseline`, `oem-integration`). New contributor docs: `simulation-testing.md` (complete simulation framework guide, IIC canonical data standard, fixture regeneration), `template-authoring.md` (template system design, how to add new report sections). `contributor/getting-started.md` updated to remove deleted page references and reflect current implementation focus. MkDocs nav updated for new contributor pages.
+
+### Changed
+
+- `domains.hints.networkDeviceConfigs` added to `Get-RangerDefaultConfig` default hints structure
+- `networking` domain reserved template now includes `switchConfig` and `firewallConfig` keys
+- `networking` domain summary now includes `importedSwitchConfigCount` and `importedFirewallConfigCount` counts
+- Tests: 18 → 27 total (7 new network device tests + 2 new simulation tests)
+
 ## [0.5.0] — 2026-04-07
 
 ### Added

@@ -1,0 +1,101 @@
+! IIC Infinite Improbability Corp — sample NX-OS config for Ranger unit tests
+! Switch: iic-sw-core-01 (Cisco Nexus 9336C-FX2)
+! Role: storage-switch
+
+version 9.3(8)
+hostname iic-sw-core-01
+
+feature lacp
+feature vpc
+feature interface-vlan
+
+vlan 10
+  name mgmt_iic
+  state active
+
+vlan 110
+  name storage_iic_rdma
+  state active
+
+vlan 111
+  name storage_iic_smb
+  state active
+
+vlan 200
+  name compute_iic
+  state active
+
+vlan 400
+  name livemigration_iic
+  state active
+
+interface port-channel1
+  description IIC-AZL-N01_uplink
+  switchport mode trunk
+  switchport trunk allowed vlan 110,111,200,400
+  spanning-tree port type network
+
+interface port-channel2
+  description IIC-AZL-N02_uplink
+  switchport mode trunk
+  switchport trunk allowed vlan 110,111,200,400
+  spanning-tree port type network
+
+interface port-channel3
+  description IIC-AZL-N03_uplink
+  switchport mode trunk
+  switchport trunk allowed vlan 110,111,200,400
+  spanning-tree port type network
+
+interface Ethernet1/1
+  description IIC-AZL-N01_RDMA_A
+  switchport mode trunk
+  switchport trunk allowed vlan 110,111
+  channel-group 1 mode active
+
+interface Ethernet1/2
+  description IIC-AZL-N01_RDMA_B
+  switchport mode trunk
+  switchport trunk allowed vlan 110,111
+  channel-group 1 mode active
+
+interface Ethernet1/3
+  description IIC-AZL-N02_RDMA_A
+  switchport mode trunk
+  switchport trunk allowed vlan 110,111
+  channel-group 2 mode active
+
+interface Ethernet1/4
+  description IIC-AZL-N02_RDMA_B
+  switchport mode trunk
+  switchport trunk allowed vlan 110,111
+  channel-group 2 mode active
+
+interface Ethernet1/5
+  description IIC-AZL-N03_RDMA_A
+  switchport mode trunk
+  switchport trunk allowed vlan 110,111
+  channel-group 3 mode active
+
+interface Ethernet1/6
+  description IIC-AZL-N03_RDMA_B
+  switchport mode trunk
+  switchport trunk allowed vlan 110,111
+  channel-group 3 mode active
+
+interface Ethernet1/48
+  description UPLINK-TO-SPINE
+  switchport mode trunk
+  switchport trunk allowed vlan 10,110-111,200,400
+
+interface mgmt0
+  description OOB_MGMT
+  ip address 10.245.64.1/24
+
+ip access-list MGMT_IN
+  10 permit tcp 10.0.0.0/8 any eq 22
+  20 permit tcp 10.0.0.0/8 any eq 443
+  30 deny ip any any log
+
+line console
+line vty

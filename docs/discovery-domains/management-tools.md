@@ -12,6 +12,16 @@ The management-tools domain should document:
 - notable third-party management, backup, recovery, or monitoring agents detected on the nodes
 - tool compatibility limitations for the current identity or operating variant
 
+## Manifest Sub-Domains
+
+The v1 collector writes to these named sections of the `managementTools` manifest domain:
+
+| Sub-domain | Content |
+|---|---|
+| `tools` | Detected management services — Windows Admin Center, SCVMM, SCOM, OEM tooling, and third-party agents |
+| `agents` | Per-node agent inventory — installed agents, versions, and connection state |
+| `summary` | Count of running management services and identified control surfaces |
+
 ## Why It Matters
 
 An environment is managed through tools, not just through cluster objects. Ranger should document that operational reality so a receiving team knows which control surfaces matter.

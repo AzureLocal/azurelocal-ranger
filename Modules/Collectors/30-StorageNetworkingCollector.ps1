@@ -64,6 +64,9 @@ function Invoke-RangerStorageNetworkingCollector {
         throw 'Storage and networking collector did not return any usable data.'
     }
 
+    # Import optional offline device configs provided via hints
+    $deviceImport = Invoke-RangerNetworkDeviceConfigImport -Config $Config
+
     $flattenedAdapters = @(Get-RangerFlattenedCollection -Items @($networkNodes | ForEach-Object { $_.adapters }))
     $flattenedSwitches = @(Get-RangerFlattenedCollection -Items @($networkNodes | ForEach-Object { $_.vSwitches }))
     $flattenedHostVirtualNics = @(Get-RangerFlattenedCollection -Items @($networkNodes | ForEach-Object { $_.hostVirtualNics }))
@@ -103,6 +106,8 @@ function Invoke-RangerStorageNetworkingCollector {
         vlanCount         = $flattenedVlan.Count
         proxyConfiguredNodes = @($proxyByNode | Where-Object { $_.value -and $_.value -notmatch 'Direct access' }).Count
         sdnControllerCount = $flattenedSdn.Count
+        importedSwitchConfigCount   = @($deviceImport.switchConfig).Count
+        importedFirewallConfigCount = @($deviceImport.firewallConfig).Count
     }
 
     $findings = New-Object System.Collections.ArrayList
@@ -152,6 +157,8 @@ function Invoke-RangerStorageNetworkingCollector {
                 proxy           = ConvertTo-RangerHashtable -InputObject $proxyByNode
                 firewall        = ConvertTo-RangerHashtable -InputObject @($networkNodes | ForEach-Object { [ordered]@{ node = $_.node; profiles = $_.firewall } })
                 sdn             = ConvertTo-RangerHashtable -InputObject $flattenedSdn
+                switchConfig    = ConvertTo-RangerHashtable -InputObject $deviceImport.switchConfig
+                firewallConfig  = ConvertTo-RangerHashtable -InputObject $deviceImport.firewallConfig
                 summary         = $networkSummary
             }
         }

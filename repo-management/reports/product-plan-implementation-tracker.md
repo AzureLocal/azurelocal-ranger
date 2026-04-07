@@ -32,7 +32,7 @@ Current implementation validation used for this audit:
 | Runtime/output issues | `#19`, `#22`, `#23`, `#24` closed after local completion and verification |
 | Discovery issues | `#9`, `#10`, `#11`, `#12`, `#16`, `#20`, `#21` closed after local completion and verification |
 | Post-v1 definition issues | `#13`, `#25`-`#33` closed after decision documentation was captured |
-| Remaining open issues | `#34` (live validation), `#36` (network device config import), `#37` (docs audit), `#38` (output templates) |
+| Remaining open issues | `#34` (live validation) |
 
 ## Current Backlog State
 
@@ -40,9 +40,9 @@ Current implementation validation used for this audit:
 | --- | --- |
 | Non-live v1 implementation backlog | Complete and closed |
 | Post-v1 definition backlog | Documented, deferred, and closed as planning issues |
-| Simulation testing framework | Complete — 18/18 tests passing, IIC synthetic fixture committed |
+| Simulation testing framework | Complete — 27/27 tests passing, IIC synthetic fixture committed |
 | Live validation backlog | Open in `#34` |
-| New feature backlog | `#36` network device config import, `#37` docs audit, `#38` output templates |
+| New feature backlog | — all closed; `#34` live validation remains |
 
 ## Overall Audit
 
@@ -60,7 +60,7 @@ Current implementation validation used for this audit:
 | Report generation | 3 tiers, self-contained HTML and Markdown, findings, branding, TOC, deep audience-specific content | Delivered for non-live scope | Aligned | Reports now include richer readiness, topology, recommendation, and technical depth sections from cached manifests only; the remaining question is live-estate fidelity in `#34`. |
 | Diagram generation | Baseline plus extended catalog, selection rules, skip behavior, draw.io XML, richer environment diagrams | Delivered for non-live scope | Aligned | Diagram models now include richer domain-specific nodes, relationships, details, and extended output selection while remaining cached-manifest driven; live-estate correctness is still tracked in `#34`. |
 | Testing strategy | Collector isolation, integration coverage, cached-manifest output tests, schema boundary, degraded and skip behavior | Delivered for non-live scope | Aligned | Suite now at 18 tests: schema validation, degraded scenarios, cached outputs, end-to-end fixture packaging, and 7 simulation tests against the IIC synthetic 3-node manifest in `as-built` mode. |
-| Documentation workstream | Public docs, operator docs, contributor docs, architecture docs, domain docs, output docs, diagrams | Delivered | Aligned | The docs foundation is present under `docs/`, including architecture, operator, contributor, outputs, and domain pages. |
+| Documentation workstream | Public docs, operator docs, contributor docs, architecture docs, domain docs, output docs, diagrams | Delivered and audited under issue `#37` | Aligned | All domain pages now have Manifest Sub-Domains tables. Contributor section expanded with simulation testing and template authoring guides. |
 | Live environment proof | Real Azure Local validation, not just mocked and fixture validation | Not done in this session | Partial | Current validation is strong fixture-backed testing, but not live-estate execution. |
 
 ## Domain-By-Domain Audit
@@ -71,7 +71,7 @@ Current implementation validation used for this audit:
 | Cluster and node foundation | Cluster identity, release, registration, node inventory, quorum, fault domains, networks, update and validation posture, events, health | Implemented in `Modules/Collectors/10-TopologyClusterCollector.ps1` | Mostly aligned | Release, licensing, registration, lifecycle, and validation-report context are included. `csvSummary`, `updatePosture`, and `eventSummary` are all populated by the collector and declared in the reserved template. |
 | Dell hardware | Redfish-based hardware inventory and OEM posture | Implemented in `Modules/Collectors/20-HardwareCollector.ps1` | Mostly aligned | Dell OEM posture now captures update-service, lifecycle-controller, support signals, and compliance hints; deeper per-vendor breadth remains future OEM work. |
 | Storage | Pools, disks, cache, virtual disks, volumes, CSVs, SOFS, QoS, replica, storage health | Implemented in `Modules/Collectors/30-StorageNetworkingCollector.ps1` | Mostly aligned | Storage tiers, resiliency defaults, jobs, and richer capacity posture are now included for non-live validation scope. |
-| Networking | Adapters, vSwitches, ATC, host vNICs, proxy, DNS, firewall, SDN, host-side validation | Implemented in `Modules/Collectors/30-StorageNetworkingCollector.ps1` | Mostly aligned | IP, route, VLAN, proxy, DNS, firewall, and SDN host-side evidence are now normalized together for report and diagram use. |
+| Networking | Adapters, vSwitches, ATC, host vNICs, proxy, DNS, firewall, SDN, host-side validation | Implemented in `Modules/Collectors/30-StorageNetworkingCollector.ps1`; offline device config import via `Modules/Private/60-NetworkDeviceParser.ps1` (issue `#36`) | Mostly aligned | IP, route, VLAN, proxy, DNS, firewall, and SDN host-side evidence are now normalized together for report and diagram use. Cisco NX-OS/IOS configs can be imported via hints. |
 | Virtual machines | VM inventory, placement, config, replication, guest clustering, network and storage context | Implemented in `Modules/Collectors/40-WorkloadIdentityAzureCollector.ps1` | Mostly aligned | Integration-service and deeper replication context are now included; guest-cluster enrichment remains bounded by non-live host-side evidence. |
 | Identity and security | AD-backed and local-identity posture, certificates, CredSSP, BitLocker, Defender, WDAC, secured-core, admin audit, audit policy | Implemented in `Modules/Collectors/40-WorkloadIdentityAzureCollector.ps1` | Mostly aligned | AD, AppLocker, secure boot, and Key Vault reference context are included. `activeDirectory` and `keyVault` sub-domains are now declared in the reserved template in `01-Definitions.ps1` and populated by the collector. |
 | Azure integration | Arc resources, resource groups, policy, backup, update, workload families, control-plane context | Implemented in `Modules/Collectors/40-WorkloadIdentityAzureCollector.ps1` | Mostly aligned | Resource bridge, custom locations, extensions, Arc machines, and site recovery context are now modeled where retrievable. These five fields are now declared in the reserved template in `01-Definitions.ps1`. |
@@ -88,7 +88,7 @@ Current implementation validation used for this audit:
 | Report tiers | Executive, Management, Technical; rich, branded, audience-specific | Delivered in `Modules/Outputs/Reports/10-Reports.ps1` | Mostly aligned | Structure, navigation, recommendations, and audience-specific sections are materially richer now; live-estate proof remains the last unresolved question. |
 | Diagram catalog | 6 baseline plus 12 extended diagrams with variant-aware selection | Delivered in `Modules/Internal/01-Definitions.ps1` and `Modules/Outputs/Diagrams/10-Diagrams.ps1` | Aligned | Catalog, selection rules, and richer domain-specific models are implemented for cached-manifest generation. |
 | Package assembly | Manifest, reports, diagrams, package README, package index | Delivered | Aligned | This matches the runtime and output track well. |
-| As-built package depth | Formal handoff-grade package with narrative clarity and completeness | Only baseline structural support today | Partial | The pipeline can build it, but report content does not currently differentiate between `current-state` and `as-built` mode — both produce the same output. Mode only affects diagram selection rules. |
+| As-built package depth | Formal handoff-grade package with narrative clarity and completeness | As-built reports now inject Document Control block, Installation Register, and Sign-Off table into all three tiers. Template functions live in `Modules/Outputs/Templates/10-AsBuilt.ps1`. Mode fully differentiates `as-built` from `current-state` report content. | Aligned | Live-estate proof remains in `#34`. |
 
 ## Testing Audit
 

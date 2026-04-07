@@ -258,6 +258,14 @@ function New-RangerReportPayload {
         })
     }
 
+    if ($Mode -eq 'as-built') {
+        $sections.Insert(0, (New-RangerAsBuiltDocumentControlSection -Manifest $Manifest -Tier $Tier))
+        if ($Tier -ne 'executive') {
+            [void]$sections.Add((New-RangerAsBuiltInstallationRegisterSection -Manifest $Manifest))
+        }
+        [void]$sections.Add((New-RangerAsBuiltSignOffSection))
+    }
+
     return [ordered]@{
         Title       = ((Get-RangerReportTierDefinitions | Where-Object { $_.Name -eq $Tier } | Select-Object -First 1).Title)
         Tier        = $Tier

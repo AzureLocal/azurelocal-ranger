@@ -49,7 +49,8 @@ function Get-RangerDefaultConfig {
             include = @()
             exclude = @()
             hints   = [ordered]@{
-                fixtures = [ordered]@{}
+                fixtures           = [ordered]@{}
+                networkDeviceConfigs = @()
             }
         }
         output = [ordered]@{

@@ -14,6 +14,22 @@ The storage domain should document:
 - SOFS, Storage Replica, and QoS features when configured
 - repair jobs, faults, and health signals
 
+## Manifest Sub-Domains
+
+The v1 collector writes to these named sections of the `storage` manifest domain:
+
+| Sub-domain | Content |
+|---|---|
+| `pools` | Storage pool inventory — health, operational status, size, and allocation |
+| `physicalDisks` | Physical disk inventory — media type, serial number, health, and usage classification |
+| `virtualDisks` | Virtual disk inventory — resiliency setting, health, size, and pool footprint |
+| `volumes` | Volume inventory — drive letter, label, file system, health, and size |
+| `csvs` | Cluster Shared Volume inventory — name, state, and owning node |
+| `qos` | Storage QoS policy definitions and IOPS limits |
+| `sofs` | Scale-Out File Server share inventory when SOFS is deployed |
+| `replica` | Storage Replica group replication state and sync signals |
+| `summary` | Aggregate counts — pools, disks, virtual disks, volumes, CSVs, total capacity, and disk media types |
+
 ## Why It Matters
 
 Storage is one of the most important parts of an Azure Local as-built package because it explains capacity, resiliency, and operational risk.

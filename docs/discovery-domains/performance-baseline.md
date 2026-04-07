@@ -14,6 +14,20 @@ The performance-baseline domain should document:
 - active alert or Health Service summaries
 - recent event patterns that materially affect interpretation of the current state
 
+## Manifest Sub-Domains
+
+The v1 collector writes to these named sections of the `performance` manifest domain:
+
+| Sub-domain | Content |
+|---|---|
+| `nodes` | Per-node CPU utilization, memory pressure, and uptime snapshot |
+| `compute` | Cluster-wide vCPU and memory allocation vs. capacity with overcommit indicators |
+| `storage` | Storage IOPS, throughput, latency, and cache hit-ratio baselines |
+| `networking` | Network throughput and adapter error counts |
+| `outliers` | Nodes or workloads that significantly exceed utilization norms |
+| `events` | Recent Health Service events and cluster health faults |
+| `summary` | Aggregate performance risk signals — high-CPU nodes, high-memory nodes, and alert counts |
+
 ## Why It Matters
 
 Ranger should not stop at static inventory. A short-horizon operational baseline helps explain whether a healthy-looking design is currently under stress, degraded, or simply under-observed.

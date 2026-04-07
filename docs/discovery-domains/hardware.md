@@ -16,6 +16,17 @@ The hardware domain should document:
 - physical disks and storage-controller posture
 - hardware vendor classification used by OEM-specific discovery or reporting
 
+## Manifest Sub-Domains
+
+The v1 collector writes to these named sections of the `hardware` manifest domain:
+
+| Sub-domain | Content |
+|---|---|
+| `nodes` | Per-node hardware inventory — manufacturer, model, serial number, service tag, BIOS, firmware, BMC version, processors, memory, NIC, and disk controller |
+| `firmware` | Concatenated firmware posture across nodes — BIOS, BMC, NIC, and disk controller versions |
+| `security` | Hardware-layer security posture — Secure Boot state, TPM version, UEFI mode, and virtualization extensions |
+| `summary` | Aggregate counts and vendor summary — node models, processor families, and disk counts |
+
 ## Why It Matters
 
 Hardware facts affect:

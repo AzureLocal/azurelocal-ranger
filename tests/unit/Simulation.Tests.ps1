@@ -69,4 +69,24 @@ Describe 'Azure Local Ranger simulation tests (IIC synthetic manifest)' {
         $errorArtifacts = @($result.Artifacts | Where-Object { $_.status -eq 'error' })
         $errorArtifacts.Count | Should -Be 0
     }
+
+    It 'as-built report includes document control block' {
+        $outputRoot = Join-Path $TestDrive 'sim-asbuilt-doccontrol'
+        $null = Export-AzureLocalRangerReport -ManifestPath $manifestPath -OutputPath $outputRoot -Formats @('markdown')
+
+        $anyReport = Get-ChildItem -Path (Join-Path $outputRoot 'reports') -Filter '*.md' | Select-Object -First 1
+        $content   = Get-Content -Path $anyReport.FullName -Raw
+        $content | Should -Match '(?i)Document Control'
+        $content | Should -Match '(?i)AS-BUILT HANDOFF'
+    }
+
+    It 'as-built report includes sign-off section' {
+        $outputRoot = Join-Path $TestDrive 'sim-asbuilt-signoff'
+        $null = Export-AzureLocalRangerReport -ManifestPath $manifestPath -OutputPath $outputRoot -Formats @('markdown')
+
+        $techReport = Get-ChildItem -Path (Join-Path $outputRoot 'reports') -Filter '*Technical*' | Select-Object -First 1
+        $content    = Get-Content -Path $techReport.FullName -Raw
+        $content | Should -Match '(?i)sign.?off'
+        $content | Should -Match '(?i)Implementation Engineer'
+    }
 }

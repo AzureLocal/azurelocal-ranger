@@ -15,6 +15,29 @@ The networking domain should document:
 - DNS, proxy, and firewall posture that Azure Local depends on
 - endpoint reachability that affects Azure Arc, monitoring, update, and workload management
 
+## Manifest Sub-Domains
+
+The v1 collector writes to these named sections of the `networking` manifest domain:
+
+| Sub-domain | Content |
+|---|---|
+| `nodes` | Per-node networking raw snapshot, indexed by host name |
+| `clusterNetworks` | Cluster network objects, roles, and address ranges |
+| `adapters` | Physical and virtual network adapters across all nodes |
+| `vSwitches` | Hyper-V virtual switches and their team member adapters |
+| `hostVirtualNics` | Host management virtual NICs bound to vSwitches |
+| `intents` | Network ATC intent definitions, storage, and compute intent markers |
+| `dns` | DNS client server addresses per interface and node |
+| `ipAddresses` | IPv4 addresses, prefix lengths, and interface associations |
+| `routes` | IPv4 routing table entries (first 50 per node) |
+| `vlan` | VLAN configuration from management OS virtual adapters |
+| `proxy` | HTTP proxy configuration as observed from each node |
+| `firewall` | Windows Firewall profile state (Public, Private, Domain) per node |
+| `sdn` | Network Controller discovery results when SDN is deployed |
+| `switchConfig` | Switch configuration imported from vendor config files when `networkDeviceConfigs` hints are provided |
+| `firewallConfig` | Firewall ACL configuration imported from vendor config files when `networkDeviceConfigs` hints are provided |
+| `summary` | Aggregate counts — nodes, adapters, vSwitches, intents, DNS servers, VLANs |
+
 ## Why It Matters
 
 Inherited Azure Local environments are frequently hard to understand because the networking assumptions are implicit. Ranger should make those assumptions explicit.

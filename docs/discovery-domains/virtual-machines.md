@@ -16,6 +16,18 @@ The virtual-machine domain should document:
 - guest-cluster hints when discoverable
 - workload-family presence such as AVD, AKS, Arc VMs, Arc Data Services, or Microsoft 365 Local indicators
 
+## Manifest Sub-Domains
+
+The v1 collector writes to these named sections of the `virtualMachines` manifest domain:
+
+| Sub-domain | Content |
+|---|---|
+| `inventory` | VM inventory — name, generation, state, vCPU, memory, disk, network adapters, and host |
+| `placement` | VM-to-host placement mappings and anti-affinity group memberships |
+| `workloadFamilies` | Detected workload families — AVD host pools, AKS nodepool members, Arc VMs, Arc Data Services, and Microsoft 365 Local indicators |
+| `replication` | Hyper-V Replica state for protected VMs when replication is configured |
+| `summary` | Aggregate counts — VM count by state, total vCPU, memory, density, and overcommit signals |
+
 ## Why It Matters
 
 Platform inventory is not enough. Operators and receiving teams need to understand what the cluster is actually running and how those workloads are distributed.

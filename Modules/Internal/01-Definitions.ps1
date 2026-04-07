@@ -129,6 +129,8 @@ function Get-RangerReservedDomainPayloads {
             proxy           = @()
             firewall        = @()
             sdn             = @()
+            switchConfig    = @()
+            firewallConfig  = @()
             summary         = [ordered]@{}
         }
         virtualMachines = [ordered]@{

@@ -69,4 +69,6 @@ nav:
     - Changelog: project/changelog.md
   - Contributor:
     - Getting Started: contributor/getting-started.md
+    - Simulation Testing: contributor/simulation-testing.md
+    - Template Authoring: contributor/template-authoring.md
     - Contributing: contributor/contributing.md

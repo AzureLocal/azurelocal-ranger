@@ -7,6 +7,7 @@ $moduleFolders = @(
     (Join-Path $moduleRoot 'Modules\Core'),
     (Join-Path $moduleRoot 'Modules\Collectors'),
     (Join-Path $moduleRoot 'Modules\Outputs\Reports'),
+    (Join-Path $moduleRoot 'Modules\Outputs\Templates'),
     (Join-Path $moduleRoot 'Modules\Outputs\Diagrams'),
     (Join-Path $moduleRoot 'Modules\Public')
 )
