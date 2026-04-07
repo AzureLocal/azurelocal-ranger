@@ -19,37 +19,39 @@ Planned asset layout:
 - `docs/assets/diagrams/*.drawio` for editable source
 - `docs/assets/diagrams/*.svg` for published output and embedding
 
-## Baseline Diagram Set
+## Full Diagram Catalog
 
-The baseline set should be available for most meaningful runs.
+### Baseline Set (Diagrams 1–6)
 
-| Diagram | Purpose |
-|---|---|
-| Physical Architecture | Nodes, hardware summary, BMC, rack grouping, and physical adjacency |
-| Logical Network Topology | vSwitches, SET, intents, VLANs, subnets, SDN, and proxy path |
-| Storage Architecture | Pool, cache, virtual disks, CSVs, resiliency, and capacity posture |
-| VM Placement Map | VM-to-host placement, density, anti-affinity, and guest clusters |
-| Azure Arc Integration | Azure resource hierarchy, Arc Resource Bridge, custom location, extensions, and management flows |
-| Workload and Services Map | AVD, AKS, Arc VMs, monitoring stack, OEM tooling, backup, and DR relationships |
+Baseline diagrams render on most successful runs. They do not require special trigger conditions.
 
-## Extended Diagram Set
+| # | Name | Purpose | Audience |
+|---|---|---|---|
+| 1 | Physical Architecture | Nodes, hardware summary, BMC, rack grouping, and physical adjacency | Executive, Management, Technical |
+| 2 | Logical Network Topology | vSwitches, SET, intents, VLANs, subnets, SDN, and proxy path | Management, Technical |
+| 3 | Storage Architecture | Pool, cache, virtual disks, CSVs, resiliency, and capacity posture | Management, Technical |
+| 4 | VM Placement Map | VM-to-host placement, density, anti-affinity, and guest clusters | Management, Technical |
+| 5 | Azure Arc Integration | Azure resource hierarchy, Arc Resource Bridge, custom location, extensions, and management flows | Executive, Management, Technical |
+| 6 | Workload and Services Map | AVD, AKS, Arc VMs, monitoring stack, OEM tooling, backup, and DR relationships | Management, Technical |
 
-The extended set should be available when the environment is complex or the output mode is more formal.
+### Extended Set (Diagrams 7–18)
 
-| Diagram | Use case |
-|---|---|
-| Topology and Deployment Variant Map | switchless, rack-aware, local identity, disconnected, or multi-rack environments |
-| Identity, Trust, and Secret Flow | AD, managed identity, Key Vault, RecoveryAdmin, RBAC, and certificate paths |
-| Monitoring, Telemetry, and Alerting Flow | AMA, DCRs, DCEs, Log Analytics, metrics, alerts, syslog, and third-party flows |
-| Connectivity, Firewall, and Dependency Map | jump box, WinRM, Redfish, Azure egress, proxy, and endpoint groups |
-| Identity and Access Surface Map | cluster identities, custom location, Arc identities, RBAC scope, and trust boundaries |
-| Monitoring and Health Heatmap | domain or node health summary for executive outputs |
-| OEM Hardware and Firmware Posture | per-node firmware, BMC, OEM tooling, and compliance state |
-| Backup, Recovery, and Continuity Map | Azure Backup, ASR, Storage Replica, Hyper-V Replica, and protected workloads |
-| Management Plane and Tooling Map | WAC, SCVMM, SCOM, Azure portal, CLI, OEM tools, and automation entry points |
-| Workload Family Placement Map | workload families across nodes, racks, or clusters |
-| Multi-Rack or Rack-Aware Fabric Map | rack aggregation, SAN/shared storage boundaries, managed networking spans |
-| Disconnected Operations Control Plane Map | local control plane, policy, Key Vault, registry, and appliance surfaces |
+Extended diagrams render only when the trigger condition is met.
+
+| # | Name | Trigger Condition | Audience |
+|---|---|---|---|
+| 7 | Topology and Deployment Variant Map | Always in technical tier | Management, Technical |
+| 8 | Identity, Trust, and Secret Flow | Local Key Vault identity mode detected | Management, Technical |
+| 9 | Monitoring, Telemetry, and Alerting Flow | Monitoring domain collected | Executive, Management, Technical |
+| 10 | Connectivity, Firewall, and Dependency Map | Always in technical tier | Management, Technical |
+| 11 | Identity and Access Surface Map | Always in technical as-built | Management, Technical |
+| 12 | Monitoring and Health Heatmap | Critical or warning findings present | Executive, Management |
+| 13 | OEM Hardware and Firmware Posture | Hardware domain collected | Management, Technical |
+| 14 | Backup, Recovery, and Continuity Map | Azure Backup or ASR detected | Executive, Management, Technical |
+| 15 | Management Plane and Tooling Map | Always in technical tier | Executive, Management, Technical |
+| 16 | Workload Family Placement Map | Multiple workload families detected | Management, Technical |
+| 17 | Multi-Rack or Rack-Aware Fabric Map | Rack-aware deployment type detected | Management, Technical |
+| 18 | Disconnected Operations Control Plane Map | Disconnected control plane mode detected | Management, Technical |
 
 ## Selection Rules
 
