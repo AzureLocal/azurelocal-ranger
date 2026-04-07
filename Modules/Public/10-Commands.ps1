@@ -71,11 +71,48 @@ function Export-AzureLocalRangerReport {
 }
 
 function Test-AzureLocalRangerPrerequisites {
+    # Issue #78: -InstallPrerequisites auto-installs RSAT AD and Az modules when missing.
+    # Requires an elevated (Administrator) session.  Detects Server vs Client OS and uses
+    # Install-WindowsFeature (Server) or Add-WindowsCapability (Client) for RSAT AD.
     [CmdletBinding()]
     param(
         [string]$ConfigPath,
-        $ConfigObject
+        $ConfigObject,
+        [switch]$InstallPrerequisites
     )
+
+    if ($InstallPrerequisites) {
+        $isElevated = ([Security.Principal.WindowsPrincipal]::new(
+            [Security.Principal.WindowsIdentity]::GetCurrent()
+        )).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+        if (-not $isElevated) {
+            throw '-InstallPrerequisites requires an elevated (Administrator) PowerShell session.'
+        }
+
+        # RSAT AD (ActiveDirectory PS module)
+        if (-not (Test-RangerCommandAvailable -Name 'Get-ADUser')) {
+            $osProductType = (Get-CimInstance -ClassName Win32_OperatingSystem).ProductType
+            if ($osProductType -ne 1) {
+                # Server OS (ProductType 2 = DC, 3 = Server)
+                Write-Verbose 'Installing RSAT-AD-PowerShell via Install-WindowsFeature (Server OS)...'
+                Install-WindowsFeature -Name RSAT-AD-PowerShell -ErrorAction Stop | Out-Null
+            } else {
+                # Client OS (Windows 10/11)
+                Write-Verbose 'Installing RSAT ActiveDirectory via Add-WindowsCapability (Client OS)...'
+                Add-WindowsCapability -Online -Name 'Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0' -ErrorAction Stop | Out-Null
+            }
+        }
+
+        # Az modules required by Ranger collectors
+        $azModulesNeeded = @('Az.Accounts', 'Az.Resources', 'Az.DesktopVirtualization', 'Az.Aks', 'Az.KeyVault')
+        foreach ($mod in $azModulesNeeded) {
+            if (-not (Get-Module -ListAvailable -Name $mod)) {
+                Write-Verbose "Installing $mod from PSGallery..."
+                Install-Module -Name $mod -Repository PSGallery -Force -AllowClobber -Scope CurrentUser -ErrorAction Stop
+            }
+        }
+    }
 
     $config = Import-RangerConfiguration -ConfigPath $ConfigPath -ConfigObject $ConfigObject
     $validation = Test-RangerConfiguration -Config $config -PassThru
@@ -83,6 +120,7 @@ function Test-AzureLocalRangerPrerequisites {
     $checks = @(
         [ordered]@{ Name = 'PowerShell 7+'; Passed = $PSVersionTable.PSVersion.Major -ge 7; Detail = $PSVersionTable.PSVersion.ToString() },
         [ordered]@{ Name = 'WinRM cmdlets'; Passed = (Test-RangerCommandAvailable -Name 'Invoke-Command'); Detail = 'Invoke-Command' },
+        [ordered]@{ Name = 'RSAT AD'; Passed = (Test-RangerCommandAvailable -Name 'Get-ADUser'); Detail = 'Get-ADUser (required for identity domain collection)' },
         [ordered]@{ Name = 'Cluster cmdlets'; Passed = (Test-RangerCommandAvailable -Name 'Get-Cluster'); Detail = 'Get-Cluster (optional on the runner, required on cluster nodes)' },
         [ordered]@{ Name = 'Hyper-V cmdlets'; Passed = (Test-RangerCommandAvailable -Name 'Get-VM'); Detail = 'Get-VM (optional on the runner, required on cluster nodes)' },
         [ordered]@{ Name = 'Az modules'; Passed = (Test-RangerCommandAvailable -Name 'Get-AzContext'); Detail = 'Get-AzContext' },
