@@ -278,6 +278,31 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                     hciConnectionStatus   = $hciConnStatus
                 }
 
+                # Cluster service account model (LocalSystem, gMSA, domain account)
+                $clusterSvc = try { Get-CimInstance -ClassName Win32_Service -Filter "Name='ClusSvc'" -ErrorAction Stop } catch { $null }
+                $clusterServiceAccountModel = if ($clusterSvc) {
+                    if ($clusterSvc.StartName -match '\$$') { 'gMSA' }
+                    elseif ($clusterSvc.StartName -eq 'LocalSystem') { 'LocalSystem' }
+                    elseif ($clusterSvc.StartName) { 'DomainServiceAccount' }
+                    else { $null }
+                } else { $null }
+
+                # Physical core count per node for billing aggregation
+                $physicalCoreCount = try { (Get-CimInstance -ClassName Win32_Processor -ErrorAction Stop | Measure-Object -Property NumberOfCores -Sum).Sum } catch { $null }
+
+                # Internal certificate/secret auto-rotation state (if retrievable from HCI registry)
+                $rotAutoEnabled = try {
+                    $rotVal = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\AzureStack\AzureStackHCI' -Name 'CertRotationEnabled' -ErrorAction Stop).CertRotationEnabled
+                    [bool]$rotVal
+                } catch { $null }
+                $rotLastTime = try {
+                    (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\AzureStack\AzureStackHCI' -Name 'LastCertRotationTime' -ErrorAction Stop).LastCertRotationTime
+                } catch { $null }
+                $secretRotationState = [ordered]@{
+                    autoRotationEnabled = $rotAutoEnabled
+                    lastRotationTime    = $rotLastTime
+                }
+
                 [ordered]@{
                     node               = $env:COMPUTERNAME
                     partOfDomain       = [bool]$computerSystem.PartOfDomain
@@ -304,6 +329,9 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                     securedCoreDetail  = $securedCoreDetail
                     syslogDetail       = $syslogDetail
                     driftControl       = $driftControl
+                    clusterServiceAccountModel = $clusterServiceAccountModel
+                    physicalCoreCount          = $physicalCoreCount
+                    secretRotationState        = $secretRotationState
                 }
             }
         }
@@ -664,15 +692,27 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
     # Issue #66: Cost and licensing signals (subscription type, billing model)
     $costLicensing = @(
         Invoke-RangerSafeAction -Label 'Cost and licensing snapshot' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId) -ScriptBlock {
-                param($SubscriptionId)
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+                param($SubscriptionId, $ResourceGroup)
                 if (-not (Get-Command -Name Get-AzSubscription -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($SubscriptionId)) { return @() }
                 $sub = Get-AzSubscription -SubscriptionId $SubscriptionId -ErrorAction SilentlyContinue
+                $hciCluster = if (-not [string]::IsNullOrWhiteSpace($ResourceGroup)) {
+                    @(Get-AzResource -ResourceGroupName $ResourceGroup -ResourceType 'Microsoft.AzureStackHCI/clusters' -ExpandProperties -ErrorAction SilentlyContinue) | Select-Object -First 1
+                } else { $null }
+                $ahbEnabled = if ($hciCluster) {
+                    $propVal = try { $hciCluster.Properties.azureHybridBenefit } catch { $null }
+                    if ($null -eq $propVal) { $propVal = try { $hciCluster.Properties.billingModel } catch { $null } }
+                    $propVal
+                } else { $null }
+                $subscriptionType = try { $sub.SubscriptionType } catch { $null }
                 @([ordered]@{
-                    subscriptionId    = $SubscriptionId
-                    subscriptionName  = if ($sub) { $sub.Name } else { $null }
-                    subscriptionState = if ($sub) { [string]$sub.State } else { $null }
-                    tenantId          = if ($sub) { $sub.TenantId } else { $null }
+                    subscriptionId         = $SubscriptionId
+                    subscriptionName       = if ($sub) { $sub.Name } else { $null }
+                    subscriptionState      = if ($sub) { [string]$sub.State } else { $null }
+                    tenantId               = if ($sub) { $sub.TenantId } else { $null }
+                    subscriptionType       = $subscriptionType
+                    azureHybridBenefit     = $ahbEnabled
+                    hciClusterBillingModel = if ($hciCluster) { try { $hciCluster.Properties.billingModel } catch { $null } } else { $null }
                 })
             }
         }
@@ -767,6 +807,9 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
         securedCoreNodes             = @($identitySnapshots | Where-Object { $_.securedCoreDetail.systemGuardEnabled -eq $true }).Count
         syslogForwardingNodes        = @($identitySnapshots | Where-Object { @($_.syslogDetail.syslogAgents).Count -gt 0 -or @($_.syslogDetail.wefSubscriptions | Where-Object { $_.recordCount -gt 0 }).Count -gt 0 }).Count
         defenderForCloudEnabled      = @($defenderForCloud | Where-Object { $_.PricingTier -eq 'Standard' }).Count -gt 0
+        totalPhysicalCoreCountForBilling = @($identitySnapshots | Measure-Object -Property physicalCoreCount -Sum).Sum
+        clusterServiceAccountModels  = @($identitySnapshots | Select-Object -ExpandProperty clusterServiceAccountModel -ErrorAction SilentlyContinue | Where-Object { $_ } | Sort-Object -Unique)
+        secretAutoRotationEnabled    = @($identitySnapshots | Where-Object { $_.secretRotationState.autoRotationEnabled -eq $true }).Count -gt 0
     }
 
     $findings = New-Object System.Collections.ArrayList

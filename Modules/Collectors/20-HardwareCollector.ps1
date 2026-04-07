@@ -366,6 +366,8 @@ function Invoke-RangerHardwareCollector {
 
             $trustedModules = @($system.TrustedModules)
             $processorModels = @(Get-RangerGroupedCount -Items $processors -PropertyName 'Model')
+            $processorTotalCores = try { ($processors | Where-Object { $_.TotalCores } | Measure-Object -Property TotalCores -Sum).Sum } catch { $null }
+            $processorLogicalThreads = try { ($processors | Where-Object { $_.TotalThreads } | Measure-Object -Property TotalThreads -Sum).Sum } catch { $null }
             $memoryCapacityGiB = [math]::Round((@($memory | Where-Object { $_.CapacityMiB } | ForEach-Object { [double]$_.CapacityMiB / 1024 } | Measure-Object -Sum).Sum), 2)
             $firmwareVersions = @(Get-RangerGroupedCount -Items $firmwareInventory -PropertyName 'Version')
             $storageControllerModels = @(Get-RangerGroupedCount -Items $storageControllers -PropertyName 'Name')
@@ -387,7 +389,12 @@ function Invoke-RangerHardwareCollector {
                 nicCount         = @($ethernet).Count
                 storageControllerCount = @($storageControllers).Count
                 firmwareCount    = @($firmwareInventory).Count
-                processorSummary = [ordered]@{ sockets = @($processors).Count; models = $processorModels }
+                processorSummary = [ordered]@{
+                    sockets            = @($processors).Count
+                    totalPhysicalCores = $processorTotalCores
+                    logicalProcessors  = $processorLogicalThreads
+                    models             = $processorModels
+                }
                 memorySummary    = [ordered]@{ dimmCount = @($memory).Count; totalCapacityGiB = $memoryCapacityGiB }
                 memoryDimms      = @($memoryDimms)
                 ethernetSummary  = [ordered]@{ portCount = @($ethernet).Count; byState = @(Get-RangerGroupedCount -Items $ethernet -PropertyName 'LinkStatus') }

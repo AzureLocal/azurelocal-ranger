@@ -31,6 +31,8 @@
           "gpuDevices": [],
           "processorSummary": {
             "sockets": 2,
+            "totalPhysicalCores": 64,
+            "logicalProcessors": 128,
             "models": [ "Intel(R) Xeon(R) Gold 6414U" ]
           },
           "memorySummary": {
@@ -207,6 +209,8 @@
           "gpuDevices": [],
           "processorSummary": {
             "sockets": 2,
+            "totalPhysicalCores": 64,
+            "logicalProcessors": 128,
             "models": [ "Intel(R) Xeon(R) Gold 6414U" ]
           },
           "memorySummary": {
@@ -214,7 +218,7 @@
             "totalCapacityGiB": 512
           },
           "memoryDimms": [
-            { "slot": "A1", "partNumber": "HMA84GR7AFR4N-XN", "capacityGiB": 32, "operatingSpeedMhz": 3200, "memoryType": "DRAM", "status": "Enabled" }
+            { "slot": "B1", "partNumber": "HMA84GR7AFR4N-XN", "capacityGiB": 32, "operatingSpeedMhz": 3200, "memoryType": "DRAM", "status": "Enabled" }
           ],
           "ethernetSummary": {
             "portCount": 6,
