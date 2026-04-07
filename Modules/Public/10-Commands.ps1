@@ -92,14 +92,13 @@ function Test-AzureLocalRangerPrerequisites {
 
         # RSAT AD (ActiveDirectory PS module)
         if (-not (Test-RangerCommandAvailable -Name 'Get-ADUser')) {
-            $osProductType = (Get-CimInstance -ClassName Win32_OperatingSystem).ProductType
-            if ($osProductType -ne 1) {
-                # Server OS (ProductType 2 = DC, 3 = Server)
+            if (Get-Command Install-WindowsFeature -ErrorAction SilentlyContinue) {
+                # Windows Server — ServerManager cmdlet available
                 Write-Verbose 'Installing RSAT-AD-PowerShell via Install-WindowsFeature (Server OS)...'
                 Install-WindowsFeature -Name RSAT-AD-PowerShell -ErrorAction Stop | Out-Null
             } else {
-                # Client OS (Windows 10/11)
-                Write-Verbose 'Installing RSAT ActiveDirectory via Add-WindowsCapability (Client OS)...'
+                # Windows client or multi-session (Win10/11/AVD) — use DISM capability
+                Write-Verbose 'Installing RSAT ActiveDirectory via Add-WindowsCapability (Client/multi-session OS)...'
                 Add-WindowsCapability -Online -Name 'Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0' -ErrorAction Stop | Out-Null
             }
         }
