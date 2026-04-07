@@ -2,7 +2,9 @@
 
 This directory contains all testing assets for Azure Local Ranger: unit tests, integration tests, fixture data, a simulation framework, and helper scripts.
 
-All tests run with Pester 5. No live Azure or WinRM connections are required.
+All Pester tests run with Pester 5. **No live Azure or WinRM connections are required** for Pester tests — they are entirely fixture-backed.
+
+For live field testing against a real Azure Local environment, see the **Operation TRAILHEAD** methodology in [`repo-management/plans/field-testing.md`](../repo-management/plans/field-testing.md) and the cycle-creation script at [`repo-management/scripts/New-RangerFieldTestCycle.ps1`](../repo-management/scripts/New-RangerFieldTestCycle.ps1).
 
 ## Directory Layout
 
