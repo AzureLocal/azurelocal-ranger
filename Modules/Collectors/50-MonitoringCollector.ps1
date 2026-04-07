@@ -92,12 +92,32 @@ function Invoke-RangerMonitoringCollector {
                 }
                 if (Get-Command -Name Get-AzMetricAlertRuleV2 -ErrorAction SilentlyContinue) {
                     @(Get-AzMetricAlertRuleV2 -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue) | ForEach-Object {
-                        [void]$results.Add([ordered]@{ name = $_.Name; type = 'Metric'; severity = $_.Severity; enabled = $_.Enabled; evaluationFrequency = [string]$_.EvaluationFrequency; windowSize = [string]$_.WindowSize; lastModified = $_.LastUpdated })
+                        [void]$results.Add([ordered]@{
+                            name                = $_.Name
+                            type                = 'Metric'
+                            severity            = $_.Severity
+                            enabled             = $_.Enabled
+                            evaluationFrequency = [string]$_.EvaluationFrequency
+                            windowSize          = [string]$_.WindowSize
+                            lastModified        = $_.LastUpdated
+                            targetResourceType  = $_.TargetResourceType
+                            actionGroups        = @($_.Action | ForEach-Object { Split-Path $_.ActionGroupId -Leaf })
+                            criteriaTypes       = @(if ($_.Criteria) { @($_.Criteria.PSObject.Properties.Name) } else { @() })
+                        })
                     }
                 }
                 if (Get-Command -Name Get-AzScheduledQueryRule -ErrorAction SilentlyContinue) {
                     @(Get-AzScheduledQueryRule -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue) | ForEach-Object {
-                        [void]$results.Add([ordered]@{ name = $_.Name; type = 'ScheduledQuery'; severity = $_.Severity; enabled = $_.Enabled; query = $_.Query })
+                        [void]$results.Add([ordered]@{
+                            name         = $_.Name
+                            type         = 'ScheduledQuery'
+                            severity     = $_.Severity
+                            enabled      = $_.Enabled
+                            query        = $_.Query
+                            actionGroups = @($_.Action | ForEach-Object { Split-Path $_.ActionGroupResourceId -Leaf })
+                            windowSize   = [string]$_.WindowSize
+                            frequency    = [string]$_.Frequency
+                        })
                     }
                 }
                 @($results)
@@ -127,12 +147,112 @@ function Invoke-RangerMonitoringCollector {
         }
     )
 
+    # Issue #67: Log Analytics workspace detail and HCI Insights solutions
+    $logAnalyticsWorkspaces = @(
+        Invoke-RangerSafeAction -Label 'Log Analytics workspace detail' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+                param($SubscriptionId, $ResourceGroup)
+                if (-not (Get-Command -Name Get-AzOperationalInsightsWorkspace -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
+                @(Get-AzOperationalInsightsWorkspace -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue | ForEach-Object {
+                    $ws = $_
+                    $solutions = @(try { Get-AzOperationalInsightsIntelligencePack -ResourceGroupName $ResourceGroup -WorkspaceName $ws.Name -ErrorAction Stop | Where-Object { $_.Enabled } | Select-Object Name, Enabled } catch { @() })
+                    $hciInsightsEnabled = @($solutions | Where-Object { $_.Name -match 'azurelocal|hciinsights|ContainerInsights|AzureActivity' }).Count -gt 0
+                    [ordered]@{
+                        name             = $ws.Name
+                        workspaceId      = $ws.CustomerId
+                        resourceGroup    = $ws.ResourceGroupName
+                        location         = $ws.Location
+                        sku              = [string]$ws.Sku
+                        retentionDays    = $ws.RetentionInDays
+                        enabledSolutions = @($solutions | ForEach-Object { $_.Name })
+                        hciInsightsEnabled = $hciInsightsEnabled
+                    }
+                })
+            }
+        }
+    )
+
+    # Issue #67: Diagnostic settings on HCI cluster and Arc resources
+    $diagnosticSettings = @(
+        Invoke-RangerSafeAction -Label 'Diagnostic settings on HCI cluster resource' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+                param($SubscriptionId, $ResourceGroup)
+                if (-not (Get-Command -Name Get-AzDiagnosticSetting -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($SubscriptionId) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
+                $hciResources = @(Get-AzResource -ResourceGroupName $ResourceGroup -ResourceType 'Microsoft.AzureStackHCI/clusters' -ErrorAction SilentlyContinue)
+                $diagResult = New-Object System.Collections.ArrayList
+                foreach ($res in $hciResources) {
+                    $settings = @(Get-AzDiagnosticSetting -ResourceId $res.ResourceId -ErrorAction SilentlyContinue)
+                    foreach ($s in $settings) {
+                        [void]$diagResult.Add([ordered]@{
+                            resourceId       = $res.ResourceId
+                            resourceName     = $res.Name
+                            name             = $s.Name
+                            enabledLogs      = @($s.Log | Where-Object { $_.Enabled } | ForEach-Object { $_.Category })
+                            enabledMetrics   = @($s.Metrics | Where-Object { $_.Enabled } | ForEach-Object { $_.Category })
+                            workspaceId      = $s.WorkspaceId
+                            storageAccountId = $s.StorageAccountId
+                        })
+                    }
+                }
+                @($diagResult)
+            }
+        }
+    )
+
+    # Issue #67: Action groups
+    $actionGroups = @(
+        Invoke-RangerSafeAction -Label 'Azure Monitor action groups' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+                param($SubscriptionId, $ResourceGroup)
+                if (-not (Get-Command -Name Get-AzActionGroup -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
+                @(Get-AzActionGroup -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue | ForEach-Object {
+                    [ordered]@{
+                        name             = $_.Name
+                        groupShortName   = $_.GroupShortName
+                        enabled          = $_.Enabled
+                        emailReceivers   = @($_.EmailReceiver | ForEach-Object { [ordered]@{ name = $_.Name; address = $_.EmailAddress; useCommonAlert = $_.UseCommonAlertSchema } })
+                        webhookReceivers = @($_.WebhookReceiver | ForEach-Object { [ordered]@{ name = $_.Name; serviceUri = $_.ServiceUri } })
+                        armRoleReceivers = @($_.ArmRoleReceiver | ForEach-Object { $_.RoleId })
+                    }
+                })
+            }
+        }
+    )
+
     $ama = @($azureResources | Where-Object { $_.Name -match 'AzureMonitor|AMA' -or $_.ResourceType -match 'HybridCompute.*/extensions' })
     $dcr = @($azureResources | Where-Object { $_.ResourceType -match 'dataCollectionRules' })
     $dce = @($azureResources | Where-Object { $_.ResourceType -match 'dataCollectionEndpoints' })
     $telemetry = @($azureResources | Where-Object { $_.Name -match 'Telemetry|Diagnostics|HCIInsights' -or $_.ResourceType -match 'insights|operationalinsights' })
     $alerts = @($azureResources | Where-Object { $_.ResourceType -match 'actionGroups|scheduledQueryRules|alertrules' })
     $updateManager = @($azureResources | Where-Object { $_.ResourceType -match 'maintenance|update' })
+
+    # Issue #67: Health fault category grouping (group by FaultType prefix)
+    $allFaults = @($healthSnapshots | ForEach-Object { $_.healthFaults })
+    $healthFaultsByCategory = @($allFaults | Group-Object -Property { ($_.faultType -split '\.')[0] } | ForEach-Object {
+        [ordered]@{
+            category     = $_.Name
+            count        = $_.Count
+            criticalCount = @($_.Group | Where-Object { $_.severity -match 'Critical|Fatal' }).Count
+            faults       = @($_.Group | Select-Object -First 3)
+        }
+    })
+
+    # Issue #67: Telemetry extension detail from arc machine extensions
+    $telemetryExtensionDetail = @($azureResources | Where-Object { $_.Name -match 'AzureEdgeTelemetryAndDiagnostics|TelemetryAndDiagnostics' } | ForEach-Object {
+        [ordered]@{ name = $_.Name; resourceType = $_.ResourceType; location = $_.Location; id = $_.ResourceId }
+    })
+
+    # Issue #67: HCI Insights enablement summary
+    $hciInsightsSummary = [ordered]@{
+        enabled                  = @($logAnalyticsWorkspaces | Where-Object { $_.hciInsightsEnabled -eq $true }).Count -gt 0
+        workspaceCount           = @($logAnalyticsWorkspaces).Count
+        workspaceName            = if (@($logAnalyticsWorkspaces).Count -gt 0) { $logAnalyticsWorkspaces[0].name } else { $null }
+        workspaceId              = if (@($logAnalyticsWorkspaces).Count -gt 0) { $logAnalyticsWorkspaces[0].workspaceId } else { $null }
+        workspaceRegion          = if (@($logAnalyticsWorkspaces).Count -gt 0) { $logAnalyticsWorkspaces[0].location } else { $null }
+        diagnosticSettingsCount  = @($diagnosticSettings).Count
+        platformMetricsEnabled   = @($diagnosticSettings | Where-Object { @($_.enabledMetrics).Count -gt 0 }).Count -gt 0
+    }
+
     $monitoringSummary = [ordered]@{
         telemetryCount             = @($telemetry).Count
         amaCount                   = @($ama).Count
@@ -149,6 +269,12 @@ function Invoke-RangerMonitoringCollector {
         totalHealthFaults          = (@($healthSnapshots | ForEach-Object { $_.healthFaultCount } | Measure-Object -Sum).Sum)
         criticalHealthFaults       = (@($healthSnapshots | ForEach-Object { $_.criticalFaultCount } | Measure-Object -Sum).Sum)
         nodesWithAmaAgent          = @($healthSnapshots | Where-Object { $null -ne $_.amaAgentVersion }).Count
+        logAnalyticsWorkspaceCount = @($logAnalyticsWorkspaces).Count
+        diagnosticSettingsCount    = @($diagnosticSettings).Count
+        actionGroupCount           = @($actionGroups).Count
+        hciInsightsEnabled         = $hciInsightsSummary.enabled
+        healthFaultCategoryCount   = @($healthFaultsByCategory).Count
+        telemetryExtensionCount    = @($telemetryExtensionDetail).Count
     }
 
     $findings = New-Object System.Collections.ArrayList
@@ -172,31 +298,40 @@ function Invoke-RangerMonitoringCollector {
         Status        = if ($findings.Count -gt 0) { 'partial' } else { 'success' }
         Domains       = @{
             monitoring = [ordered]@{
-                telemetry       = ConvertTo-RangerHashtable -InputObject $telemetry
-                ama             = ConvertTo-RangerHashtable -InputObject $ama
-                dcr             = ConvertTo-RangerHashtable -InputObject $dcr
-                dcrDetail       = ConvertTo-RangerHashtable -InputObject $dcrDetail
-                dce             = ConvertTo-RangerHashtable -InputObject $dce
-                insights        = ConvertTo-RangerHashtable -InputObject @($azureResources | Where-Object { $_.ResourceType -match 'operationalinsights|insights' })
-                alerts          = ConvertTo-RangerHashtable -InputObject $alerts
-                alertRuleDetail = ConvertTo-RangerHashtable -InputObject $alertRuleDetail
-                health          = ConvertTo-RangerHashtable -InputObject $healthSnapshots
-                healthFaults    = ConvertTo-RangerHashtable -InputObject @($healthSnapshots | ForEach-Object { [ordered]@{ node = $_.node; faults = $_.healthFaults; count = $_.healthFaultCount } })
-                updateManager   = ConvertTo-RangerHashtable -InputObject $updateManager
-                updateManagerDetail = ConvertTo-RangerHashtable -InputObject $updateManagerDetail
-                resourceHealth  = ConvertTo-RangerHashtable -InputObject $resourceHealth
-                summary         = $monitoringSummary
+                telemetry               = ConvertTo-RangerHashtable -InputObject $telemetry
+                ama                     = ConvertTo-RangerHashtable -InputObject $ama
+                dcr                     = ConvertTo-RangerHashtable -InputObject $dcr
+                dcrDetail               = ConvertTo-RangerHashtable -InputObject $dcrDetail
+                dce                     = ConvertTo-RangerHashtable -InputObject $dce
+                insights                = ConvertTo-RangerHashtable -InputObject @($azureResources | Where-Object { $_.ResourceType -match 'operationalinsights|insights' })
+                logAnalyticsWorkspaces  = ConvertTo-RangerHashtable -InputObject $logAnalyticsWorkspaces
+                diagnosticSettings      = ConvertTo-RangerHashtable -InputObject $diagnosticSettings
+                actionGroups            = ConvertTo-RangerHashtable -InputObject $actionGroups
+                alerts                  = ConvertTo-RangerHashtable -InputObject $alerts
+                alertRuleDetail         = ConvertTo-RangerHashtable -InputObject $alertRuleDetail
+                health                  = ConvertTo-RangerHashtable -InputObject $healthSnapshots
+                healthFaults            = ConvertTo-RangerHashtable -InputObject @($healthSnapshots | ForEach-Object { [ordered]@{ node = $_.node; faults = $_.healthFaults; count = $_.healthFaultCount } })
+                healthFaultsByCategory  = ConvertTo-RangerHashtable -InputObject $healthFaultsByCategory
+                telemetryExtension      = ConvertTo-RangerHashtable -InputObject $telemetryExtensionDetail
+                hciInsights             = $hciInsightsSummary
+                updateManager           = ConvertTo-RangerHashtable -InputObject $updateManager
+                updateManagerDetail     = ConvertTo-RangerHashtable -InputObject $updateManagerDetail
+                resourceHealth          = ConvertTo-RangerHashtable -InputObject $resourceHealth
+                summary                 = $monitoringSummary
             }
         }
         Findings      = @($findings)
         Relationships = @()
         RawEvidence   = [ordered]@{
-            azureResources    = ConvertTo-RangerHashtable -InputObject $azureResources
-            health            = ConvertTo-RangerHashtable -InputObject $healthSnapshots
-            updateManager     = ConvertTo-RangerHashtable -InputObject $updateManager
-            dcrDetail         = ConvertTo-RangerHashtable -InputObject $dcrDetail
-            alertRuleDetail   = ConvertTo-RangerHashtable -InputObject $alertRuleDetail
-            resourceHealth    = ConvertTo-RangerHashtable -InputObject $resourceHealth
+            azureResources         = ConvertTo-RangerHashtable -InputObject $azureResources
+            health                 = ConvertTo-RangerHashtable -InputObject $healthSnapshots
+            updateManager          = ConvertTo-RangerHashtable -InputObject $updateManager
+            dcrDetail              = ConvertTo-RangerHashtable -InputObject $dcrDetail
+            alertRuleDetail        = ConvertTo-RangerHashtable -InputObject $alertRuleDetail
+            resourceHealth         = ConvertTo-RangerHashtable -InputObject $resourceHealth
+            logAnalyticsWorkspaces = ConvertTo-RangerHashtable -InputObject $logAnalyticsWorkspaces
+            diagnosticSettings     = ConvertTo-RangerHashtable -InputObject $diagnosticSettings
+            actionGroups           = ConvertTo-RangerHashtable -InputObject $actionGroups
         }
     }
 }

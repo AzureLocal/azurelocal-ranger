@@ -25,6 +25,11 @@
           "wac": {
             "installed": true,
             "status": "Running",
+            "version": "2311.0.0",
+            "gatewayMode": "gateway",
+            "url": "https://azl-node-01:443",
+            "authMode": "AzureAD",
+            "azureResourceId": "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-hci-demo/providers/Microsoft.HybridConnectivity/gateways/wac-gw-01",
             "cert": {
               "subject": "CN=azl-node-01.contoso.com",
               "notAfter": "2027-06-01T00:00:00Z",
@@ -59,8 +64,24 @@
           "node": "azl-node-01",
           "metrics": {
             "cpuUtilizationPercent": 41,
+            "cpuPeakPercent": 58.2,
+            "cpuSampleCount": 3,
             "availableMemoryMb": 131072,
-            "totalMemoryMb": 524288
+            "totalMemoryMb": 524288,
+            "committedBytesMb": 196608,
+            "commitLimitMb": 589000,
+            "committedRatio": 0.334,
+            "hypervHypervisorRunTimePct": 12.7,
+            "storageIops": {
+              "readIops": 320.5,
+              "writeIops": 85.3,
+              "readThroughputMBps": 124.8,
+              "writeThroughputMBps": 33.2,
+              "avgReadLatencyMs": 0.62,
+              "avgWriteLatencyMs": 0.41
+            },
+            "csvCacheHitRatio": 91.4,
+            "networkErrors": []
           }
         }
       ],
@@ -113,6 +134,32 @@
           "eventCount": 12,
           "topEventIds": [
             { "eventId": "1570", "count": 5, "level": "Information", "sample": "Cluster network interface came online." }
+          ]
+        },
+        {
+          "node": "azl-node-01",
+          "logName": "Microsoft-Windows-Hyper-V-VMMS-Admin",
+          "eventCount": 0,
+          "topEventIds": []
+        },
+        {
+          "node": "azl-node-01",
+          "logName": "Microsoft-Windows-Hyper-V-Worker-Admin",
+          "eventCount": 0,
+          "topEventIds": []
+        },
+        {
+          "node": "azl-node-01",
+          "logName": "Microsoft-Windows-StorageReplica/Admin",
+          "eventCount": 0,
+          "topEventIds": []
+        },
+        {
+          "node": "azl-node-01",
+          "logName": "Application",
+          "eventCount": 8,
+          "topEventIds": [
+            { "eventId": "0", "count": 8, "level": "Information", "sample": "Application event log sample." }
           ]
         }
       ],

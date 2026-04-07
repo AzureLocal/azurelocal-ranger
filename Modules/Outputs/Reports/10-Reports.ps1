@@ -72,6 +72,40 @@ function Write-RangerReportArtifacts {
     return @($artifacts)
 }
 
+# Issue #73: Inline SVG traffic light indicator (green/yellow/red/gray)
+function New-RangerTrafficLightSvg {
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('green', 'yellow', 'red', 'gray')]
+        [string]$Color,
+        [int]$Size = 16
+    )
+    $fill = switch ($Color) {
+        'green'  { '#22c55e' }
+        'yellow' { '#f59e0b' }
+        'red'    { '#ef4444' }
+        default  { '#94a3b8' }
+    }
+    $cx = [int][math]::Round($Size / 2); $r = [int][math]::Round($Size / 2 - 1)
+    "<svg xmlns='http://www.w3.org/2000/svg' width='$Size' height='$Size' style='display:inline-block;vertical-align:middle'><circle cx='$cx' cy='$cx' r='$r' fill='$fill'/></svg>"
+}
+
+# Issue #73: Inline SVG horizontal capacity bar
+function New-RangerCapacityBarSvg {
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)]
+        [double]$Percent,
+        [int]$Width = 160,
+        [int]$Height = 12
+    )
+    $pct = [math]::Max(0, [math]::Min(100, [double]$Percent))
+    $fill = if ($pct -ge 85) { '#ef4444' } elseif ($pct -ge 70) { '#f59e0b' } else { '#3b82f6' }
+    $barW = [int][math]::Round($pct / 100 * $Width)
+    "<svg xmlns='http://www.w3.org/2000/svg' width='$Width' height='$Height' style='vertical-align:middle;margin-right:6px'><rect width='$Width' height='$Height' rx='2' fill='#e2e8f0'/><rect width='$barW' height='$Height' rx='2' fill='$fill'/></svg>$([math]::Round($pct,1))%"
+}
+
 function New-RangerReportPayload {
     param(
         [Parameter(Mandatory = $true)]
@@ -180,6 +214,25 @@ function New-RangerReportPayload {
         body    = $readinessBody
     })
 
+    # Issue #73: Health status section with traffic light indicators (all tiers)
+    [void]$sections.Add([ordered]@{
+        heading = 'Health Status'
+        body    = @(
+            "Overall health: $($summary.OverallHealthColor.ToUpperInvariant()) ($criticalCount critical, $warningCount warning findings)",
+            "Azure integration: $($summary.AzureIntegrationColor.ToUpperInvariant()) ($($summary.AzureResourceCount) Azure resources discovered)",
+            "Security posture: $($summary.SecurityPostureColor.ToUpperInvariant()) (Secured-Core enabled on $($Manifest.domains.identitySecurity.summary.securedCoreNodes) node(s))",
+            "Monitoring coverage: $(if ($summary.MonitoringCoveragePercent -ge 100) { 'GREEN' } elseif ($summary.MonitoringCoveragePercent -gt 0) { 'YELLOW' } else { 'GRAY' }) ($($summary.MonitoringCoveragePercent)% of nodes have Azure Monitor Agent)"
+        )
+        _visualStats = [ordered]@{
+            lights = @(
+                [ordered]@{ label = 'Overall Health';       color = $summary.OverallHealthColor }
+                [ordered]@{ label = 'Azure Integration';    color = $summary.AzureIntegrationColor }
+                [ordered]@{ label = 'Security Posture';     color = $summary.SecurityPostureColor }
+                [ordered]@{ label = 'Monitoring Coverage';  color = if ($summary.MonitoringCoveragePercent -ge 100) { 'green' } elseif ($summary.MonitoringCoveragePercent -gt 0) { 'yellow' } else { 'gray' } }
+            )
+        }
+    })
+
     [void]$sections.Add([ordered]@{
         heading = 'Environment Overview'
         body    = @(
@@ -213,6 +266,38 @@ function New-RangerReportPayload {
         body    = $operationalRiskBody
     })
 
+    # Issue #73: Workload Summary (executive + management + technical)
+    [void]$sections.Add([ordered]@{
+        heading = 'Workload Summary'
+        body    = @(
+            "Total VMs: $($summary.VmCount)",
+            "Total nodes: $($summary.NodeCount)",
+            "AKS clusters: $(@($Manifest.domains.azureIntegration.aksClusters).Count)",
+            "AVD host pools: $(@($Manifest.domains.azureIntegration.avdHostPools).Count)",
+            "Arc-connected machines: $(@($Manifest.domains.azureIntegration.arcMachineDetail).Count)",
+            "Update compliance: $(if ($Manifest.domains.azureIntegration.summary.updateCount -gt 0) { "$($Manifest.domains.azureIntegration.summary.updateCount) update resource(s) tracked" } else { 'No update resources tracked' })",
+            "Licensing: $(if ($Manifest.domains.azureIntegration.costLicensing.subscriptionName) { $Manifest.domains.azureIntegration.costLicensing.subscriptionName } else { 'Not collected' })"
+        )
+    })
+
+    # Issue #73: Capacity Summary with utilization text (all tiers)
+    [void]$sections.Add([ordered]@{
+        heading = 'Capacity Summary'
+        body    = @(
+            "Storage total raw: $([math]::Round($summary.StorageTotalRawGiB / 1024, 2)) TiB",
+            "Storage total usable: $([math]::Round($summary.StorageTotalUsableGiB / 1024, 2)) TiB",
+            "Storage utilization: $($summary.StorageUtilizationPct)% of usable capacity allocated",
+            "vCPU:pCPU overcommit ratio: $(if ($summary.VcpuOvercommitRatio) { $summary.VcpuOvercommitRatio } else { 'Not computed' })",
+            "Memory overcommit ratio: $(if ($summary.MemoryOvercommitRatio) { $summary.MemoryOvercommitRatio } else { 'Not computed' })",
+            "Average VMs per node: $(if ($summary.AvgVmsPerNode) { $summary.AvgVmsPerNode } else { 'N/A' })"
+        )
+        _visualStats = [ordered]@{
+            bars = @(
+                [ordered]@{ label = 'Storage utilization'; percent = $summary.StorageUtilizationPct }
+            )
+        }
+    })
+
     if ($Tier -eq 'management' -or $Tier -eq 'technical') {
         [void]$sections.Add([ordered]@{
             heading = 'Priority Recommendations'
@@ -225,6 +310,64 @@ function New-RangerReportPayload {
                 else {
                     'No recommendation-bearing findings were recorded for this manifest.'
                 }
+            )
+        })
+
+        # Issue #73: VM Density Metrics (management + technical)
+        [void]$sections.Add([ordered]@{
+            heading = 'VM Density Metrics'
+            body    = @(
+                "VMs per node (average): $(if ($summary.AvgVmsPerNode) { $summary.AvgVmsPerNode } else { 'N/A' })",
+                "Highest-density node: $(if ($Manifest.domains.virtualMachines.summary.highestDensityNode) { $Manifest.domains.virtualMachines.summary.highestDensityNode } else { 'N/A' })",
+                "vCPU:pCPU overcommit ratio: $(if ($summary.VcpuOvercommitRatio) { $summary.VcpuOvercommitRatio } else { 'Not computed' })",
+                "Memory overcommit ratio: $(if ($summary.MemoryOvercommitRatio) { $summary.MemoryOvercommitRatio } else { 'Not computed' })",
+                "Arc-connected VMs: $($Manifest.domains.virtualMachines.summary.arcConnectedVms)",
+                "Avg CPU utilization (all nodes): $($Manifest.domains.performance.summary.averageCpuUtilizationPercent)%",
+                "Avg available memory (all nodes): $([math]::Round([double]$Manifest.domains.performance.summary.averageAvailableMemoryMb / 1024, 1)) GiB"
+            )
+        })
+
+        # Issue #73: Coverage Assessment (management + technical)
+        [void]$sections.Add([ordered]@{
+            heading = 'Coverage Assessment'
+            body    = @(
+                "Monitoring coverage (AMA): $($summary.MonitoringCoveragePercent)% ($amaCount of $($summary.NodeCount) nodes have Azure Monitor Agent)",
+                "Backup coverage estimate: $($summary.BackupCoveragePercent)% (based on backup items vs VM count)",
+                "Defender for Cloud: $(if ($Manifest.domains.identitySecurity.defenderForCloud.enabled) { 'Enabled' } else { 'Not confirmed or not collected' })",
+                "WDAC policy: $(if ($Manifest.domains.identitySecurity.security.wdacPolicy) { $Manifest.domains.identitySecurity.security.wdacPolicy } else { 'Not collected' })",
+                "BitLocker status: $(if ($Manifest.domains.identitySecurity.security.bitlockerEnabled -eq $true) { 'Enabled' } elseif ($Manifest.domains.identitySecurity.security.bitlockerEnabled -eq $false) { 'Disabled' } else { 'Not collected' })",
+                "Certificates expiring in <90 days: $($Manifest.domains.identitySecurity.summary.certificateExpiringWithin90Days)"
+            )
+            _visualStats = [ordered]@{
+                bars = @(
+                    [ordered]@{ label = 'Monitoring coverage (AMA)'; percent = $summary.MonitoringCoveragePercent }
+                    [ordered]@{ label = 'Backup coverage'; percent = $summary.BackupCoveragePercent }
+                )
+            }
+        })
+
+        # Issue #73: Security Posture Summary (management + technical)
+        [void]$sections.Add([ordered]@{
+            heading = 'Security Posture Summary'
+            body    = @(
+                "Secured-Core enabled nodes: $($Manifest.domains.identitySecurity.summary.securedCoreNodes) of $($summary.NodeCount)",
+                "Syslog forwarding nodes: $($Manifest.domains.identitySecurity.summary.syslogForwardingNodes)",
+                "RBAC assignments at resource group: $(@($Manifest.domains.identitySecurity.rbacAssignments).Count)",
+                "Policy assignments tracked: $($Manifest.domains.azureIntegration.policySummary.assignmentCount)",
+                "Policy exemptions: $($Manifest.domains.azureIntegration.policySummary.exemptionCount)",
+                "Active Directory site: $(if ($Manifest.domains.identitySecurity.activeDirectory.adSite) { $Manifest.domains.identitySecurity.activeDirectory.adSite } else { 'Not collected' })"
+            )
+        })
+
+        # Issue #73: Management Tool Coverage (management + technical)
+        [void]$sections.Add([ordered]@{
+            heading = 'Management Tool Coverage'
+            body    = @(
+                "WAC installed nodes: $($Manifest.domains.managementTools.summary.wacInstalled) of $($summary.NodeCount)",
+                "SCVMM agent nodes: $($Manifest.domains.managementTools.summary.scvmmNodes)",
+                "SCOM agent nodes: $($Manifest.domains.managementTools.summary.scomNodes)",
+                "Running management services: $($Manifest.domains.managementTools.summary.runningServices)",
+                "Third-party agent types: $((@($Manifest.domains.managementTools.summary.thirdPartyTypes) | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', ')"
             )
         })
     }
@@ -256,6 +399,90 @@ function New-RangerReportPayload {
                 "Performance summary: avg CPU=$($Manifest.domains.performance.summary.averageCpuUtilizationPercent), avg available memory MB=$($Manifest.domains.performance.summary.averageAvailableMemoryMb)"
             )
         })
+
+        # Issue #73: Storage Pool Math (Technical) — raw → usable capacity breakdown
+        $storageMathLines = @(
+            "Storage resiliency math (approximate — actual usable depends on pool resiliency settings):",
+            "  Total raw capacity: $([math]::Round($summary.StorageTotalRawGiB, 0)) GiB ($([math]::Round($summary.StorageTotalRawGiB / 1024, 2)) TiB)",
+            "  Total usable capacity (after resiliency): $([math]::Round($summary.StorageTotalUsableGiB, 0)) GiB ($([math]::Round($summary.StorageTotalUsableGiB / 1024, 2)) TiB)",
+            "  Overhead ratio: $(if ($summary.StorageTotalRawGiB -gt 0) { [math]::Round((1 - $summary.StorageTotalUsableGiB / $summary.StorageTotalRawGiB) * 100, 1) } else { 'N/A' })% consumed by resiliency"
+        )
+        foreach ($pool in @($Manifest.domains.storage.pools)) {
+            $resiliency = if ($pool.resiliencyType) { $pool.resiliencyType } else { 'unknown' }
+            $rawGiB = [double]$pool.totalCapacityGiB
+            $approxPct = switch ($resiliency.ToLowerInvariant()) {
+                'mirror'          { 50 }
+                'three-way'       { 33 }
+                'threeway'        { 33 }
+                'three-waymirror' { 33 }
+                'parity'          { 60 }
+                'dualparity'      { 72 }
+                default           { 50 }
+            }
+            $approxUsableGiB = [math]::Round($rawGiB * $approxPct / 100, 0)
+            $storageMathLines += "  Pool '$($pool.friendlyName)': $rawGiB GiB raw, resiliency=$resiliency, ~$approxUsableGiB GiB usable (~$approxPct% efficiency)"
+        }
+        [void]$sections.Add([ordered]@{
+            heading = 'Storage Pool Math'
+            body    = $storageMathLines
+        })
+
+        # Issue #73: Event Log Analysis Summary (Technical)
+        $eventLogSummaryLines = @(
+            "Event logs analyzed per node across $(@($Manifest.domains.performance.eventLogAnalysis).Count) log sources:"
+        )
+        $topLogEntries = @($Manifest.domains.performance.eventLogAnalysis | Where-Object { $_.eventCount -gt 0 } | Sort-Object eventCount -Descending | Select-Object -First 10)
+        if ($topLogEntries.Count -gt 0) {
+            foreach ($entry in $topLogEntries) {
+                $eventLogSummaryLines += "  Node $($entry.node): $($entry.logName) — $($entry.eventCount) events"
+                foreach ($topId in @($entry.topEventIds | Select-Object -First 2)) {
+                    $eventLogSummaryLines += "    EventId $($topId.eventId) x$($topId.count) [$($topId.level)]: $($topId.sample)"
+                }
+            }
+        } else {
+            $eventLogSummaryLines += "  No events recorded in this collection window."
+        }
+        [void]$sections.Add([ordered]@{
+            heading = 'Event Log Analysis'
+            body    = $eventLogSummaryLines
+        })
+
+        # Issue #73: Full security audit summary (Technical)
+        [void]$sections.Add([ordered]@{
+            heading = 'Security Audit'
+            body    = @(
+                "--- Certificate Inventory ---",
+                "Total certificates tracked: $(@($Manifest.domains.identitySecurity.posture.certificates).Count)",
+                "Expiring within 90 days: $($Manifest.domains.identitySecurity.summary.certificateExpiringWithin90Days)",
+                "--- Policy and Compliance ---",
+                "Policy assignments: $($Manifest.domains.azureIntegration.policySummary.assignmentCount)",
+                "Policy exemptions: $($Manifest.domains.azureIntegration.policySummary.exemptionCount)",
+                "Policy non-compliant: $($Manifest.domains.azureIntegration.policySummary.nonCompliantCount)",
+                "--- Identity ---",
+                "AD objects: $(@($Manifest.domains.identitySecurity.activeDirectory.adObjects).Count) CNO(s) tracked",
+                "RBAC assignments at RG scope: $(@($Manifest.domains.identitySecurity.rbacAssignments).Count)",
+                "--- Workload Protection ---",
+                "Backup items tracked: $(@($Manifest.domains.azureIntegration.backup.items).Count)",
+                "ASR (disaster recovery) items: $(@($Manifest.domains.azureIntegration.asr.protectedItems).Count)",
+                "--- Endpoint Protection ---",
+                "Defender for Cloud enabled: $(if ($Manifest.domains.identitySecurity.defenderForCloud.enabled) { 'Yes' } else { 'Not confirmed' })",
+                "Secured-Core nodes: $($Manifest.domains.identitySecurity.summary.securedCoreNodes) of $($summary.NodeCount)"
+            )
+        })
+
+        # Issue #73: Raw Data Appendix (Technical)
+        [void]$sections.Add([ordered]@{
+            heading = 'Raw Data Appendix'
+            body    = @(
+                "The complete collection manifest (ranger-manifest.json) is included in this package.",
+                "It contains the full raw evidence from all collectors, including every data point used to generate this report.",
+                "To regenerate reports from the saved manifest without re-running discovery, use:",
+                "  Invoke-AzureLocalRanger -ManifestPath <path-to-manifest.json> -OutputPath <output-folder>",
+                "Manifest schema version: $($Manifest.run.schemaVersion)",
+                "Collection completed: $($Manifest.run.endTimeUtc)",
+                "Ranger version: $($Manifest.run.toolVersion)"
+            )
+        })
     }
 
     if ($Mode -eq 'as-built') {
@@ -267,20 +494,35 @@ function New-RangerReportPayload {
     }
 
     return [ordered]@{
-        Title       = ((Get-RangerReportTierDefinitions | Where-Object { $_.Name -eq $Tier } | Select-Object -First 1).Title)
-        Tier        = $Tier
-        ClusterName = $summary.ClusterName
-        Mode        = $Mode
-        Summary     = $summary
-        Findings    = @($findings)
+        Title           = ((Get-RangerReportTierDefinitions | Where-Object { $_.Name -eq $Tier } | Select-Object -First 1).Title)
+        Tier            = $Tier
+        ClusterName     = $summary.ClusterName
+        Mode            = $Mode
+        Summary         = $summary
+        Findings        = @($findings)
         Recommendations = @($recommendations)
-        CollectorCards = @($collectorCards)
+        CollectorCards  = @($collectorCards)
         TableOfContents = @($sections | ForEach-Object { $_.heading })
-        Sections    = @($sections)
-        Version     = $Manifest.run.toolVersion
-        GeneratedAt = $Manifest.run.endTimeUtc
+        Sections        = @($sections)
+        Version         = $Manifest.run.toolVersion
+        GeneratedAt     = $Manifest.run.endTimeUtc
+        # Issue #73: Visual stats passed to HTML renderer
+        VisualStats     = [ordered]@{
+            healthLights = @(
+                [ordered]@{ label = 'Overall Health';      color = $summary.OverallHealthColor }
+                [ordered]@{ label = 'Azure Integration';   color = $summary.AzureIntegrationColor }
+                [ordered]@{ label = 'Security Posture';    color = $summary.SecurityPostureColor }
+                [ordered]@{ label = 'Monitoring Coverage'; color = if ($summary.MonitoringCoveragePercent -ge 100) { 'green' } elseif ($summary.MonitoringCoveragePercent -gt 0) { 'yellow' } else { 'gray' } }
+            )
+            capacityBars = @(
+                [ordered]@{ label = 'Storage utilization';  percent = $summary.StorageUtilizationPct }
+                [ordered]@{ label = 'Monitoring coverage';  percent = $summary.MonitoringCoveragePercent }
+                [ordered]@{ label = 'Backup coverage';      percent = $summary.BackupCoveragePercent }
+            )
+        }
     }
 }
+
 
 function Get-RangerManifestSummary {
     param(
@@ -289,24 +531,72 @@ function Get-RangerManifestSummary {
     )
 
     $collectorStatuses = @($Manifest.collectors.Values)
+    $nodeCount  = @($Manifest.domains.clusterNode.nodes).Count
+    $vmCount    = @($Manifest.domains.virtualMachines.inventory).Count
+    $vmSummary  = $Manifest.domains.virtualMachines.summary
+    $storageSummary = $Manifest.domains.storage.summary
+    $monitorSummary = $Manifest.domains.monitoring.summary
+
+    # Issue #73: Monitoring coverage (AMA agents / total nodes)
+    $amaCount             = if ($monitorSummary -and $null -ne $monitorSummary.amaCount) { [int]$monitorSummary.amaCount } else { 0 }
+    $monitoringCoveragePct = if ($nodeCount -gt 0) { [math]::Round($amaCount / $nodeCount * 100, 0) } else { 0 }
+
+    # Issue #73: Backup coverage estimate (backup items / VMs)
+    $backupItemCount  = @($Manifest.domains.azureIntegration.backup.items).Count
+    $backupCoveragePct = if ($vmCount -gt 0) { [math]::Min(100, [math]::Round($backupItemCount / $vmCount * 100, 0)) } else { 0 }
+
+    # Issue #73: Storage utilization
+    $storageTotalRaw    = if ($storageSummary -and $storageSummary.totalRawCapacityGiB)    { [double]$storageSummary.totalRawCapacityGiB }    else { 0 }
+    $storageTotalUsable = if ($storageSummary -and $storageSummary.totalUsableCapacityGiB) { [double]$storageSummary.totalUsableCapacityGiB } else { 0 }
+    $storageAllocated   = if ($storageSummary -and $storageSummary.totalAllocatedCapacityGiB) { [double]$storageSummary.totalAllocatedCapacityGiB } else { 0 }
+    $storageUtilPct     = if ($storageTotalUsable -gt 0) { [math]::Round($storageAllocated / $storageTotalUsable * 100, 1) } else { 0 }
+
+    # Issue #73: Overall health color (red=any critical, yellow=>2 warnings, green=clean)
+    $criticalCount  = @($Manifest.findings | Where-Object { $_.severity -eq 'critical' }).Count
+    $warningCount   = @($Manifest.findings | Where-Object { $_.severity -eq 'warning'  }).Count
+    $overallColor   = if ($criticalCount -gt 0) { 'red' } elseif ($warningCount -gt 2) { 'yellow' } else { 'green' }
+
+    # Issue #73: Azure integration status color
+    $arcResources  = @($Manifest.domains.azureIntegration.resources).Count
+    $azureColor    = if ($arcResources -gt 0) { 'green' } else { 'yellow' }
+
+    # Issue #73: Security posture color (Secured-Core coverage of nodes)
+    $securedCoreNodes = if ($Manifest.domains.identitySecurity.summary.securedCoreNodes) { [int]$Manifest.domains.identitySecurity.summary.securedCoreNodes } else { 0 }
+    $securityColor    = if ($nodeCount -gt 0 -and $securedCoreNodes -ge $nodeCount) { 'green' } elseif ($securedCoreNodes -gt 0) { 'yellow' } else { 'gray' }
+
     [ordered]@{
-        ClusterName          = if (-not [string]::IsNullOrWhiteSpace($Manifest.target.clusterName)) { $Manifest.target.clusterName } else { $Manifest.target.environmentLabel }
-        NodeCount            = @($Manifest.domains.clusterNode.nodes).Count
-        VmCount              = @($Manifest.domains.virtualMachines.inventory).Count
-        AzureResourceCount   = @($Manifest.domains.azureIntegration.resources).Count
-        DeploymentType       = $Manifest.topology.deploymentType
-        IdentityMode         = $Manifest.topology.identityMode
-        ControlPlaneMode     = $Manifest.topology.controlPlaneMode
-        TotalCollectors      = $collectorStatuses.Count
-        SuccessfulCollectors = @($collectorStatuses | Where-Object { $_.status -eq 'success' }).Count
-        PartialCollectors    = @($collectorStatuses | Where-Object { $_.status -eq 'partial' }).Count
-        FailedCollectors     = @($collectorStatuses | Where-Object { $_.status -eq 'failed' }).Count
-        FindingsBySeverity   = [ordered]@{
-            critical      = @($Manifest.findings | Where-Object { $_.severity -eq 'critical' }).Count
-            warning       = @($Manifest.findings | Where-Object { $_.severity -eq 'warning' }).Count
+        ClusterName               = if (-not [string]::IsNullOrWhiteSpace($Manifest.target.clusterName)) { $Manifest.target.clusterName } else { $Manifest.target.environmentLabel }
+        NodeCount                 = $nodeCount
+        VmCount                   = $vmCount
+        AzureResourceCount        = @($Manifest.domains.azureIntegration.resources).Count
+        DeploymentType            = $Manifest.topology.deploymentType
+        IdentityMode              = $Manifest.topology.identityMode
+        ControlPlaneMode          = $Manifest.topology.controlPlaneMode
+        TotalCollectors           = $collectorStatuses.Count
+        SuccessfulCollectors      = @($collectorStatuses | Where-Object { $_.status -eq 'success' }).Count
+        PartialCollectors         = @($collectorStatuses | Where-Object { $_.status -eq 'partial' }).Count
+        FailedCollectors          = @($collectorStatuses | Where-Object { $_.status -eq 'failed' }).Count
+        FindingsBySeverity        = [ordered]@{
+            critical      = $criticalCount
+            warning       = $warningCount
             informational = @($Manifest.findings | Where-Object { $_.severity -eq 'informational' }).Count
             good          = @($Manifest.findings | Where-Object { $_.severity -eq 'good' }).Count
         }
+        # Issue #73: Density and overcommit metrics
+        VcpuOvercommitRatio       = if ($vmSummary -and $null -ne $vmSummary.vcpuOvercommitRatio)   { $vmSummary.vcpuOvercommitRatio }   else { $null }
+        MemoryOvercommitRatio     = if ($vmSummary -and $null -ne $vmSummary.memoryOvercommitRatio) { $vmSummary.memoryOvercommitRatio } else { $null }
+        AvgVmsPerNode             = if ($vmSummary -and $null -ne $vmSummary.avgVmsPerNode)         { $vmSummary.avgVmsPerNode }         else { $null }
+        # Issue #73: Coverage metrics
+        MonitoringCoveragePercent = $monitoringCoveragePct
+        BackupCoveragePercent     = $backupCoveragePct
+        # Issue #73: Storage capacity
+        StorageTotalRawGiB        = $storageTotalRaw
+        StorageTotalUsableGiB     = $storageTotalUsable
+        StorageUtilizationPct     = $storageUtilPct
+        # Issue #73: Health status colors (for traffic lights)
+        OverallHealthColor        = $overallColor
+        AzureIntegrationColor     = $azureColor
+        SecurityPostureColor      = $securityColor
     }
 }
 
@@ -325,6 +615,22 @@ function ConvertTo-RangerMarkdownReport {
     $lines.Add("- Generated: $($Report.GeneratedAt)")
     $lines.Add("- Schema validation: $(if ($Report.Summary -and $Report.Summary.Contains('FindingsBySeverity')) { if ($Report.Findings | Where-Object { $_.title -eq 'Manifest schema validation failed' }) { 'failed' } else { 'passed or warnings only' } } else { 'unknown' })")
     $lines.Add('')
+
+    # Issue #73: Traffic light health status block
+    if ($Report.VisualStats -and $Report.VisualStats.healthLights) {
+        $lines.Add('## At-a-Glance Health Status')
+        $lines.Add('')
+        foreach ($light in @($Report.VisualStats.healthLights)) {
+            $indicator = switch ($light.color) {
+                'green'  { '● GREEN' }
+                'yellow' { '▲ YELLOW' }
+                'red'    { '■ RED' }
+                default  { '○ UNKNOWN' }
+            }
+            $lines.Add("- $indicator — $($light.label)")
+        }
+        $lines.Add('')
+    }
 
     $lines.Add('## Table of Contents')
     $lines.Add('')
@@ -403,6 +709,29 @@ function ConvertTo-RangerHtmlReport {
 "@
         }
     ) -join [Environment]::NewLine
+
+    # Issue #73: Build visual stats banner (traffic lights + capacity bars)
+    $statsBannerHtml = ''
+    if ($Report.VisualStats) {
+        $lightsRowHtml = @(
+            foreach ($light in @($Report.VisualStats.healthLights)) {
+                $svg = New-RangerTrafficLightSvg -Color $light.color -Size 20
+                "<div class='tl-item'>$svg <span class='tl-label'>$([System.Net.WebUtility]::HtmlEncode($light.label))</span></div>"
+            }
+        ) -join ''
+        $barsRowHtml = @(
+            foreach ($bar in @($Report.VisualStats.capacityBars)) {
+                $svg = New-RangerCapacityBarSvg -Percent $bar.percent -Width 160
+                "<div class='cap-item'><span class='cap-label'>$([System.Net.WebUtility]::HtmlEncode($bar.label)):</span> $svg</div>"
+            }
+        ) -join ''
+        $statsBannerHtml = @"
+<section class="stats-banner">
+  <div class="stats-lights">$lightsRowHtml</div>
+  <div class="stats-bars">$barsRowHtml</div>
+</section>
+"@
+    }
 
     $sectionHtml = @(
         foreach ($section in $Report.Sections) {
@@ -483,6 +812,13 @@ $items
     .finding-informational { border-left-color: #2563eb; }
         section { margin: 1rem 0; background: rgba(255,255,255,0.92); border: 1px solid #dbe7ef; border-radius: 16px; padding: 1rem 1.25rem; }
         @media (max-width: 900px) { .hero { grid-template-columns: 1fr; } }
+        /* Issue #73: Stats banner (traffic lights + capacity bars) */
+        .stats-banner { display: flex; gap: 2rem; flex-wrap: wrap; background: rgba(255,255,255,0.95); border: 1px solid #dbe7ef; border-radius: 16px; padding: 1rem 1.5rem; margin-bottom: 1rem; align-items: flex-start; }
+        .stats-lights { display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center; }
+        .tl-item { display: flex; align-items: center; gap: 6px; font-size: 0.92em; font-weight: 500; white-space: nowrap; }
+        .stats-bars { display: flex; flex-direction: column; gap: 0.4rem; }
+        .cap-item { display: flex; align-items: center; gap: 8px; font-size: 0.88em; }
+        .cap-label { min-width: 160px; color: #475569; }
   </style>
 </head>
 <body>
@@ -492,6 +828,7 @@ $items
             <p class="meta">Cluster: $([System.Net.WebUtility]::HtmlEncode($Report.ClusterName))</p>
             <p class="meta">Mode: $([System.Net.WebUtility]::HtmlEncode($Report.Mode)) | Ranger Version: $([System.Net.WebUtility]::HtmlEncode($Report.Version)) | Generated: $([System.Net.WebUtility]::HtmlEncode($Report.GeneratedAt))</p>
         </header>
+        $statsBannerHtml
         <div class="hero">
             <section class="panel toc">
                 <h2>Table of Contents</h2>

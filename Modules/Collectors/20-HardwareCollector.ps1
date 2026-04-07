@@ -65,6 +65,95 @@ function Invoke-RangerHardwareCollector {
             $dellLcService = Invoke-RangerSafeAction -Label "Dell lifecycle controller service for $host" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/Managers/iDRAC.Embedded.1/Oem/Dell/DellLCService" -Credential $CredentialMap.bmc }
             $dellAttributes = Invoke-RangerSafeAction -Label "Dell manager attributes for $host" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/Managers/iDRAC.Embedded.1/Attributes" -Credential $CredentialMap.bmc }
 
+            # Issue #57: Power supplies and thermal/fans from Redfish
+            $powerSupplies = @(
+                Invoke-RangerSafeAction -Label "Power supply inventory for $host" -DefaultValue @() -ScriptBlock {
+                    $powerPayload = Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/Chassis/System.Embedded.1/Power" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                    if ($powerPayload -and $powerPayload.PowerSupplies) {
+                        @($powerPayload.PowerSupplies | ForEach-Object {
+                            [ordered]@{
+                                name                 = $_.Name
+                                manufacturer         = $_.Manufacturer
+                                model                = $_.Model
+                                serialNumber         = $_.SerialNumber
+                                partNumber           = $_.PartNumber
+                                powerCapacityWatts   = $_.PowerCapacityWatts
+                                lastPowerOutputWatts = $_.LastPowerOutputWatts
+                                statusHealth         = if ($_.Status) { $_.Status.Health } else { $null }
+                                statusState          = if ($_.Status) { $_.Status.State } else { $null }
+                            }
+                        })
+                    } else { @() }
+                }
+            )
+            $thermalPayload = Invoke-RangerSafeAction -Label "Thermal inventory for $host" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/Chassis/System.Embedded.1/Thermal" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue }
+            $fans = if ($thermalPayload -and $thermalPayload.Fans) {
+                @($thermalPayload.Fans | ForEach-Object {
+                    [ordered]@{
+                        name         = $_.Name
+                        reading      = $_.Reading
+                        readingUnits = $_.ReadingUnits
+                        minReadingRange = $_.MinReadingRange
+                        statusHealth = if ($_.Status) { $_.Status.Health } else { $null }
+                        statusState  = if ($_.Status) { $_.Status.State } else { $null }
+                    }
+                })
+            } else { @() }
+            $temperatures = if ($thermalPayload -and $thermalPayload.Temperatures) {
+                @($thermalPayload.Temperatures | Where-Object { -not [string]::IsNullOrWhiteSpace($_.Name) } | Select-Object -First 20 | ForEach-Object {
+                    [ordered]@{
+                        name                     = $_.Name
+                        readingCelsius           = $_.ReadingCelsius
+                        upperThresholdCritical   = $_.UpperThresholdCritical
+                        upperThresholdNonCritical = $_.UpperThresholdNonCritical
+                        statusHealth             = if ($_.Status) { $_.Status.Health } else { $null }
+                        statusState              = if ($_.Status) { $_.Status.State } else { $null }
+                    }
+                })
+            } else { @() }
+
+            # Issue #57: NIC detail from Redfish NetworkAdapters endpoint
+            $networkAdaptersDetail = @(
+                Invoke-RangerSafeAction -Label "Redfish NetworkAdapters for $host" -DefaultValue @() -ScriptBlock {
+                    $naCollection = Invoke-RangerRedfishRequest -Uri "$systemUri/NetworkAdapters" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                    if ($naCollection -and $naCollection.Members) {
+                        @($naCollection.Members | ForEach-Object {
+                            $naUri = $_.'@odata.id'
+                            $na = Invoke-RangerSafeAction -Label "NetworkAdapter $naUri" -DefaultValue $null -ScriptBlock {
+                                Invoke-RangerRedfishRequest -Uri "https://$host$naUri" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                            }
+                            if ($na) {
+                                [ordered]@{
+                                    id              = $na.Id
+                                    name            = $na.Name
+                                    manufacturer    = $na.Manufacturer
+                                    model           = $na.Model
+                                    partNumber      = $na.PartNumber
+                                    serialNumber    = $na.SerialNumber
+                                    driverVersion   = if ($na.Controllers) { @($na.Controllers)[0].FirmwarePackageVersion } else { $null }
+                                    firmwareVersion = if ($na.Controllers) { @($na.Controllers)[0].ControllerCapabilities.DataCenterBridging } else { $null }
+                                    networkPorts    = @(if ($na.NetworkPorts) {
+                                        Invoke-RangerSafeAction -Label "NetworkPorts for $naUri" -DefaultValue @() -ScriptBlock {
+                                            $portsUri = "https://$host$naUri/NetworkPorts"
+                                            $ports = Invoke-RangerRedfishRequest -Uri $portsUri -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                                            if ($ports -and $ports.Members) {
+                                                @($ports.Members | ForEach-Object {
+                                                    $p = Invoke-RangerSafeAction -Label "Port $_.'@odata.id'" -DefaultValue $null -ScriptBlock {
+                                                        Invoke-RangerRedfishRequest -Uri "https://$host$($_.'@odata.id')" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                                                    }
+                                                    if ($p) { [ordered]@{ id = $p.Id; linkStatus = $p.LinkStatus; currentLinkSpeedMbps = $p.CurrentLinkSpeedMbps; macAddress = $p.AssociatedNetworkAddresses; supportedLinkCapabilities = @($p.SupportedLinkCapabilities) } }
+                                                } | Where-Object { $_ })
+                                            } else { @() }
+                                        }
+                                    } else { @() })
+                                    statusHealth = if ($na.Status) { $na.Status.Health } else { $null }
+                                }
+                            }
+                        } | Where-Object { $_ })
+                    } else { @() }
+                }
+            )
+
             # Per-DIMM granularity from Redfish memory collection
             $memoryDimms = @(
                 Invoke-RangerSafeAction -Label "Redfish DIMM detail for $host" -DefaultValue @() -ScriptBlock {
@@ -182,6 +271,13 @@ function Invoke-RangerHardwareCollector {
             $vbsPosture = Invoke-RangerSafeAction -Label "VBS sub-component posture for $nodeName" -DefaultValue $null -ScriptBlock {
                 Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -NodeName $nodeName -ScriptBlock {
                     $dg = Get-CimInstance -Namespace 'root\Microsoft\Windows\DeviceGuard' -ClassName Win32_DeviceGuard -ErrorAction SilentlyContinue
+                    # Issue #57: DDA and GPU-P capability
+                    $partitionableGpu = @(try { Get-VMHostPartitionableGpu -ErrorAction Stop } catch { try { Get-VMPartitionableGpu -ErrorAction Stop } catch { @() } })
+                    # Issue #70: OpenManage Integration for Microsoft Azure Local
+                    $omiService = @(Get-Service -Name 'DELL_*', 'OpenManage*', 'OMHCI*' -ErrorAction SilentlyContinue | Select-Object Name, DisplayName, Status, StartType)
+                    $omiReg = try { Get-ItemProperty -Path 'HKLM:\SOFTWARE\Dell\OpenManage' -ErrorAction Stop } catch {
+                        try { Get-ItemProperty -Path 'HKLM:\SOFTWARE\Dell\SEA\OMHCI' -ErrorAction Stop } catch { $null }
+                    }
                     if ($dg) {
                         [ordered]@{
                             virtualBasedSecurityStatus    = $dg.VirtualizationBasedSecurityStatus
@@ -193,10 +289,80 @@ function Invoke-RangerHardwareCollector {
                             hvciEnabled           = (@($dg.SecurityServicesRunning) -contains 4) -or (@($dg.SecurityServicesRunning) -contains 2)
                             credentialGuardEnabled = (@($dg.SecurityServicesRunning) -contains 1)
                             securedCoreDrtm        = (@($dg.SecurityServicesConfigured) -contains 128)
+                            gpuPCapable            = @($partitionableGpu).Count -gt 0
+                            gpuPartitionableCount  = @($partitionableGpu).Count
+                            openManageService      = @($omiService | ForEach-Object { [ordered]@{ name = $_.Name; status = [string]$_.Status } })
+                            openManageInstalled    = @($omiService).Count -gt 0
+                            openManageVersion      = if ($omiReg) { $omiReg.Version } else { $null }
                         }
                     }
                 }
             }
+
+            # Issue #57: TPM detail extraction from system.TrustedModules
+            $tpmDetail = if (@($system.TrustedModules).Count -gt 0) {
+                $tpm = @($system.TrustedModules)[0]
+                [ordered]@{
+                    present         = $true
+                    firmwareVersion = $tpm.FirmwareVersion
+                    interfaceType   = $tpm.InterfaceType
+                    statusHealth    = if ($tpm.Status) { $tpm.Status.Health } else { $null }
+                    statusState     = if ($tpm.Status) { $tpm.Status.State } else { $null }
+                }
+            } else { [ordered]@{ present = $false } }
+
+            # Issue #57: BIOS depth extraction
+            $biosDetail = [ordered]@{
+                version     = if ($bios.Attributes.SystemBiosVersion) { $bios.Attributes.SystemBiosVersion } else { $system.BiosVersion }
+                vendor      = $bios.Attributes.SystemBiosVendor
+                releaseDate = $bios.Attributes.SystemBiosReleaseDate
+                bootMode    = if ($bios.Attributes.BootMode) { $bios.Attributes.BootMode } else { if ($system.Boot.BootSourceOverrideTarget) { 'UEFI' } else { $null } }
+                secureBoot  = $bios.Attributes.SecureBoot
+                uefiEnabled = $bios.Attributes.UefiBootSettings -eq 'Enabled' -or $bios.Attributes.BootMode -eq 'Uefi'
+            }
+
+            # Issue #70: Structured Dell OEM data
+            $idracLicenseLevel = Invoke-RangerSafeAction -Label "iDRAC license level for $host" -DefaultValue $null -ScriptBlock {
+                if ($dellAttributes -and $dellAttributes.Attributes) {
+                    $attrs = $dellAttributes.Attributes
+                    # Try common Dell attribute paths for license level
+                    $lic = $attrs.'iDRAC.Embedded.1.LicensingSummary'
+                    if (-not $lic) { $lic = $attrs.'LicenseSKU' }
+                    if (-not $lic) { $lic = $attrs.'Info.1.License' }
+                    $lic
+                }
+            }
+            $lcVersion = Invoke-RangerSafeAction -Label "Lifecycle Controller version for $host" -DefaultValue $null -ScriptBlock {
+                if ($dellLcService) {
+                    $v = $dellLcService.LCVersion
+                    if (-not $v) { $v = $dellLcService.Version }
+                    if (-not $v -and $manager) { $manager.FirmwareVersion }
+                    else { $v }
+                }
+            }
+            $supportAssistDetail = Invoke-RangerSafeAction -Label "SupportAssist data for $host" -DefaultValue $null -ScriptBlock {
+                if ($dellAttributes -and $dellAttributes.Attributes) {
+                    $attrs = $dellAttributes.Attributes
+                    [ordered]@{
+                        enabled                 = [string]$attrs.'SupportAssist.1.Enable' -eq 'Enabled'
+                        proSupportEntitlementDate = $attrs.'SupportAssist.1.ProPackageRenewalDate'
+                        lastCollectionTime      = $attrs.'SupportAssist.1.CollectionTimeStamp'
+                        contactEmail            = $attrs.'SupportAssist.1.ContactEmail'
+                    }
+                }
+            }
+            $firmwareComplianceDetail = @($firmwareInventory | ForEach-Object {
+                $fw = $_
+                [ordered]@{
+                    name          = $fw.Name
+                    id            = $fw.'@odata.id'
+                    version       = $fw.Version
+                    updateable    = $fw.Updateable
+                    softwareType  = $fw.SoftwareType
+                    releaseDate   = $fw.ReleaseDate
+                    statusHealth  = if ($fw.Status) { $fw.Status.Health } else { $null }
+                }
+            })
 
             $trustedModules = @($system.TrustedModules)
             $processorModels = @(Get-RangerGroupedCount -Items $processors -PropertyName 'Model')
@@ -213,6 +379,7 @@ function Invoke-RangerHardwareCollector {
                 serialNumber     = $system.SerialNumber
                 powerState       = $system.PowerState
                 biosVersion      = if ($bios.Attributes.SystemBiosVersion) { $bios.Attributes.SystemBiosVersion } else { $system.BiosVersion }
+                biosDetail       = $biosDetail
                 bmcFirmware      = $manager.FirmwareVersion
                 cpuCount         = @($processors).Count
                 memoryDeviceCount = @($memory).Count
@@ -224,19 +391,34 @@ function Invoke-RangerHardwareCollector {
                 memorySummary    = [ordered]@{ dimmCount = @($memory).Count; totalCapacityGiB = $memoryCapacityGiB }
                 memoryDimms      = @($memoryDimms)
                 ethernetSummary  = [ordered]@{ portCount = @($ethernet).Count; byState = @(Get-RangerGroupedCount -Items $ethernet -PropertyName 'LinkStatus') }
+                networkAdaptersDetail = @($networkAdaptersDetail)
                 storageSummary   = [ordered]@{ controllerCount = @($storageControllers).Count; models = $storageControllerModels }
                 physicalDisksDetail = @($physicalDisksDetail)
                 firmwareSummary  = [ordered]@{ componentCount = @($firmwareInventory).Count; versions = $firmwareVersions }
+                firmwareComplianceDetail = @($firmwareComplianceDetail)
                 gpuDevices       = @($gpuDevices)
                 gpuCount         = @($gpuDevices).Count
+                powerSupplies    = @($powerSupplies)
+                powerSupplyCount = @($powerSupplies).Count
+                fans             = @($fans)
+                fanCount         = @($fans).Count
+                temperatures     = @($temperatures)
+                tpmDetail        = $tpmDetail
                 vbsPosture       = $vbsPosture
                 bmcCert          = $bmcCert
+                idracLicenseLevel = $idracLicenseLevel
+                lcVersion        = $lcVersion
+                supportAssist    = $supportAssistDetail
                 securityPosture  = [ordered]@{
                     trustedModuleCount    = @($trustedModules).Count
                     secureBoot            = $bios.Attributes.SecureBoot
                     hvciEnabled           = if ($vbsPosture) { $vbsPosture.hvciEnabled } else { $null }
                     credentialGuardEnabled = if ($vbsPosture) { $vbsPosture.credentialGuardEnabled } else { $null }
                     bmcCertExpiryDays     = if ($bmcCert) { $bmcCert.daysUntilExpiry } else { $null }
+                    tpmPresent            = $tpmDetail.present
+                    tpmVersion            = $tpmDetail.interfaceType
+                    gpuPCapable           = if ($vbsPosture) { $vbsPosture.gpuPCapable } else { $null }
+                    openManageInstalled   = if ($vbsPosture) { $vbsPosture.openManageInstalled } else { $null }
                 }
                 trustedModules   = ConvertTo-RangerHashtable -InputObject $system.TrustedModules
                 boot             = ConvertTo-RangerHashtable -InputObject $system.Boot
@@ -248,13 +430,17 @@ function Invoke-RangerHardwareCollector {
                 managerModel            = $manager.Model
                 managerFirmwareVersion  = $manager.FirmwareVersion
                 lifecycleController     = if ($manager.Name) { $manager.Name } else { 'iDRAC' }
+                lifecycleControllerVersion = $lcVersion
+                idracLicenseLevel       = $idracLicenseLevel
                 openManageSignals       = ConvertTo-RangerHashtable -InputObject $manager.Oem
+                openManageInstalled     = if ($vbsPosture) { $vbsPosture.openManageInstalled } else { $null }
+                openManageVersion       = if ($vbsPosture) { $vbsPosture.openManageVersion } else { $null }
                 firmwareInventoryCount  = @($firmwareInventory).Count
+                firmwareComplianceDetail = @($firmwareComplianceDetail)
                 lastResetTime           = $manager.DateTime
                 updateService           = [ordered]@{ serviceEnabled = $updateService.ServiceEnabled; pushUri = $updateService.HttpPushUri; multipartPushUri = $updateService.MultipartHttpPushUri }
                 lifecycleControllerState = ConvertTo-RangerHashtable -InputObject $dellLcService
-                supportAssistSignals    = ConvertTo-RangerHashtable -InputObject $dellAttributes
-                firmwareCompliance      = [ordered]@{ complianceEvidence = if ($updateService) { 'update-service-present' } else { 'not-discovered' }; inventoryCount = @($firmwareInventory).Count }
+                supportAssist           = $supportAssistDetail
                 bmcCert                 = $bmcCert
             })
 

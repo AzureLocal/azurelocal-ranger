@@ -32,10 +32,61 @@
           "resourceType": "Microsoft.OperationalInsights/workspaces"
         }
       ],
+      "logAnalyticsWorkspaces": [
+        {
+          "name": "law-azlocal-prod-01",
+          "workspaceId": "aaaaaaaa-1111-1111-1111-aaaaaaaaaaaa",
+          "resourceGroup": "rg-azlocal-prod-01",
+          "location": "eastus",
+          "sku": "PerGB2018",
+          "retentionDays": 90,
+          "enabledSolutions": [ "AzureActivity", "SecurityCenterFree", "ContainerInsights" ],
+          "hciInsightsEnabled": true
+        }
+      ],
+      "diagnosticSettings": [
+        {
+          "resourceId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-azlocal-prod-01/providers/Microsoft.AzureStackHCI/clusters/azlocal-prod-01",
+          "resourceName": "azlocal-prod-01",
+          "name": "diag-hci-to-law",
+          "enabledLogs": [ "AuditLogs", "HealthFault" ],
+          "enabledMetrics": [ "AllMetrics" ],
+          "workspaceId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-azlocal-prod-01/providers/Microsoft.OperationalInsights/workspaces/law-azlocal-prod-01",
+          "storageAccountId": null
+        }
+      ],
+      "actionGroups": [
+        {
+          "name": "ag-ops-team",
+          "groupShortName": "OpsTeam",
+          "enabled": true,
+          "emailReceivers": [
+            {
+              "name": "OpsEmail",
+              "address": "ops@contoso.com",
+              "useCommonAlert": true
+            }
+          ],
+          "webhookReceivers": [],
+          "armRoleReceivers": []
+        }
+      ],
       "alerts": [
         {
           "name": "critical-capacity-alert",
           "resourceType": "Microsoft.Insights/scheduledQueryRules"
+        }
+      ],
+      "alertRuleDetail": [
+        {
+          "name": "critical-capacity-alert",
+          "type": "ScheduledQuery",
+          "severity": 1,
+          "enabled": true,
+          "query": "StorageHealthFault | where Level == 'Critical'",
+          "actionGroups": [ "ag-ops-team" ],
+          "windowSize": "00:15:00",
+          "frequency": "00:05:00"
         }
       ],
       "health": [
@@ -56,6 +107,31 @@
           "healthEvents": []
         }
       ],
+      "healthFaults": [
+        {
+          "node": "azl-node-01",
+          "faults": [],
+          "count": 0
+        }
+      ],
+      "healthFaultsByCategory": [],
+      "telemetryExtension": [
+        {
+          "name": "AzureEdgeTelemetryAndDiagnostics",
+          "resourceType": "Microsoft.AzureStackHCI/clusters/extensions",
+          "location": "eastus",
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-azlocal-prod-01/providers/Microsoft.AzureStackHCI/clusters/azlocal-prod-01/extensions/AzureEdgeTelemetryAndDiagnostics"
+        }
+      ],
+      "hciInsights": {
+        "enabled": true,
+        "workspaceCount": 1,
+        "workspaceName": "law-azlocal-prod-01",
+        "workspaceId": "aaaaaaaa-1111-1111-1111-aaaaaaaaaaaa",
+        "workspaceRegion": "eastus",
+        "diagnosticSettingsCount": 1,
+        "platformMetricsEnabled": true
+      },
       "dcrDetail": [
         {
           "name": "dcr-azlocal-prod-01",
@@ -65,12 +141,10 @@
           "transformKql": null
         }
       ],
-      "alertRuleDetail": [
+      "updateManager": [
         {
-          "name": "critical-capacity-alert",
-          "type": "ScheduledQuery",
-          "severity": 1,
-          "enabled": true
+          "name": "update-manager-prod",
+          "resourceType": "Microsoft.Maintenance/configurationAssignments"
         }
       ],
       "updateManagerDetail": [
@@ -106,7 +180,13 @@
         "healthServiceRunningNodes": 1,
         "totalHealthFaults": 0,
         "criticalHealthFaults": 0,
-        "nodesWithAmaAgent": 1
+        "nodesWithAmaAgent": 1,
+        "logAnalyticsWorkspaceCount": 1,
+        "diagnosticSettingsCount": 1,
+        "actionGroupCount": 1,
+        "hciInsightsEnabled": true,
+        "healthFaultCategoryCount": 0,
+        "telemetryExtensionCount": 1
       }
     }
   },

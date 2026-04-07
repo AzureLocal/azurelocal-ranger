@@ -28,7 +28,68 @@
               "isolationMode": "Vlan"
             }
           ],
-          "guestClusterCandidate": false
+          "guestClusterCandidate": false,
+          "vmId": "aaaaaaaa-0001-0001-0001-aaaaaaaaaaaa",
+          "creationTime": "2025-01-15T10:00:00Z",
+          "configVersion": "10.0",
+          "notes": "AVD session host - production",
+          "automaticStartAction": "StartIfRunning",
+          "automaticStartDelay": 0,
+          "automaticStopAction": "ShutDown",
+          "memoryStartupMb": 16384,
+          "memoryMinimumMb": 8192,
+          "memoryMaximumMb": 32768,
+          "memoryDemandMb": 15200,
+          "diskDetail": [
+            {
+              "controllerType": "SCSI",
+              "controllerNumber": 0,
+              "controllerLocation": 0,
+              "path": "C:\\ClusterStorage\\Volume1\\avd-sessionhost-01\\avd-sessionhost-01.vhdx",
+              "vhdFormat": "VHDX",
+              "vhdType": "Dynamic",
+              "currentSizeGiB": 62.5,
+              "maxSizeGiB": 127.0,
+              "parentPath": null
+            }
+          ],
+          "nicDetail": [
+            {
+              "name": "Network Adapter",
+              "switchName": "ConvergedSwitch",
+              "macAddress": "00155D0A0101",
+              "macAddressType": "Static",
+              "ipAddresses": [ "10.10.10.51" ],
+              "vlanId": 10,
+              "dhcpGuard": "Off",
+              "routerGuard": "Off",
+              "macAddressSpoofing": "Off",
+              "portMirroring": "None",
+              "deviceNaming": true
+            }
+          ],
+          "placement": {
+            "preferredOwners": [ "azl-node-01" ],
+            "antiAffinityGroups": [],
+            "clusterRoleName": "Virtual Machine avd-sessionhost-01",
+            "clusterRoleState": "Online",
+            "failoverThreshold": 1
+          },
+          "arcAgentInstalled": true,
+          "arcAgentVersion": "1.40.0",
+          "arcLastHeartbeat": "2026-04-06T08:30:00Z",
+          "arcProvisioningState": "Succeeded",
+          "arcExtensions": [
+            {
+              "machineName": "avd-sessionhost-01",
+              "extensionName": "MicrosoftMonitoringAgent",
+              "publisher": "Microsoft.EnterpriseCloud.Monitoring",
+              "extensionType": "MicrosoftMonitoringAgent",
+              "typeHandlerVersion": "1.0.18068.2",
+              "provisioningState": "Succeeded",
+              "autoUpgradeMinorVersion": true
+            }
+          ]
         }
       ],
       "placement": [
@@ -46,6 +107,23 @@
         {
           "name": "Arc VMs",
           "count": 1
+        }
+      ],
+      "vmImages": [
+        {
+          "name": "win11-avd-2024",
+          "resourceType": "galleryImage",
+          "location": "eastus",
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-azlocal-prod-01/providers/Microsoft.AzureStackHCI/galleryImages/win11-avd-2024"
+        }
+      ],
+      "isoImages": [],
+      "arcCorrelation": [
+        {
+          "vm": "avd-sessionhost-01",
+          "arcAgentInstalled": true,
+          "arcAgentVersion": "1.40.0",
+          "arcProvisioningState": "Succeeded"
         }
       ]
     },
@@ -113,7 +191,11 @@
             }
           ],
           "secureBoot": true,
-          "appLocker": []
+          "appLocker": [],
+          "securedCoreDetail": {
+            "systemGuardEnabled": true,
+            "drtmCapable": true
+          }
         }
       ],
       "localAdmins": [
@@ -144,7 +226,14 @@
             "DomainMode": "Windows2016Domain",
             "DistinguishedName": "DC=contoso,DC=com"
           },
-          "forest": null
+          "forest": null,
+          "adObjects": {
+            "cnoName": "AZLOCAL-PROD-01",
+            "cnoDistinguishedName": "CN=AZLOCAL-PROD-01,OU=Servers,DC=contoso,DC=com",
+            "cnoSpns": [ "MSClusterVirtualServer/azlocal-prod-01.contoso.com" ],
+            "cnoEnabled": true
+          },
+          "adSite": "Default-First-Site-Name"
         }
       ],
       "keyVault": [
@@ -165,6 +254,40 @@
           "aadkerbConfigured": false
         }
       ],
+      "syslog": [
+        {
+          "node": "azl-node-01",
+          "detail": {
+            "wefSubscriptions": [],
+            "syslogAgents": []
+          }
+        }
+      ],
+      "driftControl": [
+        {
+          "node": "azl-node-01",
+          "detail": {
+            "hciRegistrationStatus": "Registered",
+            "hciConnectionStatus": "Connected"
+          }
+        }
+      ],
+      "rbacAssignments": [
+        {
+          "DisplayName": "AzureLocal-Admins",
+          "SignInName": null,
+          "RoleDefinitionName": "Contributor",
+          "ObjectType": "Group",
+          "Scope": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-azlocal-prod-01"
+        }
+      ],
+      "defenderForCloud": [
+        {
+          "Name": "VirtualMachines",
+          "PricingTier": "Standard",
+          "FreeTrialRemainingTime": null
+        }
+      ],
       "summary": {
         "nodeCount": 1,
         "domainJoinedNodes": 1,
@@ -182,7 +305,10 @@
         "aadkerbConfiguredNodes": 0,
         "certificateCount": 1,
         "certificateExpiringWithin90Days": 0,
-        "appLockerNodes": 0
+        "appLockerNodes": 0,
+        "securedCoreNodes": 1,
+        "syslogForwardingNodes": 0,
+        "defenderForCloudEnabled": true
       }
     },
     "azureIntegration": {
@@ -217,18 +343,51 @@
           "name": "audit-tagging",
           "displayName": "Audit tag usage",
           "scope": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-azlocal-prod-01",
-          "enforcementMode": "Default"
+          "enforcementMode": "Default",
+          "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/00000001-0001-0001-0001-000000000001",
+          "description": "Audit resource tagging compliance"
         }
       ],
       "policyCompliance": [],
-      "aksClusters": [],
+      "policyExemptions": [],
+      "aksClusters": [
+        {
+          "name": "aks-azlocal-prod-01",
+          "kubernetesVersion": "1.29.2",
+          "provisioningState": "Succeeded",
+          "powerState": "Running",
+          "nodeResourceGroup": "rg-azlocal-aks-nodes",
+          "enableRbac": true,
+          "location": "eastus",
+          "nodePoolCount": 1,
+          "nodePools": [
+            {
+              "name": "nodepool1",
+              "count": 3,
+              "vmSize": "Standard_D4s_v3",
+              "osType": "Linux",
+              "mode": "System",
+              "provisioningState": "Succeeded"
+            }
+          ],
+          "networkPlugin": "azure",
+          "networkPolicy": "calico",
+          "extensionCount": 0
+        }
+      ],
       "avdHostPools": [
         {
           "name": "avd-hostpool-prod",
           "hostPoolType": "Personal",
           "loadBalancerType": "Persistent",
           "validationEnvironment": false,
-          "maxSessionLimit": 1
+          "maxSessionLimit": 1,
+          "preferredAppGroupType": "Desktop",
+          "sessionHostCount": 1,
+          "availableSessionHosts": 1,
+          "appGroupCount": 1,
+          "scalingPlanAssigned": false,
+          "fslogixDetected": false
         }
       ],
       "arbDetail": [],
@@ -246,12 +405,84 @@
           "resourceType": "Microsoft.Maintenance/configurationAssignments"
         }
       ],
+      "arcMachines": [
+        {
+          "Name": "avd-sessionhost-01",
+          "ResourceType": "Microsoft.HybridCompute/machines",
+          "Location": "eastus"
+        }
+      ],
+      "arcMachineDetail": [
+        {
+          "Name": "avd-sessionhost-01",
+          "Status": "Connected",
+          "AgentVersion": "1.40.0",
+          "OsName": "Windows Server 2022 Datacenter",
+          "OsVersion": "10.0.20348",
+          "Location": "eastus",
+          "LastStatusChange": "2026-04-06T08:30:00Z",
+          "ProvisioningState": "Succeeded"
+        }
+      ],
+      "arcExtensionsDetail": [
+        {
+          "machineName": "avd-sessionhost-01",
+          "extensionName": "MicrosoftMonitoringAgent",
+          "publisher": "Microsoft.EnterpriseCloud.Monitoring",
+          "extensionType": "MicrosoftMonitoringAgent",
+          "typeHandlerVersion": "1.0.18068.2",
+          "provisioningState": "Succeeded",
+          "autoUpgradeMinorVersion": true
+        }
+      ],
+      "resourceProviders": [
+        {
+          "namespace": "Microsoft.AzureStackHCI",
+          "registrationState": "Registered",
+          "resourceTypeCount": 42
+        }
+      ],
+      "vmManagementResources": [
+        {
+          "name": "csv-volume1-container",
+          "resourceType": "Microsoft.AzureStackHCI/storageContainers",
+          "location": "eastus"
+        },
+        {
+          "name": "mgmt-network",
+          "resourceType": "Microsoft.AzureStackHCI/logicalNetworks",
+          "location": "eastus"
+        }
+      ],
+      "arcDataServices": [],
+      "iotOperations": [],
+      "costLicensing": [
+        {
+          "subscriptionId": "00000000-0000-0000-0000-000000000000",
+          "subscriptionName": "AzureLocal-Prod-Sub",
+          "subscriptionState": "Enabled",
+          "tenantId": "11111111-1111-1111-1111-111111111111"
+        }
+      ],
+      "cost": [],
       "policySummary": {
         "assignmentCount": 1,
         "nonCompliantCount": 0,
-        "complianceByType": []
+        "complianceByType": [],
+        "exemptionCount": 0
       },
-      "cost": []
+      "resourceSummary": {
+        "totalResources": 2,
+        "azureArcMachines": 1,
+        "hciClusterRegistrations": 1,
+        "aksClusterCount": 1,
+        "avdHostPoolCount": 1,
+        "vmImageCount": 1,
+        "arcDataServiceCount": 0,
+        "iotOperationsCount": 0,
+        "vmManagementResourceCount": 2,
+        "policyExemptionCount": 0
+      }
     }
   },
   "Findings": [],

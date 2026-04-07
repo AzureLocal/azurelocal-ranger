@@ -12,6 +12,14 @@
           "serialNumber": "SN-001",
           "powerState": "On",
           "biosVersion": "1.5.2",
+          "biosDetail": {
+            "version": "1.5.2",
+            "vendor": "Dell Inc.",
+            "releaseDate": "2024-01-15",
+            "bootMode": "Uefi",
+            "secureBoot": "Enabled",
+            "uefiEnabled": true
+          },
           "bmcFirmware": "7.00.00.00",
           "cpuCount": 2,
           "memoryDeviceCount": 16,
@@ -21,9 +29,118 @@
           "firmwareCount": 14,
           "gpuCount": 0,
           "gpuDevices": [],
+          "processorSummary": {
+            "sockets": 2,
+            "models": [ "Intel(R) Xeon(R) Gold 6414U" ]
+          },
+          "memorySummary": {
+            "dimmCount": 16,
+            "totalCapacityGiB": 512
+          },
           "memoryDimms": [
-            { "slot": "A1", "partNumber": "HMA84GR7AFR4N-XN", "capacityGiB": 32, "operatingSpeedMhz": 3200, "memoryType": "DRAM", "status": "Enabled" }
+            { "slot": "A1", "partNumber": "HMA84GR7AFR4N-XN", "capacityGiB": 32, "operatingSpeedMhz": 3200, "memoryType": "DRAM", "status": "Enabled" },
+            { "slot": "A2", "partNumber": "HMA84GR7AFR4N-XN", "capacityGiB": 32, "operatingSpeedMhz": 3200, "memoryType": "DRAM", "status": "Enabled" }
           ],
+          "ethernetSummary": {
+            "portCount": 6,
+            "byState": [
+              { "name": "Up", "count": 4 },
+              { "name": "Down", "count": 2 }
+            ]
+          },
+          "networkAdaptersDetail": [
+            {
+              "id": "NIC.Integrated.1",
+              "name": "Integrated NIC 1",
+              "manufacturer": "Broadcom Inc. and subsidiaries",
+              "model": "BCM5720 Gigabit Ethernet PCIe",
+              "partNumber": "0K3M05",
+              "serialNumber": "NA",
+              "driverVersion": "22.11.12",
+              "firmwareVersion": null,
+              "networkPorts": [
+                { "id": "NIC.Integrated.1-1-1", "linkStatus": "Up", "currentLinkSpeedMbps": 1000, "macAddress": ["00:11:22:33:44:55"], "supportedLinkCapabilities": [] },
+                { "id": "NIC.Integrated.1-2-1", "linkStatus": "Up", "currentLinkSpeedMbps": 1000, "macAddress": ["00:11:22:33:44:56"], "supportedLinkCapabilities": [] }
+              ],
+              "statusHealth": "OK"
+            },
+            {
+              "id": "NIC.Slot.4",
+              "name": "Mellanox ConnectX-6 Dx Adapter",
+              "manufacturer": "Mellanox Technologies",
+              "model": "MCX623106AN-CDAT",
+              "partNumber": "0TXP6W",
+              "serialNumber": "MT2252X01234",
+              "driverVersion": "20.35.2000",
+              "firmwareVersion": null,
+              "networkPorts": [
+                { "id": "NIC.Slot.4-1-1", "linkStatus": "Up", "currentLinkSpeedMbps": 25000, "macAddress": ["B0:26:28:AA:BB:CC"], "supportedLinkCapabilities": [] },
+                { "id": "NIC.Slot.4-2-1", "linkStatus": "Up", "currentLinkSpeedMbps": 25000, "macAddress": ["B0:26:28:AA:BB:CD"], "supportedLinkCapabilities": [] }
+              ],
+              "statusHealth": "OK"
+            }
+          ],
+          "storageSummary": {
+            "controllerCount": 2,
+            "models": [ "PERC H755 Adapter", "BOSS-S2" ]
+          },
+          "physicalDisksDetail": [
+            { "id": "Disk.Virtual.0:RAID.SL.3-1", "capacityGiB": 893, "protocol": "SATA", "mediaType": "SSD", "manufacturer": "Samsung", "model": "SAMSUNG MZ7L3960HCJR", "statusHealth": "OK" }
+          ],
+          "firmwareSummary": {
+            "componentCount": 14,
+            "versions": {
+              "BIOS": "1.5.2",
+              "iDRAC": "7.00.00.00"
+            }
+          },
+          "firmwareComplianceDetail": [
+            { "name": "BIOS", "id": "/redfish/v1/UpdateService/FirmwareInventory/BIOS.Setup.1-1", "version": "1.5.2", "updateable": true, "softwareType": "BIOS", "releaseDate": "2024-01-15", "statusHealth": "OK" },
+            { "name": "iDRAC with Lifecycle Controller", "id": "/redfish/v1/UpdateService/FirmwareInventory/iDRAC.Embedded.1", "version": "7.00.00.00", "updateable": true, "softwareType": "Firmware", "releaseDate": "2024-02-01", "statusHealth": "OK" },
+            { "name": "PERC H755 Adapter", "id": "/redfish/v1/UpdateService/FirmwareInventory/RAID.SL.3-1", "version": "52.24.3-4650", "updateable": true, "softwareType": "Firmware", "releaseDate": "2023-11-20", "statusHealth": "OK" },
+            { "name": "Mellanox ConnectX-6 Dx Adapter", "id": "/redfish/v1/UpdateService/FirmwareInventory/NIC.Slot.4-1-1", "version": "20.35.2000", "updateable": true, "softwareType": "Firmware", "releaseDate": "2024-01-10", "statusHealth": "OK" }
+          ],
+          "powerSupplies": [
+            {
+              "name": "PS1 Status",
+              "manufacturer": "Dell Inc.",
+              "model": "PWR SPLY,800W,RDNT,DELTA",
+              "serialNumber": "CN179842240069",
+              "partNumber": "0HHJ7D",
+              "powerCapacityWatts": 800,
+              "lastPowerOutputWatts": 320,
+              "statusHealth": "OK",
+              "statusState": "Enabled"
+            },
+            {
+              "name": "PS2 Status",
+              "manufacturer": "Dell Inc.",
+              "model": "PWR SPLY,800W,RDNT,DELTA",
+              "serialNumber": "CN179842240070",
+              "partNumber": "0HHJ7D",
+              "powerCapacityWatts": 800,
+              "lastPowerOutputWatts": 0,
+              "statusHealth": "OK",
+              "statusState": "StandbySpare"
+            }
+          ],
+          "powerSupplyCount": 2,
+          "fans": [
+            { "name": "System Board Fan1", "reading": 4440, "readingUnits": "RPM", "minReadingRange": 720, "statusHealth": "OK", "statusState": "Enabled" },
+            { "name": "System Board Fan2", "reading": 4560, "readingUnits": "RPM", "minReadingRange": 720, "statusHealth": "OK", "statusState": "Enabled" }
+          ],
+          "fanCount": 2,
+          "temperatures": [
+            { "name": "Inlet Temp", "readingCelsius": 22, "upperThresholdCritical": 47, "upperThresholdNonCritical": 42, "statusHealth": "OK", "statusState": "Enabled" },
+            { "name": "Exhaust Temp", "readingCelsius": 33, "upperThresholdCritical": 75, "upperThresholdNonCritical": 70, "statusHealth": "OK", "statusState": "Enabled" }
+          ],
+          "tpmDetail": {
+            "present": true,
+            "firmwareVersion": "7.85",
+            "interfaceType": "TPM2_0",
+            "statusHealth": "OK",
+            "statusState": "Enabled"
+          },
           "bmcCert": {
             "subject": "CN=idrac-node-01.contoso.com",
             "validUntil": "2027-01-01T00:00:00Z",
@@ -32,16 +149,35 @@
           "vbsPosture": {
             "hvciEnabled": true,
             "credentialGuardEnabled": true,
-            "securedCoreDrtm": true
+            "securedCoreDrtm": true,
+            "gpuPCapable": false,
+            "gpuPartitionableCount": 0,
+            "openManageService": [],
+            "openManageInstalled": false,
+            "openManageVersion": null
+          },
+          "idracLicenseLevel": "Enterprise",
+          "lcVersion": "7.00.00.00",
+          "supportAssist": {
+            "enabled": true,
+            "proSupportEntitlementDate": "2026-12-31",
+            "lastCollectionTime": "2025-05-01T06:00:00Z",
+            "contactEmail": "itops@contoso.com"
           },
           "securityPosture": {
-            "secureBoot": true,
+            "secureBoot": "Enabled",
             "tpmPresent": true,
-            "tpmEnabled": true,
+            "tpmVersion": "TPM2_0",
             "hvciEnabled": true,
             "credentialGuardEnabled": true,
-            "bmcCertExpiryDays": 480
-          }
+            "bmcCertExpiryDays": 480,
+            "gpuPCapable": false,
+            "openManageInstalled": false
+          },
+          "trustedModules": [
+            { "FirmwareVersion": "7.85", "InterfaceType": "TPM2_0", "Status": { "State": "Enabled", "Health": "OK" } }
+          ],
+          "boot": { "BootSourceOverrideTarget": "None" }
         },
         {
           "node": "azl-node-02",
@@ -52,6 +188,14 @@
           "serialNumber": "SN-002",
           "powerState": "On",
           "biosVersion": "1.5.2",
+          "biosDetail": {
+            "version": "1.5.2",
+            "vendor": "Dell Inc.",
+            "releaseDate": "2024-01-15",
+            "bootMode": "Uefi",
+            "secureBoot": "Enabled",
+            "uefiEnabled": true
+          },
           "bmcFirmware": "7.00.00.00",
           "cpuCount": 2,
           "memoryDeviceCount": 16,
@@ -61,9 +205,97 @@
           "firmwareCount": 14,
           "gpuCount": 0,
           "gpuDevices": [],
+          "processorSummary": {
+            "sockets": 2,
+            "models": [ "Intel(R) Xeon(R) Gold 6414U" ]
+          },
+          "memorySummary": {
+            "dimmCount": 16,
+            "totalCapacityGiB": 512
+          },
           "memoryDimms": [
             { "slot": "A1", "partNumber": "HMA84GR7AFR4N-XN", "capacityGiB": 32, "operatingSpeedMhz": 3200, "memoryType": "DRAM", "status": "Enabled" }
           ],
+          "ethernetSummary": {
+            "portCount": 6,
+            "byState": [
+              { "name": "Up", "count": 4 },
+              { "name": "Down", "count": 2 }
+            ]
+          },
+          "networkAdaptersDetail": [
+            {
+              "id": "NIC.Integrated.1",
+              "name": "Integrated NIC 1",
+              "manufacturer": "Broadcom Inc. and subsidiaries",
+              "model": "BCM5720 Gigabit Ethernet PCIe",
+              "partNumber": "0K3M05",
+              "serialNumber": "NA",
+              "driverVersion": "22.11.12",
+              "firmwareVersion": null,
+              "networkPorts": [
+                { "id": "NIC.Integrated.1-1-1", "linkStatus": "Up", "currentLinkSpeedMbps": 1000, "macAddress": ["00:11:22:33:44:57"], "supportedLinkCapabilities": [] }
+              ],
+              "statusHealth": "OK"
+            }
+          ],
+          "storageSummary": {
+            "controllerCount": 2,
+            "models": [ "PERC H755 Adapter", "BOSS-S2" ]
+          },
+          "physicalDisksDetail": [
+            { "id": "Disk.Virtual.0:RAID.SL.3-1", "capacityGiB": 893, "protocol": "SATA", "mediaType": "SSD", "manufacturer": "Samsung", "model": "SAMSUNG MZ7L3960HCJR", "statusHealth": "OK" }
+          ],
+          "firmwareSummary": {
+            "componentCount": 14,
+            "versions": {
+              "BIOS": "1.5.2",
+              "iDRAC": "7.00.00.00"
+            }
+          },
+          "firmwareComplianceDetail": [
+            { "name": "BIOS", "id": "/redfish/v1/UpdateService/FirmwareInventory/BIOS.Setup.1-1", "version": "1.5.2", "updateable": true, "softwareType": "BIOS", "releaseDate": "2024-01-15", "statusHealth": "OK" },
+            { "name": "iDRAC with Lifecycle Controller", "id": "/redfish/v1/UpdateService/FirmwareInventory/iDRAC.Embedded.1", "version": "7.00.00.00", "updateable": true, "softwareType": "Firmware", "releaseDate": "2024-02-01", "statusHealth": "OK" }
+          ],
+          "powerSupplies": [
+            {
+              "name": "PS1 Status",
+              "manufacturer": "Dell Inc.",
+              "model": "PWR SPLY,800W,RDNT,DELTA",
+              "serialNumber": "CN179842240079",
+              "partNumber": "0HHJ7D",
+              "powerCapacityWatts": 800,
+              "lastPowerOutputWatts": 315,
+              "statusHealth": "OK",
+              "statusState": "Enabled"
+            },
+            {
+              "name": "PS2 Status",
+              "manufacturer": "Dell Inc.",
+              "model": "PWR SPLY,800W,RDNT,DELTA",
+              "serialNumber": "CN179842240080",
+              "partNumber": "0HHJ7D",
+              "powerCapacityWatts": 800,
+              "lastPowerOutputWatts": 0,
+              "statusHealth": "OK",
+              "statusState": "StandbySpare"
+            }
+          ],
+          "powerSupplyCount": 2,
+          "fans": [
+            { "name": "System Board Fan1", "reading": 4320, "readingUnits": "RPM", "minReadingRange": 720, "statusHealth": "OK", "statusState": "Enabled" }
+          ],
+          "fanCount": 1,
+          "temperatures": [
+            { "name": "Inlet Temp", "readingCelsius": 23, "upperThresholdCritical": 47, "upperThresholdNonCritical": 42, "statusHealth": "OK", "statusState": "Enabled" }
+          ],
+          "tpmDetail": {
+            "present": true,
+            "firmwareVersion": "7.85",
+            "interfaceType": "TPM2_0",
+            "statusHealth": "OK",
+            "statusState": "Enabled"
+          },
           "bmcCert": {
             "subject": "CN=idrac-node-02.contoso.com",
             "validUntil": "2027-01-01T00:00:00Z",
@@ -72,44 +304,56 @@
           "vbsPosture": {
             "hvciEnabled": true,
             "credentialGuardEnabled": true,
-            "securedCoreDrtm": true
+            "securedCoreDrtm": true,
+            "gpuPCapable": false,
+            "gpuPartitionableCount": 0,
+            "openManageService": [],
+            "openManageInstalled": false,
+            "openManageVersion": null
+          },
+          "idracLicenseLevel": "Enterprise",
+          "lcVersion": "7.00.00.00",
+          "supportAssist": {
+            "enabled": true,
+            "proSupportEntitlementDate": "2026-12-31",
+            "lastCollectionTime": "2025-05-01T06:00:00Z",
+            "contactEmail": "itops@contoso.com"
           },
           "securityPosture": {
-            "secureBoot": true,
+            "secureBoot": "Enabled",
             "tpmPresent": true,
-            "tpmEnabled": true,
+            "tpmVersion": "TPM2_0",
             "hvciEnabled": true,
             "credentialGuardEnabled": true,
-            "bmcCertExpiryDays": 480
-          }
+            "bmcCertExpiryDays": 480,
+            "gpuPCapable": false,
+            "openManageInstalled": false
+          },
+          "trustedModules": [
+            { "FirmwareVersion": "7.85", "InterfaceType": "TPM2_0", "Status": { "State": "Enabled", "Health": "OK" } }
+          ],
+          "boot": { "BootSourceOverrideTarget": "None" }
         }
       ],
       "summary": {
         "nodeCount": 2,
         "manufacturers": [
-          {
-            "name": "Dell Inc.",
-            "count": 2
-          }
+          { "name": "Dell Inc.", "count": 2 }
         ],
         "firmwareNodes": 2,
         "gpuNodes": 0,
         "totalGpuCount": 0,
         "hvciEnabledNodes": 2,
         "credGuardEnabledNodes": 2,
-        "bmcCertExpiringNodes": 0
+        "bmcCertExpiringNodes": 0,
+        "tpmEnabledNodes": 2,
+        "redundantPsuNodes": 2
       }
     },
     "oemIntegration": {
       "endpoints": [
-        {
-          "host": "idrac-node-01.contoso.com",
-          "node": "azl-node-01"
-        },
-        {
-          "host": "idrac-node-02.contoso.com",
-          "node": "azl-node-02"
-        }
+        { "host": "idrac-node-01.contoso.com", "node": "azl-node-01" },
+        { "host": "idrac-node-02.contoso.com", "node": "azl-node-02" }
       ],
       "managementPosture": [
         {
@@ -117,7 +361,63 @@
           "endpoint": "idrac-node-01.contoso.com",
           "managerModel": "iDRAC9",
           "managerFirmwareVersion": "7.00.00.00",
-          "lifecycleController": "iDRAC"
+          "lifecycleController": "iDRAC",
+          "lifecycleControllerVersion": "7.00.00.00",
+          "idracLicenseLevel": "Enterprise",
+          "openManageInstalled": false,
+          "openManageVersion": null,
+          "firmwareInventoryCount": 14,
+          "firmwareComplianceDetail": [
+            { "name": "BIOS", "id": "/redfish/v1/UpdateService/FirmwareInventory/BIOS.Setup.1-1", "version": "1.5.2", "updateable": true, "softwareType": "BIOS", "releaseDate": "2024-01-15", "statusHealth": "OK" },
+            { "name": "iDRAC with Lifecycle Controller", "id": "/redfish/v1/UpdateService/FirmwareInventory/iDRAC.Embedded.1", "version": "7.00.00.00", "updateable": true, "softwareType": "Firmware", "releaseDate": "2024-02-01", "statusHealth": "OK" }
+          ],
+          "updateService": {
+            "serviceEnabled": true,
+            "pushUri": "/redfish/v1/UpdateService/FirmwareInventory",
+            "multipartPushUri": null
+          },
+          "supportAssist": {
+            "enabled": true,
+            "proSupportEntitlementDate": "2026-12-31",
+            "lastCollectionTime": "2025-05-01T06:00:00Z",
+            "contactEmail": "itops@contoso.com"
+          },
+          "bmcCert": {
+            "subject": "CN=idrac-node-01.contoso.com",
+            "validUntil": "2027-01-01T00:00:00Z",
+            "daysUntilExpiry": 480
+          }
+        },
+        {
+          "node": "azl-node-02",
+          "endpoint": "idrac-node-02.contoso.com",
+          "managerModel": "iDRAC9",
+          "managerFirmwareVersion": "7.00.00.00",
+          "lifecycleController": "iDRAC",
+          "lifecycleControllerVersion": "7.00.00.00",
+          "idracLicenseLevel": "Enterprise",
+          "openManageInstalled": false,
+          "openManageVersion": null,
+          "firmwareInventoryCount": 14,
+          "firmwareComplianceDetail": [
+            { "name": "BIOS", "id": "/redfish/v1/UpdateService/FirmwareInventory/BIOS.Setup.1-1", "version": "1.5.2", "updateable": true, "softwareType": "BIOS", "releaseDate": "2024-01-15", "statusHealth": "OK" }
+          ],
+          "updateService": {
+            "serviceEnabled": true,
+            "pushUri": "/redfish/v1/UpdateService/FirmwareInventory",
+            "multipartPushUri": null
+          },
+          "supportAssist": {
+            "enabled": true,
+            "proSupportEntitlementDate": "2026-12-31",
+            "lastCollectionTime": "2025-05-01T06:00:00Z",
+            "contactEmail": "itops@contoso.com"
+          },
+          "bmcCert": {
+            "subject": "CN=idrac-node-02.contoso.com",
+            "validUntil": "2027-01-01T00:00:00Z",
+            "daysUntilExpiry": 480
+          }
         }
       ]
     }
@@ -132,6 +432,20 @@
       "target": {
         "type": "cluster-node",
         "id": "azl-node-01"
+      },
+      "relationshipType": "manages",
+      "properties": {
+        "manufacturer": "Dell Inc."
+      }
+    },
+    {
+      "source": {
+        "type": "bmc-endpoint",
+        "id": "idrac-node-02.contoso.com"
+      },
+      "target": {
+        "type": "cluster-node",
+        "id": "azl-node-02"
       },
       "relationshipType": "manages",
       "properties": {

@@ -60,33 +60,112 @@ function Invoke-RangerManagementPerformanceCollector {
                             Get-ChildItem -Path $extPath -Directory -ErrorAction SilentlyContinue | Select-Object Name, @{N='LastWriteTime';E={$_.LastWriteTime}}
                         }
                     } catch { @() })
+                    # Issue #68: WAC version, gateway mode, URL, Azure registration, auth mode
+                    $wacVersion         = try { (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\ServerManagementExperience' -Name 'InstalledVersion' -ErrorAction Stop).InstalledVersion } catch { $null }
+                    $wacGatewayMode     = try { (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\ServerManagementExperience' -Name 'GatewayMode' -ErrorAction Stop).GatewayMode } catch { 'standalone' }
+                    $wacUrl             = "https://$($env:COMPUTERNAME):$wacPort"
+                    $wacAuthMode        = try { (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\ServerManagementExperience' -Name 'AuthenticationMode' -ErrorAction Stop).AuthenticationMode } catch { 'unknown' }
+                    $wacAzureResourceId = try { (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\ServerManagementExperience' -Name 'AzureResourceId' -ErrorAction Stop).AzureResourceId } catch { $null }
+                } else {
+                    $wacVersion = $null; $wacGatewayMode = $null; $wacUrl = $null; $wacAuthMode = $null; $wacAzureResourceId = $null
                 }
 
-                # SCVMM agent depth (version, managed host state)
                 $scvmmInfo = $null
                 $scvmmAgentSvc = Get-Service -Name 'SCVMMAgent' -ErrorAction SilentlyContinue
                 if ($scvmmAgentSvc) {
                     $scvmmInfo = try {
                         $vmmReg = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\VirtualMachineManager\Agent' -ErrorAction Stop
-                        [ordered]@{ version = $vmmReg.Version; vmmServerName = $vmmReg.VMMServerName; machineId = $vmmReg.MachineId; agentStatus = [string]$scvmmAgentSvc.Status }
+                        [ordered]@{
+                            version       = $vmmReg.Version
+                            vmmServerName = $vmmReg.VMMServerName
+                            machineId     = $vmmReg.MachineId
+                            agentStatus   = [string]$scvmmAgentSvc.Status
+                            hostGroup     = try { $vmmReg.HostGroupPath } catch { $null }
+                        }
                     } catch { [ordered]@{ agentStatus = [string]$scvmmAgentSvc.Status } }
                 }
 
-                # SCOM agent depth (active alerts, management group)
+                # SCOM agent depth (management group, management server, heartbeat)
                 $scomInfo = $null
                 $momAgentSvc = Get-Service -Name 'HealthService' -ErrorAction SilentlyContinue
                 if ($momAgentSvc -and $momAgentSvc.DisplayName -match 'Operations Manager|SCOM') {
-                    $scomInfo = try {
-                        $scomReg = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Microsoft Operations Manager\3.0\Setup' -ErrorAction Stop
-                        [ordered]@{ version = $scomReg.ServerVersion; agentStatus = [string]$momAgentSvc.Status }
-                    } catch { [ordered]@{ agentStatus = [string]$momAgentSvc.Status } }
+                    $scomInfo = [ordered]@{ agentStatus = [string]$momAgentSvc.Status }
+                    try {
+                        $scomSetup = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Microsoft Operations Manager\3.0\Setup' -ErrorAction Stop
+                        $scomInfo['version'] = $scomSetup.ServerVersion
+                    } catch { }
+                    try {
+                        $mgGroupKeys = @(Get-ChildItem -Path 'HKLM:\SOFTWARE\Microsoft\Microsoft Operations Manager\3.0\Agent Management Groups' -ErrorAction Stop)
+                        if (@($mgGroupKeys).Count -gt 0) {
+                            $firstMg = Get-ItemProperty -Path $mgGroupKeys[0].PSPath -ErrorAction Stop
+                            $scomInfo['managementGroupName'] = $mgGroupKeys[0].PSChildName
+                            $scomInfo['managementServer']    = try { $firstMg.ManagementServerDNSName } catch { $null }
+                            $scomInfo['lastHeartbeat']       = try { (Get-ItemProperty -Path "$($mgGroupKeys[0].PSPath)\Agent Parameters" -Name 'LastHeartbeatRequestTime' -ErrorAction Stop).LastHeartbeatRequestTime } catch { $null }
+                        }
+                    } catch { }
                 }
 
                 # Performance baseline
-                $cpu = Get-CimInstance -ClassName Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'" -ErrorAction SilentlyContinue
+                # Issue #69: Multi-sample CPU (average and peak over 3 samples)
+                $cpuSamples = @(try {
+                    (Get-Counter '\Processor(_Total)\% Processor Time' -SampleInterval 3 -MaxSamples 3 -ErrorAction Stop).CounterSamples | ForEach-Object { $_.CookedValue }
+                } catch {
+                    $wmiCpu = Get-CimInstance -ClassName Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'" -ErrorAction SilentlyContinue
+                    if ($wmiCpu) { @($wmiCpu.PercentProcessorTime) } else { @() }
+                })
+                $cpuAvg  = if ($cpuSamples.Count -gt 0) { [math]::Round(($cpuSamples | Measure-Object -Average).Average, 1) } else { $null }
+                $cpuPeak = if ($cpuSamples.Count -gt 0) { [math]::Round(($cpuSamples | Measure-Object -Maximum).Maximum, 1) } else { $null }
                 $memory = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue
+                # Issue #69: Committed memory counters
+                $memoryPerf = Get-CimInstance -ClassName Win32_PerfFormattedData_PerfOS_Memory -ErrorAction SilentlyContinue
+                # Issue #69: Hyper-V Hypervisor Logical Processor % Total Run Time
+                $hypervRunTime = try { [math]::Round((Get-Counter '\Hyper-V Hypervisor Logical Processor(_Total)\% Total Run Time' -ErrorAction Stop).CounterSamples[0].CookedValue, 1) } catch { $null }
                 $disks = @(Get-CimInstance -ClassName Win32_PerfFormattedData_PerfDisk_LogicalDisk -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne '_Total' } | Select-Object Name, PercentFreeSpace, AvgDiskSecPerTransfer, DiskTransfersPerSec)
                 $network = @(Get-CimInstance -ClassName Win32_PerfFormattedData_Tcpip_NetworkInterface -ErrorAction SilentlyContinue | Select-Object Name, BytesTotalPersec, CurrentBandwidth)
+
+                # Issue #69: Storage IOPS, throughput, and avg latency
+                $storageIopsDetail = try {
+                    $pCounters = Get-Counter @(
+                        '\PhysicalDisk(_Total)\Disk Reads/sec',
+                        '\PhysicalDisk(_Total)\Disk Writes/sec',
+                        '\PhysicalDisk(_Total)\Disk Read Bytes/sec',
+                        '\PhysicalDisk(_Total)\Disk Write Bytes/sec',
+                        '\PhysicalDisk(_Total)\Avg. Disk sec/Read',
+                        '\PhysicalDisk(_Total)\Avg. Disk sec/Write'
+                    ) -ErrorAction Stop
+                    $oidx = [ordered]@{ readIops = $null; writeIops = $null; readThroughputMBps = $null; writeThroughputMBps = $null; avgReadLatencyMs = $null; avgWriteLatencyMs = $null }
+                    $pCounters.CounterSamples | ForEach-Object {
+                        if     ($_.Path -match 'Reads/sec$')       { $oidx['readIops']            = [math]::Round($_.CookedValue, 1) }
+                        elseif ($_.Path -match 'Writes/sec$')      { $oidx['writeIops']           = [math]::Round($_.CookedValue, 1) }
+                        elseif ($_.Path -match 'Read Bytes/sec$')  { $oidx['readThroughputMBps']  = [math]::Round($_.CookedValue / 1MB, 2) }
+                        elseif ($_.Path -match 'Write Bytes/sec$') { $oidx['writeThroughputMBps'] = [math]::Round($_.CookedValue / 1MB, 2) }
+                        elseif ($_.Path -match 'sec/Read$')        { $oidx['avgReadLatencyMs']    = [math]::Round($_.CookedValue * 1000, 2) }
+                        elseif ($_.Path -match 'sec/Write$')       { $oidx['avgWriteLatencyMs']   = [math]::Round($_.CookedValue * 1000, 2) }
+                    }
+                    $oidx
+                } catch { $null }
+                # Issue #69: S2D cache hit ratio
+                $s2dCacheHitRatio = try {
+                    $cacheSamples = (Get-Counter '\Cluster Storage Hybrid Disks(*)\Cache Hit %' -ErrorAction Stop).CounterSamples
+                    [math]::Round(($cacheSamples | Measure-Object -Property CookedValue -Average).Average, 1)
+                } catch { $null }
+                # Issue #69: Network adapter errors and discards
+                $networkErrors = @(try {
+                    Get-NetAdapterStatistics -ErrorAction Stop | ForEach-Object {
+                        $stat = $_
+                        $nic = Get-NetAdapter -Name $stat.Name -ErrorAction SilentlyContinue
+                        if ($stat.OutboundPacketErrors -gt 0 -or $stat.ReceivedPacketErrors -gt 0 -or $stat.OutboundDiscardedPackets -gt 0 -or $stat.ReceivedDiscardedPackets -gt 0) {
+                            [ordered]@{
+                                name                     = $stat.Name
+                                linkSpeedMbps            = if ($nic) { [math]::Round($nic.LinkSpeed / 1MB, 0) } else { $null }
+                                outboundDiscardedPackets  = $stat.OutboundDiscardedPackets
+                                outboundPacketErrors      = $stat.OutboundPacketErrors
+                                receivedDiscardedPackets  = $stat.ReceivedDiscardedPackets
+                                receivedPacketErrors      = $stat.ReceivedPacketErrors
+                            }
+                        }
+                    } | Where-Object { $_ }
+                } catch { @() })
 
                 # RDMA Activity counters
                 $rdmaCounters = @(try {
@@ -144,7 +223,11 @@ function Invoke-RangerManagementPerformanceCollector {
                     'Microsoft-Windows-Health/Operational',
                     'Microsoft-Windows-StorageSpaces-Driver/Operational',
                     'Microsoft-Windows-FailoverClustering/Operational',
-                    'Microsoft-Windows-SDDC-Management/Operational'
+                    'Microsoft-Windows-SDDC-Management/Operational',
+                    'Microsoft-Windows-Hyper-V-VMMS-Admin',
+                    'Microsoft-Windows-Hyper-V-Worker-Admin',
+                    'Microsoft-Windows-StorageReplica/Admin',
+                    'Application'
                 )) {
                     try {
                         $logEvents = @(Get-WinEvent -LogName $logName -MaxEvents 500 -ErrorAction Stop)
@@ -167,13 +250,33 @@ function Invoke-RangerManagementPerformanceCollector {
                     node              = $env:COMPUTERNAME
                     tools             = @($managementServices)
                     thirdPartyAgents  = @($thirdPartyAgents)
-                    wac               = [ordered]@{ installed = $null -ne $wacService; status = if ($wacService) { [string]$wacService.Status } else { 'not-installed' }; cert = $wacCert; extensionCount = @($wacExtensions).Count; extensions = @($wacExtensions) }
+                    wac               = [ordered]@{
+                        installed       = $null -ne $wacService
+                        status          = if ($wacService) { [string]$wacService.Status } else { 'not-installed' }
+                        version         = $wacVersion
+                        gatewayMode     = $wacGatewayMode
+                        url             = $wacUrl
+                        authMode        = $wacAuthMode
+                        azureResourceId = $wacAzureResourceId
+                        cert            = $wacCert
+                        extensionCount  = @($wacExtensions).Count
+                        extensions      = @($wacExtensions)
+                    }
                     scvmm             = $scvmmInfo
                     scom              = $scomInfo
                     compute           = [ordered]@{
-                        cpuUtilizationPercent = if ($cpu) { $cpu.PercentProcessorTime } else { $null }
-                        availableMemoryMb     = if ($memory) { [math]::Round(($memory.FreePhysicalMemory / 1KB), 2) } else { $null }
-                        totalMemoryMb         = if ($memory) { [math]::Round(($memory.TotalVisibleMemorySize / 1KB), 2) } else { $null }
+                        cpuUtilizationPercent      = $cpuAvg
+                        cpuPeakPercent             = $cpuPeak
+                        cpuSampleCount             = @($cpuSamples).Count
+                        availableMemoryMb          = if ($memory) { [math]::Round(($memory.FreePhysicalMemory / 1KB), 2) } else { $null }
+                        totalMemoryMb              = if ($memory) { [math]::Round(($memory.TotalVisibleMemorySize / 1KB), 2) } else { $null }
+                        committedBytesMb           = if ($memoryPerf) { [math]::Round($memoryPerf.CommittedBytes / 1MB, 0) } else { $null }
+                        commitLimitMb              = if ($memoryPerf) { [math]::Round($memoryPerf.CommitLimit / 1MB, 0) } else { $null }
+                        committedRatio             = if ($memoryPerf -and $memoryPerf.CommitLimit -gt 0) { [math]::Round($memoryPerf.CommittedBytes / $memoryPerf.CommitLimit, 3) } else { $null }
+                        hypervHypervisorRunTimePct = $hypervRunTime
+                        storageIops                = $storageIopsDetail
+                        csvCacheHitRatio           = $s2dCacheHitRatio
+                        networkErrors              = @($networkErrors)
                     }
                     storage           = @($disks)
                     networking        = @($network)

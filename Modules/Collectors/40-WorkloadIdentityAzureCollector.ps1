@@ -58,6 +58,52 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                     # Shared VHDX detection for guest cluster heuristic
                     $hasSharedVhdx = @($drives | Where-Object { $_.SupportPersistentReservations -or $_.Path -match '\bshared\b' }).Count -gt 0
 
+                    # Issue #62: Per-disk detail with VHD metadata
+                    $diskDetail = @($drives | ForEach-Object {
+                        $d = $_
+                        $vhd = if ($d.Path) { try { Get-VHD -Path $d.Path -ErrorAction Stop } catch { $null } } else { $null }
+                        [ordered]@{
+                            controllerType     = [string]$d.ControllerType
+                            controllerNumber   = $d.ControllerNumber
+                            controllerLocation = $d.ControllerLocation
+                            path               = $d.Path
+                            vhdFormat          = if ($vhd) { [string]$vhd.VhdFormat } else { $null }
+                            vhdType            = if ($vhd) { [string]$vhd.VhdType } else { $null }
+                            currentSizeGiB     = if ($vhd) { [math]::Round($vhd.FileSize / 1GB, 2) } else { $null }
+                            maxSizeGiB         = if ($vhd) { [math]::Round($vhd.Size / 1GB, 2) } else { $null }
+                            parentPath         = if ($vhd) { $vhd.ParentPath } else { $null }
+                        }
+                    })
+                    # Issue #62: Per-NIC detail with VLAN, security guards, spoofing
+                    $nicDetail = @($adapters | ForEach-Object {
+                        $nic = $_
+                        $vlan = if (Get-Command -Name Get-VMNetworkAdapterVlan -ErrorAction SilentlyContinue) { try { Get-VMNetworkAdapterVlan -VMNetworkAdapter $nic -ErrorAction Stop } catch { $null } } else { $null }
+                        [ordered]@{
+                            name               = $nic.Name
+                            switchName         = $nic.SwitchName
+                            macAddress         = $nic.MacAddress
+                            macAddressType     = [string]$nic.MacAddressType
+                            ipAddresses        = @($nic.IPAddresses)
+                            vlanId             = if ($vlan) { $vlan.AccessVlanId } else { $null }
+                            dhcpGuard          = [string]$nic.DhcpGuard
+                            routerGuard        = [string]$nic.RouterGuard
+                            macAddressSpoofing = [string]$nic.MacAddressSpoofing
+                            portMirroring      = [string]$nic.PortMirroringMode
+                            deviceNaming       = $nic.DeviceNaming
+                        }
+                    })
+                    # Issue #62: Cluster placement (preferred owners, anti-affinity, failover policy)
+                    $clusterGroup = if ((Get-Command -Name Get-ClusterGroup -ErrorAction SilentlyContinue) -and $vm.IsClustered) {
+                        try { Get-ClusterGroup -Name "Virtual Machine $($vm.Name)" -ErrorAction Stop } catch { $null }
+                    } else { $null }
+                    $vmPlacement = [ordered]@{
+                        preferredOwners    = if ($clusterGroup) { @($clusterGroup.PreferredOwners) } else { @() }
+                        antiAffinityGroups = if ($clusterGroup) { @($clusterGroup.AntiAffinityClassNames) } else { @() }
+                        clusterRoleName    = if ($clusterGroup) { $clusterGroup.Name } else { $null }
+                        clusterRoleState   = if ($clusterGroup) { [string]$clusterGroup.State } else { $null }
+                        failoverThreshold  = if ($clusterGroup) { $clusterGroup.FailoverThreshold } else { $null }
+                    }
+
                     [ordered]@{
                         name              = $vm.Name
                         hostNode          = $env:COMPUTERNAME
@@ -81,6 +127,20 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                         checkpointCount   = @($checkpoints).Count
                         nicsAdvanced      = @($nicsAdvanced)
                         guestClusterCandidate = $hasSharedVhdx
+                        vmId                = [string]$vm.Id
+                        creationTime        = $vm.CreationTime
+                        configVersion       = $vm.Version
+                        notes               = $vm.Notes
+                        automaticStartAction = [string]$vm.AutomaticStartAction
+                        automaticStartDelay  = $vm.AutomaticStartDelay
+                        automaticStopAction  = [string]$vm.AutomaticStopAction
+                        memoryStartupMb     = [math]::Round($vm.MemoryStartup / 1MB, 0)
+                        memoryMinimumMb     = [math]::Round($vm.MemoryMinimum / 1MB, 0)
+                        memoryMaximumMb     = [math]::Round($vm.MemoryMaximum / 1MB, 0)
+                        memoryDemandMb      = [math]::Round($vm.MemoryDemand / 1MB, 0)
+                        diskDetail          = @($diskDetail)
+                        nicDetail           = @($nicDetail)
+                        placement           = $vmPlacement
                     }
                 }
             }
@@ -175,6 +235,49 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                     $null -ne (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters' -Name 'CloudKerberosTicketRetrievalEnabled' -ErrorAction Stop)
                 } catch { $false }
 
+                # Issue #64: AD object depth (CNO, AD site)
+                $clusterName = if (Get-Command -Name Get-Cluster -ErrorAction SilentlyContinue) { try { (Get-Cluster -ErrorAction Stop).Name } catch { $null } } else { $null }
+                $adObjects = if ($clusterName -and (Get-Command -Name Get-ADComputer -ErrorAction SilentlyContinue)) {
+                    try {
+                        $cno = Get-ADComputer -Identity $clusterName -Properties DistinguishedName, ServicePrincipalNames, Enabled -ErrorAction Stop
+                        [ordered]@{
+                            cnoName              = $cno.Name
+                            cnoDistinguishedName = $cno.DistinguishedName
+                            cnoSpns              = @($cno.ServicePrincipalNames)
+                            cnoEnabled           = [bool]$cno.Enabled
+                        }
+                    } catch { $null }
+                } else { $null }
+                $adSite = try { [System.DirectoryServices.ActiveDirectory.ActiveDirectorySite]::GetComputerSite().Name } catch { $null }
+                # Issue #64: Secured-Core / DRTM / SystemGuard registry check
+                $sgEnabled = try { $sgKey = Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\SystemGuard' -Name 'Enabled' -ErrorAction Stop; $sgKey.Enabled -eq 1 } catch { $false }
+                $drtmCapable = try { $dg = Get-CimInstance -ClassName Win32_DeviceGuard -Namespace 'root\Microsoft\Windows\DeviceGuard' -ErrorAction Stop; @($dg.AvailableSecurityProperties) -contains 128 } catch { $false }
+                $securedCoreDetail = [ordered]@{
+                    systemGuardEnabled = $sgEnabled
+                    drtmCapable        = $drtmCapable
+                }
+                # Issue #64: Syslog and WEF subscription detection
+                $syslogDetail = [ordered]@{
+                    wefSubscriptions = @(try {
+                        Get-WinEvent -ListLog 'ForwardedEvents' -ErrorAction Stop | Select-Object LogName, LogMode, RecordCount | ForEach-Object {
+                            [ordered]@{ logName = $_.LogName; mode = [string]$_.LogMode; recordCount = $_.RecordCount }
+                        }
+                    } catch { @() })
+                    syslogAgents = @(
+                        @('rsyslog', 'nxlog', 'syslog-ng', 'Microsoft-Geneva-MonitoringAgent', 'AzureMonitorAgent') | ForEach-Object {
+                            $svc = Get-Service -Name $_ -ErrorAction SilentlyContinue
+                            if ($svc) { [ordered]@{ name = $svc.Name; status = [string]$svc.Status; startType = [string]$svc.StartType } }
+                        } | Where-Object { $_ }
+                    )
+                }
+                # Issue #64: Drift control markers (HCI registration registry keys)
+                $hciRegStatus = try { (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\AzureStack\AzureStackHCI' -ErrorAction Stop).RegistrationStatus } catch { $null }
+                $hciConnStatus = try { (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\AzureStack\AzureStackHCI' -ErrorAction Stop).ConnectionStatus } catch { $null }
+                $driftControl = [ordered]@{
+                    hciRegistrationStatus = $hciRegStatus
+                    hciConnectionStatus   = $hciConnStatus
+                }
+
                 [ordered]@{
                     node               = $env:COMPUTERNAME
                     partOfDomain       = [bool]$computerSystem.PartOfDomain
@@ -196,6 +299,11 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                     auditPolicy        = @($auditPolicy)
                     entraJoinStatus    = $entraJoinStatus
                     aadkerbConfigured  = $aadkerbConfigured
+                    adObjects          = $adObjects
+                    adSite             = $adSite
+                    securedCoreDetail  = $securedCoreDetail
+                    syslogDetail       = $syslogDetail
+                    driftControl       = $driftControl
                 }
             }
         }
@@ -215,7 +323,7 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                 }
 
                 $scope = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup"
-                Get-AzPolicyAssignment -Scope $scope -ErrorAction SilentlyContinue | Select-Object Name, DisplayName, Scope, EnforcementMode
+                Get-AzPolicyAssignment -Scope $scope -ErrorAction SilentlyContinue | Select-Object Name, DisplayName, Scope, EnforcementMode, PolicyDefinitionId, Description
             }
         }
     )
@@ -238,8 +346,27 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
             Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if (-not (Get-Command -Name Get-AzAksCluster -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
-                Get-AzAksCluster -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue |
-                    Select-Object Name, KubernetesVersion, ProvisioningState, PowerState, NodeResourceGroup, EnableRBAC, Location
+                $clusters = @(Get-AzAksCluster -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue)
+                $aksResult = New-Object System.Collections.ArrayList
+                foreach ($c in $clusters) {
+                    $nodePools = @(try { Get-AzAksNodePool -ResourceGroupName $ResourceGroup -ClusterName $c.Name -ErrorAction Stop | Select-Object Name, Count, VmSize, OsType, Mode, ProvisioningState } catch { @() })
+                    $aksExts = @(try { Get-AzResource -ResourceGroupName $c.NodeResourceGroup -ResourceType 'Microsoft.KubernetesConfiguration/extensions' -ErrorAction Stop | Select-Object Name, Location } catch { @() })
+                    [void]$aksResult.Add([ordered]@{
+                        name              = $c.Name
+                        kubernetesVersion = $c.KubernetesVersion
+                        provisioningState = $c.ProvisioningState
+                        powerState        = if ($c.PowerState) { [string]$c.PowerState.Code } else { $null }
+                        nodeResourceGroup = $c.NodeResourceGroup
+                        enableRbac        = $c.EnableRBAC
+                        location          = $c.Location
+                        nodePoolCount     = @($nodePools).Count
+                        nodePools         = @($nodePools | ForEach-Object { [ordered]@{ name = $_.Name; count = $_.Count; vmSize = $_.VmSize; osType = [string]$_.OsType; mode = [string]$_.Mode; provisioningState = $_.ProvisioningState } })
+                        networkPlugin     = if ($c.NetworkProfile) { [string]$c.NetworkProfile.NetworkPlugin } else { $null }
+                        networkPolicy     = if ($c.NetworkProfile) { [string]$c.NetworkProfile.NetworkPolicy } else { $null }
+                        extensionCount    = @($aksExts).Count
+                    })
+                }
+                @($aksResult)
             }
         }
     )
@@ -251,7 +378,27 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                 param($SubscriptionId, $ResourceGroup)
                 if (-not (Get-Command -Name Get-AzWvdHostPool -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
                 $pools = @(Get-AzWvdHostPool -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue)
-                $pools | Select-Object Name, HostPoolType, LoadBalancerType, ValidationEnvironment, MaxSessionLimit, PreferredAppGroupType, Status
+                $avdResult = New-Object System.Collections.ArrayList
+                foreach ($pool in $pools) {
+                    $sessionHosts = @(try { Get-AzWvdSessionHost -ResourceGroupName $ResourceGroup -HostPoolName $pool.Name -ErrorAction Stop } catch { @() })
+                    $appGroups    = @(try { Get-AzWvdApplicationGroup -ResourceGroupName $ResourceGroup -ErrorAction Stop | Where-Object { $_.HostPoolArmPath -match $pool.Name } } catch { @() })
+                    $scalingPlan  = try { Get-AzWvdScalingPlan -ResourceGroupName $ResourceGroup -ErrorAction Stop | Where-Object { @($_.HostPool.Keys) -contains "/hostpools/$($pool.Name)" } | Select-Object -First 1 } catch { $null }
+                    $fslogixDetected = @($sessionHosts | Where-Object { $_.ResourceId -match 'fslogix' -or $_.FriendlyName -match 'fslogix' }).Count -gt 0
+                    [void]$avdResult.Add([ordered]@{
+                        name                  = $pool.Name
+                        hostPoolType          = [string]$pool.Type
+                        loadBalancerType      = [string]$pool.LoadBalancerType
+                        validationEnvironment = [bool]$pool.ValidationEnvironment
+                        maxSessionLimit       = $pool.MaxSessionLimit
+                        preferredAppGroupType = [string]$pool.PreferredAppGroupType
+                        sessionHostCount      = @($sessionHosts).Count
+                        availableSessionHosts = @($sessionHosts | Where-Object { $_.AllowNewSession -eq $true }).Count
+                        appGroupCount         = @($appGroups).Count
+                        scalingPlanAssigned   = $null -ne $scalingPlan
+                        fslogixDetected       = $fslogixDetected
+                    })
+                }
+                @($avdResult)
             }
         }
     )
@@ -283,12 +430,26 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                     $replicated = @(Get-AzRecoveryServicesAsrReplicationProtectedItem -ErrorAction SilentlyContinue)
                     foreach ($item in $replicated) {
                         [void]$items.Add([ordered]@{
-                            vaultName        = $vault.Name
-                            vmName           = $item.FriendlyName
-                            protectionState  = $item.ProtectionState
-                            replicationHealth = $item.ReplicationHealth
-                            testFailoverState = $item.TestFailoverState
-                            lastRpo          = $item.LastSuccessfulFailoverTime
+                            vaultName                  = $vault.Name
+                            vmName                     = $item.FriendlyName
+                            protectionState            = $item.ProtectionState
+                            replicationHealth          = $item.ReplicationHealth
+                            testFailoverState          = [string]$item.TestFailoverState
+                            lastRpo                    = $item.LastSuccessfulFailoverTime
+                            lastRpoCalculated          = $item.LastRpoCalculatedTime
+                            lastSuccessfulTestFailover = $item.LastSuccessfulTestFailoverTime
+                        })
+                    }
+                    # Issue #72: Recovery plans per vault
+                    $plans = @(try { Get-AzRecoveryServicesAsrRecoveryPlan -ErrorAction SilentlyContinue | Select-Object Name, FriendlyName, ReplicationProvider, PrimaryFabricFriendlyName, RecoveryFabricFriendlyName } catch { @() })
+                    foreach ($plan in $plans) {
+                        [void]$items.Add([ordered]@{
+                            vaultName         = $vault.Name
+                            vmName            = $null
+                            protectionState   = 'RecoveryPlan'
+                            replicationHealth = $null
+                            recoveryPlanName  = $plan.FriendlyName
+                            replicationProvider = $plan.ReplicationProvider
                         })
                     }
                 }
@@ -311,14 +472,21 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                     $protected = @(Get-AzRecoveryServicesBackupItem -WorkloadType AzureVM -ErrorAction SilentlyContinue)
                     $protected += @(Get-AzRecoveryServicesBackupItem -WorkloadType FileFolder -ErrorAction SilentlyContinue)
                     foreach ($item in $protected) {
+                        $policy = try { Get-AzRecoveryServicesBackupProtectionPolicy -Name $item.PolicyName -ErrorAction Stop } catch { $null }
+                        $rpCount = try { @(Get-AzRecoveryServicesBackupRecoveryPoint -Item $item -ErrorAction Stop).Count } catch { 0 }
+                        $agentType = if ($item.ContainerName -match 'MABS') { 'MABS' } elseif ($item.ContainerName -match 'DPM') { 'DPM' } elseif ($item.ContainerName -match 'MARS') { 'MARS' } else { 'AzureBackup' }
                         [void]$items.Add([ordered]@{
-                            vaultName       = $vault.Name
-                            name            = $item.Name
-                            containerName   = $item.ContainerName
-                            backupStatus    = [string]$item.Status
-                            lastBackupStatus = [string]$item.LastBackupStatus
-                            lastBackupTime  = $item.LastBackupTime
-                            protectionState = [string]$item.ProtectionState
+                            vaultName           = $vault.Name
+                            name                = $item.Name
+                            containerName       = $item.ContainerName
+                            backupStatus        = [string]$item.Status
+                            lastBackupStatus    = [string]$item.LastBackupStatus
+                            lastBackupTime      = $item.LastBackupTime
+                            protectionState     = [string]$item.ProtectionState
+                            policyName          = if ($policy) { $policy.Name } else { $item.PolicyName }
+                            recoveryPointCount  = $rpCount
+                            agentType           = $agentType
+                            failedInLast7Days   = ($item.LastBackupStatus -eq 'Failed') -and ($item.LastBackupTime -gt (Get-Date).AddDays(-7))
                         })
                     }
                 }
@@ -333,6 +501,208 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
     $customLocations = @($azureResources | Where-Object { $_.ResourceType -match 'customlocations' })
     $extensions = @($azureResources | Where-Object { $_.ResourceType -match 'extensions' })
     $siteRecovery = @($azureResources | Where-Object { $_.ResourceType -match 'siterecovery' })
+
+    # Issue #63: VM image gallery (marketplace + local gallery images)
+    $vmImages = @(
+        Invoke-RangerSafeAction -Label 'HCI VM image gallery' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+                param($SubscriptionId, $ResourceGroup)
+                if ([string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
+                $imgResult = New-Object System.Collections.ArrayList
+                @(Get-AzResource -ResourceGroupName $ResourceGroup -ResourceType 'Microsoft.AzureStackHCI/marketplaceGalleryImages' -ErrorAction SilentlyContinue) | ForEach-Object {
+                    [void]$imgResult.Add([ordered]@{ name = $_.Name; resourceType = 'marketplaceGalleryImage'; location = $_.Location; id = $_.ResourceId })
+                }
+                @(Get-AzResource -ResourceGroupName $ResourceGroup -ResourceType 'Microsoft.AzureStackHCI/galleryImages' -ErrorAction SilentlyContinue) | ForEach-Object {
+                    [void]$imgResult.Add([ordered]@{ name = $_.Name; resourceType = 'galleryImage'; location = $_.Location; id = $_.ResourceId })
+                }
+                @($imgResult)
+            }
+        }
+    )
+
+    # Issue #63: ISO file discovery on CSV paths
+    $isoImages = @(
+        Invoke-RangerSafeAction -Label 'ISO file discovery on CSV' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -ScriptBlock {
+                try {
+                    @(Get-ChildItem -Path 'C:\ClusterStorage' -Filter '*.iso' -Recurse -Depth 3 -ErrorAction SilentlyContinue | Select-Object -First 50 | ForEach-Object {
+                        [ordered]@{ name = $_.Name; fullPath = $_.FullName; sizeGiB = [math]::Round($_.Length / 1GB, 2); lastWriteTime = $_.LastWriteTime }
+                    })
+                } catch { @() }
+            }
+        }
+    )
+
+    # Issue #64: Azure RBAC assignments at HCI resource group scope
+    $rbacAssignments = @(
+        Invoke-RangerSafeAction -Label 'Azure RBAC assignments (HCI scope)' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+                param($SubscriptionId, $ResourceGroup)
+                if (-not (Get-Command -Name Get-AzRoleAssignment -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($SubscriptionId) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
+                $scope = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup"
+                @(Get-AzRoleAssignment -Scope $scope -ErrorAction SilentlyContinue | Select-Object DisplayName, SignInName, RoleDefinitionName, ObjectType, Scope)
+            }
+        }
+    )
+
+    # Issue #64: Defender for Cloud pricing and enablement
+    $defenderForCloud = @(
+        Invoke-RangerSafeAction -Label 'Defender for Cloud posture' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+                param($SubscriptionId, $ResourceGroup)
+                if (-not (Get-Command -Name Get-AzSecurityPricing -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($SubscriptionId)) { return @() }
+                @(Get-AzSecurityPricing -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'VirtualMachines|HybridCompute|Servers' } | Select-Object Name, PricingTier, FreeTrialRemainingTime)
+            }
+        }
+    )
+
+    # Issue #65: Arc Connected Machine detail per node (agent version, status)
+    $arcMachineDetail = @(
+        Invoke-RangerSafeAction -Label 'Arc Connected Machine detail' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+                param($SubscriptionId, $ResourceGroup)
+                if (-not (Get-Command -Name Get-AzConnectedMachine -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
+                @(Get-AzConnectedMachine -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue | Select-Object Name, Status, AgentVersion, OsName, OsVersion, Location, LastStatusChange, ProvisioningState)
+            }
+        }
+    )
+
+    # Issue #65: Arc extension detail per machine (publisher, version, provisioning state, auto-upgrade)
+    $arcExtensionsDetail = @(
+        Invoke-RangerSafeAction -Label 'Arc extension detail' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+                param($SubscriptionId, $ResourceGroup)
+                if (-not (Get-Command -Name Get-AzConnectedMachineExtension -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
+                $machineList = @(try { Get-AzConnectedMachine -ResourceGroupName $ResourceGroup -ErrorAction Stop | Select-Object Name } catch { @() })
+                $extResult = New-Object System.Collections.ArrayList
+                foreach ($m in $machineList) {
+                    $exts = @(Get-AzConnectedMachineExtension -MachineName $m.Name -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue)
+                    foreach ($e in $exts) {
+                        [void]$extResult.Add([ordered]@{
+                            machineName            = $m.Name
+                            extensionName          = $e.Name
+                            publisher              = $e.Publisher
+                            extensionType          = $e.MachineExtensionType
+                            typeHandlerVersion     = $e.TypeHandlerVersion
+                            provisioningState      = $e.ProvisioningState
+                            autoUpgradeMinorVersion = $e.AutoUpgradeMinorVersion
+                        })
+                    }
+                }
+                @($extResult)
+            }
+        }
+    )
+
+    # Issue #65: Resource provider registration state for Microsoft.AzureStackHCI
+    $resourceProviders = @(
+        Invoke-RangerSafeAction -Label 'HCI resource provider registration' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId) -ScriptBlock {
+                param($SubscriptionId)
+                if (-not (Get-Command -Name Get-AzResourceProvider -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($SubscriptionId)) { return @() }
+                @(Get-AzResourceProvider -ProviderNamespace 'Microsoft.AzureStackHCI' -ErrorAction SilentlyContinue | Select-Object ProviderNamespace, RegistrationState, ResourceTypes | ForEach-Object {
+                    [ordered]@{ namespace = $_.ProviderNamespace; registrationState = $_.RegistrationState; resourceTypeCount = @($_.ResourceTypes).Count }
+                })
+            }
+        }
+    )
+
+    # Issue #65: HCI VM management plane resources (storageContainers, logicalNetworks, etc.)
+    $vmManagementResources = @(
+        Invoke-RangerSafeAction -Label 'HCI VM management plane resources' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+                param($SubscriptionId, $ResourceGroup)
+                if ([string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
+                $hciTypes = @(
+                    'Microsoft.AzureStackHCI/storageContainers',
+                    'Microsoft.AzureStackHCI/logicalNetworks',
+                    'Microsoft.AzureStackHCI/galleryImages',
+                    'Microsoft.AzureStackHCI/networkInterfaces',
+                    'Microsoft.AzureStackHCI/virtualHardDisks',
+                    'Microsoft.AzureStackHCI/networkSecurityGroups'
+                )
+                $vmMgmtResult = New-Object System.Collections.ArrayList
+                foreach ($rt in $hciTypes) {
+                    @(Get-AzResource -ResourceGroupName $ResourceGroup -ResourceType $rt -ErrorAction SilentlyContinue) | ForEach-Object {
+                        [void]$vmMgmtResult.Add([ordered]@{ name = $_.Name; resourceType = $rt; location = $_.Location })
+                    }
+                }
+                @($vmMgmtResult)
+            }
+        }
+    )
+
+    # Issue #66: Arc Data Services inventory (dataControllers, sqlManagedInstances, postgresInstances)
+    $arcDataServices = @(
+        Invoke-RangerSafeAction -Label 'Arc Data Services inventory' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+                param($SubscriptionId, $ResourceGroup)
+                if ([string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
+                $dsResult = New-Object System.Collections.ArrayList
+                @(Get-AzResource -ResourceGroupName $ResourceGroup -ResourceType 'Microsoft.AzureArcData/dataControllers' -ErrorAction SilentlyContinue) | ForEach-Object { [void]$dsResult.Add([ordered]@{ name = $_.Name; resourceType = 'dataController'; location = $_.Location }) }
+                @(Get-AzResource -ResourceGroupName $ResourceGroup -ResourceType 'Microsoft.AzureArcData/sqlManagedInstances' -ErrorAction SilentlyContinue) | ForEach-Object { [void]$dsResult.Add([ordered]@{ name = $_.Name; resourceType = 'sqlManagedInstance'; location = $_.Location }) }
+                @(Get-AzResource -ResourceGroupName $ResourceGroup -ResourceType 'Microsoft.AzureArcData/postgresInstances' -ErrorAction SilentlyContinue) | ForEach-Object { [void]$dsResult.Add([ordered]@{ name = $_.Name; resourceType = 'postgresInstance'; location = $_.Location }) }
+                @($dsResult)
+            }
+        }
+    )
+
+    # Issue #66: IoT Operations inventory
+    $iotOperations = @(
+        Invoke-RangerSafeAction -Label 'IoT Operations inventory' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+                param($SubscriptionId, $ResourceGroup)
+                if ([string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
+                $iotResult = New-Object System.Collections.ArrayList
+                @(Get-AzResource -ResourceGroupName $ResourceGroup -ResourceType 'microsoft.iotoperations/instances' -ErrorAction SilentlyContinue) | ForEach-Object { [void]$iotResult.Add([ordered]@{ name = $_.Name; resourceType = 'iotInstance'; location = $_.Location }) }
+                @(Get-AzResource -ResourceGroupName $ResourceGroup -ResourceType 'microsoft.iotoperations/brokers' -ErrorAction SilentlyContinue) | ForEach-Object { [void]$iotResult.Add([ordered]@{ name = $_.Name; resourceType = 'iotBroker'; location = $_.Location }) }
+                @($iotResult)
+            }
+        }
+    )
+
+    # Issue #66: Cost and licensing signals (subscription type, billing model)
+    $costLicensing = @(
+        Invoke-RangerSafeAction -Label 'Cost and licensing snapshot' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId) -ScriptBlock {
+                param($SubscriptionId)
+                if (-not (Get-Command -Name Get-AzSubscription -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($SubscriptionId)) { return @() }
+                $sub = Get-AzSubscription -SubscriptionId $SubscriptionId -ErrorAction SilentlyContinue
+                @([ordered]@{
+                    subscriptionId    = $SubscriptionId
+                    subscriptionName  = if ($sub) { $sub.Name } else { $null }
+                    subscriptionState = if ($sub) { [string]$sub.State } else { $null }
+                    tenantId          = if ($sub) { $sub.TenantId } else { $null }
+                })
+            }
+        }
+    )
+
+    # Issue #72: Policy exemptions at resource group scope
+    $policyExemptions = @(
+        Invoke-RangerSafeAction -Label 'Azure Policy exemption snapshot' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+                param($SubscriptionId, $ResourceGroup)
+                if (-not (Get-Command -Name Get-AzPolicyExemption -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
+                $scope = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup"
+                @(Get-AzPolicyExemption -Scope $scope -ErrorAction SilentlyContinue | Select-Object Name, DisplayName, ExemptionCategory, PolicyAssignmentId, ExpiresOn)
+            }
+        }
+    )
+
+    # Issue #63: Correlate Arc Connected Machines to local VM inventory by name
+    $vmInventory = @($vmInventory | ForEach-Object {
+        $vm = $_
+        $arcMatch = $arcMachineDetail | Where-Object { $_.Name -eq $vm.name } | Select-Object -First 1
+        if (-not $arcMatch) { $arcMatch = $arcMachines | Where-Object { $_.Name -eq $vm.name } | Select-Object -First 1 }
+        $vm['arcAgentInstalled']    = $null -ne $arcMatch
+        $vm['arcAgentVersion']      = if ($arcMatch) { $arcMatch.AgentVersion } else { $null }
+        $vm['arcLastHeartbeat']     = if ($arcMatch) { $arcMatch.LastStatusChange } else { $null }
+        $vm['arcProvisioningState'] = if ($arcMatch) { $arcMatch.ProvisioningState } else { $null }
+        $vm['arcExtensions']        = @($arcExtensionsDetail | Where-Object { $_.machineName -eq $vm.name })
+        $vm
+    })
+
     $resourceSummary = [ordered]@{
         totalResources  = @($azureResources).Count
         byType          = @(Get-RangerGroupedCount -Items $azureResources -PropertyName 'ResourceType')
@@ -347,9 +717,14 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
         aksClusterCount     = @($aksClusters).Count
         avdHostPoolCount    = @($avdHostPools).Count
         arbApplianceCount   = @($arbDetail).Count
-        asrProtectedItemCount = @($asrItems).Count
+        asrProtectedItemCount = @($asrItems | Where-Object { $_.protectionState -ne 'RecoveryPlan' }).Count
         backupProtectedItemCount = @($backupItems).Count
         nonCompliantPolicies = @($policyComplianceStates | Where-Object { $_.ComplianceState -eq 'NonCompliant' }).Count
+        vmImageCount        = @($vmImages).Count
+        arcDataServiceCount = @($arcDataServices).Count
+        iotOperationsCount  = @($iotOperations).Count
+        vmManagementResourceCount = @($vmManagementResources).Count
+        policyExemptionCount = @($policyExemptions).Count
     }
 
     $vmSummary = [ordered]@{
@@ -363,6 +738,11 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
         vmsWithCheckpoints     = @($vmInventory | Where-Object { $_.checkpointCount -gt 0 }).Count
         totalCheckpoints       = (@($vmInventory | Measure-Object -Property checkpointCount -Sum).Sum)
         sriovEnabledNics       = @($vmInventory | ForEach-Object { @($_.nicsAdvanced | Where-Object { $_.sriovEnabled }) } | Measure-Object).Count
+        vcpuOvercommitRatio    = if (@($vmInventory).Count -gt 0 -and @($config.targets.cluster.nodes).Count -gt 0) { [math]::Round((@($vmInventory | Measure-Object -Property processorCount -Sum).Sum) / 1, 2) } else { $null }
+        memoryOvercommitRatio  = if (@($vmInventory).Count -gt 0) { [math]::Round((@($vmInventory | Measure-Object -Property memoryAssignedMb -Sum).Sum / 1024), 2) } else { $null }
+        avgVmsPerNode          = if (@($vmInventory).Count -gt 0) { [math]::Round(@($vmInventory).Count / [math]::Max(1, @($vmInventory | Select-Object -ExpandProperty hostNode -Unique).Count), 1) } else { 0 }
+        highestDensityNode     = ($vmInventory | Group-Object -Property hostNode | Sort-Object Count -Descending | Select-Object -First 1).Name
+        arcConnectedVms        = @($vmInventory | Where-Object { $_.arcAgentInstalled -eq $true }).Count
     }
 
     $identitySummary = [ordered]@{
@@ -384,6 +764,9 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
         appLockerNodes               = @($identitySnapshots | Where-Object { @($_.appLocker).Count -gt 0 }).Count
         secureBootEnabledNodes       = @($identitySnapshots | Where-Object { $_.secureBoot -eq $true }).Count
         aadkerbConfiguredNodes       = @($identitySnapshots | Where-Object { $_.aadkerbConfigured -eq $true }).Count
+        securedCoreNodes             = @($identitySnapshots | Where-Object { $_.securedCoreDetail.systemGuardEnabled -eq $true }).Count
+        syslogForwardingNodes        = @($identitySnapshots | Where-Object { @($_.syslogDetail.syslogAgents).Count -gt 0 -or @($_.syslogDetail.wefSubscriptions | Where-Object { $_.recordCount -gt 0 }).Count -gt 0 }).Count
+        defenderForCloudEnabled      = @($defenderForCloud | Where-Object { $_.PricingTier -eq 'Standard' }).Count -gt 0
     }
 
     $findings = New-Object System.Collections.ArrayList
@@ -449,17 +832,24 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                 replication      = ConvertTo-RangerHashtable -InputObject @($vmInventory | Where-Object { $_.replicationMode } | ForEach-Object { [ordered]@{ vm = $_.name; mode = $_.replicationMode; health = $_.replicationHealth } })
                 checkpoints      = ConvertTo-RangerHashtable -InputObject @($vmInventory | Where-Object { $_.checkpointCount -gt 0 } | ForEach-Object { [ordered]@{ vm = $_.name; count = $_.checkpointCount; snapshots = $_.checkpoints } })
                 guestClusters    = ConvertTo-RangerHashtable -InputObject @($vmInventory | Where-Object { $_.guestClusterCandidate } | ForEach-Object { [ordered]@{ vm = $_.name; hostNode = $_.hostNode } })
+                vmImages         = ConvertTo-RangerHashtable -InputObject $vmImages
+                isoImages        = ConvertTo-RangerHashtable -InputObject $isoImages
+                arcCorrelation   = ConvertTo-RangerHashtable -InputObject @($vmInventory | ForEach-Object { [ordered]@{ vm = $_.name; arcAgentInstalled = $_.arcAgentInstalled; arcAgentVersion = $_.arcAgentVersion; arcProvisioningState = $_.arcProvisioningState } })
                 summary          = $vmSummary
             }
             identitySecurity = [ordered]@{
                 nodes           = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; partOfDomain = $_.partOfDomain; domain = $_.domain; credSsp = $_.credSsp } })
                 certificates    = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; items = $_.certificates } })
-                posture         = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; defender = $_.defender; defenderExclusions = $_.defenderExclusions; wdacInfo = $_.wdacInfo; bitlocker = $_.bitlocker; bitlockerProtectors = $_.bitlockerProtectors; secureBoot = $_.secureBoot; appLocker = $_.appLocker } })
+                posture         = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; defender = $_.defender; defenderExclusions = $_.defenderExclusions; wdacInfo = $_.wdacInfo; bitlocker = $_.bitlocker; bitlockerProtectors = $_.bitlockerProtectors; secureBoot = $_.secureBoot; appLocker = $_.appLocker; securedCoreDetail = $_.securedCoreDetail } })
                 localAdmins     = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; members = $_.localAdmins; detail = $_.localAdminDetail } })
                 auditPolicy     = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; values = $_.auditPolicy } })
-                activeDirectory = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; domain = $_.adDomain; forest = $_.adForest } })
+                activeDirectory = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; domain = $_.adDomain; forest = $_.adForest; adObjects = $_.adObjects; adSite = $_.adSite } })
                 entraJoin       = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; status = $_.entraJoinStatus; aadkerbConfigured = $_.aadkerbConfigured } })
                 keyVault        = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; references = $keyVaultReferences } })
+                syslog          = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; detail = $_.syslogDetail } })
+                driftControl    = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; detail = $_.driftControl } })
+                rbacAssignments = ConvertTo-RangerHashtable -InputObject $rbacAssignments
+                defenderForCloud = ConvertTo-RangerHashtable -InputObject $defenderForCloud
                 summary         = $identitySummary
             }
             azureIntegration = [ordered]@{
@@ -468,29 +858,38 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                     resourceGroup  = $Config.targets.azure.resourceGroup
                     tenantId       = $Config.targets.azure.tenantId
                 }
-                resources        = ConvertTo-RangerHashtable -InputObject $azureResources
-                services         = ConvertTo-RangerHashtable -InputObject @($resourcesByType | ForEach-Object { [ordered]@{ category = $_.Name; count = $_.Count; name = $_.Name } })
-                policy           = ConvertTo-RangerHashtable -InputObject $policyAssignments
-                policyCompliance = ConvertTo-RangerHashtable -InputObject $policyComplianceStates
-                backup           = ConvertTo-RangerHashtable -InputObject $backupItems
-                backupLegacy     = ConvertTo-RangerHashtable -InputObject @($azureResources | Where-Object { $_.ResourceType -match 'RecoveryServices|DataProtection|SiteRecovery' })
-                siteRecovery     = ConvertTo-RangerHashtable -InputObject $asrItems
-                update           = ConvertTo-RangerHashtable -InputObject @($azureResources | Where-Object { $_.ResourceType -match 'maintenance|update' })
-                cost             = ConvertTo-RangerHashtable -InputObject @($azureResources | Where-Object { $_.ResourceType -match 'billing|cost' })
-                resourceBridge   = ConvertTo-RangerHashtable -InputObject $resourceBridge
-                arbDetail        = ConvertTo-RangerHashtable -InputObject $arbDetail
-                aksClusters      = ConvertTo-RangerHashtable -InputObject $aksClusters
-                avdHostPools     = ConvertTo-RangerHashtable -InputObject $avdHostPools
-                customLocations  = ConvertTo-RangerHashtable -InputObject $customLocations
-                extensions       = ConvertTo-RangerHashtable -InputObject $extensions
-                arcMachines      = ConvertTo-RangerHashtable -InputObject $arcMachines
-                resourceSummary  = $resourceSummary
-                resourceLocations = ConvertTo-RangerHashtable -InputObject $resourceSummary.byLocation
-                policySummary    = [ordered]@{
+                resources           = ConvertTo-RangerHashtable -InputObject $azureResources
+                services            = ConvertTo-RangerHashtable -InputObject @($resourcesByType | ForEach-Object { [ordered]@{ category = $_.Name; count = $_.Count; name = $_.Name } })
+                policy              = ConvertTo-RangerHashtable -InputObject $policyAssignments
+                policyCompliance    = ConvertTo-RangerHashtable -InputObject $policyComplianceStates
+                policyExemptions    = ConvertTo-RangerHashtable -InputObject $policyExemptions
+                backup              = ConvertTo-RangerHashtable -InputObject $backupItems
+                backupLegacy        = ConvertTo-RangerHashtable -InputObject @($azureResources | Where-Object { $_.ResourceType -match 'RecoveryServices|DataProtection|SiteRecovery' })
+                siteRecovery        = ConvertTo-RangerHashtable -InputObject $asrItems
+                update              = ConvertTo-RangerHashtable -InputObject @($azureResources | Where-Object { $_.ResourceType -match 'maintenance|update' })
+                cost                = ConvertTo-RangerHashtable -InputObject @($azureResources | Where-Object { $_.ResourceType -match 'billing|cost' })
+                costLicensing       = ConvertTo-RangerHashtable -InputObject $costLicensing
+                resourceBridge      = ConvertTo-RangerHashtable -InputObject $resourceBridge
+                arbDetail           = ConvertTo-RangerHashtable -InputObject $arbDetail
+                aksClusters         = ConvertTo-RangerHashtable -InputObject $aksClusters
+                avdHostPools        = ConvertTo-RangerHashtable -InputObject $avdHostPools
+                customLocations     = ConvertTo-RangerHashtable -InputObject $customLocations
+                extensions          = ConvertTo-RangerHashtable -InputObject $extensions
+                arcMachines         = ConvertTo-RangerHashtable -InputObject $arcMachines
+                arcMachineDetail    = ConvertTo-RangerHashtable -InputObject $arcMachineDetail
+                arcExtensionsDetail = ConvertTo-RangerHashtable -InputObject $arcExtensionsDetail
+                resourceProviders   = ConvertTo-RangerHashtable -InputObject $resourceProviders
+                vmManagementResources = ConvertTo-RangerHashtable -InputObject $vmManagementResources
+                arcDataServices     = ConvertTo-RangerHashtable -InputObject $arcDataServices
+                iotOperations       = ConvertTo-RangerHashtable -InputObject $iotOperations
+                resourceSummary     = $resourceSummary
+                resourceLocations   = ConvertTo-RangerHashtable -InputObject $resourceSummary.byLocation
+                policySummary       = [ordered]@{
                     assignmentCount   = @($policyAssignments).Count
                     enforcementModes  = @(Get-RangerGroupedCount -Items $policyAssignments -PropertyName 'EnforcementMode')
                     nonCompliantCount = @($policyComplianceStates | Where-Object { $_.ComplianceState -eq 'NonCompliant' }).Count
                     complianceByType  = @(Get-RangerGroupedCount -Items ($policyComplianceStates | Where-Object { $_.ComplianceState -eq 'NonCompliant' }) -PropertyName 'ResourceType')
+                    exemptionCount    = @($policyExemptions).Count
                 }
                 auth = [ordered]@{ method = $CredentialMap.azure.method; tenantId = $CredentialMap.azure.tenantId; subscriptionId = $CredentialMap.azure.subscriptionId; azureCliFallback = [bool]$CredentialMap.azure.useAzureCliFallback }
             }
@@ -508,6 +907,9 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
             aksClusters       = ConvertTo-RangerHashtable -InputObject $aksClusters
             avdHostPools      = ConvertTo-RangerHashtable -InputObject $avdHostPools
             arbDetail         = ConvertTo-RangerHashtable -InputObject $arbDetail
+            arcMachineDetail  = ConvertTo-RangerHashtable -InputObject $arcMachineDetail
+            arcDataServices   = ConvertTo-RangerHashtable -InputObject $arcDataServices
+            iotOperations     = ConvertTo-RangerHashtable -InputObject $iotOperations
         }
     }
 }

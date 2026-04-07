@@ -26,10 +26,29 @@ function Invoke-RangerTopologyClusterCollector {
 
             $quorum = if (Get-Command -Name Get-ClusterQuorum -ErrorAction SilentlyContinue) {
                 $value = Get-ClusterQuorum
+                # Issue #54: per-node vote assignments and witness detail
+                $nodeVotes = if (Get-Command -Name Get-ClusterNode -ErrorAction SilentlyContinue) {
+                    @(Get-ClusterNode -ErrorAction SilentlyContinue | ForEach-Object {
+                        [ordered]@{ name = $_.Name; nodeWeight = $_.NodeWeight; dynamicWeight = $_.DynamicWeight }
+                    })
+                } else { @() }
+                $witnessDetail = if ($value.QuorumType -match 'Cloud') {
+                    try {
+                        $witnessParams = @($value.QuorumResource | Get-ClusterParameter -ErrorAction Stop | ForEach-Object { [ordered]@{ name = $_.Name; value = [string]$_.Value } })
+                        [ordered]@{ type = 'CloudWitness'; parameters = $witnessParams }
+                    } catch { [ordered]@{ type = 'CloudWitness'; parameters = @() } }
+                } elseif ($value.QuorumType -match 'Disk') {
+                    [ordered]@{ type = 'DiskWitness'; diskId = $value.QuorumResourcePath }
+                } elseif ($value.QuorumType -match 'FileShare') {
+                    [ordered]@{ type = 'FileShareWitness'; sharePath = $value.QuorumResourcePath }
+                } else { $null }
                 [ordered]@{
-                    quorumType         = $value.QuorumType
-                    quorumResource     = $value.QuorumResource
-                    quorumResourcePath = $value.QuorumResourcePath
+                    quorumType           = $value.QuorumType
+                    quorumResource       = $value.QuorumResource
+                    quorumResourcePath   = $value.QuorumResourcePath
+                    dynamicQuorumEnabled = [bool]((Get-Cluster -ErrorAction SilentlyContinue).DynamicQuorum -eq 1)
+                    nodeVotes            = @($nodeVotes)
+                    witnessDetail        = $witnessDetail
                 }
             }
 
@@ -47,12 +66,28 @@ function Invoke-RangerTopologyClusterCollector {
                 @()
             }
 
+            # Issue #55: CSV capacity, free space, redirected/maintenance state
             $csvs = if (Get-Command -Name Get-ClusterSharedVolume -ErrorAction SilentlyContinue) {
-                Get-ClusterSharedVolume | Select-Object Name, State, OwnerNode
-            }
-            else {
-                @()
-            }
+                @(Get-ClusterSharedVolume -ErrorAction SilentlyContinue | ForEach-Object {
+                    $csv = $_
+                    $stateInfo = try { $csv | Get-ClusterSharedVolumeState -ErrorAction Stop } catch { $null }
+                    $volPath = if ($stateInfo -and $stateInfo.VolumeLocalPath) { $stateInfo.VolumeLocalPath } else { $null }
+                    $volInfo = if ($volPath) { Get-Volume -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $volPath } | Select-Object -First 1 Size, SizeRemaining } else { $null }
+                    [ordered]@{
+                        name              = $csv.Name
+                        state             = [string]$csv.State
+                        ownerNode         = if ($csv.OwnerNode) { $csv.OwnerNode.Name } else { $null }
+                        volumeFriendlyName = if ($stateInfo) { $stateInfo.VolumeFriendlyName } else { $null }
+                        volumeLocalPath   = $volPath
+                        inMaintenanceMode = if ($stateInfo) { [bool]$stateInfo.IsInMaintenance } else { $null }
+                        isBlockRedirected = if ($stateInfo) { [bool]$stateInfo.IsBlockRedirected } else { $null }
+                        redirectReason    = if ($stateInfo) { [string]$stateInfo.BlockRedirectedIOReason } else { $null }
+                        totalSizeGiB      = if ($volInfo -and $volInfo.Size) { [math]::Round($volInfo.Size / 1GB, 2) } else { $null }
+                        freeSpaceGiB      = if ($volInfo -and $volInfo.SizeRemaining) { [math]::Round($volInfo.SizeRemaining / 1GB, 2) } else { $null }
+                        percentFree       = if ($volInfo -and $volInfo.Size -and $volInfo.Size -gt 0) { [math]::Round(($volInfo.SizeRemaining / $volInfo.Size) * 100, 1) } else { $null }
+                    }
+                })
+            } else { @() }
 
             $groups = if (Get-Command -Name Get-ClusterGroup -ErrorAction SilentlyContinue) {
                 Get-ClusterGroup | Select-Object Name, GroupType, State, OwnerNode
@@ -162,23 +197,71 @@ function Invoke-RangerTopologyClusterCollector {
                     } catch { @() })
                 }
 
+                # Issue #53: OS detail depth, OU location, roles/features, SSH, workgroup
+                $ouDistinguishedName = if ($computerSystem.PartOfDomain) {
+                    try { (Get-ADComputer -Identity $env:COMPUTERNAME -Properties DistinguishedName -ErrorAction Stop).DistinguishedName } catch { $null }
+                } else { $null }
+                $installedRoles = @(try { Get-WindowsFeature -ErrorAction Stop | Where-Object { $_.Installed } | Select-Object Name, DisplayName } catch { @() })
+                $sshEnabled = try {
+                    $sshdSvc = Get-Service -Name 'sshd' -ErrorAction SilentlyContinue
+                    if ($sshdSvc) { [bool]($sshdSvc.Status -eq 'Running') }
+                    else { $cap = Get-WindowsCapability -Online -Name 'OpenSSH.Server*' -ErrorAction SilentlyContinue; if ($cap) { $cap.State -eq 'Installed' } else { $false } }
+                } catch { $false }
+
+                # Issue #56: Reboot pending detection
+                $rebootPending = try {
+                    $rb = $false
+                    if (Get-Item 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired' -ErrorAction SilentlyContinue) { $rb = $true }
+                    if (Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending' -ErrorAction SilentlyContinue) { $rb = $true }
+                    if ((Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' -Name 'PendingFileRenameOperations' -ErrorAction SilentlyContinue).PendingFileRenameOperations) { $rb = $true }
+                    $rb
+                } catch { $null }
+
+                # Issue #74: 7-day event log severity aggregation per node
+                $eventLogAggregation = @(foreach ($logSpec in @('System', 'Application', 'Microsoft-Windows-Health/Operational', 'Microsoft-Windows-FailoverClustering/Operational')) {
+                    try {
+                        $cutoff = (Get-Date).AddDays(-7)
+                        $evts = @(Get-WinEvent -FilterHashtable @{ LogName = $logSpec; Level = @(1,2); StartTime = $cutoff } -ErrorAction Stop)
+                        [ordered]@{
+                            logName       = $logSpec
+                            criticalCount = @($evts | Where-Object { $_.Level -eq 1 }).Count
+                            errorCount    = @($evts | Where-Object { $_.Level -eq 2 }).Count
+                            totalCount    = $evts.Count
+                            topEventIds   = @($evts | Group-Object -Property Id | Sort-Object Count -Descending | Select-Object -First 5 | ForEach-Object {
+                                $smp = $_.Group[0].Message; [ordered]@{ eventId = [string]$_.Name; count = $_.Count; level = $_.Group[0].LevelDisplayName; sample = if ($smp) { $smp.Substring(0, [Math]::Min(200, $smp.Length)) } else { $null } }
+                            })
+                        }
+                    } catch {
+                        [ordered]@{ logName = $logSpec; criticalCount = 0; errorCount = 0; totalCount = 0; topEventIds = @() }
+                    }
+                })
+
                 [ordered]@{
-                    name           = $env:COMPUTERNAME
-                    fqdn           = if ($computerSystem.DNSHostName -and $computerSystem.Domain) { "{0}.{1}" -f $computerSystem.DNSHostName, $computerSystem.Domain } else { $computerSystem.DNSHostName }
-                    state          = if ($clusterNodeState) { [string]$clusterNodeState } else { 'Up' }
-                    uptimeHours    = if ($operatingSystem.LastBootUpTime) { [math]::Round(((Get-Date) - $operatingSystem.LastBootUpTime).TotalHours, 2) } else { $null }
-                    osCaption      = $operatingSystem.Caption
-                    osVersion      = $operatingSystem.Version
-                    lastBootUpTime = $operatingSystem.LastBootUpTime
-                    manufacturer   = $computerSystem.Manufacturer
-                    model          = $computerSystem.Model
-                    totalMemoryGiB = if ($computerSystem.TotalPhysicalMemory) { ConvertTo-RangerGiB -Value $computerSystem.TotalPhysicalMemory } else { $null }
+                    name                = $env:COMPUTERNAME
+                    fqdn                = if ($computerSystem.DNSHostName -and $computerSystem.Domain) { "{0}.{1}" -f $computerSystem.DNSHostName, $computerSystem.Domain } else { $computerSystem.DNSHostName }
+                    state               = if ($clusterNodeState) { [string]$clusterNodeState } else { 'Up' }
+                    uptimeHours         = if ($operatingSystem.LastBootUpTime) { [math]::Round(((Get-Date) - $operatingSystem.LastBootUpTime).TotalHours, 2) } else { $null }
+                    osCaption           = $operatingSystem.Caption
+                    osVersion           = $operatingSystem.Version
+                    osBuildNumber       = $operatingSystem.BuildNumber
+                    osEditionSku        = $operatingSystem.OperatingSystemSKU
+                    lastBootUpTime      = $operatingSystem.LastBootUpTime
+                    manufacturer        = $computerSystem.Manufacturer
+                    model               = $computerSystem.Model
+                    totalMemoryGiB      = if ($computerSystem.TotalPhysicalMemory) { ConvertTo-RangerGiB -Value $computerSystem.TotalPhysicalMemory } else { $null }
                     logicalProcessorCount = @($processors | ForEach-Object { $_.NumberOfLogicalProcessors } | Measure-Object -Sum).Sum
-                    partOfDomain   = [bool]$computerSystem.PartOfDomain
-                    domain         = $computerSystem.Domain
-                    biosVersion    = if ($bios) { @($bios.SMBIOSBIOSVersion) -join ', ' } else { $null }
-                    pendingUpdates = @($nodePendingUpdates)
-                    pendingUpdateCount = @($nodePendingUpdates).Count
+                    partOfDomain        = [bool]$computerSystem.PartOfDomain
+                    domain              = $computerSystem.Domain
+                    workgroupName       = if (-not $computerSystem.PartOfDomain) { $computerSystem.Workgroup } else { $null }
+                    ouDistinguishedName = $ouDistinguishedName
+                    installedRoles      = @($installedRoles | ForEach-Object { [ordered]@{ name = $_.Name; displayName = $_.DisplayName } })
+                    installedRoleCount  = @($installedRoles).Count
+                    sshEnabled          = $sshEnabled
+                    biosVersion         = if ($bios) { @($bios.SMBIOSBIOSVersion) -join ', ' } else { $null }
+                    rebootPending       = $rebootPending
+                    pendingUpdates      = @($nodePendingUpdates)
+                    pendingUpdateCount  = @($nodePendingUpdates).Count
+                    eventLogAggregation = @($eventLogAggregation)
                 }
             }
         }
@@ -210,10 +293,30 @@ function Invoke-RangerTopologyClusterCollector {
     $controlPlaneMode = if (-not [string]::IsNullOrWhiteSpace((Get-RangerHintValue -Config $Config -Name 'controlPlaneMode'))) { [string](Get-RangerHintValue -Config $Config -Name 'controlPlaneMode') } elseif ([string]::IsNullOrWhiteSpace($Config.targets.azure.subscriptionId)) { 'disconnected' } else { 'connected' }
     $storageArchitecture = if ($clusterSnapshot.cluster.S2DEnabled) { 'storage-spaces-direct' } else { 'shared-storage' }
     $networkArchitecture = if (@($clusterSnapshot.networks).Count -le 1) { 'switchless' } else { 'switched' }
+
+    # Issue #71: Topology classification — rack/site counts, connectivity model, variant prerequisites
+    $rackCount = @($clusterSnapshot.faultDomains | Where-Object { [string]$_.FaultDomainType -match 'Rack' }).Count
+    $siteCount = @($clusterSnapshot.faultDomains | Where-Object { [string]$_.FaultDomainType -match 'Site' }).Count
+    $nodeCount = @($nodeSnapshots).Count
+    $azureConnectivityModel = if (-not [string]::IsNullOrWhiteSpace((Get-RangerHintValue -Config $Config -Name 'azureConnectivityModel'))) {
+        [string](Get-RangerHintValue -Config $Config -Name 'azureConnectivityModel')
+    } elseif ($controlPlaneMode -eq 'disconnected') { 'disconnected' } else { 'direct' }
+    $variantPrerequisites = [ordered]@{
+        customLocationRequired    = ($deploymentType -ne 'switchless')
+        arcResourceBridgeRequired = ($deploymentType -ne 'switchless')
+        keyVaultRequired          = ($identityMode -eq 'local-key-vault')
+        multiRackIndicators       = ($rackCount -gt 1)
+        switchlessIndicators      = ($deploymentType -eq 'switchless' -or @($clusterSnapshot.networks).Count -le 1)
+        disconnectedIndicators    = ($controlPlaneMode -eq 'disconnected')
+    }
+
     $variantMarkers = @()
     if ($deploymentType -eq 'switchless') { $variantMarkers += 'switchless' }
     if ($identityMode -eq 'local-key-vault') { $variantMarkers += 'local-identity' }
     if ($controlPlaneMode -eq 'disconnected') { $variantMarkers += 'disconnected' }
+    if ($controlPlaneMode -eq 'connected') { $variantMarkers += 'connected' }
+    if ($rackCount -gt 1) { $variantMarkers += 'multi-rack' }
+    if ($siteCount -gt 1) { $variantMarkers += 'multi-site' }
 
     $healthSummary = [ordered]@{
         totalNodes   = @($nodeSnapshots).Count
@@ -228,6 +331,8 @@ function Invoke-RangerTopologyClusterCollector {
         totalLogicalCpu     = @($nodeSnapshots | Where-Object { $null -ne $_.logicalProcessorCount } | Measure-Object -Property logicalProcessorCount -Sum).Sum
         domainJoinedNodes   = @($nodeSnapshots | Where-Object { $_.partOfDomain }).Count
         localIdentityNodes  = @($nodeSnapshots | Where-Object { -not $_.partOfDomain }).Count
+        rebootPendingNodes  = @($nodeSnapshots | Where-Object { $_.rebootPending -eq $true }).Count
+        sshEnabledNodes     = @($nodeSnapshots | Where-Object { $_.sshEnabled -eq $true }).Count
     }
 
     $faultDomainSummary = [ordered]@{
@@ -270,12 +375,17 @@ function Invoke-RangerTopologyClusterCollector {
     return @{
         Status        = if ($healthSummary.unhealthy -gt 0) { 'partial' } else { 'success' }
         Topology      = [ordered]@{
-            deploymentType     = $deploymentType
-            identityMode       = $identityMode
-            controlPlaneMode   = $controlPlaneMode
+            deploymentType      = $deploymentType
+            identityMode        = $identityMode
+            controlPlaneMode    = $controlPlaneMode
             storageArchitecture = $storageArchitecture
             networkArchitecture = $networkArchitecture
-            variantMarkers     = @($variantMarkers)
+            variantMarkers      = @($variantMarkers)
+            rackCount           = $rackCount
+            siteCount           = $siteCount
+            nodeCount           = $nodeCount
+            azureConnectivityModel = $azureConnectivityModel
+            variantPrerequisites = $variantPrerequisites
         }
         Domains       = @{
             clusterNode = [ordered]@{
@@ -302,7 +412,14 @@ function Invoke-RangerTopologyClusterCollector {
                 faultDomains  = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.faultDomains
                 networks      = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.networks
                 roles         = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.groups
-                csvSummary    = [ordered]@{ count = @($clusterSnapshot.csvs).Count; items = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.csvs }
+                csvSummary    = [ordered]@{
+                    count             = @($clusterSnapshot.csvs).Count
+                    items             = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.csvs
+                    redirectedCount   = @($clusterSnapshot.csvs | Where-Object { $_.isBlockRedirected }).Count
+                    maintenanceCount  = @($clusterSnapshot.csvs | Where-Object { $_.inMaintenanceMode }).Count
+                    totalCapacityGiB  = [math]::Round((@($clusterSnapshot.csvs | Where-Object { $null -ne $_.totalSizeGiB } | Measure-Object -Property totalSizeGiB -Sum).Sum), 2)
+                    totalFreeSpaceGiB = [math]::Round((@($clusterSnapshot.csvs | Where-Object { $null -ne $_.freeSpaceGiB } | Measure-Object -Property freeSpaceGiB -Sum).Sum), 2)
+                }
                 updatePosture = [ordered]@{
                     clusterAwareUpdating   = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.cau
                     cauRunHistory          = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.cauRunHistory
@@ -312,6 +429,8 @@ function Invoke-RangerTopologyClusterCollector {
                     lifecycleServices      = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.lifecycleServices
                     validationReports      = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.validationReports
                     pendingSolutionUpdateCount = @($clusterSnapshot.pendingSolutionUpdates).Count
+                    rebootPendingNodes         = @($nodeSnapshots | Where-Object { $_.rebootPending -eq $true } | ForEach-Object { $_.name })
+                    rebootPendingCount         = @($nodeSnapshots | Where-Object { $_.rebootPending -eq $true }).Count
                 }
                 registration  = [ordered]@{
                     subscriptionId        = $Config.targets.azure.subscriptionId
@@ -320,11 +439,19 @@ function Invoke-RangerTopologyClusterCollector {
                     arcRegistrationDetail = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.arcRegistration
                     clusterCreationHint   = if ($clusterSnapshot.clusterCreationEvent) { $clusterSnapshot.clusterCreationEvent.TimeCreated.ToString('o') } else { $null }
                 }
-                eventSummary  = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.events
-                healthSummary = $healthSummary
-                nodeSummary   = $nodeSummary
+                eventSummary      = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.events
+                eventAggregation  = ConvertTo-RangerHashtable -InputObject @($nodeSnapshots | ForEach-Object { [ordered]@{ node = $_.name; logs = $_.eventLogAggregation } })
+                healthSummary     = $healthSummary
+                nodeSummary       = $nodeSummary
                 faultDomainSummary = $faultDomainSummary
-                networkSummary = $networkSummary
+                networkSummary    = $networkSummary
+                topologyClassification = [ordered]@{
+                    rackCount           = $rackCount
+                    siteCount           = $siteCount
+                    nodeCount           = $nodeCount
+                    azureConnectivityModel = $azureConnectivityModel
+                    variantPrerequisites = $variantPrerequisites
+                }
             }
         }
         Findings      = @($findings)

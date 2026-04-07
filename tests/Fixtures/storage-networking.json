@@ -7,19 +7,58 @@
           "friendlyName": "S2D on azlocal-prod-01",
           "healthStatus": "Healthy",
           "operationalStatus": "OK",
-          "size": 8796093022208,
-          "allocatedSize": 4398046511104,
+          "sizeGiB": 8192.0,
+          "allocatedSizeGiB": 4096.0,
+          "provisionedCapacityGiB": 6144.0,
+          "faultDomainAwarenessDefault": "StorageScaleUnit",
+          "retiredPhysicalDiskCount": 0,
+          "readCacheSize": 0,
+          "isTiered": false,
           "isPrimordial": false
         }
       ],
       "physicalDisks": [
         {
-          "friendlyName": "Disk01",
+          "friendlyName": "SAMSUNG MZ7L3960HCJR-00A07",
           "healthStatus": "Healthy",
           "operationalStatus": "OK",
           "mediaType": "SSD",
-          "size": 1920397905920,
-          "usage": "AutoSelect"
+          "sizeGiB": 893.75,
+          "serialNumber": "S4EVNX0N123456",
+          "usage": "AutoSelect",
+          "slotNumber": "0",
+          "canPool": false,
+          "cannotPoolReason": "In a Pool",
+          "busType": "SAS",
+          "manufacturer": "Samsung",
+          "model": "SAMSUNG MZ7L3960HCJR"
+        },
+        {
+          "friendlyName": "SAMSUNG MZ7L3960HCJR-00A07",
+          "healthStatus": "Healthy",
+          "operationalStatus": "OK",
+          "mediaType": "SSD",
+          "sizeGiB": 893.75,
+          "serialNumber": "S4EVNX0N654321",
+          "usage": "AutoSelect",
+          "slotNumber": "1",
+          "canPool": false,
+          "cannotPoolReason": "In a Pool",
+          "busType": "SAS",
+          "manufacturer": "Samsung",
+          "model": "SAMSUNG MZ7L3960HCJR"
+        }
+      ],
+      "physicalDiskReliability": [
+        {
+          "DeviceId": "{1234-5678-abcd}",
+          "Wear": 2,
+          "Temperature": 38,
+          "ReadErrors": 0,
+          "WriteErrors": 0,
+          "PowerOnHours": 8760,
+          "ReadLatencyMax": 5,
+          "WriteLatencyMax": 8
         }
       ],
       "virtualDisks": [
@@ -28,17 +67,46 @@
           "healthStatus": "Healthy",
           "operationalStatus": "OK",
           "resiliencySettingName": "Mirror",
-          "size": 2199023255552
+          "sizeGiB": 2048.0,
+          "footprintOnPoolGiB": 4096.0,
+          "numberOfDataCopies": 2,
+          "numberOfColumns": 4,
+          "interleave": 262144,
+          "isEnclosureAware": false,
+          "provisioningType": "Fixed",
+          "writeCacheSize": 0,
+          "uniqueId": "{GUID-VDISK-1}"
         }
       ],
       "volumes": [
         {
-          "driveLetter": "C",
-          "fileSystemLabel": "System",
-          "fileSystem": "NTFS",
+          "driveLetter": null,
+          "fileSystemLabel": "Volume1",
+          "fileSystem": "CSVFS_ReFS",
+          "fileSystemType": "CSVFS_ReFS",
           "healthStatus": "Healthy",
-          "sizeRemaining": 536870912000,
-          "size": 1073741824000
+          "sizeGiB": 2048.0,
+          "sizeRemainingGiB": 1024.0,
+          "dedupMode": "Disabled",
+          "driveType": "Fixed",
+          "path": "C:\\ClusterStorage\\Volume1"
+        }
+      ],
+      "dedupStatus": [],
+      "cacheConfig": {
+        "CacheState": "Enabled",
+        "CacheBehavior": "Default",
+        "CacheModeSSD": "CacheStoreAndRead",
+        "CacheModeHDD": "CacheStoreAndRead",
+        "CachePageSizeKBytes": 16,
+        "AutoConfig": true
+      },
+      "scrubSchedule": [
+        {
+          "TaskName": "Data Integrity Scan",
+          "TaskPath": "\\Microsoft\\Windows\\Data Integrity Scan\\",
+          "State": "Ready",
+          "Description": "Scheduled scan for storage integrity"
         }
       ],
       "csvs": [
@@ -48,6 +116,13 @@
           "ownerNode": "azl-node-01"
         }
       ],
+      "tiers": [],
+      "subsystems": [
+        { "FriendlyName": "azlocal-prod-01", "Model": "Windows Storage", "SerialNumber": null, "HealthStatus": "Healthy" }
+      ],
+      "resiliency": [
+        { "Name": "Mirror", "NumberOfDataCopiesDefault": 2, "PhysicalDiskRedundancyDefault": 1 }
+      ],
       "qos": [],
       "sofs": [],
       "sofsDetail": [],
@@ -55,12 +130,32 @@
       "replicaDepth": [],
       "qosFlows": [],
       "healthFaults": [],
-      "scrubSettings": null,
+      "jobs": [],
+      "clusterNetworks": [
+        { "Name": "ManagementNetwork", "Role": "ClusterAndClient", "Address": "192.168.1.0", "AddressMask": "255.255.255.0", "State": "Up" },
+        { "Name": "StorageNetwork1", "Role": "Cluster", "Address": "10.0.1.0", "AddressMask": "255.255.255.0", "State": "Up" }
+      ],
       "summary": {
+        "poolCount": 1,
+        "physicalDiskCount": 2,
+        "virtualDiskCount": 1,
+        "volumeCount": 1,
+        "csvCount": 1,
+        "totalPoolCapacityGiB": 8192.0,
+        "allocatedPoolCapacityGiB": 4096.0,
+        "diskMediaTypes": [ { "name": "SSD", "count": 2 } ],
+        "unhealthyDisks": 0,
+        "canPoolDisks": 0,
+        "retiredDisks": 0,
+        "resiliencyModes": [ { "name": "Mirror", "count": 1 } ],
+        "tierCount": 0,
+        "storageJobCount": 0,
         "activeHealthFaultCount": 0,
         "sofsShareCount": 0,
         "replicaGroupCount": 0,
-        "qosFlowCount": 0
+        "qosFlowCount": 0,
+        "cacheEnabled": true,
+        "dedupVolumes": 0
       }
     },
     "networking": {
@@ -69,96 +164,304 @@
           "node": "azl-node-01",
           "adapters": [
             {
-              "name": "NIC1",
-              "interfaceDescription": "Mellanox ConnectX",
+              "name": "SLOT 4 Port 1",
+              "interfaceDescription": "Mellanox ConnectX-6 Dx Adapter",
               "status": "Up",
-              "linkSpeed": "100 Gbps"
+              "linkSpeed": "25 Gbps",
+              "macAddress": "B0-26-28-AA-BB-CC",
+              "mtuSize": 9014,
+              "mediaType": "802.3",
+              "driverProvider": "Mellanox Technologies Ltd.",
+              "driverFileName": "mlx5.sys",
+              "driverVersion": "2.80.56000.0",
+              "driverDate": "2023-11-15T00:00:00",
+              "vlanId": 0,
+              "isInboxDriver": false,
+              "rdmaCapable": true,
+              "sriovCapable": true
+            },
+            {
+              "name": "Integrated NIC 1 Port 1",
+              "interfaceDescription": "Broadcom BCM5720 NetXtreme GiG Adapter",
+              "status": "Up",
+              "linkSpeed": "1 Gbps",
+              "macAddress": "00-11-22-33-44-55",
+              "mtuSize": 1500,
+              "mediaType": "802.3",
+              "driverProvider": "Broadcom",
+              "driverFileName": "b57nd60a.sys",
+              "driverVersion": "22.9.20.0",
+              "driverDate": "2023-05-10T00:00:00",
+              "vlanId": 0,
+              "isInboxDriver": false,
+              "rdmaCapable": false,
+              "sriovCapable": false
             }
           ],
           "vSwitches": [
             {
               "name": "ConvergedSwitch",
               "switchType": "External",
-              "allowManagementOS": true
+              "allowManagementOS": true,
+              "netAdapterNames": [ "SLOT 4 Port 1", "SLOT 4 Port 2" ],
+              "bandwidthReservationMode": "Weight",
+              "iovEnabled": false,
+              "iovQueuePairCount": 0,
+              "embeddedTeamingEnabled": true,
+              "extensions": [
+                { "Name": "Microsoft NDIS Capture", "Vendor": "Microsoft Corp.", "Enabled": true, "Running": true }
+              ]
             }
           ],
           "hostVirtualNics": [
             {
               "name": "vNIC-Management",
               "switchName": "ConvergedSwitch",
-              "status": "Up"
+              "status": "Ok",
+              "ipAddresses": [ "192.168.1.11" ],
+              "ipAddress": "192.168.1.11",
+              "prefixLength": 24,
+              "vlanId": 711,
+              "rdmaEnabled": false,
+              "rdmaOperational": null,
+              "isManagementNic": true
+            },
+            {
+              "name": "vSMB01",
+              "switchName": "ConvergedSwitch",
+              "status": "Ok",
+              "ipAddresses": [ "10.0.1.11" ],
+              "ipAddress": "10.0.1.11",
+              "prefixLength": 24,
+              "vlanId": 711,
+              "rdmaEnabled": true,
+              "rdmaOperational": true,
+              "isManagementNic": false
             }
           ],
+          "smbConfig": {
+            "serverConfig": {
+              "EnableSMBQUIC": false,
+              "RequireSecuritySignature": false,
+              "EncryptData": false,
+              "AutoDisconnectTimeout": 15,
+              "EnableMultiChannel": true
+            },
+            "multichannelEnabled": true,
+            "smbDirectEnabled": true,
+            "activeConnections": [
+              {
+                "ServerName": "azl-node-02",
+                "ClientInterface": "10.0.1.11",
+                "ServerInterface": "10.0.1.12",
+                "Protocol": "SMB3",
+                "Selected": true,
+                "ConstrainedBy": null
+              }
+            ]
+          },
+          "liveMigration": {
+            "liveMigrationEnabled": true,
+            "maxMigrations": 2,
+            "maxStorageMigrations": 2,
+            "performanceOption": "SMBTransport",
+            "useAnyNetworkForMigration": false,
+            "smbBandwidthLimits": []
+          },
           "intents": [
             {
-              "name": "Compute_Management",
-              "clusterName": "azlocal-prod-01"
+              "name": "Compute_Management_Storage",
+              "clusterName": "azlocal-prod-01",
+              "IsStorageIntent": true,
+              "IsComputeIntent": true
             }
           ],
-          "dns": [
-            {
-              "interfaceAlias": "vNIC-Management",
-              "serverAddresses": [
-                "10.10.10.10",
-                "10.10.10.11"
-              ]
-            }
-          ],
-          "proxy": "Direct access",
-          "firewall": [
-            {
-              "name": "Domain",
-              "enabled": true,
-              "defaultInboundAction": "Allow"
-            }
-          ],
-          "sdn": [],
           "dcb": {
-            "dcbxSettings": { "willing": true },
             "trafficClasses": [
-              { "name": "SMB", "priority": 3, "bandwidthPercentage": 50, "algorithm": "ETS" }
+              { "Name": "SMB", "Algorithm": "ETS", "BandwidthPercentage": 50, "Priority": 3 },
+              { "Name": "Default", "Algorithm": "ETS", "BandwidthPercentage": 50, "Priority": 0 }
             ],
             "flowControl": [
-              { "priority": 3, "enabled": true }
-            ],
-            "policy": []
+              { "Priority": 3, "Enabled": true },
+              { "Priority": 0, "Enabled": false }
+            ]
           },
-          "intentOverrides": [
-            {
-              "name": "Compute_Management",
-              "adapters": [ "NIC1", "NIC2" ],
-              "storageVlans": [ 711, 712 ]
-            }
+          "dns": [
+            { "InterfaceAlias": "vNIC-Management", "ServerAddresses": [ "192.168.1.1", "192.168.1.2" ] }
           ],
-          "lldpNeighbors": []
+          "dnsForwarders": [],
+          "dnsConditionalForwarders": [],
+          "ipAddresses": [
+            { "InterfaceAlias": "vNIC-Management", "IPAddress": "192.168.1.11", "PrefixLength": 24, "AddressState": "Preferred" },
+            { "InterfaceAlias": "vSMB01", "IPAddress": "10.0.1.11", "PrefixLength": 24, "AddressState": "Preferred" }
+          ],
+          "routes": [
+            { "DestinationPrefix": "0.0.0.0/0", "NextHop": "192.168.1.1", "InterfaceAlias": "vNIC-Management", "RouteMetric": 0 }
+          ],
+          "vlan": [
+            { "VMNetworkAdapterName": "vNIC-Management", "OperationMode": "Access", "AccessVlanId": 711, "NativeVlanId": 0 }
+          ],
+          "proxy": {
+            "winhttp": null,
+            "winhttp_bypass": null,
+            "isDirect": true,
+            "envHttpProxy": null,
+            "envHttpsProxy": null,
+            "envNoProxy": null,
+            "proxyConfigured": false,
+            "rawWinhttp": "Current WinHTTP proxy settings:\n\n    Direct access (no proxy server)."
+          },
+          "proxyRaw": "Current WinHTTP proxy settings:\n\n    Direct access (no proxy server).",
+          "firewall": [
+            { "Name": "Domain", "Enabled": true, "DefaultInboundAction": "NotConfigured", "DefaultOutboundAction": "Allow" },
+            { "Name": "Private", "Enabled": true, "DefaultInboundAction": "NotConfigured", "DefaultOutboundAction": "Allow" },
+            { "Name": "Public", "Enabled": false, "DefaultInboundAction": "Block", "DefaultOutboundAction": "Allow" }
+          ],
+          "firewallRuleAudit": [
+            { "requiredPort": 5985, "protocol": "TCP", "description": "WinRM HTTP", "rulesFound": 1, "ruleNames": ["Windows Remote Management (HTTP-In)"], "satisfied": true },
+            { "requiredPort": 5986, "protocol": "TCP", "description": "WinRM HTTPS", "rulesFound": 1, "ruleNames": ["Windows Remote Management (HTTPS-In)"], "satisfied": true },
+            { "requiredPort": 445, "protocol": "TCP", "description": "SMB file sharing", "rulesFound": 1, "ruleNames": ["File and Printer Sharing (SMB-In)"], "satisfied": true },
+            { "requiredPort": 3343, "protocol": "TCP", "description": "Cluster heartbeat", "rulesFound": 1, "ruleNames": ["Failover Clusters (TCP-In)"], "satisfied": true },
+            { "requiredPort": 443, "protocol": "TCP", "description": "Arc agent and Azure services", "rulesFound": 1, "ruleNames": ["Outbound-HTTPS"], "satisfied": true }
+          ],
+          "inboxDriverAdapters": [],
+          "sdn": { "deployed": false },
+          "lldpNeighbors": [],
+          "intentOverrides": []
         }
       ],
       "clusterNetworks": [
+        { "Name": "ManagementNetwork", "Role": "ClusterAndClient", "Address": "192.168.1.0", "AddressMask": "255.255.255.0", "State": "Up" },
+        { "Name": "StorageNetwork1", "Role": "Cluster", "Address": "10.0.1.0", "AddressMask": "255.255.255.0", "State": "Up" }
+      ],
+      "adapters": [
         {
-          "name": "Management",
-          "role": 3,
-          "address": "10.10.10.0",
-          "addressMask": "255.255.255.0",
-          "state": 2
+          "name": "SLOT 4 Port 1",
+          "interfaceDescription": "Mellanox ConnectX-6 Dx Adapter",
+          "status": "Up",
+          "linkSpeed": "25 Gbps",
+          "macAddress": "B0-26-28-AA-BB-CC",
+          "mtuSize": 9014,
+          "driverProvider": "Mellanox Technologies Ltd.",
+          "driverVersion": "2.80.56000.0",
+          "isInboxDriver": false,
+          "rdmaCapable": true
         }
       ],
-      "adapters": [],
-      "vSwitches": [],
-      "hostVirtualNics": [],
-      "intents": [],
-      "intentOverrides": [],
-      "dcb": [],
-      "lldpNeighbors": [],
-      "dns": [],
-      "proxy": [],
-      "firewall": [],
-      "sdn": [],
+      "vSwitches": [
+        {
+          "name": "ConvergedSwitch",
+          "switchType": "External",
+          "allowManagementOS": true,
+          "netAdapterNames": [ "SLOT 4 Port 1", "SLOT 4 Port 2" ],
+          "embeddedTeamingEnabled": true,
+          "iovEnabled": false
+        }
+      ],
+      "hostVirtualNics": [
+        {
+          "name": "vNIC-Management",
+          "switchName": "ConvergedSwitch",
+          "ipAddress": "192.168.1.11",
+          "vlanId": 711,
+          "rdmaEnabled": false
+        }
+      ],
+      "intents": [
+        { "name": "Compute_Management_Storage", "IsStorageIntent": true, "IsComputeIntent": true }
+      ],
+      "intentOverrides": [
+        { "node": "azl-node-01", "intentOverrides": [] }
+      ],
+      "dcb": [
+        {
+          "node": "azl-node-01",
+          "dcb": {
+            "trafficClasses": [ { "Name": "SMB", "Algorithm": "ETS", "BandwidthPercentage": 50, "Priority": 3 } ]
+          }
+        }
+      ],
+      "lldpNeighbors": [
+        { "node": "azl-node-01", "neighbors": [] }
+      ],
+      "dns": [
+        { "InterfaceAlias": "vNIC-Management", "ServerAddresses": [ "192.168.1.1", "192.168.1.2" ] }
+      ],
+      "dnsForwarders": [
+        { "node": "azl-node-01", "forwarders": [], "conditionalForwarders": [] }
+      ],
+      "ipAddresses": [
+        { "InterfaceAlias": "vNIC-Management", "IPAddress": "192.168.1.11", "PrefixLength": 24, "AddressState": "Preferred" }
+      ],
+      "routes": [
+        { "DestinationPrefix": "0.0.0.0/0", "NextHop": "192.168.1.1", "InterfaceAlias": "vNIC-Management", "RouteMetric": 0 }
+      ],
+      "vlan": [
+        { "VMNetworkAdapterName": "vNIC-Management", "OperationMode": "Access", "AccessVlanId": 711 }
+      ],
+      "proxy": [
+        { "node": "azl-node-01", "proxy": { "isDirect": true, "proxyConfigured": false }, "proxyRaw": "Direct access (no proxy server)." }
+      ],
+      "firewall": [
+        { "node": "azl-node-01", "profiles": [ { "Name": "Domain", "Enabled": true } ] }
+      ],
+      "firewallRuleAudit": [
+        {
+          "node": "azl-node-01",
+          "audit": [
+            { "requiredPort": 5985, "protocol": "TCP", "description": "WinRM HTTP", "rulesFound": 1, "satisfied": true },
+            { "requiredPort": 445, "protocol": "TCP", "description": "SMB file sharing", "rulesFound": 1, "satisfied": true },
+            { "requiredPort": 443, "protocol": "TCP", "description": "Arc agent and Azure services", "rulesFound": 1, "satisfied": true }
+          ],
+          "inboxDriverAdapters": []
+        }
+      ],
+      "sdn": [
+        { "node": "azl-node-01", "sdn": { "deployed": false } }
+      ],
+      "smbConfig": [
+        {
+          "node": "azl-node-01",
+          "smbConfig": {
+            "multichannelEnabled": true,
+            "smbDirectEnabled": true,
+            "serverConfig": { "RequireSecuritySignature": false, "EncryptData": false, "EnableMultiChannel": true }
+          },
+          "liveMigration": {
+            "liveMigrationEnabled": true,
+            "performanceOption": "SMBTransport",
+            "maxMigrations": 2
+          }
+        }
+      ],
+      "switchConfig": [],
+      "firewallConfig": [],
       "summary": {
+        "nodeCount": 1,
+        "clusterNetworkCount": 2,
+        "adapterCount": 1,
+        "adapterStates": [ { "name": "Up", "count": 1 } ],
+        "vSwitchCount": 1,
+        "intentCount": 1,
+        "dnsServers": [ "192.168.1.1", "192.168.1.2" ],
+        "routeCount": 1,
+        "vlanCount": 1,
+        "proxyConfiguredNodes": 0,
+        "sdnDeployed": false,
+        "importedSwitchConfigCount": 0,
+        "importedFirewallConfigCount": 0,
         "dcbConfiguredNodes": 1,
-        "lldpNeighborCount": 0
+        "lldpNeighborCount": 0,
+        "inboxDriverAdapterCount": 0,
+        "firewallRulesAudited": 5,
+        "firewallRequiredPortsSatisfied": 5
       }
     }
   },
   "Findings": [],
-  "Relationships": []
+  "Relationships": [],
+  "RawEvidence": {
+    "storage": {},
+    "network": []
+  }
 }

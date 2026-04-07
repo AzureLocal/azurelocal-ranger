@@ -8,7 +8,19 @@
     "networkArchitecture": "switched",
     "variantMarkers": [
       "connected"
-    ]
+    ],
+    "rackCount": 1,
+    "siteCount": 0,
+    "nodeCount": 2,
+    "azureConnectivityModel": "direct",
+    "variantPrerequisites": {
+      "customLocationRequired": true,
+      "arcResourceBridgeRequired": true,
+      "keyVaultRequired": false,
+      "multiRackIndicators": false,
+      "switchlessIndicators": false,
+      "disconnectedIndicators": false
+    }
   },
   "Domains": {
     "clusterNode": {
@@ -29,10 +41,27 @@
           "uptimeHours": 144.2,
           "osCaption": "Microsoft Azure Stack HCI",
           "osVersion": "10.0.25398",
+          "osBuildNumber": "25398",
+          "osEditionSku": 175,
           "partOfDomain": true,
           "domain": "contoso.com",
+          "workgroupName": null,
+          "ouDistinguishedName": "CN=AZL-NODE-01,OU=AzureLocal,DC=contoso,DC=com",
+          "installedRoles": [
+            { "name": "Hyper-V", "displayName": "Hyper-V" },
+            { "name": "FailoverClustering", "displayName": "Failover Clustering" }
+          ],
+          "installedRoleCount": 2,
+          "sshEnabled": false,
+          "rebootPending": false,
           "pendingUpdates": [],
-          "pendingUpdateCount": 0
+          "pendingUpdateCount": 0,
+          "eventLogAggregation": [
+            { "logName": "System", "criticalCount": 0, "errorCount": 0, "totalCount": 0, "topEventIds": [] },
+            { "logName": "Application", "criticalCount": 0, "errorCount": 0, "totalCount": 0, "topEventIds": [] },
+            { "logName": "Microsoft-Windows-Health/Operational", "criticalCount": 0, "errorCount": 0, "totalCount": 0, "topEventIds": [] },
+            { "logName": "Microsoft-Windows-FailoverClustering/Operational", "criticalCount": 0, "errorCount": 2, "totalCount": 2, "topEventIds": [{ "eventId": "1561", "count": 2, "level": "Error", "sample": "Sample cluster event" }] }
+          ]
         },
         {
           "name": "azl-node-02",
@@ -41,20 +70,50 @@
           "uptimeHours": 141.8,
           "osCaption": "Microsoft Azure Stack HCI",
           "osVersion": "10.0.25398",
+          "osBuildNumber": "25398",
+          "osEditionSku": 175,
           "partOfDomain": true,
           "domain": "contoso.com",
+          "workgroupName": null,
+          "ouDistinguishedName": "CN=AZL-NODE-02,OU=AzureLocal,DC=contoso,DC=com",
+          "installedRoles": [
+            { "name": "Hyper-V", "displayName": "Hyper-V" },
+            { "name": "FailoverClustering", "displayName": "Failover Clustering" }
+          ],
+          "installedRoleCount": 2,
+          "sshEnabled": false,
+          "rebootPending": false,
           "pendingUpdates": [],
-          "pendingUpdateCount": 0
+          "pendingUpdateCount": 0,
+          "eventLogAggregation": [
+            { "logName": "System", "criticalCount": 0, "errorCount": 0, "totalCount": 0, "topEventIds": [] },
+            { "logName": "Application", "criticalCount": 0, "errorCount": 0, "totalCount": 0, "topEventIds": [] },
+            { "logName": "Microsoft-Windows-Health/Operational", "criticalCount": 0, "errorCount": 0, "totalCount": 0, "topEventIds": [] },
+            { "logName": "Microsoft-Windows-FailoverClustering/Operational", "criticalCount": 0, "errorCount": 0, "totalCount": 0, "topEventIds": [] }
+          ]
         }
       ],
       "quorum": {
         "quorumType": "CloudWitness",
-        "quorumResource": "Cloud Witness"
+        "quorumResource": "Cloud Witness",
+        "quorumResourcePath": null,
+        "dynamicQuorumEnabled": true,
+        "nodeVotes": [
+          { "name": "azl-node-01", "nodeWeight": 1, "dynamicWeight": 1 },
+          { "name": "azl-node-02", "nodeWeight": 1, "dynamicWeight": 1 }
+        ],
+        "witnessDetail": {
+          "type": "CloudWitness",
+          "parameters": [
+            { "name": "AccountName", "value": "saclusterwitness01" },
+            { "name": "Endpoint", "value": "core.windows.net" }
+          ]
+        }
       },
       "faultDomains": [
         {
           "name": "Rack01",
-          "faultDomainType": "Site",
+          "faultDomainType": "Rack",
           "location": "Rack 01"
         }
       ],
@@ -82,9 +141,34 @@
           {
             "name": "Cluster Virtual Disk (Volume1)",
             "state": "Online",
-            "ownerNode": "azl-node-01"
+            "ownerNode": "azl-node-01",
+            "volumeFriendlyName": "Volume1",
+            "volumeLocalPath": "C:\\ClusterStorage\\Volume1",
+            "inMaintenanceMode": false,
+            "isBlockRedirected": false,
+            "redirectReason": "NotBlockRedirected",
+            "totalSizeGiB": 1024.0,
+            "freeSpaceGiB": 712.5,
+            "percentFree": 69.6
+          },
+          {
+            "name": "Cluster Virtual Disk (Volume2)",
+            "state": "Online",
+            "ownerNode": "azl-node-02",
+            "volumeFriendlyName": "Volume2",
+            "volumeLocalPath": "C:\\ClusterStorage\\Volume2",
+            "inMaintenanceMode": false,
+            "isBlockRedirected": false,
+            "redirectReason": "NotBlockRedirected",
+            "totalSizeGiB": 2048.0,
+            "freeSpaceGiB": 1536.0,
+            "percentFree": 75.0
           }
-        ]
+        ],
+        "redirectedCount": 0,
+        "maintenanceCount": 0,
+        "totalCapacityGiB": 3072.0,
+        "totalFreeSpaceGiB": 2248.5
       },
       "updatePosture": {
         "clusterAwareUpdating": {
@@ -110,7 +194,9 @@
           "WacsService": "Running"
         },
         "validationReports": [],
-        "pendingSolutionUpdateCount": 0
+        "pendingSolutionUpdateCount": 0,
+        "rebootPendingNodes": [],
+        "rebootPendingCount": 0
       },
       "registration": {
         "subscriptionId": "00000000-0000-0000-0000-000000000000",
@@ -130,10 +216,44 @@
           "providerName": "Microsoft-Windows-FailoverClustering"
         }
       ],
+      "eventAggregation": [
+        {
+          "node": "azl-node-01",
+          "logs": [
+            { "logName": "System", "criticalCount": 0, "errorCount": 0, "totalCount": 0, "topEventIds": [] },
+            { "logName": "Application", "criticalCount": 0, "errorCount": 0, "totalCount": 0, "topEventIds": [] },
+            { "logName": "Microsoft-Windows-Health/Operational", "criticalCount": 0, "errorCount": 0, "totalCount": 0, "topEventIds": [] },
+            { "logName": "Microsoft-Windows-FailoverClustering/Operational", "criticalCount": 0, "errorCount": 2, "totalCount": 2, "topEventIds": [] }
+          ]
+        },
+        {
+          "node": "azl-node-02",
+          "logs": [
+            { "logName": "System", "criticalCount": 0, "errorCount": 0, "totalCount": 0, "topEventIds": [] },
+            { "logName": "Application", "criticalCount": 0, "errorCount": 0, "totalCount": 0, "topEventIds": [] },
+            { "logName": "Microsoft-Windows-Health/Operational", "criticalCount": 0, "errorCount": 0, "totalCount": 0, "topEventIds": [] },
+            { "logName": "Microsoft-Windows-FailoverClustering/Operational", "criticalCount": 0, "errorCount": 0, "totalCount": 0, "topEventIds": [] }
+          ]
+        }
+      ],
       "healthSummary": {
         "totalNodes": 2,
         "healthyNodes": 2,
         "unhealthy": 0
+      },
+      "topologyClassification": {
+        "rackCount": 1,
+        "siteCount": 0,
+        "nodeCount": 2,
+        "azureConnectivityModel": "direct",
+        "variantPrerequisites": {
+          "customLocationRequired": true,
+          "arcResourceBridgeRequired": true,
+          "keyVaultRequired": false,
+          "multiRackIndicators": false,
+          "switchlessIndicators": false,
+          "disconnectedIndicators": false
+        }
       }
     }
   },
