@@ -76,6 +76,10 @@ $runId    = "TRAILHEAD-$runStamp"
 $logFile  = Join-Path $logsDir "run-$runStamp.md"
 
 # ── Build log file ────────────────────────────────────────────────────────────
+$tzOffset  = [System.TimeZoneInfo]::Local.BaseUtcOffset
+$tzString  = "UTC{0:+00;-00}:{1:00}" -f $tzOffset.Hours, [Math]::Abs($tzOffset.Minutes)
+$startedAt = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') $tzString"
+
 $header = @"
 # Operation TRAILHEAD — Run Log
 
@@ -86,7 +90,7 @@ $header = @"
 | Environment | $Environment |
 | Starting Phase | P$Phase |
 | Tester | $(whoami) |
-| Started | $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") UTC$(([System.TimeZoneInfo]::Local.BaseUtcOffset).ToString('+hh\:mm')) |
+| Started | $startedAt |
 | Log file | ``repo-management/logs/trailhead/run-$runStamp.md`` |
 
 ---

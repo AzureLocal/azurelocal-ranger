@@ -13,9 +13,9 @@ Describe 'Azure Local Ranger simulation tests (IIC synthetic manifest)' {
 
         $mdFiles = @(Get-ChildItem -Path (Join-Path $outputRoot 'reports') -Filter '*.md' -ErrorAction SilentlyContinue)
         $mdFiles.Count | Should -Be 3
-        ($mdFiles.Name | Where-Object { $_ -match 'Executive' }).Count   | Should -Be 1
-        ($mdFiles.Name | Where-Object { $_ -match 'Management' }).Count  | Should -Be 1
-        ($mdFiles.Name | Where-Object { $_ -match 'Technical' }).Count   | Should -Be 1
+        (@($mdFiles.Name | Where-Object { $_ -match 'Executive' })).Count   | Should -Be 1
+        (@($mdFiles.Name | Where-Object { $_ -match 'Management' })).Count  | Should -Be 1
+        (@($mdFiles.Name | Where-Object { $_ -match 'Technical' })).Count   | Should -Be 1
     }
 
     It 'includes the IIC cluster name in rendered reports' {
