@@ -1,117 +1,81 @@
 # Roadmap
 
-Azure Local Ranger is being built in phases so the product boundary, execution model, and module architecture are stable before broad implementation begins.
+This page outlines what has shipped, what is next, and where Ranger is heading.
+Community contributions are welcome — see [Contributing](../contributor/contributing.md) to get involved.
 
 Ranger supports two outcomes through one discovery engine:
 
-- recurring current-state documentation
-- formal as-built documentation for customer or operational handoff
+- **Current-state** — recurring operational snapshot of a live Azure Local deployment
+- **As-built** — formal documentation package for customer or operational handoff
 
-## Current Phase
+## Current Release — v0.5.0
 
-The repository has completed its documentation and architecture foundation phase and now has the non-live v1 implementation backlog completed in-repo.
+Released April 2026. Pre-release ahead of PSGallery `1.0.0`.
 
-That means the immediate priority is no longer proving that Ranger can exist structurally or filling in the remaining local implementation gaps. The immediate priority is validating the implementation against real environments and keeping post-v1 work explicitly separated.
+| Area | What shipped |
+| --- | --- |
+| Module architecture | One public module (`AzureLocalRanger.psd1`) with layered orchestration, collectors, shared services, and output generators |
+| Manifest-first runtime | Collect once into `audit-manifest.json`; all reports and diagrams render from that cache only |
+| Collectors | Six grouped collectors: topology/cluster, Dell/Redfish hardware, storage/networking, workload/identity/Azure, monitoring, management/performance |
+| Report generation | Three-tier HTML and Markdown reports (executive, management, technical) from saved manifest |
+| Diagram generation | 18 draw.io-compatible diagrams (6 baseline + 12 extended) with variant-aware selection and SVG output |
+| Schema contract | Standalone manifest schema v1.1.0-draft with runtime validation and test boundary |
+| Authentication | Five methods: existing context, managed identity, device-code, service principal, Azure CLI fallback |
+| Key Vault credential refs | `keyvault://` URI pattern resolved at runtime — no secrets in config files |
+| `-OutputPath` parameter | User-controlled export destination overrides the config default |
+| Testing | 18 Pester tests: schema, degraded scenarios, cached outputs, end-to-end, and 7 simulation tests against a synthetic IIC 3-node fixture |
+| Simulation framework | Full output pipeline validated without live connections via `New-RangerSyntheticManifest.ps1` and committed fixture |
+| Public documentation | Product, architecture, operator, discovery domain, output, and contributor docs under `docs/` |
 
-## Phase 1: Product and Architecture Foundation
+## Next Release — v1.0.0 (PSGallery)
 
-This phase locks the decisions that later implementation depends on.
+Focus: live-estate proof, PSGallery publish, and polish.
 
-Status: complete
+| Item | Detail | Status |
+| --- | --- | --- |
+| Live environment validation | Run Ranger against a real Azure Local cluster and reconcile generated package against known facts ([#34](https://github.com/AzureLocal/azurelocal-ranger/issues/34)) | 🔵 In progress |
+| PSGallery publish | Publish `AzureLocalRanger` module to PowerShell Gallery at `1.0.0` | 🔵 Planned |
+| As-built mode report differentiation | Mode-specific report sections so `as-built` output differs meaningfully from `current-state` | 🔵 Planned |
+| Topology collector summary fields | Compute `csvSummary`, `updatePosture`, and `eventSummary` objects currently collected as raw evidence only | 🔵 Planned |
+| Network device config import ([#36](https://github.com/AzureLocal/azurelocal-ranger/issues/36)) | Import switch and firewall config from external sources for environments where direct interrogation is not possible | 🔵 Planned |
+| Output template improvements ([#38](https://github.com/AzureLocal/azurelocal-ranger/issues/38)) | Richer output template definitions aligned to full collector data inventory | 🔵 Planned |
+| Docs audit ([#37](https://github.com/AzureLocal/azurelocal-ranger/issues/37)) | Verify all public docs reflect the current implementation and remove any planning-era stale content | 🔵 Planned |
 
-Focus areas:
+## Post-v1 Backlog
 
-- product definition and scope boundary
-- deployment-variant posture
-- manifest contract and output model
-- connectivity, authentication, and execution model
-- internal module architecture and test strategy
+These items are intentionally deferred outside the `1.0.0` baseline. Each has a tracked decision record.
 
-## Phase 2: Documentation Foundation
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Azure-hosted automation worker | Run Ranger from an Azure Automation account or hosted runner without a local PowerShell session | [#25](https://github.com/AzureLocal/azurelocal-ranger/issues/25) |
+| Arc Run Command transport | Use Azure Arc Run Command as an alternate collection channel for environments where WinRM is blocked | [#26](https://github.com/AzureLocal/azurelocal-ranger/issues/26) |
+| Direct switch interrogation | Collect switch configuration directly via SSH/RESTCONF/NETCONF rather than host-side evidence only | [#27](https://github.com/AzureLocal/azurelocal-ranger/issues/27) |
+| Direct firewall interrogation | Collect firewall policy directly from the appliance | [#28](https://github.com/AzureLocal/azurelocal-ranger/issues/28) |
+| Non-Dell OEM support | Hardware inventory modules for HPE, Lenovo, and other OEM vendors beyond Dell/Redfish | [#29](https://github.com/AzureLocal/azurelocal-ranger/issues/29) |
+| Disconnected enrichment | Richer discovery for environments with limited or no Azure connectivity | [#30](https://github.com/AzureLocal/azurelocal-ranger/issues/30) |
+| Multi-rack and management cluster enrichment | Deployment-variant-specific discovery depth for rack-scale and stretched cluster topologies | [#31](https://github.com/AzureLocal/azurelocal-ranger/issues/31) |
+| Manual import workflows | Accept externally gathered data for environments where automated collection is not authorized | [#32](https://github.com/AzureLocal/azurelocal-ranger/issues/32) |
+| Windows PowerShell 5.1 compatibility | Assess and implement compatibility without distorting the PowerShell 7 architecture | [#33](https://github.com/AzureLocal/azurelocal-ranger/issues/33) |
 
-This phase makes the public documentation and repo guidance match the actual product direction.
+## Long-term Vision
 
-Status: complete
+Azure Local Ranger aims to be the definitive open-source documentation and audit tool for Azure Local deployments — useful to:
 
-Focus areas:
+- **Platform engineers** who need a reliable, repeatable record of how a deployment is built and configured
+- **Operations teams** who need a fast current-state snapshot before changes or incidents
+- **Architects** designing expansions, migrations, or new workloads on top of an existing environment
+- **Managed service providers** who need consistent, client-ready as-built packages across multiple customer sites
 
-- coherent site navigation and reading flow
-- product, architecture, domain, output, and operator docs
-- project roadmap and repository structure pages
-- contributor guidance aligned to the current maturity level
+The tool will remain open-source, PowerShell-native, and output-friendly — no agents, no portals, no licensing fees.
 
-Key documentation work is tracked in:
+## Suggest a Feature
 
-- [Tracker: documentation rollout from product-direction plan #14](https://github.com/AzureLocal/azurelocal-ranger/issues/14)
-- [Publish project roadmap, repository structure, and contributor documentation #17](https://github.com/AzureLocal/azurelocal-ranger/issues/17)
-- [Align docs navigation, cross-links, and publishing flow #18](https://github.com/AzureLocal/azurelocal-ranger/issues/18)
+Open an issue at [github.com/AzureLocal/azurelocal-ranger/issues](https://github.com/AzureLocal/azurelocal-ranger/issues) with the label `enhancement`.
 
-## Phase 3: V1 Runtime and Collector Delivery
-
-Once the planning and documentation gates are locked, implementation can move into the v1 runtime and collector backlog.
-
-Status: non-live implementation complete in-repo; live-environment validation still remains.
-
-Main v1 tracks:
-
-- orchestration and shared platform services
-- topology and cluster foundation collectors
-- Dell-first hardware collectors
-- storage and networking collectors
-- workload, identity, Azure integration, monitoring, management-tools, and performance collectors
-- report generation and output packaging from the cached manifest
-- diagram generation from the cached manifest
-
-The completed v1 implementation tracks are:
-
-- [Tracker: v1 discovery collector delivery #16](https://github.com/AzureLocal/azurelocal-ranger/issues/16)
-- [Implement orchestration layer and shared platform services #19](https://github.com/AzureLocal/azurelocal-ranger/issues/19)
-- [Implement topology and cluster foundation collectors #9](https://github.com/AzureLocal/azurelocal-ranger/issues/9)
-- [Implement Dell OEM hardware inventory collectors #10](https://github.com/AzureLocal/azurelocal-ranger/issues/10)
-- [Implement storage and networking collectors #11](https://github.com/AzureLocal/azurelocal-ranger/issues/11)
-- [Implement workload, identity, and Azure integration collectors #12](https://github.com/AzureLocal/azurelocal-ranger/issues/12)
-- [Implement monitoring and observability collectors #20](https://github.com/AzureLocal/azurelocal-ranger/issues/20)
-- [Implement management-tools and performance baseline collectors #21](https://github.com/AzureLocal/azurelocal-ranger/issues/21)
-- [Implement report generation and output packaging from cached manifest #22](https://github.com/AzureLocal/azurelocal-ranger/issues/22)
-- [Implement diagram generation from cached manifest #23](https://github.com/AzureLocal/azurelocal-ranger/issues/23)
-- [Tracker: core runtime and output delivery #24](https://github.com/AzureLocal/azurelocal-ranger/issues/24)
-
-## Phase 4: Post-V1 Extension Backlog
-
-Anything intentionally pushed out of v1 should remain visible as separate issues, not disappear into one umbrella bullet list.
-
-Status: defined and deferred
-
-The planning and decision issues for this phase are complete; the future feature implementation itself remains deferred.
-
-Post-v1 extension backlog:
-
-- [Tracker: post-v1 extension backlog #13](https://github.com/AzureLocal/azurelocal-ranger/issues/13)
-- [Evaluate Azure-hosted automation worker execution model #25](https://github.com/AzureLocal/azurelocal-ranger/issues/25)
-- [Investigate Azure Arc Run Command as an alternate collection transport #26](https://github.com/AzureLocal/azurelocal-ranger/issues/26)
-- [Implement direct switch interrogation collectors #27](https://github.com/AzureLocal/azurelocal-ranger/issues/27)
-- [Implement direct firewall interrogation collectors #28](https://github.com/AzureLocal/azurelocal-ranger/issues/28)
-- [Implement non-Dell OEM hardware inventory support #29](https://github.com/AzureLocal/azurelocal-ranger/issues/29)
-- [Add disconnected and limited-connectivity discovery enrichment #30](https://github.com/AzureLocal/azurelocal-ranger/issues/30)
-- [Add multi-rack and management-cluster-specific discovery enrichment #31](https://github.com/AzureLocal/azurelocal-ranger/issues/31)
-- [Add manual import workflows for externally governed environments #32](https://github.com/AzureLocal/azurelocal-ranger/issues/32)
-- [Assess Windows PowerShell 5.1 compatibility without distorting the v1 architecture #33](https://github.com/AzureLocal/azurelocal-ranger/issues/33)
-
-These items are now bounded by the decisions recorded in `repo-management/plans/post-v1-extension-decisions.md` and remain intentionally outside the v1 delivery baseline.
-
-## Phase 5: Live-Estate Validation
-
-Status: remaining open item
-
-The final remaining implementation task is to run Ranger against a real Azure Local environment and reconcile the generated package against known environment facts.
-
-## Guiding Rule
-
-If a requirement is explicitly future-scope, it should stay visible in the roadmap and preferably have its own backlog item rather than surviving only as a sentence in architecture documentation.
+Pull requests are welcome — see [Contributing](../contributor/contributing.md) for guidelines.
 
 ## Read Next
 
-- [Status](status.md)
-- [Documentation Roadmap](documentation-roadmap.md)
 - [Repository Structure](repository-structure.md)
 - [Getting Started](../contributor/getting-started.md)
+- [Changelog](changelog.md)

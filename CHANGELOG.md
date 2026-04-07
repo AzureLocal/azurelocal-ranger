@@ -27,6 +27,10 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 ### Changed
 
 - Version bumped from `0.2.0` to `0.5.0` to reflect substantial implementation completeness ahead of PSGallery `1.0.0` release
+- Roadmap rewritten in versioned-milestone format (Current Release, Next Release, Post-v1 Backlog, Long-term Vision) aligned with Azure Scout pattern
+- `docs/project/status.md` removed — current delivery state folded into roadmap Current Release section
+- `docs/project/documentation-roadmap.md` removed — internal planning artifact no longer relevant for public docs
+- `mkdocs.yml` nav updated to remove deleted pages
 
 ## [0.2.0]
 
