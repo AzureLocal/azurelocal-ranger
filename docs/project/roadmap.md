@@ -56,6 +56,9 @@ These items are intentionally deferred outside the `1.0.0` baseline. Each has a 
 | Multi-rack and management cluster enrichment | Deployment-variant-specific discovery depth for rack-scale and stretched cluster topologies | [#31](https://github.com/AzureLocal/azurelocal-ranger/issues/31) |
 | Manual import workflows | Accept externally gathered data for environments where automated collection is not authorized | [#32](https://github.com/AzureLocal/azurelocal-ranger/issues/32) |
 | Windows PowerShell 5.1 compatibility | Assess and implement compatibility without distorting the PowerShell 7 architecture | [#33](https://github.com/AzureLocal/azurelocal-ranger/issues/33) |
+| Interactive configuration wizard | Guided terminal wizard (`Invoke-RangerWizard`) for first-run setup: enter cluster/credential/output details, select domains, choose presets — no hand-authored YAML required. All wizard fields are also passable as direct parameters to `Invoke-RangerCollect` for automation scenarios. | [#75](https://github.com/AzureLocal/azurelocal-ranger/issues/75) |
+| Spectre.Console TUI scan progress | Rich terminal UI while collection runs: per-collector live progress bars, spinner per active collector, real-time finding count, graceful ANSI-fallback for CI. Also drives interactive prompts in the configuration wizard. | [#76](https://github.com/AzureLocal/azurelocal-ranger/issues/76) |
+| Terminal TUI alternatives survey | Structured evaluation of Spectre.Console (via PwshSpectreConsole), Terminal.Gui/ConsoleGuiTools, Sharprompt, and other options before committing to an implementation. Produces a decision record. | [#77](https://github.com/AzureLocal/azurelocal-ranger/issues/77) |
 
 ## Long-term Vision
 

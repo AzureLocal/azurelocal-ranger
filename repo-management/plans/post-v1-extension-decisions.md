@@ -204,3 +204,81 @@ Recommended support posture:
 The post-v1 backlog is now explicitly defined with bounded decisions, non-goals, and preserved architectural constraints.
 
 That means the definition issues can close without implying that the future features themselves have already been implemented.
+
+---
+
+## #75 Interactive Configuration Wizard and Direct Parameter Passthrough
+
+Decision:
+The configuration wizard (`Invoke-RangerWizard`) is a post-v1 addition. It must not require a config file on disk and it must not be a GUI window. The correct form is a guided terminal interaction.
+
+Architectural requirements that must be preserved:
+
+- Every field the wizard collects maps 1-to-1 to a parameter on `Invoke-RangerCollect`. No wizard-only input path may exist; all inputs must be addressable headlessly.
+- The wizard synthesises an in-memory config object using the same internal representation as a loaded YAML config. No special wizard code paths inside the collectors.
+- Presets are filter sets over the six domain keys. They do not change collector internals; they set `domains.enabled` the same way a hand-authored config would.
+- WinForms, WPF, and any platform-specific GUI framework are explicitly excluded. The wizard must run inside a standard PowerShell 7.x terminal session on Windows and Linux management workstations.
+- The wizard must detect non-interactive execution (redirected stdin, `$CI`, `$env:GITHUB_ACTIONS`) and refuse to run, with a clear error pointing to the parameter-based interface.
+
+Scope presets to support:
+
+| Preset key | Domains enabled |
+|---|---|
+| `full` | all six |
+| `nodes-only` | topology-cluster, hardware, storage-networking, workload-identity-azure |
+| `azure-only` | workload-identity-azure, monitoring |
+| `networking-only` | storage-networking |
+| `no-networking` | topology-cluster, hardware, workload-identity-azure, monitoring, management-performance |
+| `custom` | user-selected in wizard screen |
+
+Implementation dependency:
+
+- Rendering engine (Spectre.Console or alternative) should be selected via #77 before #75 is implemented, since the wizard prompts depend on multi-selection capability.
+- If the TUI library decision is not yet made, the wizard may use plain `$Host.UI.PromptForChoice` as a temporary implementation with a tracked upgrade issue.
+
+## #76 Spectre.Console TUI Rendering
+
+Decision:
+Spectre.Console is the preferred library candidate for both scan progress display and interactive wizard prompts. The decision is pending the alternatives survey (#77).
+
+If the survey confirms Spectre.Console:
+
+- `PwshSpectreConsole` (PSGallery) is the integration path — not raw DLL loading — so that the dependency is installable via `Install-Module` and declared in `AzureLocalRanger.psd1` as a `RequiredModules` entry.
+- The TUI rendering layer must be isolated behind a Ranger-internal abstraction (`Write-RangerProgress`, `Invoke-RangerWithStatus`, etc.) so that swapping the underlying library in the future does not require changes to collector or orchestrator code.
+- ANSI detection must run at module load time. If ANSI is unsupported or `$env:RANGER_NO_TUI = 'true'` is set, all TUI calls route to plain `Write-Verbose` / `Write-Host` fallbacks. This must be testable via the existing Pester suite without requiring a real ANSI terminal.
+- `LiveDisplay` (the in-place updating component) is not thread-safe in Spectre.Console. Collectors running in parallel must post status updates to a main-thread queue; the display loop polls that queue on the main thread. This queue pattern should be designed to work regardless of which library is ultimately chosen.
+
+Spectre.Console capabilities confirmed as sufficient for Ranger's needs:
+
+| Need | Spectre.Console feature |
+|---|---|
+| Per-collector progress bars | `Progress` display with per-task `AddTask()` |
+| Spinner for indeterminate wait | `Status` display with `AnsiConsole.Status().Start()` |
+| Per-node status table | `LiveDisplay` with a `Table` widget refreshed per update |
+| Multi-select domain selection | `MultiSelectionPrompt<T>` |
+| Single-select preset | `SelectionPrompt<T>` |
+| Text prompt with validation | `TextPrompt<T>` with `.Validate()` |
+| Findings count display | `Markup` in a live-refreshed panel |
+
+Explicit non-goals for this feature:
+
+- No full TUI window manager (Terminal.Gui / gui.cs-style) — Ranger is not a dashboard app; it runs and exits.
+- No web-based progress UI.
+- No persistent background service.
+
+## #77 Terminal TUI Alternatives Survey
+
+Decision:
+This is a research task only. No code is written until the survey is complete and a library recommendation is recorded here.
+
+Evaluation must cover at minimum:
+
+- PwshSpectreConsole (Spectre.Console wrapper)
+- Microsoft.PowerShell.ConsoleGuiTools (Out-ConsoleGridView, uses Terminal.Gui)
+- Sharprompt (prompt-only .NET library)
+- PSWriteColor (lightweight colour output)
+
+The evaluation matrix must score each candidate against:
+interactive prompts, progress display, table rendering, PS 7.2+ compatibility, cross-platform support, graceful degradation, maintenance health, PSGallery availability, license, and module weight.
+
+The recommended library becomes the implementation target for #76. If no single library satisfies all criteria, the survey should identify a composition (e.g., Spectre.Console for progress + plain Host.UI for prompts).
