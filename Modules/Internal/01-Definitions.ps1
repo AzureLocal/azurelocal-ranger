@@ -224,7 +224,7 @@ function Get-RangerDiagramDefinitions {
         [pscustomobject][ordered]@{ Name = 'monitoring-health-heatmap'; Title = 'Monitoring and Health Heatmap'; Tier = 'extended'; Required = @('monitoring', 'clusterNode'); Audience = @('executive', 'management') }
         [pscustomobject][ordered]@{ Name = 'oem-firmware-posture'; Title = 'OEM Hardware and Firmware Posture'; Tier = 'extended'; Required = @('hardware', 'oemIntegration'); Audience = @('management', 'technical') }
         [pscustomobject][ordered]@{ Name = 'backup-recovery-map'; Title = 'Backup, Recovery, and Continuity Map'; Tier = 'extended'; Required = @('azureIntegration'); Audience = @('executive', 'management', 'technical') }
-        [pscustomobject][ordered]@{ Name = 'management-plane-tooling'; Title = 'Management Plane and Tooling Map'; Tier = 'extended'; Required = @('managementTools'); Audience = @('management', 'technical') }
+        [pscustomobject][ordered]@{ Name = 'management-plane-tooling'; Title = 'Management Plane and Tooling Map'; Tier = 'extended'; Required = @('managementTools'); Audience = @('executive', 'management', 'technical') }
         [pscustomobject][ordered]@{ Name = 'workload-family-placement'; Title = 'Workload Family Placement Map'; Tier = 'extended'; Required = @('virtualMachines'); Audience = @('management', 'technical') }
         [pscustomobject][ordered]@{ Name = 'fabric-map'; Title = 'Rack-Aware Fabric Map'; Tier = 'extended'; Required = @('clusterNode', 'networking'); Audience = @('management', 'technical') }
         [pscustomobject][ordered]@{ Name = 'disconnected-control-plane'; Title = 'Disconnected Operations Control Plane Map'; Tier = 'extended'; Required = @('azureIntegration', 'identitySecurity'); Audience = @('management', 'technical') }

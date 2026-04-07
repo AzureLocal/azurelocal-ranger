@@ -2,8 +2,8 @@ site_name: Azure Local Ranger
 site_description: Repository scaffold and project documentation for a future Azure Local auditing, diagramming, and reporting tool
 site_author: Azure Local Cloud
 site_url: https://azurelocal.github.io/azurelocal-ranger/
-repo_url: https://github.com/azure-local-cloud/azurelocal-ranger
-repo_name: azure-local-cloud/azurelocal-ranger
+repo_url: https://github.com/AzureLocal/azurelocal-ranger
+repo_name: AzureLocal/azurelocal-ranger
 
 theme:
   name: material
@@ -65,6 +65,7 @@ nav:
     - Troubleshooting: operator/troubleshooting.md
   - Project:
     - Roadmap: project/roadmap.md
+    - Documentation Roadmap: project/documentation-roadmap.md
     - Repository Structure: project/repository-structure.md
     - Changelog: project/changelog.md
   - Contributor:

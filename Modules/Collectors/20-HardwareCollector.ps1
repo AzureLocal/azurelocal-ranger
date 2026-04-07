@@ -65,6 +65,139 @@ function Invoke-RangerHardwareCollector {
             $dellLcService = Invoke-RangerSafeAction -Label "Dell lifecycle controller service for $host" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/Managers/iDRAC.Embedded.1/Oem/Dell/DellLCService" -Credential $CredentialMap.bmc }
             $dellAttributes = Invoke-RangerSafeAction -Label "Dell manager attributes for $host" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/Managers/iDRAC.Embedded.1/Attributes" -Credential $CredentialMap.bmc }
 
+            # Per-DIMM granularity from Redfish memory collection
+            $memoryDimms = @(
+                Invoke-RangerSafeAction -Label "Redfish DIMM detail for $host" -DefaultValue @() -ScriptBlock {
+                    @($memory | ForEach-Object {
+                        $dimm = $_
+                        [ordered]@{
+                            id               = $dimm.'@odata.id'
+                            manufacturer     = $dimm.Manufacturer
+                            partNumber       = $dimm.PartNumber
+                            serialNumber     = $dimm.SerialNumber
+                            capacityMiB      = $dimm.CapacityMiB
+                            capacityGiB      = if ($dimm.CapacityMiB) { [math]::Round($dimm.CapacityMiB / 1024.0, 2) } else { $null }
+                            operatingSpeedMhz = $dimm.OperatingSpeedMhz
+                            memoryType       = $dimm.MemoryType
+                            memoryDeviceType = $dimm.MemoryDeviceType
+                            bankLocator      = $dimm.BankLocator
+                            slotLocator      = $dimm.DeviceLocator
+                            configuredVoltageMv = $dimm.VoltageMV
+                            status           = if ($dimm.Status) { [ordered]@{ state = $dimm.Status.State; health = $dimm.Status.Health } } else { $null }
+                        }
+                    })
+                }
+            )
+
+            # GPU / Accelerators via Redfish PCIeDevices (and OS-side via WinRM if available)
+            $gpuDevices = @(
+                Invoke-RangerSafeAction -Label "GPU/accelerator inventory for $host" -DefaultValue @() -ScriptBlock {
+                    $pcieCollection = Invoke-RangerSafeAction -Label "Redfish PCIe devices for $host" -DefaultValue $null -ScriptBlock {
+                        Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/Systems/System.Embedded.1/PCIeDevices" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                    }
+                    if ($pcieCollection -and $pcieCollection.Members) {
+                        @($pcieCollection.Members | ForEach-Object {
+                            $pcieUri = $_.'@odata.id'
+                            $pcieDev = Invoke-RangerSafeAction -Label "PCIe device detail $pcieUri" -DefaultValue $null -ScriptBlock {
+                                Invoke-RangerRedfishRequest -Uri "https://$host$pcieUri" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                            }
+                            if ($pcieDev -and $pcieDev.Name -match 'GPU|Accelerat|NVIDIA|AMD|Radeon') {
+                                [ordered]@{
+                                    name       = $pcieDev.Name
+                                    model      = $pcieDev.Model
+                                    deviceType = $pcieDev.DeviceType
+                                    slotId     = if ($pcieDev.PCIeInterface) { $pcieDev.PCIeInterface.MaxLanes } else { $null }
+                                    status     = if ($pcieDev.Status) { $pcieDev.Status.Health } else { $null }
+                                }
+                            }
+                        } | Where-Object { $_ })
+                    } else { @() }
+                }
+            )
+
+            # BMC SSL certificate detail
+            $bmcCert = Invoke-RangerSafeAction -Label "BMC SSL certificate for $host" -DefaultValue $null -ScriptBlock {
+                $certCollection = Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/Managers/iDRAC.Embedded.1/NetworkProtocol/HTTPS/Certificates" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                if ($certCollection -and $certCollection.Members -and @($certCollection.Members).Count -gt 0) {
+                    $certUri = $certCollection.Members[0].'@odata.id'
+                    $certDetail = Invoke-RangerRedfishRequest -Uri "https://$host$certUri" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                    if ($certDetail) {
+                        $expiryDate = if ($certDetail.ValidNotAfter) { [datetime]::ParseExact($certDetail.ValidNotAfter, 'yyyy-MM-ddTHH:mm:ssZ', $null, [System.Globalization.DateTimeStyles]::AssumeUniversal) } else { $null }
+                        [ordered]@{
+                            subject        = $certDetail.Subject
+                            issuer         = $certDetail.Issuer
+                            validFrom      = $certDetail.ValidNotBefore
+                            validUntil     = $certDetail.ValidNotAfter
+                            daysUntilExpiry = if ($expiryDate) { [math]::Round(($expiryDate - (Get-Date)).TotalDays, 0) } else { $null }
+                            thumbprint     = $certDetail.Fingerprint
+                        }
+                    }
+                }
+            }
+
+            # Physical disk enumeration with slot/location depth
+            $physicalDisksDetail = @(
+                Invoke-RangerSafeAction -Label "Physical disk detail for $host" -DefaultValue @() -ScriptBlock {
+                    @($storageControllers | ForEach-Object {
+                        $ctrlUri = $_.'@odata.id'
+                        if ($ctrlUri) {
+                            $driveLinks = Invoke-RangerSafeAction -Label "Drive links for $ctrlUri" -DefaultValue $null -ScriptBlock {
+                                Invoke-RangerRedfishRequest -Uri "https://$host$ctrlUri" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                            }
+                            if ($driveLinks -and $driveLinks.Drives) {
+                                @($driveLinks.Drives | ForEach-Object {
+                                    $driveUri = $_.'@odata.id'
+                                    $driveDetail = Invoke-RangerSafeAction -Label "Drive $driveUri" -DefaultValue $null -ScriptBlock {
+                                        Invoke-RangerRedfishRequest -Uri "https://$host$driveUri" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                                    }
+                                    if ($driveDetail) {
+                                        [ordered]@{
+                                            name            = $driveDetail.Name
+                                            model           = $driveDetail.Model
+                                            manufacturer    = $driveDetail.Manufacturer
+                                            mediaType       = $driveDetail.MediaType
+                                            protocol        = $driveDetail.Protocol
+                                            capacityBytes   = $driveDetail.CapacityBytes
+                                            capacityGiB     = if ($driveDetail.CapacityBytes) { [math]::Round($driveDetail.CapacityBytes / 1GB, 2) } else { $null }
+                                            revision        = $driveDetail.Revision
+                                            serialNumber    = $driveDetail.SerialNumber
+                                            partNumber      = $driveDetail.PartNumber
+                                            slot            = if ($driveDetail.PhysicalLocation) { $driveDetail.PhysicalLocation.PartLocation } else { $driveDetail.Location }
+                                            locationIndicatorActive = $driveDetail.LocationIndicatorActive
+                                            powerState      = $driveDetail.PowerState
+                                            statusHealth    = if ($driveDetail.Status) { $driveDetail.Status.Health } else { $null }
+                                            statusState     = if ($driveDetail.Status) { $driveDetail.Status.State } else { $null }
+                                            predictedLifeLeftPercent = $driveDetail.PredictedLifeLeftPercent
+                                            hotspareType    = $driveDetail.HotspareType
+                                        }
+                                    }
+                                } | Where-Object { $_ })
+                            } else { @() }
+                        } else { @() }
+                    })
+                }
+            )
+
+            # VBS sub-components (OS-level — requires WinRM on the node)
+            $vbsPosture = Invoke-RangerSafeAction -Label "VBS sub-component posture for $nodeName" -DefaultValue $null -ScriptBlock {
+                Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -NodeName $nodeName -ScriptBlock {
+                    $dg = Get-CimInstance -Namespace 'root\Microsoft\Windows\DeviceGuard' -ClassName Win32_DeviceGuard -ErrorAction SilentlyContinue
+                    if ($dg) {
+                        [ordered]@{
+                            virtualBasedSecurityStatus    = $dg.VirtualizationBasedSecurityStatus
+                            securityServicesRunning       = @($dg.SecurityServicesRunning)
+                            securityServicesConfigured    = @($dg.SecurityServicesConfigured)
+                            codeIntegrityPolicyEnforcementStatus = $dg.CodeIntegrityPolicyEnforcementStatus
+                            usermodeCodeIntegrityPolicyEnforcementStatus = $dg.UsermodeCodeIntegrityPolicyEnforcementStatus
+                            # 4 = HVCI, 6 = Credential Guard, 128 = DRTM indicator
+                            hvciEnabled           = (@($dg.SecurityServicesRunning) -contains 4) -or (@($dg.SecurityServicesRunning) -contains 2)
+                            credentialGuardEnabled = (@($dg.SecurityServicesRunning) -contains 1)
+                            securedCoreDrtm        = (@($dg.SecurityServicesConfigured) -contains 128)
+                        }
+                    }
+                }
+            }
+
             $trustedModules = @($system.TrustedModules)
             $processorModels = @(Get-RangerGroupedCount -Items $processors -PropertyName 'Model')
             $memoryCapacityGiB = [math]::Round((@($memory | Where-Object { $_.CapacityMiB } | ForEach-Object { [double]$_.CapacityMiB / 1024 } | Measure-Object -Sum).Sum), 2)
@@ -89,10 +222,22 @@ function Invoke-RangerHardwareCollector {
                 firmwareCount    = @($firmwareInventory).Count
                 processorSummary = [ordered]@{ sockets = @($processors).Count; models = $processorModels }
                 memorySummary    = [ordered]@{ dimmCount = @($memory).Count; totalCapacityGiB = $memoryCapacityGiB }
+                memoryDimms      = @($memoryDimms)
                 ethernetSummary  = [ordered]@{ portCount = @($ethernet).Count; byState = @(Get-RangerGroupedCount -Items $ethernet -PropertyName 'LinkStatus') }
                 storageSummary   = [ordered]@{ controllerCount = @($storageControllers).Count; models = $storageControllerModels }
+                physicalDisksDetail = @($physicalDisksDetail)
                 firmwareSummary  = [ordered]@{ componentCount = @($firmwareInventory).Count; versions = $firmwareVersions }
-                securityPosture  = [ordered]@{ trustedModuleCount = @($trustedModules).Count; secureBoot = $bios.Attributes.SecureBoot }
+                gpuDevices       = @($gpuDevices)
+                gpuCount         = @($gpuDevices).Count
+                vbsPosture       = $vbsPosture
+                bmcCert          = $bmcCert
+                securityPosture  = [ordered]@{
+                    trustedModuleCount    = @($trustedModules).Count
+                    secureBoot            = $bios.Attributes.SecureBoot
+                    hvciEnabled           = if ($vbsPosture) { $vbsPosture.hvciEnabled } else { $null }
+                    credentialGuardEnabled = if ($vbsPosture) { $vbsPosture.credentialGuardEnabled } else { $null }
+                    bmcCertExpiryDays     = if ($bmcCert) { $bmcCert.daysUntilExpiry } else { $null }
+                }
                 trustedModules   = ConvertTo-RangerHashtable -InputObject $system.TrustedModules
                 boot             = ConvertTo-RangerHashtable -InputObject $system.Boot
             })
@@ -110,6 +255,7 @@ function Invoke-RangerHardwareCollector {
                 lifecycleControllerState = ConvertTo-RangerHashtable -InputObject $dellLcService
                 supportAssistSignals    = ConvertTo-RangerHashtable -InputObject $dellAttributes
                 firmwareCompliance      = [ordered]@{ complianceEvidence = if ($updateService) { 'update-service-present' } else { 'not-discovered' }; inventoryCount = @($firmwareInventory).Count }
+                bmcCert                 = $bmcCert
             })
 
             [void]$relationships.Add((New-RangerRelationship -SourceType 'bmc-endpoint' -SourceId $host -TargetType 'cluster-node' -TargetId $nodeName -RelationshipType 'manages' -Properties ([ordered]@{ manufacturer = $system.Manufacturer; model = $system.Model })))
@@ -123,9 +269,13 @@ function Invoke-RangerHardwareCollector {
                 managerAttributes = ConvertTo-RangerHashtable -InputObject $dellAttributes
                 processors        = ConvertTo-RangerHashtable -InputObject $processors
                 memory            = ConvertTo-RangerHashtable -InputObject $memory
+                memoryDimms       = ConvertTo-RangerHashtable -InputObject $memoryDimms
                 ethernet          = ConvertTo-RangerHashtable -InputObject $ethernet
                 storageControllers = ConvertTo-RangerHashtable -InputObject $storageControllers
+                physicalDisksDetail = ConvertTo-RangerHashtable -InputObject $physicalDisksDetail
                 firmwareInventory = ConvertTo-RangerHashtable -InputObject $firmwareInventory
+                gpuDevices        = ConvertTo-RangerHashtable -InputObject $gpuDevices
+                vbsPosture        = ConvertTo-RangerHashtable -InputObject $vbsPosture
             })
         }
         catch {
@@ -148,6 +298,11 @@ function Invoke-RangerHardwareCollector {
         [void]$findings.Add((New-RangerFinding -Severity informational -Title 'One or more Dell management endpoints did not advertise update-service enablement' -Description 'The OEM posture snapshot could not confirm a healthy Redfish update-service path for every endpoint.' -AffectedComponents (@($managementArray | Where-Object { -not $_.updateService.serviceEnabled } | ForEach-Object { $_.node })) -CurrentState 'firmware-service posture mixed' -Recommendation 'Review iDRAC update-service state, firmware catalog access, and lifecycle-controller posture before relying on automated firmware evidence.'))
     }
 
+    $nodesWithExpiringBmcCert = @($nodesArray | Where-Object { $null -ne $_.bmcCert.daysUntilExpiry -and $_.bmcCert.daysUntilExpiry -lt 90 })
+    if ($nodesWithExpiringBmcCert.Count -gt 0) {
+        [void]$findings.Add((New-RangerFinding -Severity warning -Title 'BMC SSL certificate expiring within 90 days on one or more nodes' -Description 'The iDRAC certificate inventory found certificates approaching expiry.' -AffectedComponents (@($nodesWithExpiringBmcCert | ForEach-Object { $_.node })) -CurrentState "$($nodesWithExpiringBmcCert.Count) nodes with expiring BMC cert" -Recommendation 'Renew the iDRAC HTTPS certificate before it expires to prevent management plane disruption.'))
+    }
+
     return @{
         Status        = if ($findings.Count -gt 0) { 'partial' } else { 'success' }
         Domains       = @{
@@ -160,9 +315,17 @@ function Invoke-RangerHardwareCollector {
                     firmwareNodes = @($managementArray | Where-Object { $_.firmwareInventoryCount -gt 0 }).Count
                     totalMemoryGiB = [math]::Round((@($nodesArray | Where-Object { $null -ne $_.memoryGiB } | Measure-Object -Property memoryGiB -Sum).Sum), 2)
                     totalProcessors = @($nodesArray | Measure-Object -Property cpuCount -Sum).Sum
+                    gpuNodes      = @($nodesArray | Where-Object { $_.gpuCount -gt 0 }).Count
+                    totalGpuCount = @($nodesArray | Measure-Object -Property gpuCount -Sum).Sum
                 }
                 firmware = [ordered]@{ managedNodes = @($managementArray | Where-Object { $_.managerFirmwareVersion }).Count; versions = @(Get-RangerGroupedCount -Items $managementArray -PropertyName 'managerFirmwareVersion') }
-                security = [ordered]@{ trustedModuleNodes = @($nodesArray | Where-Object { $_.securityPosture.trustedModuleCount -gt 0 }).Count; secureBootEnabledNodes = @($nodesArray | Where-Object { $_.securityPosture.secureBoot -in @('Enabled', 'On', $true) }).Count }
+                security = [ordered]@{
+                    trustedModuleNodes     = @($nodesArray | Where-Object { $_.securityPosture.trustedModuleCount -gt 0 }).Count
+                    secureBootEnabledNodes = @($nodesArray | Where-Object { $_.securityPosture.secureBoot -in @('Enabled', 'On', $true) }).Count
+                    hvciEnabledNodes       = @($nodesArray | Where-Object { $_.securityPosture.hvciEnabled -eq $true }).Count
+                    credGuardEnabledNodes  = @($nodesArray | Where-Object { $_.securityPosture.credentialGuardEnabled -eq $true }).Count
+                    bmcCertExpiringNodes   = @($nodesArray | Where-Object { $null -ne $_.securityPosture.bmcCertExpiryDays -and $_.securityPosture.bmcCertExpiryDays -lt 90 }).Count
+                }
             }
             oemIntegration = [ordered]@{
                 endpoints         = @($Config.targets.bmc.endpoints)

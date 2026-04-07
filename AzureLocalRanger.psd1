@@ -30,8 +30,8 @@
                 'Audit',
                 'AsBuilt'
             )
-            LicenseUri = 'https://github.com/azure-local-cloud/azurelocal-ranger/blob/main/LICENSE'
-            ProjectUri = 'https://github.com/azure-local-cloud/azurelocal-ranger'
+            LicenseUri = 'https://github.com/AzureLocal/azurelocal-ranger/blob/main/LICENSE'
+            ProjectUri = 'https://github.com/AzureLocal/azurelocal-ranger'
             ReleaseNotes = 'Adds the initial Ranger runtime, grouped collectors, manifest persistence, and cached output generation for reports and diagrams.'
         }
     }

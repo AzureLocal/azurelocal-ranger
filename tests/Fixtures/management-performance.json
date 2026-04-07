@@ -17,7 +17,37 @@
           "status": "Running",
           "startType": "Automatic"
         }
-      ]
+      ],
+      "thirdPartyAgents": [],
+      "wac": [
+        {
+          "node": "azl-node-01",
+          "wac": {
+            "installed": true,
+            "status": "Running",
+            "cert": {
+              "subject": "CN=azl-node-01.contoso.com",
+              "notAfter": "2027-06-01T00:00:00Z",
+              "daysUntilExpiry": 490
+            },
+            "extensionCount": 3,
+            "extensions": [
+              { "name": "msft.sme.azure-stack-hci", "lastWriteTime": "2026-01-10T00:00:00Z" },
+              { "name": "msft.sme.storage-spaces", "lastWriteTime": "2026-01-10T00:00:00Z" }
+            ]
+          }
+        }
+      ],
+      "scvmm": [],
+      "scom": [],
+      "summary": {
+        "totalServices": 2,
+        "runningServices": 2,
+        "wacInstalled": 1,
+        "scvmmNodes": 0,
+        "scomNodes": 0,
+        "thirdPartyTypes": []
+      }
     },
     "performance": {
       "nodes": [
@@ -59,7 +89,46 @@
           ]
         }
       ],
-      "outliers": []
+      "rdmaCounters": [
+        {
+          "node": "azl-node-01",
+          "adapter": "Mellanox ConnectX-5 #1",
+          "inboundBytes": 2147483648,
+          "outboundBytes": 1073741824
+        }
+      ],
+      "csvCacheStats": [
+        {
+          "node": "azl-node-01",
+          "name": "Cluster Virtual Disk (Volume1)",
+          "ownerNode": "azl-node-01",
+          "volumeName": "Volume1"
+        }
+      ],
+      "driveLatencyOutliers": [],
+      "eventLogAnalysis": [
+        {
+          "node": "azl-node-01",
+          "logName": "Microsoft-Windows-FailoverClustering/Operational",
+          "eventCount": 12,
+          "topEventIds": [
+            { "eventId": "1570", "count": 5, "level": "Information", "sample": "Cluster network interface came online." }
+          ]
+        }
+      ],
+      "outliers": [],
+      "summary": {
+        "averageCpuUtilizationPercent": 41,
+        "averageAvailableMemoryMb": 131072,
+        "runningManagementServices": 2,
+        "highCpuNodes": 0,
+        "wacInstalledNodes": 1,
+        "wacCertExpiringNodes": 0,
+        "scvmmAgentNodes": 0,
+        "scomAgentNodes": 0,
+        "rdmaAdaptersDetected": 1,
+        "driveLatencyOutlierCount": 0
+      }
     }
   },
   "Findings": [],

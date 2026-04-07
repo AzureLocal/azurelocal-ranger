@@ -30,7 +30,9 @@
           "osCaption": "Microsoft Azure Stack HCI",
           "osVersion": "10.0.25398",
           "partOfDomain": true,
-          "domain": "contoso.com"
+          "domain": "contoso.com",
+          "pendingUpdates": [],
+          "pendingUpdateCount": 0
         },
         {
           "name": "azl-node-02",
@@ -40,7 +42,9 @@
           "osCaption": "Microsoft Azure Stack HCI",
           "osVersion": "10.0.25398",
           "partOfDomain": true,
-          "domain": "contoso.com"
+          "domain": "contoso.com",
+          "pendingUpdates": [],
+          "pendingUpdateCount": 0
         }
       ],
       "quorum": {
@@ -86,8 +90,37 @@
         "clusterAwareUpdating": {
           "clusterName": "azlocal-prod-01",
           "maxRetriesPerNode": 2,
-          "requireAllNodesOnline": true
-        }
+          "requireAllNodesOnline": true,
+          "maxFailedNodes": 1,
+          "enableFirewallRules": true,
+          "rebootMode": "SelfManaged",
+          "selfUpdating": false,
+          "cauPluginName": "Microsoft.WindowsUpdatePlugin"
+        },
+        "cauRunHistory": [],
+        "solutionUpdateEnv": {
+          "state": "Succeeded",
+          "version": "10.2411.0.1",
+          "sbeVersion": null
+        },
+        "solutionUpdateHistory": [],
+        "pendingSolutionUpdates": [],
+        "lifecycleServices": {
+          "MOC": "Running",
+          "WacsService": "Running"
+        },
+        "validationReports": [],
+        "pendingSolutionUpdateCount": 0
+      },
+      "registration": {
+        "subscriptionId": "00000000-0000-0000-0000-000000000000",
+        "resourceGroup": "rg-azlocal-prod-01",
+        "tenantId": "11111111-1111-1111-1111-111111111111",
+        "arcRegistrationDetail": {
+          "registrationStatus": "Registered",
+          "cloudId": "AzureCloud"
+        },
+        "clusterCreationHint": "2024-11-01T10:00:00Z"
       },
       "eventSummary": [
         {

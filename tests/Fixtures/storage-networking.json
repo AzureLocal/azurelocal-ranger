@@ -50,7 +50,18 @@
       ],
       "qos": [],
       "sofs": [],
-      "replica": []
+      "sofsDetail": [],
+      "replica": [],
+      "replicaDepth": [],
+      "qosFlows": [],
+      "healthFaults": [],
+      "scrubSettings": null,
+      "summary": {
+        "activeHealthFaultCount": 0,
+        "sofsShareCount": 0,
+        "replicaGroupCount": 0,
+        "qosFlowCount": 0
+      }
     },
     "networking": {
       "nodes": [
@@ -101,7 +112,25 @@
               "defaultInboundAction": "Allow"
             }
           ],
-          "sdn": []
+          "sdn": [],
+          "dcb": {
+            "dcbxSettings": { "willing": true },
+            "trafficClasses": [
+              { "name": "SMB", "priority": 3, "bandwidthPercentage": 50, "algorithm": "ETS" }
+            ],
+            "flowControl": [
+              { "priority": 3, "enabled": true }
+            ],
+            "policy": []
+          },
+          "intentOverrides": [
+            {
+              "name": "Compute_Management",
+              "adapters": [ "NIC1", "NIC2" ],
+              "storageVlans": [ 711, 712 ]
+            }
+          ],
+          "lldpNeighbors": []
         }
       ],
       "clusterNetworks": [
@@ -117,10 +146,17 @@
       "vSwitches": [],
       "hostVirtualNics": [],
       "intents": [],
+      "intentOverrides": [],
+      "dcb": [],
+      "lldpNeighbors": [],
       "dns": [],
       "proxy": [],
       "firewall": [],
-      "sdn": []
+      "sdn": [],
+      "summary": {
+        "dcbConfiguredNodes": 1,
+        "lldpNeighborCount": 0
+      }
     }
   },
   "Findings": [],

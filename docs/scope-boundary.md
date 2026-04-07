@@ -63,6 +63,36 @@ This applies to:
 
 Manual evidence is included in the manifest and marked as imported so it is distinguishable from machine-collected data.
 
+#### Tier 4 Scope Decision — Two Separate Workflows
+
+Within Tier 4, two distinct workflows exist and are treated separately. This boundary was formally established as part of [Decision #52](https://github.com/AzureLocal/azurelocal-ranger/issues/52).
+
+**Workflow A — Offline Static Config Parsing (in scope for v1)**
+
+Ranger can accept structured config outputs exported from devices it cannot interrogate directly — for example, a network switch config file or firewall export — and parse specific, well-understood fields from those files using a hints-based import pattern.
+
+This applies when:
+
+- the evidence source is a named, well-structured file format (e.g. a JSON export, a vendor-specific config export)
+- Ranger knows which fields to extract and what they mean
+- the import is triggered by the user providing a file path, not by Ranger discovering data automatically
+
+This capability is tracked as [#36 — offline config import](https://github.com/AzureLocal/azurelocal-ranger/issues/36) and is in scope for v1.
+
+**Workflow B — General Manual Import with Evidence Provenance (post-v1)**
+
+A broader capability to accept arbitrary user-provided evidence — including freeform text, screenshots, or structured data with unknown schema — and track it with explicit provenance metadata (who provided it, when, from what source, with what confidence level) is a different and more complex problem.
+
+This applies when:
+
+- the evidence is not a known structured format
+- the import requires user-defined metadata about how the evidence was gathered
+- the manifest must record the provenance so downstream consumers understand the data quality
+
+This capability is tracked as [Decision #32 — manual import workflow](https://github.com/AzureLocal/azurelocal-ranger/issues/32) and is explicitly deferred to post-v1.
+
+**Why they are separate:** Workflow A (static config parsing) is a constrained, well-defined extension of the Redfish/WinRM discovery model — the "source" is just a file instead of a live endpoint. Workflow B (general manual import with provenance) requires a fundamentally different evidence model and has significant UX surface area. Conflating them would block v1 shipping while waiting for a complex feature that is not required for the core use case.
+
 ## In Scope
 
 ### 1. Physical Platform

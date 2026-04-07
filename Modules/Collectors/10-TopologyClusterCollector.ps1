@@ -62,8 +62,32 @@ function Invoke-RangerTopologyClusterCollector {
             }
 
             $cau = if (Get-Command -Name Get-CauClusterRole -ErrorAction SilentlyContinue) {
-                Get-CauClusterRole | Select-Object ClusterName, MaxRetriesPerNode, RequireAllNodesOnline, StartDate, DaysOfWeek
+                Get-CauClusterRole | Select-Object ClusterName, MaxRetriesPerNode, MaxFailedNodes, RequireAllNodesOnline, StartDate, DaysOfWeek, EnableFirewallRules, RebootMode, SelfUpdating, CauPluginName, CauPluginArguments
             }
+
+            $cauRunHistory = if (Get-Command -Name Get-CauReport -ErrorAction SilentlyContinue) {
+                @(try { Get-CauReport -ErrorAction Stop | Sort-Object -Property RunDate -Descending | Select-Object -First 5 Status, LastNodeCompleted, NodeResults, RunDate, Description } catch { @() })
+            } else { @() }
+
+            $solutionUpdateEnv = if (Get-Command -Name Get-SolutionUpdateEnvironment -ErrorAction SilentlyContinue) {
+                try { Get-SolutionUpdateEnvironment -ErrorAction Stop | Select-Object State, Version, SbeVersion, HardwareModel, LastCheckedForUpdates, LastUpdated, LifecycleUri } catch { $null }
+            } else { $null }
+
+            $solutionUpdateHistory = if (Get-Command -Name Get-SolutionUpdateRun -ErrorAction SilentlyContinue) {
+                @(try { Get-SolutionUpdateRun -ErrorAction Stop | Sort-Object -Property StartTimeUtc -Descending | Select-Object -First 5 RunId, State, StartTimeUtc, LastUpdatedTimeUtc, Version, Description } catch { @() })
+            } elseif (Get-Command -Name Get-SolutionUpdate -ErrorAction SilentlyContinue) {
+                @(try { Get-SolutionUpdate -ErrorAction Stop | Where-Object { $_.State -notin @('ReadyToInstall', 'Staged', 'NotApplicable') } | Select-Object -First 5 Version, State, Description, PreparedTime, InstalledTime } catch { @() })
+            } else { @() }
+
+            $pendingSolutionUpdates = if (Get-Command -Name Get-SolutionUpdate -ErrorAction SilentlyContinue) {
+                @(try { Get-SolutionUpdate -ErrorAction Stop | Where-Object { $_.State -in @('ReadyToInstall', 'Staged') } | Select-Object -First 10 Version, State, Description, PackagePath } catch { @() })
+            } else { @() }
+
+            $arcRegistration = if (Get-Command -Name Get-AzureLocalRegistration -ErrorAction SilentlyContinue) {
+                try { Get-AzureLocalRegistration -ErrorAction Stop | Select-Object RegistrationStatus, AzureSubscriptionId, AzureResourceName, AzureResourceGroupName, AzureTenantId, HybridSKU, BillingModel, RegistrationDate } catch { $null }
+            } elseif (Get-Command -Name Get-AzStackHciRegistration -ErrorAction SilentlyContinue) {
+                try { Get-AzStackHciRegistration -ErrorAction Stop | Select-Object RegistrationStatus, AzureSubscriptionId, AzureResourceName, AzureResourceGroupName, AzureTenantId } catch { $null }
+            } else { $null }
 
             $events = if (Get-Command -Name Get-WinEvent -ErrorAction SilentlyContinue) {
                 Get-WinEvent -LogName 'Microsoft-Windows-FailoverClustering/Operational' -MaxEvents 20 -ErrorAction SilentlyContinue |
@@ -71,6 +95,11 @@ function Invoke-RangerTopologyClusterCollector {
             }
             else {
                 @()
+            }
+
+            $clusterCreationEvent = if (Get-Command -Name Get-WinEvent -ErrorAction SilentlyContinue) {
+                Get-WinEvent -LogName 'Microsoft-Windows-FailoverClustering/Operational' -MaxEvents 1 -Oldest -ErrorAction SilentlyContinue |
+                    Select-Object -First 1 TimeCreated
             }
 
             $release = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -ErrorAction SilentlyContinue
@@ -81,7 +110,7 @@ function Invoke-RangerTopologyClusterCollector {
                 Sort-Object -Property LastWriteTime -Descending |
                 Select-Object -First 5 Name, FullName, LastWriteTime, Length
             $lifecycleServices = @(
-                foreach ($serviceName in @('CauService', '*Lifecycle*', '*LCM*')) {
+                foreach ($serviceName in @('CauService', '*Lifecycle*', '*LCM*', 'MocGateway', 'WacsService')) {
                     Get-Service -Name $serviceName -ErrorAction SilentlyContinue | Select-Object Name, DisplayName, Status, StartType
                 }
             )
@@ -94,7 +123,13 @@ function Invoke-RangerTopologyClusterCollector {
                 csvs         = @($csvs)
                 groups       = @($groups)
                 cau          = $cau
+                cauRunHistory = @($cauRunHistory)
+                solutionUpdateEnv = $solutionUpdateEnv
+                solutionUpdateHistory = @($solutionUpdateHistory)
+                pendingSolutionUpdates = @($pendingSolutionUpdates)
+                arcRegistration = $arcRegistration
                 events       = @($events)
+                clusterCreationEvent = $clusterCreationEvent
                 release      = $release
                 licensing    = @($licensing)
                 validationReports = @($validationReports)
@@ -114,6 +149,19 @@ function Invoke-RangerTopologyClusterCollector {
                     (Get-ClusterNode -Name $env:COMPUTERNAME -ErrorAction SilentlyContinue).State
                 }
 
+                $nodePendingUpdates = if (Get-Command -Name Get-SolutionUpdate -ErrorAction SilentlyContinue) {
+                    @(try { Get-SolutionUpdate -ErrorAction Stop | Where-Object { $_.State -in @('ReadyToInstall', 'Staged') } | Select-Object -First 10 Version, State, Description } catch { @() })
+                } else {
+                    @(try {
+                        $wuSession = New-Object -ComObject Microsoft.Update.Session -ErrorAction Stop
+                        $wuSearcher = $wuSession.CreateUpdateSearcher()
+                        $wuResult = $wuSearcher.Search('IsInstalled=0')
+                        @($wuResult.Updates | Select-Object -First 20 | ForEach-Object {
+                            [ordered]@{ title = $_.Title; kbArticleIds = @($_.KBArticleIDs); classification = @($_.Categories | ForEach-Object { $_.Name }) -join ',' }
+                        })
+                    } catch { @() })
+                }
+
                 [ordered]@{
                     name           = $env:COMPUTERNAME
                     fqdn           = if ($computerSystem.DNSHostName -and $computerSystem.Domain) { "{0}.{1}" -f $computerSystem.DNSHostName, $computerSystem.Domain } else { $computerSystem.DNSHostName }
@@ -129,6 +177,8 @@ function Invoke-RangerTopologyClusterCollector {
                     partOfDomain   = [bool]$computerSystem.PartOfDomain
                     domain         = $computerSystem.Domain
                     biosVersion    = if ($bios) { @($bios.SMBIOSBIOSVersion) -join ', ' } else { $null }
+                    pendingUpdates = @($nodePendingUpdates)
+                    pendingUpdateCount = @($nodePendingUpdates).Count
                 }
             }
         }
@@ -213,6 +263,10 @@ function Invoke-RangerTopologyClusterCollector {
         [void]$findings.Add((New-RangerFinding -Severity informational -Title 'Azure connectivity context is disconnected or undefined' -Description 'The cluster target does not currently advertise an Azure subscription context in the Ranger configuration.' -CurrentState $controlPlaneMode -Recommendation 'Confirm whether this deployment should operate disconnected or if Azure registration metadata is missing from the config.'))
     }
 
+    if (@($clusterSnapshot.pendingSolutionUpdates).Count -gt 0) {
+        [void]$findings.Add((New-RangerFinding -Severity warning -Title 'Pending solution updates detected on the cluster' -Description "The collector found $(@($clusterSnapshot.pendingSolutionUpdates).Count) solution update(s) in ReadyToInstall or Staged state." -AffectedComponents @($clusterSnapshot.cluster.Name) -CurrentState "$(@($clusterSnapshot.pendingSolutionUpdates).Count) pending updates" -Recommendation 'Review pending solution updates and schedule an appropriate maintenance window to apply them.'))
+    }
+
     return @{
         Status        = if ($healthSummary.unhealthy -gt 0) { 'partial' } else { 'success' }
         Topology      = [ordered]@{
@@ -249,7 +303,23 @@ function Invoke-RangerTopologyClusterCollector {
                 networks      = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.networks
                 roles         = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.groups
                 csvSummary    = [ordered]@{ count = @($clusterSnapshot.csvs).Count; items = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.csvs }
-                updatePosture = [ordered]@{ clusterAwareUpdating = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.cau; lifecycleServices = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.lifecycleServices; validationReports = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.validationReports }
+                updatePosture = [ordered]@{
+                    clusterAwareUpdating   = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.cau
+                    cauRunHistory          = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.cauRunHistory
+                    solutionUpdateEnv      = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.solutionUpdateEnv
+                    solutionUpdateHistory  = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.solutionUpdateHistory
+                    pendingSolutionUpdates = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.pendingSolutionUpdates
+                    lifecycleServices      = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.lifecycleServices
+                    validationReports      = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.validationReports
+                    pendingSolutionUpdateCount = @($clusterSnapshot.pendingSolutionUpdates).Count
+                }
+                registration  = [ordered]@{
+                    subscriptionId        = $Config.targets.azure.subscriptionId
+                    resourceGroup         = $Config.targets.azure.resourceGroup
+                    tenantId              = $Config.targets.azure.tenantId
+                    arcRegistrationDetail = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.arcRegistration
+                    clusterCreationHint   = if ($clusterSnapshot.clusterCreationEvent) { $clusterSnapshot.clusterCreationEvent.TimeCreated.ToString('o') } else { $null }
+                }
                 eventSummary  = ConvertTo-RangerHashtable -InputObject $clusterSnapshot.events
                 healthSummary = $healthSummary
                 nodeSummary   = $nodeSummary

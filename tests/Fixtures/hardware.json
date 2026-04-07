@@ -18,7 +18,30 @@
           "memoryGiB": 512,
           "nicCount": 6,
           "storageControllerCount": 2,
-          "firmwareCount": 14
+          "firmwareCount": 14,
+          "gpuCount": 0,
+          "gpuDevices": [],
+          "memoryDimms": [
+            { "slot": "A1", "partNumber": "HMA84GR7AFR4N-XN", "capacityGiB": 32, "operatingSpeedMhz": 3200, "memoryType": "DRAM", "status": "Enabled" }
+          ],
+          "bmcCert": {
+            "subject": "CN=idrac-node-01.contoso.com",
+            "validUntil": "2027-01-01T00:00:00Z",
+            "daysUntilExpiry": 480
+          },
+          "vbsPosture": {
+            "hvciEnabled": true,
+            "credentialGuardEnabled": true,
+            "securedCoreDrtm": true
+          },
+          "securityPosture": {
+            "secureBoot": true,
+            "tpmPresent": true,
+            "tpmEnabled": true,
+            "hvciEnabled": true,
+            "credentialGuardEnabled": true,
+            "bmcCertExpiryDays": 480
+          }
         },
         {
           "node": "azl-node-02",
@@ -35,7 +58,30 @@
           "memoryGiB": 512,
           "nicCount": 6,
           "storageControllerCount": 2,
-          "firmwareCount": 14
+          "firmwareCount": 14,
+          "gpuCount": 0,
+          "gpuDevices": [],
+          "memoryDimms": [
+            { "slot": "A1", "partNumber": "HMA84GR7AFR4N-XN", "capacityGiB": 32, "operatingSpeedMhz": 3200, "memoryType": "DRAM", "status": "Enabled" }
+          ],
+          "bmcCert": {
+            "subject": "CN=idrac-node-02.contoso.com",
+            "validUntil": "2027-01-01T00:00:00Z",
+            "daysUntilExpiry": 480
+          },
+          "vbsPosture": {
+            "hvciEnabled": true,
+            "credentialGuardEnabled": true,
+            "securedCoreDrtm": true
+          },
+          "securityPosture": {
+            "secureBoot": true,
+            "tpmPresent": true,
+            "tpmEnabled": true,
+            "hvciEnabled": true,
+            "credentialGuardEnabled": true,
+            "bmcCertExpiryDays": 480
+          }
         }
       ],
       "summary": {
@@ -46,7 +92,12 @@
             "count": 2
           }
         ],
-        "firmwareNodes": 2
+        "firmwareNodes": 2,
+        "gpuNodes": 0,
+        "totalGpuCount": 0,
+        "hvciEnabledNodes": 2,
+        "credGuardEnabledNodes": 2,
+        "bmcCertExpiringNodes": 0
       }
     },
     "oemIntegration": {

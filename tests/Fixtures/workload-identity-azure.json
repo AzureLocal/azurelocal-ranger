@@ -13,7 +13,22 @@
           "dynamicMemory": true,
           "switchNames": [
             "ConvergedSwitch"
-          ]
+          ],
+          "checkpoints": [],
+          "checkpointCount": 0,
+          "nicsAdvanced": [
+            {
+              "name": "Network Adapter",
+              "switchName": "ConvergedSwitch",
+              "macAddress": "00155D0A0101",
+              "sriovEnabled": false,
+              "sriovWeight": null,
+              "rdmaWeight": null,
+              "maxBandwidthMbps": null,
+              "isolationMode": "Vlan"
+            }
+          ],
+          "guestClusterCandidate": false
         }
       ],
       "placement": [
@@ -60,7 +75,21 @@
           "node": "azl-node-01",
           "defender": {
             "antivirusEnabled": true,
-            "realTimeProtectionEnabled": true
+            "realTimeProtectionEnabled": true,
+            "isTamperProtected": true,
+            "antivirusSignatureVersion": "1.409.0.0",
+            "antivirusSignatureLastUpdated": "2026-04-05T02:00:00Z",
+            "amRunningMode": "Normal"
+          },
+          "defenderExclusions": {
+            "paths": [],
+            "processes": [],
+            "extensions": []
+          },
+          "wdacInfo": {
+            "wdacConfigured": true,
+            "enforcementMode": "Enforced",
+            "codeIntegrityPolicyEnforcementStatus": 2
           },
           "deviceGuard": {
             "virtualizationBasedSecurityStatus": 2
@@ -68,9 +97,23 @@
           "bitlocker": [
             {
               "mountPoint": "C:",
-              "protectionStatus": "On"
+              "protectionStatus": "On",
+              "encryptionMethod": "XtsAes256"
             }
-          ]
+          ],
+          "bitlockerProtectors": [
+            {
+              "mountPoint": "C:",
+              "protectionStatus": "On",
+              "encryptionMethod": "XtsAes256",
+              "protectorTypes": [ "Tpm", "RecoveryPassword" ],
+              "hasTpm": true,
+              "hasRecovery": true,
+              "hasAdBackup": false
+            }
+          ],
+          "secureBoot": true,
+          "appLocker": []
         }
       ],
       "localAdmins": [
@@ -109,7 +152,38 @@
           "node": "azl-node-01",
           "references": []
         }
-      ]
+      ],
+      "entraJoin": [
+        {
+          "node": "azl-node-01",
+          "status": {
+            "azureAdJoined": false,
+            "hybridAzureAdJoined": true,
+            "domainJoined": true,
+            "tenantId": "11111111-1111-1111-1111-111111111111"
+          },
+          "aadkerbConfigured": false
+        }
+      ],
+      "summary": {
+        "nodeCount": 1,
+        "domainJoinedNodes": 1,
+        "hybridEntraJoinedNodes": 1,
+        "entraJoinedNodes": 0,
+        "credSspEnabledNodes": 0,
+        "defenderProtectedNodes": 1,
+        "tamperProtectedNodes": 1,
+        "wdacEnforcedNodes": 1,
+        "wdacAuditNodes": 0,
+        "bitLockerProtectedNodes": 1,
+        "bitLockerTpmProtectedNodes": 1,
+        "bitLockerAdBackupNodes": 0,
+        "secureBootEnabledNodes": 1,
+        "aadkerbConfiguredNodes": 0,
+        "certificateCount": 1,
+        "certificateExpiringWithin90Days": 0,
+        "appLockerNodes": 0
+      }
     },
     "azureIntegration": {
       "context": {
@@ -146,7 +220,21 @@
           "enforcementMode": "Default"
         }
       ],
-      "backup": [
+      "policyCompliance": [],
+      "aksClusters": [],
+      "avdHostPools": [
+        {
+          "name": "avd-hostpool-prod",
+          "hostPoolType": "Personal",
+          "loadBalancerType": "Persistent",
+          "validationEnvironment": false,
+          "maxSessionLimit": 1
+        }
+      ],
+      "arbDetail": [],
+      "siteRecovery": [],
+      "backup": [],
+      "backupLegacy": [
         {
           "name": "rsv-azlocal-prod-01",
           "resourceType": "Microsoft.RecoveryServices/vaults"
@@ -158,6 +246,11 @@
           "resourceType": "Microsoft.Maintenance/configurationAssignments"
         }
       ],
+      "policySummary": {
+        "assignmentCount": 1,
+        "nonCompliantCount": 0,
+        "complianceByType": []
+      },
       "cost": []
     }
   },
