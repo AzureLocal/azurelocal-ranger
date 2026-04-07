@@ -41,24 +41,24 @@ Focus: live-estate proof, PSGallery publish, and polish.
 | Output template improvements ([#38](https://github.com/AzureLocal/azurelocal-ranger/issues/38)) | Richer output template definitions aligned to full collector data inventory | 🔵 Planned |
 | Docs audit ([#37](https://github.com/AzureLocal/azurelocal-ranger/issues/37)) | Verify all public docs reflect the current implementation and remove any planning-era stale content | 🔵 Planned |
 
-## Post-v1 Backlog
+## Backlog
 
-These items are intentionally deferred outside the `1.0.0` baseline. Each has a tracked decision record.
+Open features tracked as GitHub issues. All are implementation targets — no item in this list is permanently deferred or off the table.
 
 | Item | Detail | Issue |
 | --- | --- | --- |
-| Azure-hosted automation worker | Run Ranger from an Azure Automation account or hosted runner without a local PowerShell session | [#25](https://github.com/AzureLocal/azurelocal-ranger/issues/25) |
 | Arc Run Command transport | Use Azure Arc Run Command as an alternate collection channel for environments where WinRM is blocked | [#26](https://github.com/AzureLocal/azurelocal-ranger/issues/26) |
-| Direct switch interrogation | Collect switch configuration directly via SSH/RESTCONF/NETCONF rather than host-side evidence only | [#27](https://github.com/AzureLocal/azurelocal-ranger/issues/27) |
-| Direct firewall interrogation | Collect firewall policy directly from the appliance | [#28](https://github.com/AzureLocal/azurelocal-ranger/issues/28) |
-| Non-Dell OEM support | Hardware inventory modules for HPE, Lenovo, and other OEM vendors beyond Dell/Redfish | [#29](https://github.com/AzureLocal/azurelocal-ranger/issues/29) |
-| Disconnected enrichment | Richer discovery for environments with limited or no Azure connectivity | [#30](https://github.com/AzureLocal/azurelocal-ranger/issues/30) |
-| Multi-rack and management cluster enrichment | Deployment-variant-specific discovery depth for rack-scale and stretched cluster topologies | [#31](https://github.com/AzureLocal/azurelocal-ranger/issues/31) |
+| Direct switch interrogation | SSH/RESTCONF/NETCONF collection from Dell OS10, Arista EOS, Cisco Nexus, and other ToR switches | [#27](https://github.com/AzureLocal/azurelocal-ranger/issues/27) |
+| Direct firewall interrogation | Collect firewall policy directly from Palo Alto, FortiGate, Cisco ASA, pfSense, and other appliances | [#28](https://github.com/AzureLocal/azurelocal-ranger/issues/28) |
+| Non-Dell OEM hardware support | Hardware inventory collectors for HPE iLO, Lenovo XClarity, and DataON via Redfish | [#29](https://github.com/AzureLocal/azurelocal-ranger/issues/29) |
+| Disconnected / semi-connected discovery | Graceful degradation and enriched collection for environments with limited or no Azure connectivity | [#30](https://github.com/AzureLocal/azurelocal-ranger/issues/30) |
+| Multi-rack Azure Local discovery | Rack topology, SAN storage, compute rack correlation, northbound connectivity for rack-scale deployments | [#31](https://github.com/AzureLocal/azurelocal-ranger/issues/31) |
+| Azure-hosted automation worker | Run Ranger from an Azure Automation account or hosted runner without a local PowerShell session | [#25](https://github.com/AzureLocal/azurelocal-ranger/issues/25) |
 | Manual import workflows | Accept externally gathered data for environments where automated collection is not authorized | [#32](https://github.com/AzureLocal/azurelocal-ranger/issues/32) |
 | Windows PowerShell 5.1 compatibility | Assess and implement compatibility without distorting the PowerShell 7 architecture | [#33](https://github.com/AzureLocal/azurelocal-ranger/issues/33) |
-| Interactive configuration wizard | Guided terminal wizard (`Invoke-RangerWizard`) for first-run setup: enter cluster/credential/output details, select domains, choose presets — no hand-authored YAML required. All wizard fields are also passable as direct parameters to `Invoke-RangerCollect` for automation scenarios. | [#75](https://github.com/AzureLocal/azurelocal-ranger/issues/75) |
-| Spectre.Console TUI scan progress | Rich terminal UI while collection runs: per-collector live progress bars, spinner per active collector, real-time finding count, graceful ANSI-fallback for CI. Also drives interactive prompts in the configuration wizard. | [#76](https://github.com/AzureLocal/azurelocal-ranger/issues/76) |
-| Terminal TUI alternatives survey | Structured evaluation of Spectre.Console (via PwshSpectreConsole), Terminal.Gui/ConsoleGuiTools, Sharprompt, and other options before committing to an implementation. Produces a decision record. | [#77](https://github.com/AzureLocal/azurelocal-ranger/issues/77) |
+| Interactive configuration wizard | Guided terminal wizard (`Invoke-RangerWizard`) with domain selection, presets, and full parameter passthrough for headless use | [#75](https://github.com/AzureLocal/azurelocal-ranger/issues/75) |
+| Terminal TUI scan progress | Rich live progress display while collection runs — per-collector bars, spinner, real-time findings count, ANSI fallback for CI | [#76](https://github.com/AzureLocal/azurelocal-ranger/issues/76) |
+| Terminal TUI library survey | Evaluate Spectre.Console, Terminal.Gui/ConsoleGuiTools, Sharprompt, and alternatives before committing to #76 | [#77](https://github.com/AzureLocal/azurelocal-ranger/issues/77) |
 
 ## Long-term Vision
 
