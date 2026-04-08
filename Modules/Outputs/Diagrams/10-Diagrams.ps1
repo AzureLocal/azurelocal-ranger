@@ -390,6 +390,7 @@ function ConvertTo-RangerSvgDiagram {
     $groupOffsets = @{}
     $positions = @{}
     foreach ($node in @($Model.nodes)) {
+        if ([string]::IsNullOrWhiteSpace($node.id)) { continue }
         $group = if ($node.group) { [string]$node.group } else { 'platform' }
         if (-not $groupColumns.Contains($group)) {
             $group = 'platform'
@@ -423,6 +424,7 @@ function ConvertTo-RangerSvgDiagram {
     }
 
     foreach ($edge in @($Model.edges)) {
+        if ([string]::IsNullOrWhiteSpace($edge.source) -or [string]::IsNullOrWhiteSpace($edge.target)) { continue }
         if (-not $positions.Contains($edge.source) -or -not $positions.Contains($edge.target)) {
             continue
         }

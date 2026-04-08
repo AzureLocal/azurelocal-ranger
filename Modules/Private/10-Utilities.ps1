@@ -83,9 +83,12 @@ function ConvertTo-RangerHashtable {
 function Get-RangerSafeName {
     param(
         [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [AllowNull()]
         [string]$Value
     )
 
+    if ([string]::IsNullOrWhiteSpace($Value)) { return 'unnamed' }
     ($Value -replace '[^A-Za-z0-9._-]', '-').Trim('-')
 }
 

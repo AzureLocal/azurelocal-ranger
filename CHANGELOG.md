@@ -14,12 +14,24 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 - **Issue #38** — As-built mode now produces differentiated report content: Document Control block, Installation Register, and Sign-Off table injected into each tier report when `mode = as-built`. New `Modules/Outputs/Templates/10-AsBuilt.ps1` with three template section functions. `Modules/Outputs/Templates/` added to module load path in `AzureLocalRanger.psm1`. 2 new simulation tests covering as-built document control and sign-off content.
 - **Issue #37** — Full documentation audit: Manifest Sub-Domains tables added to all 8 domain pages that were missing them (`networking`, `cluster-and-node`, `storage`, `hardware`, `virtual-machines`, `management-tools`, `performance-baseline`, `oem-integration`). New contributor docs: `simulation-testing.md` (complete simulation framework guide, IIC canonical data standard, fixture regeneration), `template-authoring.md` (template system design, how to add new report sections). `contributor/getting-started.md` updated to remove deleted page references and reflect current implementation focus. MkDocs nav updated for new contributor pages.
 
+### Fixed
+
+- **Issue #103** — `Export-AzureLocalRangerReport`: Added `-AsHashtable` to `ConvertFrom-Json` to correctly handle mixed-case JSON keys in live manifests; changed `$manifest.run.mode` to bracket access `$manifest['run']['mode']` for consistent hashtable compatibility.
+- **Issue #105** — Workload/identity/Azure collector: Changed `Select-Object -ExpandProperty hostNode` to `ForEach-Object { $_['hostNode'] }` and `Group-Object -Property hostNode` to `Group-Object -Property { $_['hostNode'] }` to fix hashtable VM inventory property access producing incorrect `avgVmsPerNode` and always-empty `highestDensityNode`.
+- **Issue #107** — Diagram generation: `Get-RangerSafeName` now accepts null/empty input (returns `'unnamed'`), SVG layout loop skips nodes with null/empty id, SVG edge loop skips edges with null/empty source or target. Prevents storage-architecture diagram crash when storage pool/CSV has no friendly name.
+- **Issue #108** — `Test-RangerTargetConfigured`: Fixed `@($null).Count -gt 0` returning true when `targets.cluster` is absent; added explicit null check before testing for fqdn/nodes; node and endpoint lists filtered for null/empty entries before count check.
+
 ### Changed
 
 - `domains.hints.networkDeviceConfigs` added to `Get-RangerDefaultConfig` default hints structure
 - `networking` domain reserved template now includes `switchConfig` and `firewallConfig` keys
 - `networking` domain summary now includes `importedSwitchConfigCount` and `importedFirewallConfigCount` counts
-- Tests: 18 → 27 total (7 new network device tests + 2 new simulation tests)
+- Tests: 18 → 27 → 28 total (7 new network device tests + 2 new simulation tests; 1 additional regression test)
+
+### Known Issues
+
+- **Issue #106** — Unreachable cluster nodes are silently excluded from collection without emitting a manifest finding. Retry attempt count is not tracked in `manifest.run` metadata.
+- **Issue #93** — Storage domain collection fails silently on some node configurations due to script block parsing errors for the `sofs` helper.
 
 ## [0.5.0] — 2026-04-07
 

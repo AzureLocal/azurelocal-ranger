@@ -390,13 +390,15 @@ function Test-RangerTargetConfigured {
 
     switch ($TargetName) {
         'cluster' {
-            return -not [string]::IsNullOrWhiteSpace($Config.targets.cluster.fqdn) -or @($Config.targets.cluster.nodes).Count -gt 0
+            $clusterTarget = $Config.targets.cluster
+            if ($null -eq $clusterTarget) { return $false }
+            return -not [string]::IsNullOrWhiteSpace($clusterTarget.fqdn) -or @($clusterTarget.nodes | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }).Count -gt 0
         }
         'azure' {
             return -not [string]::IsNullOrWhiteSpace($Config.targets.azure.subscriptionId) -or -not [string]::IsNullOrWhiteSpace($Config.targets.azure.resourceGroup)
         }
         'bmc' {
-            return @($Config.targets.bmc.endpoints).Count -gt 0
+            return @($Config.targets.bmc.endpoints | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }).Count -gt 0
         }
         default {
             return $false
