@@ -56,7 +56,7 @@ function Get-RangerDefaultConfig {
         output = [ordered]@{
             mode            = 'current-state'
             formats         = @('html', 'markdown', 'json', 'svg')
-            rootPath        = './artifacts'
+            rootPath        = 'C:\AzureLocalRanger'
             diagramFormat   = 'svg'
             keepRawEvidence = $true
         }
