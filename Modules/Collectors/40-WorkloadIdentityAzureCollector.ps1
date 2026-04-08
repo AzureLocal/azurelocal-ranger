@@ -780,8 +780,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
         sriovEnabledNics       = @($vmInventory | ForEach-Object { @($_.nicsAdvanced | Where-Object { $_.sriovEnabled }) } | Measure-Object).Count
         vcpuOvercommitRatio    = if (@($vmInventory).Count -gt 0 -and @($config.targets.cluster.nodes).Count -gt 0) { [math]::Round((@($vmInventory | Measure-Object -Property processorCount -Sum).Sum) / 1, 2) } else { $null }
         memoryOvercommitRatio  = if (@($vmInventory).Count -gt 0) { [math]::Round((@($vmInventory | Measure-Object -Property memoryAssignedMb -Sum).Sum / 1024), 2) } else { $null }
-        avgVmsPerNode          = if (@($vmInventory).Count -gt 0) { [math]::Round(@($vmInventory).Count / [math]::Max(1, @($vmInventory | Select-Object -ExpandProperty hostNode -Unique).Count), 1) } else { 0 }
-        highestDensityNode     = ($vmInventory | Group-Object -Property hostNode | Sort-Object Count -Descending | Select-Object -First 1).Name
+        avgVmsPerNode          = if (@($vmInventory).Count -gt 0) { [math]::Round(@($vmInventory).Count / [math]::Max(1, @($vmInventory | ForEach-Object { $_['hostNode'] } | Select-Object -Unique).Count), 1) } else { 0 }
+        highestDensityNode     = ($vmInventory | Group-Object -Property { $_['hostNode'] } | Sort-Object Count -Descending | Select-Object -First 1).Name
         arcConnectedVms        = @($vmInventory | Where-Object { $_.arcAgentInstalled -eq $true }).Count
     }
 
