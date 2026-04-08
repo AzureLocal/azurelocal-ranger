@@ -38,7 +38,7 @@ function Invoke-RangerMonitoringCollector {
                         ForEach-Object { [ordered]@{ eventId = $_.Name; count = $_.Count; level = $_.Group[0].LevelDisplayName; sample = $_.Group[0].Message.Substring(0, [Math]::Min(200, $_.Group[0].Message.Length)) } }
                 } catch { @() })
                 # Windows Admin Center agent / MAS agent version
-                $amaAgentVersion = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\MonitoringAgent\Setup' -Name 'CurrentVersion' -ErrorAction SilentlyContinue)?.CurrentVersion
+                $amaAgentVersion = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\MonitoringAgent\Setup' -Name 'CurrentVersion' -ErrorAction SilentlyContinue).CurrentVersion
                 $amaService = if (Get-Command -Name Get-Service -ErrorAction SilentlyContinue) { Get-Service -Name 'AzureMonitoringAgent','HealthAndSupportServices' -ErrorAction SilentlyContinue | Select-Object Name, Status, StartType } else { @() }
 
                 [ordered]@{

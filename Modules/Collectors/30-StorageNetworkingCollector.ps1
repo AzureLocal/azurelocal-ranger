@@ -18,7 +18,7 @@ function Invoke-RangerStorageNetworkingCollector {
         return ConvertTo-RangerHashtable -InputObject $fixture
     }
 
-    $storageSnapshot = Invoke-RangerSafeAction -Label 'Storage inventory snapshot' -DefaultValue [ordered]@{} -ScriptBlock {
+    $storageSnapshot = Invoke-RangerSafeAction -Label 'Storage inventory snapshot' -DefaultValue ([ordered]@{}) -ScriptBlock {
         Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -SingleTarget -ScriptBlock {
             [ordered]@{
                 # Issue #58: Expanded pool, physical disk, virtual disk, volume collections

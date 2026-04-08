@@ -36,11 +36,10 @@ function Invoke-RangerRemoteCommand {
         [int]$RetryCount = 1
     )
 
-    Invoke-RangerRetry -RetryCount $RetryCount -ScriptBlock {
+    $retryBlock = {
         $invokeParams = @{
             ComputerName = $ComputerName
             ScriptBlock  = $ScriptBlock
-            ErrorAction  = 'Stop'
         }
 
         if ($Credential) {
@@ -52,7 +51,9 @@ function Invoke-RangerRemoteCommand {
         }
 
         Invoke-Command @invokeParams
-    }
+    }.GetNewClosure()
+
+    Invoke-RangerRetry -RetryCount $RetryCount -ScriptBlock $retryBlock
 }
 
 function Invoke-RangerRedfishRequest {
