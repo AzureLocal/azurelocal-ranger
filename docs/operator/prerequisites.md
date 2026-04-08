@@ -28,7 +28,7 @@ Optional tools may be required for specific workflows later, but v1 planning ass
 
 ## WinRM Client Configuration
 
-Ranger uses WinRM (PowerShell remoting) to run commands on cluster nodes. The execution machine must have the WinRM service running and the node IPs or hostnames added to the WinRM TrustedHosts list before `Test-WSMan` or `Invoke-Command` will succeed.
+Ranger uses WinRM (PowerShell remoting) to run commands on cluster nodes. The execution machine must have the WinRM service running and **both the node IPs and the cluster VIP** added to the WinRM TrustedHosts list before `Test-WSMan` or `Invoke-Command` will succeed. The cluster VIP is required because Ranger may target the cluster name (which resolves to the VIP) in addition to individual nodes.
 
 This is required when the execution machine is **not** domain-joined to the same domain as the cluster nodes (for example, an AVD session host or a local workstation authenticating with explicit credentials).
 
@@ -39,15 +39,15 @@ Run the following once from an **elevated** PowerShell session on the execution 
 Start-Service WinRM
 Set-Service WinRM -StartupType Automatic
 
-# Add cluster node IPs to TrustedHosts (adjust IPs for the target environment)
-Set-Item WSMan:\localhost\Client\TrustedHosts -Value "192.168.211.11,192.168.211.12,192.168.211.13,192.168.211.14" -Force
+# Add cluster node IPs and cluster VIP to TrustedHosts (adjust IPs for the target environment)
+Set-Item WSMan:\localhost\Client\TrustedHosts -Value "192.168.211.11,192.168.211.12,192.168.211.13,192.168.211.14,192.168.211.20" -Force
 ```
 
 To append to existing entries rather than overwriting:
 
 ```powershell
 $existing = (Get-Item WSMan:\localhost\Client\TrustedHosts).Value
-$new = if ($existing) { "$existing,192.168.211.11,192.168.211.12,192.168.211.13,192.168.211.14" } else { "192.168.211.11,192.168.211.12,192.168.211.13,192.168.211.14" }
+$new = if ($existing) { "$existing,192.168.211.11,192.168.211.12,192.168.211.13,192.168.211.14,192.168.211.20" } else { "192.168.211.11,192.168.211.12,192.168.211.13,192.168.211.14,192.168.211.20" }
 Set-Item WSMan:\localhost\Client\TrustedHosts -Value $new -Force
 ```
 
