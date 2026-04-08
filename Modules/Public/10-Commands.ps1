@@ -65,9 +65,9 @@ function Export-AzureLocalRangerReport {
         throw "Manifest file not found: $resolvedManifestPath"
     }
 
-    $manifest = Get-Content -Path $resolvedManifestPath -Raw | ConvertFrom-Json -Depth 100
+    $manifest = Get-Content -Path $resolvedManifestPath -Raw | ConvertFrom-Json -AsHashtable -Depth 100
     $packageRoot = if ($OutputPath) { Resolve-RangerPath -Path $OutputPath } else { Split-Path -Parent $resolvedManifestPath }
-    Invoke-RangerOutputGeneration -Manifest (ConvertTo-RangerHashtable -InputObject $manifest) -PackageRoot $packageRoot -Formats $Formats -Mode $manifest.run.mode
+    Invoke-RangerOutputGeneration -Manifest (ConvertTo-RangerHashtable -InputObject $manifest) -PackageRoot $packageRoot -Formats $Formats -Mode $manifest['run']['mode']
 }
 
 function Test-AzureLocalRangerPrerequisites {
