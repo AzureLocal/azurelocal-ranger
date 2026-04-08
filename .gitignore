@@ -1,6 +1,9 @@
 # Documentation build output
 site/
 
+# Ranger run artifacts (generated evidence/reports — not source)
+artifacts/
+
 # Python virtual environments for MkDocs contributors
 .venv/
 venv/
