@@ -20,10 +20,40 @@ The planned runtime assumes:
 
 - PowerShell 7.x
 - the Az PowerShell modules needed for Azure discovery
+- RSAT ActiveDirectory PowerShell module (`Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0` on Windows client / multi-session; `RSAT-AD-PowerShell` on Windows Server)
 - Azure CLI when CLI-only or fallback workflows are needed
 - network access to WinRM, HTTPS Redfish endpoints, and Azure public or approved private endpoints as required by the selected domains
 
 Optional tools may be required for specific workflows later, but v1 planning assumes PowerShell plus Azure authentication tooling.
+
+## WinRM Client Configuration
+
+Ranger uses WinRM (PowerShell remoting) to run commands on cluster nodes. The execution machine must have the WinRM service running and the node IPs or hostnames added to the WinRM TrustedHosts list before `Test-WSMan` or `Invoke-Command` will succeed.
+
+This is required when the execution machine is **not** domain-joined to the same domain as the cluster nodes (for example, an AVD session host or a local workstation authenticating with explicit credentials).
+
+Run the following once from an **elevated** PowerShell session on the execution machine:
+
+```powershell
+# Start WinRM if not already running
+Start-Service WinRM
+Set-Service WinRM -StartupType Automatic
+
+# Add cluster node IPs to TrustedHosts (adjust IPs for the target environment)
+Set-Item WSMan:\localhost\Client\TrustedHosts -Value "192.168.211.11,192.168.211.12,192.168.211.13,192.168.211.14" -Force
+```
+
+To append to existing entries rather than overwriting:
+
+```powershell
+$existing = (Get-Item WSMan:\localhost\Client\TrustedHosts).Value
+$new = if ($existing) { "$existing,192.168.211.11,192.168.211.12,192.168.211.13,192.168.211.14" } else { "192.168.211.11,192.168.211.12,192.168.211.13,192.168.211.14" }
+Set-Item WSMan:\localhost\Client\TrustedHosts -Value $new -Force
+```
+
+> **Note**: TrustedHosts bypasses Kerberos mutual authentication. Only add hosts you trust. Using IP addresses instead of hostnames limits the exposure to the known network range.
+
+The `-InstallPrerequisites` switch on `Test-AzureLocalRangerPrerequisites` does not configure WinRM or TrustedHosts — this must be done manually in an elevated session before running Ranger.
 
 ## Minimum Inputs
 
@@ -105,11 +135,12 @@ This is not a standard hyperconverged deployment and should be treated as varian
 Before a meaningful run, verify:
 
 1. you are on the right workstation or jump box
-2. cluster WinRM access works
-3. Azure authentication works for the intended subscription and resource group
-4. BMC endpoints are reachable if hardware discovery is included
-5. DNS, proxy, and firewall posture allow the selected domains to communicate
-6. you understand which domains are expected to run and which should be skipped
+2. the WinRM service is running on the execution machine and cluster node IPs are in TrustedHosts (see [WinRM Client Configuration](#winrm-client-configuration) above)
+3. cluster WinRM access works (`Test-WSMan -ComputerName <node-ip> -Credential <domain-cred> -Authentication Negotiate`)
+4. Azure authentication works for the intended subscription and resource group
+5. BMC endpoints are reachable if hardware discovery is included
+6. DNS, proxy, and firewall posture allow the selected domains to communicate
+7. you understand which domains are expected to run and which should be skipped
 
 ## Next Reads
 
