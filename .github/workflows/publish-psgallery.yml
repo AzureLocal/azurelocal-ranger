@@ -46,7 +46,10 @@ jobs:
           if (-not $env:PSGALLERY_API_KEY) {
             throw 'PSGALLERY_API_KEY secret is not set. Cannot publish.'
           }
-          Publish-Module -Path $env:GITHUB_WORKSPACE -NuGetApiKey $env:PSGALLERY_API_KEY -Repository PSGallery -Verbose
+          # Publish-Module requires the directory to be named after the module
+          $stagingDir = Join-Path $env:RUNNER_TEMP 'staging' 'AzureLocalRanger'
+          Copy-Item -Path $env:GITHUB_WORKSPACE -Destination $stagingDir -Recurse -Force
+          Publish-Module -Path $stagingDir -NuGetApiKey $env:PSGALLERY_API_KEY -Repository PSGallery -Verbose
 
       - name: Dry-run summary
         if: ${{ github.event.inputs.dry_run == 'true' }}
