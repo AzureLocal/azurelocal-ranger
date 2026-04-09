@@ -456,7 +456,7 @@ function New-RangerReportPayload {
         $eventLogSummaryLines = @(
             "Event logs analyzed per node across $(@($Manifest.domains.performance.eventLogAnalysis).Count) log sources:"
         )
-        $topLogEntries = @($Manifest.domains.performance.eventLogAnalysis | Where-Object { $_['eventCount'] -gt 0 } | Sort-Object { [int]($_['eventCount'] ?? 0) } -Descending | Select-Object -First 10)
+        $topLogEntries = @($Manifest.domains.performance.eventLogAnalysis | Where-Object { $_ -ne $null -and $_['eventCount'] -gt 0 } | Sort-Object { [int]($_['eventCount'] ?? 0) } -Descending | Select-Object -First 10)
         if ($topLogEntries.Count -gt 0) {
             foreach ($entry in $topLogEntries) {
                 $eventLogSummaryLines += "  Node $($entry['node']): $($entry['logName']) — $($entry['eventCount']) events"

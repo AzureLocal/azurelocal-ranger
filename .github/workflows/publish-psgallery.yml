@@ -30,6 +30,7 @@ jobs:
         shell: pwsh
         run: |
           Install-Module Pester -Force -Scope CurrentUser -MinimumVersion 5.0
+          Install-Module powershell-yaml -Force -Scope CurrentUser
           Import-Module ./AzureLocalRanger.psd1 -Force
           $result = Invoke-Pester -Path ./tests -PassThru -Output Minimal
           if ($result.FailedCount -gt 0) {
