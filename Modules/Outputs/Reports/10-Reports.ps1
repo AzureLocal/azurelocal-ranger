@@ -427,21 +427,25 @@ function New-RangerReportPayload {
             "  Overhead ratio: $(if ($summary.StorageTotalRawGiB -gt 0) { [math]::Round((1 - $summary.StorageTotalUsableGiB / $summary.StorageTotalRawGiB) * 100, 1) } else { 'N/A' })% consumed by resiliency"
         )
         foreach ($pool in @($Manifest.domains.storage.pools)) {
-            $resiliency = if ($pool['resiliencyType']) { $pool['resiliencyType'] } else { 'unknown' }
             # Use bracket notation: works for both Hashtable and OrderedDictionary regardless of
             # whether pools was a single item or array in the manifest (in-memory or deserialized).
-            $rawGiB = [double]($pool['sizeGiB'] ?? $pool['totalCapacityGiB'] ?? 0)
-            $approxPct = switch ($resiliency.ToLowerInvariant()) {
-                'mirror'          { 50 }
-                'three-way'       { 33 }
-                'threeway'        { 33 }
-                'three-waymirror' { 33 }
-                'parity'          { 60 }
-                'dualparity'      { 72 }
-                default           { 50 }
-            }
+            $rawGiB           = [double]($pool['sizeGiB'] ?? $pool['totalCapacityGiB'] ?? 0)
+            $resiliencyName   = [string]($pool['resiliencySettingName'] ?? $pool['resiliencyType'] ?? '')
+            $numCopies        = if ($pool['numberOfDataCopies']) { [int]$pool['numberOfDataCopies'] } else { 0 }
+            # Build human-readable label: Mirror (3-way), Mirror (2-way), Parity, etc.
+            $resiliencyDisplay = if (-not $resiliencyName) { 'unknown' }
+                                 elseif ($resiliencyName -ieq 'Mirror' -and $numCopies -gt 0) { "Mirror ($numCopies-way)" }
+                                 else { $resiliencyName }
+            # Efficiency: Mirror 3-way=33%, Mirror 2-way=50%, Parity~60%, Dual Parity~72%, Simple=100%
+            $approxPct = if (-not $resiliencyName)                           { 50 }
+                         elseif ($resiliencyName -ieq 'Mirror' -and $numCopies -ge 3) { 33 }
+                         elseif ($resiliencyName -ieq 'Mirror')              { 50 }
+                         elseif ($resiliencyName -ieq 'Parity')              { 60 }
+                         elseif ($resiliencyName -ieq 'DualParity')          { 72 }
+                         elseif ($resiliencyName -ieq 'Simple')              { 100 }
+                         else                                                 { 50 }
             $approxUsableGiB = [math]::Round($rawGiB * $approxPct / 100, 0)
-            $storageMathLines += "  Pool '$($pool.friendlyName)': $rawGiB GiB raw, resiliency=$resiliency, ~$approxUsableGiB GiB usable (~$approxPct% efficiency)"
+            $storageMathLines += "  Pool '$($pool['friendlyName'])': $rawGiB GiB raw, resiliency=$resiliencyDisplay, ~$approxUsableGiB GiB usable (~$approxPct% efficiency)"
         }
         [void]$sections.Add([ordered]@{
             heading = 'Storage Pool Math'

@@ -26,6 +26,15 @@ function Invoke-RangerStorageNetworkingCollector {
                 pools = if (Get-Command -Name Get-StoragePool -ErrorAction SilentlyContinue) {
                     @(Get-StoragePool | Where-Object { -not $_.IsPrimordial } | ForEach-Object {
                         $p = $_
+                        # Derive dominant resiliency from virtual disks in this pool.
+                        # Get-VirtualDisk piped from pool is the supported S2D query pattern.
+                        $poolVds = @(try { $p | Get-VirtualDisk -ErrorAction SilentlyContinue } catch { @() })
+                        $domResiliency = if ($poolVds.Count -gt 0) {
+                            $poolVds | Group-Object ResiliencySettingName | Sort-Object Count -Descending | Select-Object -First 1 -ExpandProperty Name
+                        } else { $null }
+                        $domCopies = if ($poolVds.Count -gt 0) {
+                            [int]($poolVds | Group-Object NumberOfDataCopies | Sort-Object Count -Descending | Select-Object -First 1 -ExpandProperty Name)
+                        } else { $null }
                         [ordered]@{
                             friendlyName                = $p.FriendlyName
                             healthStatus                = [string]$p.HealthStatus
@@ -38,6 +47,8 @@ function Invoke-RangerStorageNetworkingCollector {
                             readCacheSize               = $p.ReadCacheSize
                             isTiered                    = $p.IsTiered
                             isPrimordial                = $p.IsPrimordial
+                            resiliencySettingName       = $domResiliency
+                            numberOfDataCopies          = $domCopies
                         }
                     })
                 } else { @() }
