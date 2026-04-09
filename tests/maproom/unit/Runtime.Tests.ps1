@@ -110,7 +110,7 @@ Describe 'Azure Local Ranger runtime' {
         $result.ManifestSchema.IsValid | Should -BeTrue
     }
 
-    It 'caches failed WinRM preflight results and avoids repeated probes' {
+    It 'caches failed WinRM preflight results and avoids repeated probes' -Skip:(-not $IsWindows) {
         InModuleScope AzureLocalRanger {
             $script:RangerWinRmProbeCache = @{}
 
@@ -133,7 +133,7 @@ Describe 'Azure Local Ranger runtime' {
         }
     }
 
-    It 'prefers HTTPS WinRM when HTTP is unavailable but WSMan over SSL succeeds' {
+    It 'prefers HTTPS WinRM when HTTP is unavailable but WSMan over SSL succeeds' -Skip:(-not $IsWindows) {
         InModuleScope AzureLocalRanger {
             $script:RangerWinRmProbeCache = @{}
 

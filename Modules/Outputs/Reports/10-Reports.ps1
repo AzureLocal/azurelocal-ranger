@@ -426,7 +426,7 @@ function New-RangerReportPayload {
             "  Total usable capacity (after resiliency): $([math]::Round($summary.StorageTotalUsableGiB, 0)) GiB ($([math]::Round($summary.StorageTotalUsableGiB / 1024, 2)) TiB)",
             "  Overhead ratio: $(if ($summary.StorageTotalRawGiB -gt 0) { [math]::Round((1 - $summary.StorageTotalUsableGiB / $summary.StorageTotalRawGiB) * 100, 1) } else { 'N/A' })% consumed by resiliency"
         )
-        foreach ($pool in @($Manifest.domains.storage.pools)) {
+        foreach ($pool in @($Manifest.domains.storage.pools | Where-Object { $_ -ne $null })) {
             # Use bracket notation: works for both Hashtable and OrderedDictionary regardless of
             # whether pools was a single item or array in the manifest (in-memory or deserialized).
             $rawGiB           = [double]($pool['sizeGiB'] ?? $pool['totalCapacityGiB'] ?? 0)

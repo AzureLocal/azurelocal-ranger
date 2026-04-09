@@ -1,5 +1,5 @@
 BeforeAll {
-    $script:repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSCommandPath))
+    $script:repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..') | Select-Object -ExpandProperty Path
     Import-Module (Join-Path $script:repoRoot 'AzureLocalRanger.psd1') -Force
 }
 
