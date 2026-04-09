@@ -5,7 +5,7 @@
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
     CompanyName       = 'Azure Local Cloud'
-    Copyright         = '(c) 2025 Azure Local Cloud. All rights reserved.'
+    Copyright         = '(c) 2026 Hybrid Cloud Solutions. All rights reserved.'
     Description       = 'AzureLocalRanger performs automated, read-only discovery and reporting against Azure Local (formerly Azure Stack HCI) clusters. It collects cluster topology, storage and networking health, VM workload inventory, security posture, and Azure Arc registration state — then renders HTML, Markdown, JSON, and SVG as-built report packages. Run from any Windows machine with WinRM access to the cluster.'
     PowerShellVersion = '7.0'
     FunctionsToExport = @(
@@ -42,9 +42,10 @@
                 'StorageSpacesDirect',
                 'S2D'
             )
+            IconUri      = 'https://raw.githubusercontent.com/AzureLocal/azurelocal-ranger/main/docs/assets/images/azurelocalranger-icon.svg'
             LicenseUri   = 'https://github.com/AzureLocal/azurelocal-ranger/blob/main/LICENSE'
-            ProjectUri   = 'https://github.com/AzureLocal/azurelocal-ranger'
-            HelpInfoUri  = 'https://azurelocal.github.io/azurelocal-ranger'
+            ProjectUri   = 'https://azurelocal.cloud/azurelocal-ranger/'
+            HelpInfoUri  = 'https://azurelocal.cloud/azurelocal-ranger/'
             ExternalModuleDependencies = @(
                 'Az.Accounts',
                 'Az.Resources'
