@@ -128,14 +128,16 @@ function Resolve-RangerNodeInventory {
         } else { $null }
 
         if ($clusterTarget) {
-            $invokeParams = @{
-                ComputerName = $clusterTarget
-                ScriptBlock  = { if (Get-Command Get-ClusterNode -ErrorAction SilentlyContinue) { @(Get-ClusterNode | Select-Object -ExpandProperty Name) } else { @() } }
-                ErrorAction  = 'Stop'
-            }
-            if ($ClusterCredential) { $invokeParams.Credential = $ClusterCredential }
-
-            $rawDirectNodes = @(Invoke-Command @invokeParams)
+            $retryCount = if ($Config.behavior -and $Config.behavior.retryCount -gt 0) { [int]$Config.behavior.retryCount } else { 1 }
+            $timeoutSec = if ($Config.behavior -and $Config.behavior.timeoutSeconds -gt 0) { [int]$Config.behavior.timeoutSeconds } else { 0 }
+            $rawDirectNodes = @(Invoke-RangerRemoteCommand -ComputerName @($clusterTarget) -Credential $ClusterCredential -RetryCount $retryCount -TimeoutSeconds $timeoutSec -ScriptBlock {
+                if (Get-Command Get-ClusterNode -ErrorAction SilentlyContinue) {
+                    @(Get-ClusterNode | Select-Object -ExpandProperty Name)
+                }
+                else {
+                    @()
+                }
+            })
             $directNodes = @($rawDirectNodes | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 
             # Get-ClusterNode returns short NetBIOS names — reconcile back to

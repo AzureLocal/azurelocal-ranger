@@ -32,6 +32,113 @@ function Invoke-RangerRetry {
     } while ($true)
 }
 
+function Get-RangerWinRmProbeCacheKey {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ComputerName,
+
+        [PSCredential]$Credential
+    )
+
+    $userName = if ($Credential -and $Credential.UserName) { [string]$Credential.UserName } else { '<default>' }
+    return '{0}|{1}' -f $ComputerName.Trim().ToLowerInvariant(), $userName.Trim().ToLowerInvariant()
+}
+
+function Test-RangerWinRmTarget {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ComputerName,
+
+        [PSCredential]$Credential
+    )
+
+    if (-not $script:RangerWinRmProbeCache) {
+        $script:RangerWinRmProbeCache = @{}
+    }
+
+    $cacheKey = Get-RangerWinRmProbeCacheKey -ComputerName $ComputerName -Credential $Credential
+    if ($script:RangerWinRmProbeCache.ContainsKey($cacheKey)) {
+        return $script:RangerWinRmProbeCache[$cacheKey]
+    }
+
+    $probeMessages = New-Object System.Collections.Generic.List[string]
+    $probeOptions = @(
+        [ordered]@{ transport = 'http';  port = 5985; useSsl = $false },
+        [ordered]@{ transport = 'https'; port = 5986; useSsl = $true }
+    )
+
+    foreach ($probe in $probeOptions) {
+        $portReachable = $true
+        if (Test-RangerCommandAvailable -Name 'Test-NetConnection') {
+            try {
+                $connection = Test-NetConnection -ComputerName $ComputerName -Port $probe.port -WarningAction SilentlyContinue
+                $portReachable = [bool]$connection.TcpTestSucceeded
+            }
+            catch {
+                $portReachable = $false
+            }
+
+            if (-not $portReachable) {
+                $probeMessages.Add("TCP $($probe.port) unreachable")
+                continue
+            }
+        }
+
+        if (Test-RangerCommandAvailable -Name 'Test-WSMan') {
+            $wsmanParams = @{
+                ComputerName   = $ComputerName
+                Authentication = 'Negotiate'
+                ErrorAction    = 'Stop'
+            }
+
+            if ($Credential) {
+                $wsmanParams.Credential = $Credential
+            }
+
+            if ($probe.useSsl) {
+                $wsmanParams.UseSSL = $true
+            }
+
+            try {
+                $null = Test-WSMan @wsmanParams
+                $state = [ordered]@{
+                    Reachable = $true
+                    Transport = $probe.transport
+                    Port      = $probe.port
+                    Message   = "WinRM preflight succeeded over $($probe.transport.ToUpperInvariant())"
+                }
+                $script:RangerWinRmProbeCache[$cacheKey] = $state
+                Write-RangerLog -Level debug -Message "WinRM preflight succeeded for '$ComputerName' over $($probe.transport.ToUpperInvariant())"
+                return $state
+            }
+            catch {
+                $probeMessages.Add("WSMan $($probe.transport) failed: $($_.Exception.Message)")
+                continue
+            }
+        }
+
+        $state = [ordered]@{
+            Reachable = $true
+            Transport = $probe.transport
+            Port      = $probe.port
+            Message   = 'WinRM preflight tooling unavailable; assuming target is reachable.'
+        }
+        $script:RangerWinRmProbeCache[$cacheKey] = $state
+        Write-RangerLog -Level debug -Message "WinRM preflight skipped for '$ComputerName' because Test-WSMan is unavailable"
+        return $state
+    }
+
+    $state = [ordered]@{
+        Reachable = $false
+        Transport = $null
+        Port      = $null
+        Message   = "WinRM preflight failed for '$ComputerName': $($probeMessages -join ' | ')"
+    }
+    $script:RangerWinRmProbeCache[$cacheKey] = $state
+    Write-RangerLog -Level warn -Message $state.Message
+    return $state
+}
+
 function Invoke-RangerRemoteCommand {
     param(
         [Parameter(Mandatory = $true)]
@@ -46,42 +153,77 @@ function Invoke-RangerRemoteCommand {
         [int]$TimeoutSeconds = 0
     )
 
+    $targetStates = @($ComputerName | ForEach-Object {
+        [ordered]@{
+            computerName = $_
+            state        = Test-RangerWinRmTarget -ComputerName $_ -Credential $Credential
+        }
+    })
+
+    $reachableStates = @($targetStates | Where-Object { $_.state.Reachable })
+    if ($reachableStates.Count -eq 0) {
+        $messages = @($targetStates | ForEach-Object { "$($_.computerName): $($_.state.Message)" })
+        throw [System.InvalidOperationException]::new("No reachable WinRM targets available. $($messages -join ' ; ')")
+    }
+
+    $unreachableTargets = @($targetStates | Where-Object { -not $_.state.Reachable } | ForEach-Object { $_.computerName })
+    if ($unreachableTargets.Count -gt 0) {
+        Write-RangerLog -Level warn -Message "Skipping unreachable WinRM targets: $($unreachableTargets -join ', ')"
+    }
+
+    $targetGroups = @($reachableStates | Group-Object -Property { $_.state.Transport })
+
     $retryBlock = {
-        $invokeParams = @{
-            ComputerName = $ComputerName
-            ScriptBlock  = $ScriptBlock
-        }
+        $results = New-Object System.Collections.Generic.List[object]
 
-        if ($Credential) {
-            $invokeParams.Credential = $Credential
-        }
+        foreach ($group in $targetGroups) {
+            $groupTargets = @($group.Group | ForEach-Object { $_.computerName })
+            $invokeParams = @{
+                ComputerName   = $groupTargets
+                ScriptBlock    = $ScriptBlock
+                Authentication = 'Negotiate'
+            }
 
-        if ($ArgumentList) {
-            $invokeParams.ArgumentList = $ArgumentList
-        }
+            if ($Credential) {
+                $invokeParams.Credential = $Credential
+            }
 
-        # Issue #113: apply per-session operation timeout when configured
-        if ($TimeoutSeconds -gt 0) {
-            $sessionOption = New-PSSessionOption -OperationTimeout ($TimeoutSeconds * 1000) -OpenTimeout ($TimeoutSeconds * 1000)
-            $invokeParams.SessionOption = $sessionOption
-        }
+            if ($ArgumentList) {
+                $invokeParams.ArgumentList = $ArgumentList
+            }
 
-        $rangerRemoteWarnings = @()
-        $rangerLogPath = $script:RangerLogPath
-        $rangerCurrentLogLevel = if ($script:RangerLogLevel) { [string]$script:RangerLogLevel } else { 'info' }
-        $rangerShouldLogWarn = $rangerCurrentLogLevel -in @('debug', 'info', 'warn')
-        $rangerRemoteResult = Invoke-Command @invokeParams -WarningAction SilentlyContinue -WarningVariable +rangerRemoteWarnings -ErrorAction Stop
-        foreach ($w in @($rangerRemoteWarnings)) {
-            $warningMessage = if ($w -is [System.Management.Automation.WarningRecord]) { [string]$w.Message } else { [string]$w }
-            if ($rangerShouldLogWarn -and -not [string]::IsNullOrWhiteSpace($warningMessage) -and $rangerLogPath) {
-                try {
-                    Add-Content -LiteralPath $rangerLogPath -Value "[$((Get-Date).ToString('s'))][WARN] [$($ComputerName -join ',')] $warningMessage" -Encoding UTF8 -ErrorAction Stop
-                }
-                catch {
+            if ($group.Name -eq 'https') {
+                $invokeParams.UseSSL = $true
+            }
+
+            # Issue #113: apply per-session operation timeout when configured
+            if ($TimeoutSeconds -gt 0) {
+                $sessionOption = New-PSSessionOption -OperationTimeout ($TimeoutSeconds * 1000) -OpenTimeout ($TimeoutSeconds * 1000)
+                $invokeParams.SessionOption = $sessionOption
+            }
+
+            $rangerRemoteWarnings = @()
+            $rangerLogPath = $script:RangerLogPath
+            $rangerCurrentLogLevel = if ($script:RangerLogLevel) { [string]$script:RangerLogLevel } else { 'info' }
+            $rangerShouldLogWarn = $rangerCurrentLogLevel -in @('debug', 'info', 'warn')
+            $rangerRemoteResult = Invoke-Command @invokeParams -WarningAction SilentlyContinue -WarningVariable +rangerRemoteWarnings -ErrorAction Stop
+            foreach ($w in @($rangerRemoteWarnings)) {
+                $warningMessage = if ($w -is [System.Management.Automation.WarningRecord]) { [string]$w.Message } else { [string]$w }
+                if ($rangerShouldLogWarn -and -not [string]::IsNullOrWhiteSpace($warningMessage) -and $rangerLogPath) {
+                    try {
+                        Add-Content -LiteralPath $rangerLogPath -Value "[$((Get-Date).ToString('s'))][WARN] [$($groupTargets -join ',')] $warningMessage" -Encoding UTF8 -ErrorAction Stop
+                    }
+                    catch {
+                    }
                 }
             }
+
+            foreach ($item in @($rangerRemoteResult)) {
+                [void]$results.Add($item)
+            }
         }
-        $rangerRemoteResult
+
+        return $results.ToArray()
     }.GetNewClosure()
 
     $transientExceptions = @(

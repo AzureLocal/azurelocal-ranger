@@ -350,7 +350,7 @@ function New-RangerReportPayload {
         [void]$sections.Add([ordered]@{
             heading = 'Coverage Assessment'
             body    = @(
-                "Monitoring coverage (AMA): $($summary.MonitoringCoveragePercent)% ($amaCount of $($summary.NodeCount) nodes have Azure Monitor Agent)",
+                "Monitoring coverage (AMA): $($summary.MonitoringCoveragePercent)% ($($summary.AmaNodeCount) of $($summary.NodeCount) nodes have Azure Monitor Agent)",
                 "Backup coverage estimate: $($summary.BackupCoveragePercent)% (based on backup items vs VM count)",
                 "Defender for Cloud: $(if ($Manifest.domains.identitySecurity.defenderForCloud.enabled) { 'Enabled' } else { 'Not confirmed or not collected' })",
                 "WDAC policy: $(if ($Manifest.domains.identitySecurity.security.wdacPolicy) { $Manifest.domains.identitySecurity.security.wdacPolicy } else { 'Not collected' })",
@@ -427,8 +427,10 @@ function New-RangerReportPayload {
             "  Overhead ratio: $(if ($summary.StorageTotalRawGiB -gt 0) { [math]::Round((1 - $summary.StorageTotalUsableGiB / $summary.StorageTotalRawGiB) * 100, 1) } else { 'N/A' })% consumed by resiliency"
         )
         foreach ($pool in @($Manifest.domains.storage.pools)) {
-            $resiliency = if ($pool.resiliencyType) { $pool.resiliencyType } else { 'unknown' }
-            $rawGiB = [double]$pool.totalCapacityGiB
+            $resiliency = if ($pool['resiliencyType']) { $pool['resiliencyType'] } else { 'unknown' }
+            # Use bracket notation: works for both Hashtable and OrderedDictionary regardless of
+            # whether pools was a single item or array in the manifest (in-memory or deserialized).
+            $rawGiB = [double]($pool['sizeGiB'] ?? $pool['totalCapacityGiB'] ?? 0)
             $approxPct = switch ($resiliency.ToLowerInvariant()) {
                 'mirror'          { 50 }
                 'three-way'       { 33 }
@@ -450,12 +452,12 @@ function New-RangerReportPayload {
         $eventLogSummaryLines = @(
             "Event logs analyzed per node across $(@($Manifest.domains.performance.eventLogAnalysis).Count) log sources:"
         )
-        $topLogEntries = @($Manifest.domains.performance.eventLogAnalysis | Where-Object { $_.eventCount -gt 0 } | Sort-Object eventCount -Descending | Select-Object -First 10)
+        $topLogEntries = @($Manifest.domains.performance.eventLogAnalysis | Where-Object { $_['eventCount'] -gt 0 } | Sort-Object { [int]($_['eventCount'] ?? 0) } -Descending | Select-Object -First 10)
         if ($topLogEntries.Count -gt 0) {
             foreach ($entry in $topLogEntries) {
-                $eventLogSummaryLines += "  Node $($entry.node): $($entry.logName) — $($entry.eventCount) events"
-                foreach ($topId in @($entry.topEventIds | Select-Object -First 2)) {
-                    $eventLogSummaryLines += "    EventId $($topId.eventId) x$($topId.count) [$($topId.level)]: $($topId.sample)"
+                $eventLogSummaryLines += "  Node $($entry['node']): $($entry['logName']) — $($entry['eventCount']) events"
+                foreach ($topId in @($entry['topEventIds'] | Select-Object -First 2)) {
+                    $eventLogSummaryLines += "    EventId $($topId['eventId']) x$($topId['count']) [$($topId['level'])]: $($topId['sample'])"
                 }
             }
         } else {
@@ -556,9 +558,10 @@ function Get-RangerManifestSummary {
     $storageSummary = $Manifest.domains.storage.summary
     $monitorSummary = $Manifest.domains.monitoring.summary
 
-    # Issue #73: Monitoring coverage (AMA agents / total nodes)
-    $amaCount             = if ($monitorSummary -and $null -ne $monitorSummary.amaCount) { [int]$monitorSummary.amaCount } else { 0 }
-    $monitoringCoveragePct = if ($nodeCount -gt 0) { [math]::Round($amaCount / $nodeCount * 100, 0) } else { 0 }
+    # Issue #73: Monitoring coverage — use nodesWithAmaAgent (OS-level service count) not
+    # amaCount (Azure extension records which includes many non-node resources).
+    $amaCount             = if ($monitorSummary -and $null -ne $monitorSummary.nodesWithAmaAgent) { [int]$monitorSummary.nodesWithAmaAgent } elseif ($monitorSummary -and $null -ne $monitorSummary.amaCount -and [int]$monitorSummary.amaCount -le $nodeCount) { [int]$monitorSummary.amaCount } else { 0 }
+    $monitoringCoveragePct = if ($nodeCount -gt 0) { [math]::Min(100, [math]::Round($amaCount / $nodeCount * 100, 0)) } else { 0 }
 
     # Issue #73: Backup coverage estimate (backup items / VMs)
     $backupItemCount  = @($Manifest.domains.azureIntegration.backup.items).Count
@@ -607,6 +610,7 @@ function Get-RangerManifestSummary {
         AvgVmsPerNode             = if ($vmSummary -and $null -ne $vmSummary.avgVmsPerNode)         { $vmSummary.avgVmsPerNode }         else { $null }
         # Issue #73: Coverage metrics
         MonitoringCoveragePercent = $monitoringCoveragePct
+        AmaNodeCount              = $amaCount
         BackupCoveragePercent     = $backupCoveragePct
         # Issue #73: Storage capacity
         StorageTotalRawGiB        = $storageTotalRaw

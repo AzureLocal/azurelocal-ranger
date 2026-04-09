@@ -129,6 +129,7 @@ function Invoke-RangerDiscoveryRuntime {
     $packageRoot = New-RangerPackageRoot -Config $config -OutputPathOverride $OutputPath -BasePath $basePath
     $script:RangerLogPath = $null
     $script:RangerRetryDetails = New-Object System.Collections.ArrayList
+    $script:RangerWinRmProbeCache = @{}
     $logPath = Initialize-RangerFileLog -PackageRoot $packageRoot
     $transcriptPath = Join-Path -Path $packageRoot -ChildPath 'ranger.transcript.log'
     $script:_rangerPrevVerbosePreference = $VerbosePreference
@@ -288,6 +289,7 @@ function Invoke-RangerDiscoveryRuntime {
         $ProgressPreference = $script:_rangerPrevProgressPreference
         $script:RangerLogPath = $null
         $script:RangerRetryDetails = $null
+        $script:RangerWinRmProbeCache = $null
         $script:RangerBehaviorRetryCount = $null
     }
 }

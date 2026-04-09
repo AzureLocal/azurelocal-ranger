@@ -358,7 +358,13 @@ function Invoke-RangerStorageNetworkingCollector {
                             @(Get-VMNetworkAdapter -ManagementOS -ErrorAction SilentlyContinue | ForEach-Object {
                                 $vnic = $_
                                 $rdmaAdapter = if (Get-Command -Name Get-NetAdapterRdma -ErrorAction SilentlyContinue) { try { Get-NetAdapterRdma -Name $vnic.Name -ErrorAction Stop } catch { $null } } else { $null }
-                                $ipConf = try { Get-NetIPConfiguration -InterfaceAlias $vnic.Name -ErrorAction Stop | Select-Object -First 1 } catch { [void]$rangerDiagnostics.Add("Get-NetIPConfiguration '$($vnic.Name)': $($_.Exception.Message)"); $null }
+                                # Guard: use Get-NetIPInterface to pre-check before Get-NetIPConfiguration.
+                                # PA host vNICs (PAhostVNic2 etc.) lack MSFT_NetIPInterface entries.
+                                # Get-NetIPInterface -ErrorAction SilentlyContinue suppresses stream-2 output,
+                                # preventing Invoke-Command -ErrorAction Stop from promoting it to terminating.
+                                $ipConf = if (Get-NetIPInterface -InterfaceAlias $vnic.Name -ErrorAction SilentlyContinue) {
+                                    try { Get-NetIPConfiguration -InterfaceAlias $vnic.Name -ErrorAction SilentlyContinue | Select-Object -First 1 } catch { $null }
+                                } else { $null }
                                 $vlan = try { Get-VMNetworkAdapterVlan -ManagementOS -VMNetworkAdapterName $vnic.Name -ErrorAction Stop | Select-Object -First 1 } catch { $null }
                                 [ordered]@{
                                     name            = $vnic.Name
@@ -485,8 +491,11 @@ function Invoke-RangerStorageNetworkingCollector {
         virtualDiskCount    = if ($storageSnapshot.virtualDisks) { @($storageSnapshot.virtualDisks).Count } else { 0 }
         volumeCount         = if ($storageSnapshot.volumes) { @($storageSnapshot.volumes).Count } else { 0 }
         csvCount            = if ($storageSnapshot.csvs) { @($storageSnapshot.csvs).Count } else { 0 }
-        totalPoolCapacityGiB = [math]::Round((@($storageSnapshot.pools | Where-Object { $null -ne $_.sizeGiB } | Measure-Object -Property sizeGiB -Sum).Sum), 2)
-        allocatedPoolCapacityGiB = [math]::Round((@($storageSnapshot.pools | Where-Object { $null -ne $_.allocatedSizeGiB } | Measure-Object -Property allocatedSizeGiB -Sum).Sum), 2)
+        # Note: Measure-Object -Property fails on deserialized OrderedDictionary from WinRM —
+        # use ForEach-Object to extract scalar values first, then pipe to Measure-Object -Sum.
+        totalRawCapacityGiB       = [math]::Round((@($storageSnapshot.pools | Where-Object { $null -ne $_['sizeGiB'] } | ForEach-Object { [double]$_['sizeGiB'] } | Measure-Object -Sum).Sum), 2)
+        totalUsableCapacityGiB    = [math]::Round((@($storageSnapshot.virtualDisks | Where-Object { $null -ne $_['sizeGiB'] } | ForEach-Object { [double]$_['sizeGiB'] } | Measure-Object -Sum).Sum), 2)
+        totalAllocatedCapacityGiB = [math]::Round((@($storageSnapshot.pools | Where-Object { $null -ne $_['allocatedSizeGiB'] } | ForEach-Object { [double]$_['allocatedSizeGiB'] } | Measure-Object -Sum).Sum), 2)
         diskMediaTypes      = @(Get-RangerGroupedCount -Items $storageSnapshot.physicalDisks -PropertyName 'mediaType')
         unhealthyDisks      = @($storageSnapshot.physicalDisks | Where-Object { $_.healthStatus -and $_.healthStatus -ne 'Healthy' }).Count
         canPoolDisks        = @($storageSnapshot.physicalDisks | Where-Object { $_.canPool }).Count

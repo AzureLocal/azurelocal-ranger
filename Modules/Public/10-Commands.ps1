@@ -344,9 +344,53 @@ function Test-AzureLocalRangerPrerequisites {
     $config = Set-RangerStructuralOverrides -Config $config -StructuralOverrides $structuralOverrides
     $validation = Test-RangerConfiguration -Config $config -PassThru
     $selectedCollectors = Resolve-RangerSelectedCollectors -Config $config
+    $probeConfig = ConvertTo-RangerHashtable -InputObject $config
+    $probeConfig.behavior.promptForMissingCredentials = $false
+    $clusterConnectivityPassed = $false
+    $clusterConnectivityDetail = 'Cluster WinRM connectivity not tested.'
+
+    try {
+        $probeCredentialMap = Resolve-RangerCredentialMap -Config $probeConfig -Overrides @{}
+        $probeTargets = [System.Collections.Generic.List[string]]::new()
+        if (-not [string]::IsNullOrWhiteSpace($probeConfig.targets.cluster.fqdn)) {
+            $probeTargets.Add([string]$probeConfig.targets.cluster.fqdn)
+        }
+        foreach ($node in @($probeConfig.targets.cluster.nodes)) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$node) -and $node -notin $probeTargets) {
+                $probeTargets.Add([string]$node)
+            }
+        }
+
+        if ($probeTargets.Count -eq 0) {
+            $clusterConnectivityDetail = 'No cluster WinRM targets are configured.'
+        }
+        elseif (-not $probeCredentialMap.cluster) {
+            $clusterConnectivityDetail = 'Cluster credential could not be resolved; connectivity was not tested.'
+        }
+        else {
+            $probeResults = @($probeTargets | ForEach-Object {
+                [ordered]@{ target = $_; result = Test-RangerWinRmTarget -ComputerName $_ -Credential $probeCredentialMap.cluster }
+            })
+            $clusterConnectivityPassed = @($probeResults | Where-Object { $_.result.Reachable }).Count -gt 0
+            $clusterConnectivityDetail = @($probeResults | ForEach-Object {
+                $status = if ($_.result.Reachable) {
+                    "reachable over $($_.result.Transport.ToUpperInvariant())/$($_.result.Port)"
+                }
+                else {
+                    $_.result.Message
+                }
+                "$($_.target): $status"
+            }) -join '; '
+        }
+    }
+    catch {
+        $clusterConnectivityDetail = "Cluster WinRM connectivity probe failed: $($_.Exception.Message)"
+    }
+
     $checks = @(
         [ordered]@{ Name = 'PowerShell 7+'; Passed = $PSVersionTable.PSVersion.Major -ge 7; Detail = $PSVersionTable.PSVersion.ToString() },
         [ordered]@{ Name = 'WinRM cmdlets'; Passed = (Test-RangerCommandAvailable -Name 'Invoke-Command'); Detail = 'Invoke-Command' },
+        [ordered]@{ Name = 'Cluster WinRM connectivity'; Passed = $clusterConnectivityPassed; Detail = $clusterConnectivityDetail },
         [ordered]@{ Name = 'RSAT AD'; Passed = (Test-RangerCommandAvailable -Name 'Get-ADUser'); Detail = 'Get-ADUser (required for identity domain collection)' },
         [ordered]@{ Name = 'Cluster cmdlets'; Passed = (Test-RangerCommandAvailable -Name 'Get-Cluster'); Detail = 'Get-Cluster (optional on the runner, required on cluster nodes)' },
         [ordered]@{ Name = 'Hyper-V cmdlets'; Passed = (Test-RangerCommandAvailable -Name 'Get-VM'); Detail = 'Get-VM (optional on the runner, required on cluster nodes)' },

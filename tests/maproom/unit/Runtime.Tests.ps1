@@ -109,4 +109,64 @@ Describe 'Azure Local Ranger runtime' {
         @($result.Manifest.findings).Count | Should -BeGreaterThan 1
         $result.ManifestSchema.IsValid | Should -BeTrue
     }
+
+    It 'caches failed WinRM preflight results and avoids repeated probes' {
+        InModuleScope AzureLocalRanger {
+            $script:RangerWinRmProbeCache = @{}
+
+            Mock Test-RangerCommandAvailable {
+                param($Name)
+                $Name -in @('Test-NetConnection', 'Test-WSMan')
+            }
+
+            Mock Test-NetConnection {
+                [pscustomobject]@{ TcpTestSucceeded = $false }
+            }
+
+            Mock Test-WSMan { }
+
+            { Invoke-RangerRemoteCommand -ComputerName @('node01.contoso.com') -ScriptBlock { 'ok' } } | Should -Throw
+            { Invoke-RangerRemoteCommand -ComputerName @('node01.contoso.com') -ScriptBlock { 'ok' } } | Should -Throw
+
+            Assert-MockCalled Test-NetConnection -Times 2 -Exactly
+            Assert-MockCalled Test-WSMan -Times 0
+        }
+    }
+
+    It 'prefers HTTPS WinRM when HTTP is unavailable but WSMan over SSL succeeds' {
+        InModuleScope AzureLocalRanger {
+            $script:RangerWinRmProbeCache = @{}
+
+            Mock Test-RangerCommandAvailable {
+                param($Name)
+                $Name -in @('Test-NetConnection', 'Test-WSMan')
+            }
+
+            Mock Test-NetConnection {
+                param($ComputerName, $Port)
+
+                [pscustomobject]@{
+                    TcpTestSucceeded = ($Port -eq 5986)
+                }
+            }
+
+            Mock Test-WSMan {
+                param($ComputerName, $Authentication, $ErrorAction, [switch]$UseSSL)
+
+                if (-not $UseSSL) {
+                    throw 'HTTP WSMan unavailable'
+                }
+
+                [pscustomobject]@{ ProductVersion = 'OS: 0.0.0 SP: 0.0 Stack: 3.0' }
+            }
+
+            $result = Test-RangerWinRmTarget -ComputerName 'node01.contoso.com' -Credential $null
+
+            $result.Reachable | Should -BeTrue
+            $result.Transport | Should -Be 'https'
+            $result.Port | Should -Be 5986
+            Assert-MockCalled Test-NetConnection -Times 2 -Exactly
+            Assert-MockCalled Test-WSMan -Times 1 -Exactly -ParameterFilter { $UseSSL }
+        }
+    }
 }

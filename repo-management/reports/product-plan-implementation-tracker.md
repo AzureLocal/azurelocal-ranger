@@ -44,7 +44,7 @@ Current implementation validation used for this audit:
 | Simulation testing framework | Complete — 27/27 tests passing, IIC synthetic fixture committed |
 | Live validation backlog | Open in `#34` |
 | Collector depth gap backlog | Open — 10 collector depth issues `#41`–`#50` from product-direction full audit |
-| Diagram depth gap backlog | Open — `#51` (extended diagram catalog, Diagrams 7–18) |
+| Diagram depth gap backlog | Open — `#51` (extended diagram catalog, Diagrams 7–18); diagram-quality redesign plan captured in `repo-management/plans/diagram-engine-improvement-design.md` pending GitHub issue submission |
 | Documentation gap backlog | Open — `#40` (missing documentation-roadmap.md) |
 | Scope boundary decision backlog | Open — `#52` (#36 vs #32 boundary decision) |
 
