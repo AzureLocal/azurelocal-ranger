@@ -12,7 +12,7 @@ The repository structure needs to support both without mixing public explanation
 The `docs/` tree should stay concept-driven and readable as a published site.
 
 | Area | Purpose |
-|---|---|
+| --- | --- |
 | `docs/` | Public documentation content |
 | `docs/assets/images` | Static image assets |
 | `docs/assets/diagrams` | Diagram source and exported SVG assets |
@@ -48,7 +48,7 @@ That keeps the editable source and published asset side by side.
 The implementation side should remain module-oriented.
 
 | Path | Purpose |
-|---|---|
+| --- | --- |
 | `Modules/Public` | Exported commands and public entry points |
 | `Modules/Private` | Internal helper functions |
 | `Modules/Core` | Orchestration, manifest assembly, and shared services |
@@ -64,11 +64,12 @@ That layout is more honest than a generic `src/` tree because Ranger is a publis
 Other top-level areas should stay intentional.
 
 | Path | Role |
-|---|---|
+| --- | --- |
 | `.github/workflows/` | Validation, automation, and publishing workflows |
-| `tests/` | Future test coverage for schema, collectors, and outputs |
-| `samples/` | Future sample manifests and output examples |
-| `branding/` | Shared visual assets |
+| `tests/` | Top-level container for the testing solution |
+| `tests/trailhead/` | Live field-validation assets and committed run evidence |
+| `tests/maproom/` | Offline synthetic, fixture-backed, and post-discovery testing assets |
+| `en-US/` | PowerShell about/help content distributed with the module |
 
 ## Publication Model
 

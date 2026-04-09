@@ -4,6 +4,8 @@ The simulation framework validates the full Ranger render pipeline without any l
 
 It is the primary regression gate for output generation, report rendering, and diagram logic.
 
+This is the core workflow of `MAPROOM`, the offline synthetic and post-discovery testing solution under `tests/maproom/`.
+
 ## Philosophy
 
 Rather than mocking individual collector functions, the simulation framework builds a complete, semantically valid manifest from a pool of known fictional data and then runs the full `Export-AzureLocalRangerReport` pipeline against it.
@@ -15,7 +17,7 @@ This catches rendering bugs, schema mismatches, and findings logic that unit moc
 All synthetic test data follows the mandatory IIC (Infinite Improbability Corp) canonical standard. The IIC standard is the defined fictional company for all AzureLocal project test data.
 
 | Attribute | Value |
-|---|---|
+| --- | --- |
 | Company name | Infinite Improbability Corp |
 | Abbreviation | IIC |
 | Internal domain | `iic.local` |
@@ -35,7 +37,7 @@ Do not use tplabs, Contoso, or any other fictional company name in test data. Al
 
 ## Synthetic Manifest
 
-`tests/Fixtures/synthetic-manifest.json` is the pre-generated IIC manifest the simulation tests load. It represents a healthy 3-node as-built deployment with:
+`tests/maproom/Fixtures/synthetic-manifest.json` is the pre-generated IIC manifest the simulation tests load. It represents a healthy 3-node as-built deployment with:
 
 - 3 nodes all in `Up` state
 - 5 VMs (3 AVD pool members + 2 Arc VMs)
@@ -52,10 +54,10 @@ The fixture is committed to the repository so simulation tests run without execu
 
 ```powershell
 # Run simulation tests only
-Invoke-Pester -Path .\tests\unit\Simulation.Tests.ps1 -Output Detailed
+Invoke-Pester -Path .\tests\maproom\unit\Simulation.Tests.ps1 -Output Detailed
 
 # Run all unit tests
-Invoke-Pester -Path .\tests\unit -Output Detailed
+Invoke-Pester -Path .\tests\maproom\unit -Output Detailed
 
 # Run the full test suite
 Invoke-Pester -Path .\tests -Output Detailed
@@ -63,14 +65,14 @@ Invoke-Pester -Path .\tests -Output Detailed
 
 ## Manual Visual Runner
 
-`tests/Test-RangerFromSyntheticManifest.ps1` runs the full pipeline and optionally opens the output folder for manual inspection.
+`tests/maproom/scripts/Test-RangerFromSyntheticManifest.ps1` runs the full pipeline and optionally opens the output folder for manual inspection.
 
 ```powershell
 # Run and print artifact summary
-.\tests\Test-RangerFromSyntheticManifest.ps1
+.\tests\maproom\scripts\Test-RangerFromSyntheticManifest.ps1
 
 # Run and open output folder in Explorer
-.\tests\Test-RangerFromSyntheticManifest.ps1 -Open
+.\tests\maproom\scripts\Test-RangerFromSyntheticManifest.ps1 -Open
 ```
 
 Use this when you want to visually review a rendered report or diagram before committing changes to the render engine.
@@ -80,10 +82,10 @@ Use this when you want to visually review a rendered report or diagram before co
 If the manifest schema changes (new domain keys, new required fields, schema version bump), regenerate the fixture:
 
 ```powershell
-.\tests\New-RangerSyntheticManifest.ps1
+.\tests\maproom\scripts\New-RangerSyntheticManifest.ps1
 ```
 
-Then commit `tests/Fixtures/synthetic-manifest.json`. The generator script documents its own data pools at the top of the file.
+Then commit `tests/maproom/Fixtures/synthetic-manifest.json`. The generator script documents its own data pools at the top of the file.
 
 Regenerate the fixture when:
 
@@ -94,10 +96,10 @@ Regenerate the fixture when:
 
 ## What Gets Tested
 
-`tests/unit/Simulation.Tests.ps1` contains tests that validate the full pipeline:
+`tests/maproom/unit/Simulation.Tests.ps1` contains tests that validate the full pipeline:
 
 | Test | What It Validates |
-|---|---|
+| --- | --- |
 | Renders all 3 report tiers | Executive, Management, and Technical markdown files are produced |
 | IIC cluster name in reports | `azlocal-iic-01` appears in the rendered output |
 | Warning findings surfaced | Warning-level findings appear in executive and management reports |
@@ -133,6 +135,6 @@ It 'generates the new-feature artifact' {
 The synthetic manifest must pass `Test-RangerManifestSchema` without errors. If you add new required fields, update both:
 
 1. `Get-RangerReservedDomainPayloads` in `Modules/Internal/01-Definitions.ps1`
-2. The corresponding data section in `tests/New-RangerSyntheticManifest.ps1`
+2. The corresponding data section in `tests/maproom/scripts/New-RangerSyntheticManifest.ps1`
 
 Then regenerate and commit the fixture.

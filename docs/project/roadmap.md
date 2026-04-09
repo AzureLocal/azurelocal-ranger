@@ -59,6 +59,14 @@ Open features tracked as GitHub issues. All are implementation targets — no it
 | Interactive configuration wizard | Guided terminal wizard (`Invoke-RangerWizard`) with domain selection, presets, and full parameter passthrough for headless use | [#75](https://github.com/AzureLocal/azurelocal-ranger/issues/75) |
 | Terminal TUI scan progress | Rich live progress display while collection runs — per-collector bars, spinner, real-time findings count, ANSI fallback for CI | [#76](https://github.com/AzureLocal/azurelocal-ranger/issues/76) |
 | Terminal TUI library survey | Evaluate Spectre.Console, Terminal.Gui/ConsoleGuiTools, Sharprompt, and alternatives before committing to #76 | [#77](https://github.com/AzureLocal/azurelocal-ranger/issues/77) |
+| Baseline comparison and drift detection | Compare a new discovery run against a previous manifest; surface added, removed, and changed findings | [#123](https://github.com/AzureLocal/azurelocal-ranger/issues/123) |
+| Scheduled and automated recurring discovery | Task Scheduler XML template, GitHub Actions sample, and unattended invocation mode for recurring runs | [#124](https://github.com/AzureLocal/azurelocal-ranger/issues/124) |
+| Idle and underutilized VM detection | Surface VMs with low CPU/memory utilization and surface rightsizing recommendations in the cost section | [#125](https://github.com/AzureLocal/azurelocal-ranger/issues/125) |
+| Storage efficiency analysis | Deduplication ratios, thin-provisioning coverage gaps, and storage waste identification across volumes and pools | [#126](https://github.com/AzureLocal/azurelocal-ranger/issues/126) |
+| SQL Server and Windows Server license inventory | Edition, core count, and AHB cross-reference per VM for license compliance reporting | [#127](https://github.com/AzureLocal/azurelocal-ranger/issues/127) |
+| Cluster capacity headroom analysis | Compute, memory, and storage utilization percentages with configurable warning thresholds and trend-based runway | [#128](https://github.com/AzureLocal/azurelocal-ranger/issues/128) |
+| Multi-cluster inventory rollup | Discover multiple Azure Local clusters in one run and produce per-cluster packages plus an estate summary report | [#129](https://github.com/AzureLocal/azurelocal-ranger/issues/129) |
+| CMDB and ITSM structured export | `Export-AzureLocalRangerCmdb` producing ServiceNow, CSV, and JSON CI records from the audit manifest | [#130](https://github.com/AzureLocal/azurelocal-ranger/issues/130) |
 
 ## Long-term Vision
 
@@ -79,6 +87,7 @@ Pull requests are welcome — see [Contributing](../contributor/contributing.md)
 
 ## Read Next
 
+- [Versioning](versioning.md)
 - [Repository Structure](repository-structure.md)
 - [Getting Started](../contributor/getting-started.md)
 - [Changelog](changelog.md)

@@ -31,7 +31,7 @@ A configuration file should be organized around these blocks:
 | `targets` | Cluster, BMC, Azure, and optional network-device targets |
 | `credentials` | Per-target credential references |
 | `domains` | Include/exclude behavior and optional feature switches |
-| `output` | Current-state vs as-built, formats, paths, branding, and package settings |
+| `output` | Current-state vs as-built, formats, paths, and package settings |
 | `behavior` | Timeouts, retry posture, strictness, and logging preferences |
 
 ## Target Addressing Model

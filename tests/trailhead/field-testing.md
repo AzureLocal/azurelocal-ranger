@@ -46,7 +46,7 @@ in one command:
 
 ```powershell
 cd E:\git\azurelocal-ranger
-.\repo-management\scripts\New-RangerFieldTestCycle.ps1 `
+.\tests\trailhead\scripts\New-RangerFieldTestCycle.ps1 `
     -Version "0.6.0" `
     -Environment "tplabs-clus01 (4-node Dell, TierPoint Labs)" `
     -DueDate "2026-06-30"
@@ -108,7 +108,7 @@ milestones are left closed for history — do not reuse them.
 
 ## Related
 
-- Script: `repo-management/scripts/New-RangerFieldTestCycle.ps1`
+- Script: `tests/trailhead/scripts/New-RangerFieldTestCycle.ps1`
 - Prerequisites doc: `docs/prerequisites.md` (#79)
 - Validate Ranger issue: #34
 - PSGallery release issue: #81

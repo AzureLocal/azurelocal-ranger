@@ -12,7 +12,7 @@ This keeps all section logic in typed, testable PowerShell rather than in embedd
 
 ## Directory Layout
 
-```
+```text
 Modules/
   Outputs/
     Templates/
@@ -45,7 +45,7 @@ The `body` array holds plain strings. The renderer decides how to present them (
 ### `10-AsBuilt.ps1`
 
 | Function | Description |
-|---|---|
+| --- | --- |
 | `New-RangerAsBuiltDocumentControlSection` | Document control block — environment name, package ID, tool version, and handoff status |
 | `New-RangerAsBuiltInstallationRegisterSection` | Installation register — key platform parameters, node list, topology and Azure summary |
 | `New-RangerAsBuiltSignOffSection` | Sign-off block — handoff acknowledgment table for human completion |
@@ -77,12 +77,12 @@ Installation Register and Sign-Off are appended at the end.
 
 3. Call the function from `New-RangerReportPayload` at the appropriate injection point.
 
-4. Add a simulation test in `tests/unit/Simulation.Tests.ps1` that verifies the section content appears in rendered output.
+4. Add a simulation test in `tests/maproom/unit/Simulation.Tests.ps1` that verifies the section content appears in rendered output.
 
 ## Naming Conventions
 
 | Convention | Example |
-|---|---|
+| --- | --- |
 | Template file names are numbered | `10-AsBuilt.ps1`, `20-CurrentState.ps1` |
 | Function names use the `New-Ranger*Section` pattern | `New-RangerAsBuiltDocumentControlSection` |
 | Section headings are title-cased | `'Document Control'`, `'Sign-Off'` |

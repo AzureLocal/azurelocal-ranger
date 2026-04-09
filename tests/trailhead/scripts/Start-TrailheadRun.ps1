@@ -3,14 +3,14 @@
     Initialises a new Operation TRAILHEAD test run.
 
 .DESCRIPTION
-    Creates two artefacts for a test run:
-      1. A date-stamped Markdown run log under repo-management/logs/trailhead/
+        Creates two artefacts for a test run:
+            1. A date-stamped Markdown run log under tests/trailhead/logs/
       2. A GitHub issue that acts as a live commentary feed for the run
 
     After calling this script, dot-source the companion helper to get Write-TH*
     logging functions in your session:
 
-        . .\repo-management\scripts\TrailheadLog-Helpers.ps1
+        . .\tests\trailhead\scripts\TrailheadLog-Helpers.ps1
 
     Then use:
         Write-THPass   "P0.1" "PowerShell 7.6.0"
@@ -33,11 +33,11 @@
 
 .PARAMETER RepoRoot
     Path to the azurelocal-ranger repo root. Defaults to the directory
-    containing this script's parent (repo-management/).
+    three levels above this script (tests/trailhead/scripts/).
 
 .EXAMPLE
-    .\repo-management\scripts\Start-TrailheadRun.ps1
-    .\repo-management\scripts\Start-TrailheadRun.ps1 -Version "0.5.0" -Phase 0
+    .\tests\trailhead\scripts\Start-TrailheadRun.ps1
+    .\tests\trailhead\scripts\Start-TrailheadRun.ps1 -Version "0.5.0" -Phase 0
 #>
 [CmdletBinding()]
 param(
@@ -53,10 +53,10 @@ $ErrorActionPreference = 'Stop'
 
 # ── Resolve paths ──────────────────────────────────────────────────────────────
 if (-not $RepoRoot) {
-    $RepoRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+    $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..') | Select-Object -ExpandProperty Path
 }
-$logsDir  = Join-Path $RepoRoot "repo-management\logs\trailhead"
-$helpersPs = Join-Path $RepoRoot "repo-management\scripts\TrailheadLog-Helpers.ps1"
+$logsDir  = Join-Path $RepoRoot "tests\trailhead\logs"
+$helpersPs = Join-Path $RepoRoot "tests\trailhead\scripts\TrailheadLog-Helpers.ps1"
 
 # ── Resolve version if not supplied ───────────────────────────────────────────
 if (-not $Version) {
@@ -91,7 +91,7 @@ $header = @"
 | Starting Phase | P$Phase |
 | Tester | $(whoami) |
 | Started | $startedAt |
-| Log file | ``repo-management/logs/trailhead/run-$runStamp.md`` |
+| Log file | ``tests/trailhead/logs/run-$runStamp.md`` |
 
 ---
 
@@ -124,7 +124,7 @@ $issueBody = @"
 | Version | v$Version |
 | Environment | $Environment |
 | Starting Phase | P$Phase |
-| Log file | \`repo-management/logs/trailhead/run-$runStamp.md\` |
+| Log file | \`tests/trailhead/logs/run-$runStamp.md\` |
 
 This issue is the live commentary feed for this test run.
 Results are also written to the log file above, which will be committed at end of session.

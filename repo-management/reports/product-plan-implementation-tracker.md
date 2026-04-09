@@ -100,11 +100,11 @@ Current implementation validation used for this audit:
 | --- | --- | --- |
 | Each collector executable in isolation | Collector functions are individually callable; fixtures support isolated use | Mostly aligned |
 | Collectors unit-testable with mocked inputs | Fixture-backed strategy exists across healthy and degraded scenarios | Mostly aligned |
-| Orchestration integration-tested across multiple collectors | Delivered in `tests/integration/EndToEnd.Tests.ps1` | Aligned |
-| Reports and diagrams tested from saved manifests only | Delivered in `tests/unit/Outputs.Tests.ps1` | Aligned |
+| Orchestration integration-tested across multiple collectors | Delivered in `tests/maproom/integration/EndToEnd.Tests.ps1` | Aligned |
+| Reports and diagrams tested from saved manifests only | Delivered in `tests/maproom/unit/Outputs.Tests.ps1` | Aligned |
 | Schema validation as its own test boundary | Standalone manifest schema contract plus runtime and test validation | Aligned |
 | Failed and skipped collectors do not break successful ones | Runtime status model supports this in `Modules/Core/20-Runtime.ps1` | Mostly aligned |
-| Simulation testing without live connections | IIC synthetic 3-node manifest in `as-built` mode; 7 simulation tests in `tests/unit/Simulation.Tests.ps1` | Aligned |
+| Simulation testing without live connections | IIC synthetic 3-node manifest in `as-built` mode; 7 simulation tests in `tests/maproom/unit/Simulation.Tests.ps1` | Aligned |
 
 ## Simulation Testing Framework
 
@@ -112,21 +112,23 @@ A Scout-style simulation testing layer was added to allow full output validation
 
 | File | Purpose |
 | --- | --- |
-| `tests/New-RangerSyntheticManifest.ps1` | Generator script — builds a complete `1.1.0-draft` manifest from IIC canonical data pools, no live connections needed |
-| `tests/Fixtures/synthetic-manifest.json` | Pre-generated IIC 3-node fixture (`as-built` mode) committed to the repo |
-| `tests/unit/Simulation.Tests.ps1` | 7 Pester tests validating report/diagram rendering from the synthetic fixture |
-| `tests/Test-RangerFromSyntheticManifest.ps1` | Standalone visual inspection script — renders all formats and prints a summary |
+| `tests/maproom/scripts/New-RangerSyntheticManifest.ps1` | Generator script — builds a complete `1.1.0-draft` manifest from IIC canonical data pools, no live connections needed |
+| `tests/maproom/Fixtures/synthetic-manifest.json` | Pre-generated IIC 3-node fixture (`as-built` mode) committed to the repo |
+| `tests/maproom/unit/Simulation.Tests.ps1` | 7 Pester tests validating report/diagram rendering from the synthetic fixture |
+| `tests/maproom/scripts/Test-RangerFromSyntheticManifest.ps1` | Standalone visual inspection script — renders all formats and prints a summary |
 
 **IIC Canonical Data:** All synthetic data uses the mandatory Infinite Improbability Corp (IIC) fictional company standard per `azurelocal.github.io/standards/examples`. Domain: `iic.local`, NetBIOS: `IMPROBABLE`, cluster: `azlocal-iic-01`, nodes: `azl-iic-n01/02/03`.
 
 **To regenerate the fixture:**
+
 ```powershell
-.\tests\New-RangerSyntheticManifest.ps1
+.\tests\maproom\scripts\New-RangerSyntheticManifest.ps1
 ```
 
 **To run a visual inspection:**
+
 ```powershell
-.\tests\Test-RangerFromSyntheticManifest.ps1 -Open
+.\tests\maproom\scripts\Test-RangerFromSyntheticManifest.ps1 -Open
 ```
 
 ## Documentation And Project-State Audit

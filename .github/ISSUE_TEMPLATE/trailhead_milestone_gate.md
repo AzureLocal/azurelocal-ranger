@@ -18,7 +18,7 @@ Do not close the release milestone until this issue is closed or explicitly waiv
 - Test environment: `<tplabs-clus01 or other environment>`
 - Planned validation date: `YYYY-MM-DD`
 - Related TRAILHEAD milestone: `Operation TRAILHEAD — vX.Y.Z Field Validation` or `N/A`
-- TRAILHEAD run log: `repo-management/logs/trailhead/run-YYYYMMDD-HHMM.md`
+- TRAILHEAD run log: `tests/trailhead/logs/run-YYYYMMDD-HHMM.md`
 
 ## Entry Criteria
 
@@ -47,7 +47,7 @@ Choose one. If not using the full cycle, document the rationale in a comment.
 
 ## Execution Checklist
 
-- [ ] Start a TRAILHEAD run log with `repo-management/scripts/Start-TrailheadRun.ps1`
+- [ ] Start a TRAILHEAD run log with `tests/trailhead/scripts/Start-TrailheadRun.ps1`
 - [ ] Execute all required TRAILHEAD phases
 - [ ] File and link any bugs found during validation
 - [ ] Record pass, partial, or waived outcome for each executed phase

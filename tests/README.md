@@ -1,185 +1,127 @@
 # Tests
 
-This directory contains all testing assets for Azure Local Ranger: unit tests, integration tests, fixture data, a simulation framework, and helper scripts.
+AzureLocalRanger testing is split into two named solutions:
 
-All Pester tests run with Pester 5. **No live Azure or WinRM connections are required** for Pester tests — they are entirely fixture-backed.
+- `tests/trailhead/` for live field validation
+- `tests/maproom/` for offline synthetic and post-discovery testing
 
-For live field testing against a real Azure Local environment, see the **Operation TRAILHEAD** methodology in [`repo-management/plans/field-testing.md`](../repo-management/plans/field-testing.md) and the cycle-creation script at [`repo-management/scripts/New-RangerFieldTestCycle.ps1`](../repo-management/scripts/New-RangerFieldTestCycle.ps1).
+## Purpose
 
-## Two Test Lanes
+The test layout is intentionally split into one container and one real home:
 
-- **Pester lane** — fast, fixture-backed unit and integration tests under `tests/`; safe to run on any workstation with no live dependencies.
-- **TRAILHEAD lane** — live field validation against a real Azure Local environment; used as the release gate when a milestone is ready to close.
+- `tests/` is the repo-root entry point
+- `tests/trailhead/` is the testing solution
 
-## Milestone-End Validation Policy
+That means testing assets should not be spread across unrelated repo areas, and they should not live in `repo-management/`.
 
-Every delivery milestone should end with an **Operation TRAILHEAD** gate issue before the milestone is closed.
+## Named Solutions
 
-- Create the gate issue from `.github/ISSUE_TEMPLATE/trailhead_milestone_gate.md`.
-- Run `Invoke-Pester -Path .\tests` as the baseline regression pass.
-- If the milestone changed collectors, auth, remoting, manifest logic, reports, diagrams, packaging, or publishing, run the full TRAILHEAD P0-P7 cycle.
-- If the milestone is narrower in scope, run the impacted TRAILHEAD phases and document any waived phases in the issue.
-- Do not close the milestone until the TRAILHEAD gate issue is closed or explicitly waived with rationale.
+### `TRAILHEAD`
 
-## Directory Layout
+`TRAILHEAD` is the live field-validation solution.
 
-```
+It holds:
+
+- live test-cycle documentation
+- run scripts
+- committed run logs
+- milestone-close execution evidence
+
+### `MAPROOM`
+
+`MAPROOM` is the offline synthetic and cached-discovery testing solution.
+
+It holds:
+
+- fixtures
+- unit tests
+- integration tests
+- synthetic manifest tooling
+- report and output validation workflows that do not require live discovery
+
+## Layout
+
+```text
 tests/
-  Fixtures/                         pre-built JSON fixtures for unit and simulation tests
-  unit/                             Pester unit tests
-  integration/                      Pester integration tests (fixture-backed, no live connections)
-  New-RangerSyntheticManifest.ps1   generator that builds the IIC synthetic manifest from scratch
-  Test-RangerFromSyntheticManifest.ps1  standalone manual runner for visual inspection
+  trailhead/
+    scripts/
+    logs/
+    docs/
+    field-testing.md
+    README.md
+  maproom/
+    Fixtures/
+    unit/
+    integration/
+    scripts/
+    docs/
+    README.md
 ```
+
+## Folder Summary
+
+- `tests/trailhead/scripts/` holds live TRAILHEAD workflow helpers.
+- `tests/trailhead/logs/` holds committed TRAILHEAD run logs.
+- `tests/trailhead/docs/` holds detailed TRAILHEAD documentation.
+- `tests/trailhead/field-testing.md` defines the live field-testing methodology.
+- `tests/maproom/Fixtures/` holds committed fixture data used by offline tests.
+- `tests/maproom/unit/` holds Pester unit tests.
+- `tests/maproom/integration/` holds fixture-backed integration tests.
+- `tests/maproom/scripts/` holds synthetic manifest and offline render-validation scripts.
+- `tests/maproom/docs/` holds detailed MAPROOM documentation.
 
 ## Running Tests
 
-Run all tests from the repo root:
+Run the full suite from the repo root:
 
 ```powershell
 Invoke-Pester -Path .\tests -Output Detailed
 ```
 
-Run only unit tests:
+Run unit tests only:
 
 ```powershell
-Invoke-Pester -Path .\tests\unit -Output Detailed
+Invoke-Pester -Path .\tests\maproom\unit -Output Detailed
 ```
 
-Run a specific test file:
+Run integration tests only:
 
 ```powershell
-Invoke-Pester -Path .\tests\unit\Simulation.Tests.ps1 -Output Detailed
+Invoke-Pester -Path .\tests\maproom\integration -Output Detailed
 ```
 
-Current passing count: **18/18**.
-
-## Test Files
-
-| File | Purpose |
-|---|---|
-| `unit/Config.Tests.ps1` | Module config, schema defaults, and reserved template structure |
-| `unit/Runtime.Tests.ps1` | Runtime pipeline, manifest load, schema validation, and collector invocation |
-| `unit/Outputs.Tests.ps1` | Report and diagram generation from pre-built domain fixtures |
-| `unit/Simulation.Tests.ps1` | Full render pipeline driven from the IIC synthetic manifest |
-| `integration/` | End-to-end package generation and degraded-scenario tests |
-
-## Fixtures
-
-Fixtures are pre-built JSON files that stand in for live discovery output. Tests load fixtures instead of connecting to real clusters or Azure.
-
-| Fixture | Covers |
-|---|---|
-| `hardware.json` | Hardware collector payload — Dell PowerEdge nodes with NVMe disks |
-| `topology-cluster.json` | Cluster and node topology payload |
-| `storage-networking.json` | Storage and networking collector payload |
-| `storage-networking-degraded.json` | Same domain with degraded posture signals for finding tests |
-| `monitoring-observability.json` | Monitoring and observability collector payload |
-| `management-performance.json` | Management tools and performance baseline payload |
-| `management-performance-degraded.json` | Same domain with degraded posture signals |
-| `workload-identity-azure.json` | Workload, identity, and Azure integration payload |
-| `manifest-sample.json` | Minimal complete manifest used in schema validation tests |
-| `synthetic-manifest.json` | Full 3-node IIC as-built manifest — see Simulation Framework below |
-
-## Simulation Framework
-
-The simulation framework validates the full Ranger render pipeline without any live connections. It is modeled on the Azure Scout testing pattern.
-
-### Philosophy
-
-Rather than mocking individual collector functions, the simulation framework builds a complete, semantically valid manifest from a pool of known fictional data, then runs the full `Export-AzureLocalRangerReport` pipeline against it. This catches rendering bugs, schema mismatches, and findings logic that unit mocks cannot.
-
-### IIC Canonical Data Standard
-
-All synthetic data follows the mandatory IIC (Infinite Improbability Corp) canonical standard. The IIC standard is the defined fictional company for all AzureLocal project test data.
-
-| Attribute | Value |
-|---|---|
-| Company name | Infinite Improbability Corp |
-| Abbreviation | IIC |
-| Internal domain | `iic.local` |
-| NetBIOS name | `IMPROBABLE` |
-| Public domain | `improbability.cloud` |
-| Entra tenant | `improbability.onmicrosoft.com` |
-| Cluster name | `azlocal-iic-01` |
-| Nodes | `azl-iic-n01`, `azl-iic-n02`, `azl-iic-n03` |
-| Node IPs | `10.0.0.11–10.0.0.13` |
-| iDRAC IPs | `10.245.64.11–10.245.64.13` |
-| Hardware | Dell PowerEdge R760 |
-| Tenant ID | `00000000-0000-0000-0000-000000000000` |
-| Subscription ID | `33333333-3333-3333-3333-333333333333` |
-| Resource group (compute) | `rg-iic-compute-01` |
-
-Do not substitute tplabs, Contoso, or any other fictional company name for test data in this project. All test data must use IIC values.
-
-### Synthetic Manifest
-
-`tests/Fixtures/synthetic-manifest.json` is the pre-generated IIC manifest that the simulation tests load. It represents a healthy 3-node as-built deployment with:
-
-- 3 nodes all in `Up` state
-- 5 VMs (3 AVD pool members + 2 Arc VMs)
-- 24 NVMe disks across 3 nodes
-- Azure Monitor Agent on all 3 nodes
-- DCR, DCE, and Log Analytics Workspace configured
-- 1 certificate expiring within 60 days (triggers a Warning finding)
-- 2 warning findings and 2 informational findings
-- mode set to `as-built`
-
-The fixture is committed to the repository so that simulation tests run without executing the generator.
-
-### Regenerating the Fixture
-
-If the manifest schema changes, regenerate the fixture by running:
+Run the synthetic-manifest simulation test only:
 
 ```powershell
-.\tests\New-RangerSyntheticManifest.ps1
+Invoke-Pester -Path .\tests\maproom\unit\Simulation.Tests.ps1 -Output Detailed
 ```
 
-Then commit `tests/Fixtures/synthetic-manifest.json`. The generator script documents its own data pools at the top of the file.
-
-### Simulation Tests
-
-`tests/unit/Simulation.Tests.ps1` contains 7 tests that run the full pipeline against the synthetic manifest:
-
-| Test | What It Validates |
-|---|---|
-| Renders all 3 report tiers | Executive, Management, and Technical markdown files are produced |
-| IIC cluster name in reports | `azlocal-iic-01` appears in the rendered output |
-| Warning findings surfaced | Warning-level findings appear in executive and management reports |
-| At least 5 diagrams in as-built mode | As-built renders a meaningful diagram set |
-| `monitoring-telemetry-flow` diagram generated | Monitoring diagram artifact is present and status is `generated` |
-| `workload-family-placement` diagram generated | Workload placement diagram artifact is present and status is `generated` |
-| No error-state artifacts | No artifact in the result set carries `status = error` |
-
-### Manual Visual Runner
-
-`tests/Test-RangerFromSyntheticManifest.ps1` is a standalone script for manual inspection. It runs the full pipeline and optionally opens the output folder.
+Run the synthetic visual inspection script:
 
 ```powershell
-# Run and print artifact summary
-.\tests\Test-RangerFromSyntheticManifest.ps1
-
-# Run and open output folder
-.\tests\Test-RangerFromSyntheticManifest.ps1 -Open
+.\tests\maproom\scripts\Test-RangerFromSyntheticManifest.ps1
 ```
 
-Use this when you want to visually review a rendered report or diagram before committing a change to the render engine.
-
-## Adding New Tests
-
-- Place unit tests in `tests/unit/` using the `*.Tests.ps1` naming convention.
-- Place integration tests in `tests/integration/`.
-- Use `$TestDrive` (Pester's per-test temp path) for all output paths so tests remain isolated and clean.
-- Use `-BeGreaterOrEqual` for numeric lower-bound assertions in Pester 5. The alias `-BeGreaterThanOrEqualTo` does not exist.
-- Filter artifact records by `$_.relativePath` not `$_.name`. The artifact record object does not have a `name` property.
-- All test data must use IIC canonical values. Do not introduce new fictional company names.
-
-## Pester Version
-
-Tests require Pester 5. Install or update with:
+Generate or refresh the synthetic manifest fixture:
 
 ```powershell
-Install-Module Pester -Force -SkipPublisherCheck
+.\tests\maproom\scripts\New-RangerSyntheticManifest.ps1
 ```
 
-The minimum verified version is 5.7.1.
+Start a live TRAILHEAD run:
+
+```powershell
+.\tests\trailhead\scripts\Start-TrailheadRun.ps1
+```
+
+## References
+
+- `tests/trailhead/README.md`
+- `tests/trailhead/field-testing.md`
+- `tests/trailhead/docs/trailhead-guide.md`
+- `tests/maproom/README.md`
+- `tests/maproom/docs/maproom-guide.md`
+- `tests/maproom/scripts/New-RangerSyntheticManifest.ps1`
+- `tests/maproom/scripts/Test-RangerFromSyntheticManifest.ps1`
+- `tests/trailhead/scripts/New-RangerFieldTestCycle.ps1`
+- `tests/trailhead/scripts/Start-TrailheadRun.ps1`

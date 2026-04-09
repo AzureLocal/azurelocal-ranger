@@ -5,22 +5,22 @@
 
 .DESCRIPTION
     Modeled on the Azure Scout New-SyntheticSampleReport.ps1 pattern.
-    Produces tests/Fixtures/synthetic-manifest.json without any live connections,
+    Produces tests/maproom/Fixtures/synthetic-manifest.json without any live connections,
     Az module, or WinRM sessions.
 
     All company data follows the mandatory IIC canonical standard defined in:
     https://azurelocal.github.io/standards/examples
 
 .EXAMPLE
-    .\tests\New-RangerSyntheticManifest.ps1
+    .\tests\maproom\scripts\New-RangerSyntheticManifest.ps1
 
 .NOTES
-    Output: tests/Fixtures/synthetic-manifest.json
+    Output: tests/maproom/Fixtures/synthetic-manifest.json
     Schema: 1.1.0-draft / mode: as-built
 #>
 [CmdletBinding()]
 param(
-    [string]$OutputPath = (Join-Path $PSScriptRoot 'Fixtures\synthetic-manifest.json')
+    [string]$OutputPath = (Join-Path $PSScriptRoot '..\Fixtures\synthetic-manifest.json')
 )
 
 Set-StrictMode -Version Latest

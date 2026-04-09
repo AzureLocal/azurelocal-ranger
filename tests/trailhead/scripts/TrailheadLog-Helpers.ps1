@@ -5,7 +5,7 @@
 .DESCRIPTION
     Dot-source this file after running Start-TrailheadRun.ps1:
 
-        . .\repo-management\scripts\TrailheadLog-Helpers.ps1
+        . .\tests\trailhead\scripts\TrailheadLog-Helpers.ps1
 
     Requires env vars set by Start-TrailheadRun.ps1:
         $env:TH_LOG_FILE      — path to the run log markdown file
@@ -28,7 +28,7 @@ Set-StrictMode -Version Latest
 # ── Guard ──────────────────────────────────────────────────────────────────────
 function _TH-Guard {
     if (-not $env:TH_LOG_FILE) {
-        throw "No active TRAILHEAD run. Run Start-TrailheadRun.ps1 first."
+        throw "No active TRAILHEAD run. Run tests/trailhead/scripts/Start-TrailheadRun.ps1 first."
     }
 }
 
@@ -158,7 +158,7 @@ $Notes
     Write-Host "Log: $env:TH_LOG_FILE" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Commit the log file:" -ForegroundColor Yellow
-    $relPath = 'repo-management/logs/trailhead/' + (Split-Path $env:TH_LOG_FILE -Leaf)
+    $relPath = 'tests/trailhead/logs/' + (Split-Path $env:TH_LOG_FILE -Leaf)
     Write-Host "  cd '$env:TH_REPO_ROOT'" -ForegroundColor DarkGray
     Write-Host "  git add '$relPath'" -ForegroundColor DarkGray
     Write-Host "  git commit -m `"test(trailhead): run log $($env:TH_RUN_ID)`"" -ForegroundColor DarkGray

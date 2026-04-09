@@ -32,8 +32,8 @@
     .\New-RangerFieldTestCycle.ps1 -Version "1.0.0" -Environment "customer-clus01 (Contoso)" -DueDate "2026-08-01"
 
 .NOTES
-    Place this script in repo-management/scripts/.
-    See repo-management/plans/field-testing.md for the full testing methodology.
+    Place this script in tests/trailhead/scripts/.
+    See tests/trailhead/field-testing.md for the full testing methodology.
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
@@ -82,7 +82,7 @@ Invoke-Gh @("api", "repos/AzureLocal/azurelocal-ranger/milestones",
     "--method", "POST",
     "--field", "title=$milestoneTitle",
     "--field", "due_on=${DueDate}T00:00:00Z",
-    "--field", "description=Operation TRAILHEAD field-testing cycle for AzureLocalRanger v$Version. See repo-management/plans/field-testing.md for methodology."
+    "--field", "description=Operation TRAILHEAD field-testing cycle for AzureLocalRanger v$Version. See tests/trailhead/field-testing.md for methodology."
 ) | Out-Null
 Write-Host "  Milestone created." -ForegroundColor Green
 

@@ -1,6 +1,6 @@
 BeforeAll {
-    $script:repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSCommandPath))
-    $script:fixtureRoot = Join-Path $script:repoRoot 'tests\Fixtures'
+    $script:repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..') | Select-Object -ExpandProperty Path
+    $script:fixtureRoot = Join-Path $script:repoRoot 'tests\maproom\Fixtures'
     Import-Module (Join-Path $script:repoRoot 'AzureLocalRanger.psd1') -Force
 }
 

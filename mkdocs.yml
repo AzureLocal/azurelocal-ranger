@@ -71,6 +71,7 @@ nav:
     - Roadmap: project/roadmap.md
     - Documentation Roadmap: project/documentation-roadmap.md
     - Repository Structure: project/repository-structure.md
+    - Versioning: project/versioning.md
     - Changelog: project/changelog.md
   - Contributor:
     - Getting Started: contributor/getting-started.md

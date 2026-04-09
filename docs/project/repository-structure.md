@@ -14,9 +14,10 @@ That means the repo structure has to support the current documentation-first pha
 | `repo-management/` | Internal plans, checklists, and working design material | Active now |
 | `repo-management/reports/` | Canonical internal audit and implementation trackers | Active now |
 | `Modules/` | PowerShell implementation tree | Active now |
-| `tests/` | Automated validation and fixture-backed tests | Active now |
-| `samples/` | Future sample configs, manifests, and output examples | Reserved |
-| `branding/` | Shared visual assets and brand material | Reserved |
+| `tests/` | Top-level container for the testing solution | Active now |
+| `tests/trailhead/` | Live field-validation assets and run evidence | Active now |
+| `tests/maproom/` | Offline synthetic, fixture-backed, and post-discovery testing assets | Active now |
+| `en-US/` | PowerShell about/help content packaged with the module | Active now |
 
 ## PowerShell Module Surface
 
@@ -36,12 +37,16 @@ Most contributors will now be touching one or more of these areas:
 - `repo-management/`
 - `Modules/`
 - `tests/`
+- `en-US/`
 
 The split still matters:
 
 - `docs/` carries the public story
 - `repo-management/` carries internal planning and audit detail
+- `en-US/` carries module-localized help content
 - `Modules/` and `tests/` carry the implementation itself
+- `tests/trailhead/` holds live validation only
+- `tests/maproom/` holds offline testing only
 
 ## Module Structure
 

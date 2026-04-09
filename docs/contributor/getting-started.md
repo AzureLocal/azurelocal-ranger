@@ -32,10 +32,10 @@ Ranger uses Pester 5 for all tests. Run the full suite from the repo root:
 Invoke-Pester -Path .\tests -Output Detailed
 ```
 
-For simulation testing (full pipeline validation without live connections), use the IIC synthetic manifest:
+For simulation testing in MAPROOM (full pipeline validation without live connections), use the IIC synthetic manifest:
 
 ```powershell
-Invoke-Pester -Path .\tests\unit\Simulation.Tests.ps1 -Output Detailed
+Invoke-Pester -Path .\tests\maproom\unit\Simulation.Tests.ps1 -Output Detailed
 ```
 
 See [Simulation Testing](simulation-testing.md) for a detailed guide to the simulation framework, the IIC canonical data standard, and how to regenerate the synthetic manifest fixture.
