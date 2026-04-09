@@ -60,8 +60,71 @@ domains:
 
 output:
   mode: as-built
-  formats: [html, markdown, json, svg]
-  rootPath: ./artifacts
+  formats: [html, markdown, docx, xlsx, pdf, svg]
+  rootPath: C:\AzureLocalRanger
+
+## Input Resolution Precedence
+
+Ranger resolves structural input in this order:
+
+```text
+Parameter  ->  Config file  ->  Interactive prompt  ->  Default  ->  Error
+```
+
+That rule applies to environment name, cluster addressing, and Azure target metadata. Credentials follow the same broad shape, but can also be resolved through `passwordRef` URIs.
+
+## Runtime Parameter Overrides
+
+The public commands support a parameter-first operating model. These parameters override config-file values when provided:
+
+- `-OutputPath`
+- `-IncludeDomain`
+- `-ExcludeDomain`
+- `-ClusterCredential`
+- `-DomainCredential`
+- `-BmcCredential`
+- `-NoRender`
+- `-ClusterFqdn`
+- `-ClusterNodes`
+- `-EnvironmentName`
+- `-SubscriptionId`
+- `-TenantId`
+- `-ResourceGroup`
+
+Example:
+
+```powershell
+$clusterCred = Get-Credential
+Invoke-AzureLocalRanger \
+  -ConfigPath .\ranger.yml \
+  -ClusterCredential $clusterCred \
+  -ClusterFqdn tplabs-clus01.contoso.com \
+  -ClusterNodes tplabs-01-n01,tplabs-01-n02
+```
+
+## Domain Filters
+
+`-IncludeDomain` and `-ExcludeDomain` filter **data collection topics**, not Active Directory domains.
+
+Canonical names and common aliases are:
+
+| Canonical name | Aliases | Purpose |
+|---|---|---|
+| `cluster` | `topology`, `cluster` | Cluster identity, nodes, quorum, CAU, Arc cluster posture |
+| `storage-networking` | `storage`, `networking` | Storage pools, disks, volumes, QoS, vSwitches, host adapters, RDMA, and ATC |
+| `identity-security` | `identity`, `security` | AD or workgroup identity, BitLocker, WDAC, Defender, certificates, and RBAC |
+| `azure-integration` | `azure` | Arc, policy, monitoring, updates, backup, ASR, AKS, and resource bridge overlays |
+| `hardware` | `hardware`, `oem` | BMC and Redfish hardware, firmware, disks, GPUs, memory, and security posture |
+| `management-performance` | `management`, `performance` | WAC, third-party tools, performance counters, event digest, and management agents |
+
+## Prompting Behavior
+
+Two behavior flags govern interactive prompting:
+
+- `behavior.promptForMissingCredentials` controls whether Ranger will prompt for unresolved cluster, domain, or BMC credentials.
+- `behavior.promptForMissingRequired` controls whether Ranger will prompt for missing required structural values such as environment name or cluster FQDN.
+
+If prompting is disabled or unavailable, missing required values cause validation failure.
 ```
 
 ## Include and Exclude Rules
@@ -121,10 +184,14 @@ If a required value is missing, the desired behavior is:
 
 - fail early for invalid configuration
 - prompt for credentials when interactive prompting is enabled
+- prompt for required structural fields when interactive prompting is enabled
 - skip optional domains when targets or credentials are absent
 
 ## Related Pages
 
+- [Quickstart](quickstart.md)
+- [Command Reference](command-reference.md)
+- [Prerequisites](../prerequisites.md)
 - [Operator Prerequisites](prerequisites.md)
 - [Operator Authentication](authentication.md)
 - [Operator Troubleshooting](troubleshooting.md)

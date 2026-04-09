@@ -24,10 +24,18 @@ The exact file names can evolve, but the logical package should include:
 <cluster>-as-built-<timestamp>/
 	manifest/
 		audit-manifest.json
+	package-index.json
 	reports/
 		executive-summary.html
+		executive-summary.docx
+		executive-summary.pdf
 		management-summary.html
+		management-summary.docx
+		management-summary.pdf
 		technical-deep-dive.html
+		technical-deep-dive.docx
+		technical-deep-dive.pdf
+		delivery-registers.xlsx
 	diagrams/
 		physical-architecture.svg
 		logical-network-topology.svg
@@ -35,7 +43,8 @@ The exact file names can evolve, but the logical package should include:
 		...
 	evidence/
 		optional raw evidence exports or references
-	index.html or README.md
+	README.md
+	ranger.log
 ```
 
 ## Required Content
@@ -85,6 +94,9 @@ Artifact naming should include:
 Examples:
 
 - `azlocal-prod-01-as-built-20260406-technical-deep-dive.html`
+- `azlocal-prod-01-as-built-20260406-technical-deep-dive.docx`
+- `azlocal-prod-01-as-built-20260406-technical-deep-dive.pdf`
+- `azlocal-prod-01-as-built-20260406-delivery-registers.xlsx`
 - `azlocal-prod-01-as-built-20260406-physical-architecture.svg`
 
 ## Relationship to Current-State Outputs

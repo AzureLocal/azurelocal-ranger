@@ -22,6 +22,15 @@ The v1 collector writes to these named sections of the `managementTools` manifes
 | `agents` | Per-node agent inventory — installed agents, versions, and connection state |
 | `summary` | Count of running management services and identified control surfaces |
 
+## Current Collector Depth
+
+Current v1 collection also covers:
+
+- Windows Admin Center presence, service state, and certificate signals where visible.
+- Third-party agent inventory for backup, monitoring, and operations tooling.
+- SCVMM and SCOM presence indicators for environments that still carry those agents.
+- Service-level roll-ups used to explain management-plane coverage in the reports.
+
 ## Why It Matters
 
 An environment is managed through tools, not just through cluster objects. Ranger should document that operational reality so a receiving team knows which control surfaces matter.

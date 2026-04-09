@@ -12,7 +12,7 @@ function Invoke-RangerOutputGeneration {
 
     $artifacts = New-Object System.Collections.ArrayList
     $normalizedFormats = @($Formats | ForEach-Object { $_.ToLowerInvariant() } | Select-Object -Unique)
-    $reportFormats = @($normalizedFormats | Where-Object { $_ -in @('html', 'markdown', 'md') })
+    $reportFormats = @($normalizedFormats | Where-Object { $_ -in @('html', 'markdown', 'md', 'docx', 'xlsx', 'pdf') })
     $diagramFormats = @($normalizedFormats | Where-Object { $_ -in @('svg', 'drawio', 'xml') })
 
     if ($reportFormats.Count -gt 0) {
@@ -53,9 +53,11 @@ function Write-RangerReportArtifacts {
     New-Item -ItemType Directory -Path $reportsRoot -Force | Out-Null
     $prefix = Get-RangerArtifactPrefix -Manifest $Manifest
     $artifacts = New-Object System.Collections.ArrayList
+    $tierPayloads = New-Object System.Collections.ArrayList
 
     foreach ($tier in (Get-RangerReportTierDefinitions)) {
         $content = New-RangerReportPayload -Manifest $Manifest -Tier $tier.Name -Mode $Mode
+        [void]$tierPayloads.Add([ordered]@{ Definition = $tier; Content = $content })
         if ('markdown' -in $Formats -or 'md' -in $Formats) {
             $markdownPath = Join-Path -Path $reportsRoot -ChildPath ("{0}-{1}.md" -f $prefix, (Get-RangerSafeName -Value $tier.Title))
             (ConvertTo-RangerMarkdownReport -Report $content) | Set-Content -Path $markdownPath -Encoding UTF8
@@ -67,6 +69,24 @@ function Write-RangerReportArtifacts {
             (ConvertTo-RangerHtmlReport -Report $content) | Set-Content -Path $htmlPath -Encoding UTF8
             [void]$artifacts.Add((New-RangerArtifactRecord -Type 'html-report' -RelativePath ([System.IO.Path]::GetRelativePath($PackageRoot, $htmlPath)) -Status generated -Audience $tier.Audience))
         }
+
+        if ('docx' -in $Formats) {
+            $docxPath = Join-Path -Path $reportsRoot -ChildPath ("{0}-{1}.docx" -f $prefix, (Get-RangerSafeName -Value $tier.Title))
+            Write-RangerDocxReport -Report $content -Path $docxPath
+            [void]$artifacts.Add((New-RangerArtifactRecord -Type 'docx-report' -RelativePath ([System.IO.Path]::GetRelativePath($PackageRoot, $docxPath)) -Status generated -Audience $tier.Audience))
+        }
+
+        if ('pdf' -in $Formats) {
+            $pdfPath = Join-Path -Path $reportsRoot -ChildPath ("{0}-{1}.pdf" -f $prefix, (Get-RangerSafeName -Value $tier.Title))
+            Write-RangerPdfReport -Report $content -Path $pdfPath
+            [void]$artifacts.Add((New-RangerArtifactRecord -Type 'pdf-report' -RelativePath ([System.IO.Path]::GetRelativePath($PackageRoot, $pdfPath)) -Status generated -Audience $tier.Audience))
+        }
+    }
+
+    if ('xlsx' -in $Formats) {
+        $workbookPath = Join-Path -Path $reportsRoot -ChildPath ("{0}-delivery-registers.xlsx" -f $prefix)
+        Write-RangerExcelWorkbook -Manifest $Manifest -Path $workbookPath
+        [void]$artifacts.Add((New-RangerArtifactRecord -Type 'xlsx-workbook' -RelativePath ([System.IO.Path]::GetRelativePath($PackageRoot, $workbookPath)) -Status generated -Audience 'technical'))
     }
 
     return @($artifacts)
@@ -273,7 +293,6 @@ function New-RangerReportPayload {
             "Total VMs: $($summary.VmCount)",
             "Total nodes: $($summary.NodeCount)",
             "AKS clusters: $(@($Manifest.domains.azureIntegration.aksClusters).Count)",
-            "AVD host pools: $(@($Manifest.domains.azureIntegration.avdHostPools).Count)",
             "Arc-connected machines: $(@($Manifest.domains.azureIntegration.arcMachineDetail).Count)",
             "Update compliance: $(if ($Manifest.domains.azureIntegration.summary.updateCount -gt 0) { "$($Manifest.domains.azureIntegration.summary.updateCount) update resource(s) tracked" } else { 'No update resources tracked' })",
             "Licensing: $(if ($Manifest.domains.azureIntegration.costLicensing.subscriptionName) { $Manifest.domains.azureIntegration.costLicensing.subscriptionName } else { 'Not collected' })"

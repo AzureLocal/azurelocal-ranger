@@ -1,6 +1,6 @@
 # Contributing
 
-Azure Local Ranger is still being shaped at the product-definition and planning level.
+Azure Local Ranger is an active implementation repository with a public docs site, module code, tests, and release-management assets.
 
 ## Contribution Priorities
 
@@ -16,11 +16,11 @@ Useful contributions right now include:
 
 ## Repository Discipline
 
-Because this repo is intended to back a public MkDocs site and a future PowerShell module, contributors should keep:
+Because this repo backs both a public MkDocs site and the live PowerShell module, contributors should keep:
 
 - public docs clear and intentional
 - internal planning in `repo-management/`
-- implementation directories empty until the design is mature enough to support real work
+- implementation changes aligned with tests, docs, and the manifest contract
 
 ## Docs-First Rule
 

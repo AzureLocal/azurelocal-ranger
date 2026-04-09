@@ -27,6 +27,15 @@ The v1 collector writes to these named sections of the `hardware` manifest domai
 | `security` | Hardware-layer security posture — Secure Boot state, TPM version, UEFI mode, and virtualization extensions |
 | `summary` | Aggregate counts and vendor summary — node models, processor families, and disk counts |
 
+## Current Collector Depth
+
+Current v1 collection also covers:
+
+- Per-DIMM memory inventory and slot-level population detail where the host or Redfish path exposes it.
+- GPU and accelerator discovery when present in host inventory or OEM endpoints.
+- Host VBS and hardware security posture alongside TPM and Secure Boot state.
+- BMC certificate and firmware metadata used for handoff and operational review.
+
 ## Why It Matters
 
 Hardware facts affect:

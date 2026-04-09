@@ -18,7 +18,14 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
         return ConvertTo-RangerHashtable -InputObject $fixture
     }
 
-    $vmInventory = @(
+    # Issue #111: auto-detect domain context before running AD queries
+    $arcResource  = Resolve-RangerClusterArcResource -Config $Config
+    $domainCtx    = Resolve-RangerDomainContext -Config $Config -ArcResource $arcResource -ClusterCredential $CredentialMap.cluster
+    $domainFqdn   = if ($domainCtx.FQDN) { [string]$domainCtx.FQDN } else { '' }
+    $isWorkgroup  = [bool]$domainCtx.IsWorkgroup
+    Write-RangerLog -Level info -Message "WorkloadIdentityCollector: domain context — FQDN='$domainFqdn', source='$($domainCtx.ResolvedBy)', workgroup=$isWorkgroup"
+
+    $vmSnapshots = @(
         Invoke-RangerSafeAction -Label 'VM inventory snapshot' -DefaultValue @() -ScriptBlock {
             Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -ScriptBlock {
                 if (-not (Get-Command -Name Get-VM -ErrorAction SilentlyContinue)) {
@@ -147,6 +154,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
         }
     )
 
+    $vmInventory = @($vmSnapshots)
+
     $keyVaultReferences = @(
         $Config.credentials.cluster.passwordRef,
         $Config.credentials.domain.passwordRef,
@@ -156,7 +165,9 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     $identitySnapshots = @(
         Invoke-RangerSafeAction -Label 'Identity and security snapshot' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -ScriptBlock {
+            Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -ArgumentList @($domainFqdn, $isWorkgroup) -ScriptBlock {
+                param($resolvedDomainFqdn, $resolvedIsWorkgroup)
+
                 $computerSystem = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue
                 $defender = if (Get-Command -Name Get-MpComputerStatus -ErrorAction SilentlyContinue) { Get-MpComputerStatus | Select-Object AMRunningMode, AntispywareEnabled, AntivirusEnabled, RealTimeProtectionEnabled, IsTamperProtected, AntivirusSignatureVersion, AntivirusSignatureLastUpdated, AMProductVersion } else { $null }
                 $defenderExclusions = if (Get-Command -Name Get-MpPreference -ErrorAction SilentlyContinue) {
@@ -200,8 +211,14 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                         securityServicesRunning = @($deviceGuard.SecurityServicesRunning)
                     }
                 } else { [ordered]@{ wdacConfigured = $false; enforcementMode = 'not-assessed' } }
-                $adDomain = if (Get-Command -Name Get-ADDomain -ErrorAction SilentlyContinue) { Get-ADDomain -ErrorAction SilentlyContinue | Select-Object DNSRoot, NetBIOSName, DomainMode, DistinguishedName, ParentDomain } else { $null }
-                $adForest = if (Get-Command -Name Get-ADForest -ErrorAction SilentlyContinue) { Get-ADForest -ErrorAction SilentlyContinue | Select-Object Name, ForestMode, RootDomain, Domains } else { $null }
+                # Issue #111: use explicit -Server to target the cluster's DC, not the Ranger host's domain
+                $adServerParam = if (-not [string]::IsNullOrWhiteSpace($resolvedDomainFqdn)) { @{ Server = $resolvedDomainFqdn } } else { @{} }
+                $adDomain = if (-not $resolvedIsWorkgroup -and (Get-Command -Name Get-ADDomain -ErrorAction SilentlyContinue)) {
+                    try { Get-ADDomain @adServerParam -ErrorAction Stop | Select-Object DNSRoot, NetBIOSName, DomainMode, DistinguishedName, ParentDomain } catch { $null }
+                } else { $null }
+                $adForest = if (-not $resolvedIsWorkgroup -and (Get-Command -Name Get-ADForest -ErrorAction SilentlyContinue)) {
+                    try { Get-ADForest @adServerParam -ErrorAction Stop | Select-Object Name, ForestMode, RootDomain, Domains } catch { $null }
+                } else { $null }
                 $appLocker = if (Get-Command -Name Get-AppLockerPolicy -ErrorAction SilentlyContinue) { try { Get-AppLockerPolicy -Effective -ErrorAction Stop | Select-Object -ExpandProperty RuleCollections | ForEach-Object { $_.CollectionType } } catch { @() } } else { @() }
                 $secureBoot = try { Confirm-SecureBootUEFI -ErrorAction Stop } catch { $null }
                 $credSsp = (Get-Item -Path WSMan:\localhost\Service\Auth\CredSSP -ErrorAction SilentlyContinue).Value
@@ -237,9 +254,9 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
                 # Issue #64: AD object depth (CNO, AD site)
                 $clusterName = if (Get-Command -Name Get-Cluster -ErrorAction SilentlyContinue) { try { (Get-Cluster -ErrorAction Stop).Name } catch { $null } } else { $null }
-                $adObjects = if ($clusterName -and (Get-Command -Name Get-ADComputer -ErrorAction SilentlyContinue)) {
+                $adObjects = if (-not $resolvedIsWorkgroup -and $clusterName -and (Get-Command -Name Get-ADComputer -ErrorAction SilentlyContinue)) {
                     try {
-                        $cno = Get-ADComputer -Identity $clusterName -Properties DistinguishedName, ServicePrincipalNames, Enabled -ErrorAction Stop
+                        $cno = Get-ADComputer -Identity $clusterName @adServerParam -Properties DistinguishedName, ServicePrincipalNames, Enabled -ErrorAction Stop
                         [ordered]@{
                             cnoName              = $cno.Name
                             cnoDistinguishedName = $cno.DistinguishedName
@@ -312,12 +329,12 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                     certificates       = @($certificates)
                     bitlocker          = @($bitlocker)
                     bitlockerProtectors = @($bitlockerProtectors)
-                    defender           = ConvertTo-RangerHashtable -InputObject $defender
+                    defender           = $defender
                     defenderExclusions = $defenderExclusions
-                    deviceGuard        = ConvertTo-RangerHashtable -InputObject $deviceGuard
+                    deviceGuard        = $deviceGuard
                     wdacInfo           = $wdacInfo
-                    adDomain           = ConvertTo-RangerHashtable -InputObject $adDomain
-                    adForest           = ConvertTo-RangerHashtable -InputObject $adForest
+                    adDomain           = $adDomain
+                    adForest           = $adForest
                     appLocker          = @($appLocker)
                     secureBoot         = $secureBoot
                     credSsp            = $credSsp
@@ -395,38 +412,6 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                     })
                 }
                 @($aksResult)
-            }
-        }
-    )
-
-    # AVD host pools
-    $avdHostPools = @(
-        Invoke-RangerSafeAction -Label 'AVD host pool inventory' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
-                param($SubscriptionId, $ResourceGroup)
-                if (-not (Get-Command -Name Get-AzWvdHostPool -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
-                $pools = @(Get-AzWvdHostPool -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue)
-                $avdResult = New-Object System.Collections.ArrayList
-                foreach ($pool in $pools) {
-                    $sessionHosts = @(try { Get-AzWvdSessionHost -ResourceGroupName $ResourceGroup -HostPoolName $pool.Name -ErrorAction Stop } catch { @() })
-                    $appGroups    = @(try { Get-AzWvdApplicationGroup -ResourceGroupName $ResourceGroup -ErrorAction Stop | Where-Object { $_.HostPoolArmPath -match $pool.Name } } catch { @() })
-                    $scalingPlan  = try { Get-AzWvdScalingPlan -ResourceGroupName $ResourceGroup -ErrorAction Stop | Where-Object { @($_.HostPool.Keys) -contains "/hostpools/$($pool.Name)" } | Select-Object -First 1 } catch { $null }
-                    $fslogixDetected = @($sessionHosts | Where-Object { $_.ResourceId -match 'fslogix' -or $_.FriendlyName -match 'fslogix' }).Count -gt 0
-                    [void]$avdResult.Add([ordered]@{
-                        name                  = $pool.Name
-                        hostPoolType          = [string]$pool.Type
-                        loadBalancerType      = [string]$pool.LoadBalancerType
-                        validationEnvironment = [bool]$pool.ValidationEnvironment
-                        maxSessionLimit       = $pool.MaxSessionLimit
-                        preferredAppGroupType = [string]$pool.PreferredAppGroupType
-                        sessionHostCount      = @($sessionHosts).Count
-                        availableSessionHosts = @($sessionHosts | Where-Object { $_.AllowNewSession -eq $true }).Count
-                        appGroupCount         = @($appGroups).Count
-                        scalingPlanAssigned   = $null -ne $scalingPlan
-                        fslogixDetected       = $fslogixDetected
-                    })
-                }
-                @($avdResult)
             }
         }
     )
@@ -755,7 +740,6 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
         customLocationCount = $customLocations.Count
         extensionCount      = $extensions.Count
         aksClusterCount     = @($aksClusters).Count
-        avdHostPoolCount    = @($avdHostPools).Count
         arbApplianceCount   = @($arbDetail).Count
         asrProtectedItemCount = @($asrItems | Where-Object { $_.protectionState -ne 'RecoveryPlan' }).Count
         backupProtectedItemCount = @($backupItems).Count
@@ -813,6 +797,16 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
     }
 
     $findings = New-Object System.Collections.ArrayList
+
+    # Issue #111: workgroup cluster informational finding
+    if ($isWorkgroup) {
+        [void]$findings.Add((New-RangerFinding -Severity informational `
+            -Title 'Cluster is workgroup-joined — Active Directory collectors skipped' `
+            -Description 'Resolve-RangerDomainContext determined this cluster is not domain-joined. AD domain, forest, and computer object queries have been skipped to prevent errors.' `
+            -CurrentState 'workgroup — IsWorkgroup=true' `
+            -Recommendation 'If the cluster should be domain-joined, verify domain membership before running Ranger again.'))
+    }
+
     $workloadFamilies = New-Object System.Collections.ArrayList
     $resourcesByType = @($azureResources | Group-Object -Property ResourceType)
     $workloadDetections = @(
@@ -915,7 +909,6 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                 resourceBridge      = ConvertTo-RangerHashtable -InputObject $resourceBridge
                 arbDetail           = ConvertTo-RangerHashtable -InputObject $arbDetail
                 aksClusters         = ConvertTo-RangerHashtable -InputObject $aksClusters
-                avdHostPools        = ConvertTo-RangerHashtable -InputObject $avdHostPools
                 customLocations     = ConvertTo-RangerHashtable -InputObject $customLocations
                 extensions          = ConvertTo-RangerHashtable -InputObject $extensions
                 arcMachines         = ConvertTo-RangerHashtable -InputObject $arcMachines
@@ -940,6 +933,7 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
         Findings      = @($findings)
         Relationships = @($relationships)
         RawEvidence   = [ordered]@{
+            domainContext     = [ordered]@{ fqdn = $domainCtx.FQDN; netBios = $domainCtx.NetBIOS; resolvedBy = $domainCtx.ResolvedBy; isWorkgroup = $domainCtx.IsWorkgroup; confidence = $domainCtx.Confidence }
             virtualMachines   = ConvertTo-RangerHashtable -InputObject $vmInventory
             identitySecurity  = ConvertTo-RangerHashtable -InputObject $identitySnapshots
             azureResources    = ConvertTo-RangerHashtable -InputObject $azureResources
@@ -948,7 +942,6 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
             asrItems          = ConvertTo-RangerHashtable -InputObject $asrItems
             backupItems       = ConvertTo-RangerHashtable -InputObject $backupItems
             aksClusters       = ConvertTo-RangerHashtable -InputObject $aksClusters
-            avdHostPools      = ConvertTo-RangerHashtable -InputObject $avdHostPools
             arbDetail         = ConvertTo-RangerHashtable -InputObject $arbDetail
             arcMachineDetail  = ConvertTo-RangerHashtable -InputObject $arcMachineDetail
             arcDataServices   = ConvertTo-RangerHashtable -InputObject $arcDataServices

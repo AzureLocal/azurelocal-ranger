@@ -28,7 +28,29 @@ function Invoke-RangerHardwareCollector {
     $findings = New-Object System.Collections.ArrayList
     $rawEvidence = New-Object System.Collections.ArrayList
 
-    foreach ($endpoint in @($Config.targets.bmc.endpoints)) {
+    $usableEndpoints = @(
+        foreach ($endpoint in @($Config.targets.bmc.endpoints)) {
+            if ($null -eq $endpoint) {
+                continue
+            }
+
+            $host = if ($endpoint -is [System.Collections.IDictionary]) { $endpoint['host'] } else { $endpoint.host }
+            if ([string]::IsNullOrWhiteSpace([string]$host)) {
+                continue
+            }
+
+            [ordered]@{
+                host = [string]$host
+                node = if ($endpoint -is [System.Collections.IDictionary]) { $endpoint['node'] } else { $endpoint.node }
+            }
+        }
+    )
+
+    if ($usableEndpoints.Count -eq 0) {
+        throw 'No usable BMC endpoints with a host value are configured.'
+    }
+
+    foreach ($endpoint in $usableEndpoints) {
         $host = $endpoint.host
         $nodeName = if ($endpoint.node) { $endpoint.node } else { $host }
         try {

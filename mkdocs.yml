@@ -1,5 +1,5 @@
 site_name: Azure Local Ranger
-site_description: Repository scaffold and project documentation for a future Azure Local auditing, diagramming, and reporting tool
+site_description: AzureLocalRanger — automated discovery, documentation, and reporting for Azure Local (formerly Azure Stack HCI) clusters
 site_author: Azure Local Cloud
 site_url: https://azurelocal.github.io/azurelocal-ranger/
 repo_url: https://github.com/AzureLocal/azurelocal-ranger
@@ -59,9 +59,12 @@ nav:
     - Reports: outputs/reports.md
     - As-Built Package: outputs/as-built-package.md
   - Operator Guide:
-    - Prerequisites: operator/prerequisites.md
+    - Quickstart: operator/quickstart.md
+    - Prerequisites: prerequisites.md
+    - Installation and First Run: operator/prerequisites.md
     - Authentication: operator/authentication.md
     - Configuration: operator/configuration.md
+    - Command Reference: operator/command-reference.md
     - Troubleshooting: operator/troubleshooting.md
   - Project:
     - Status: project/status.md

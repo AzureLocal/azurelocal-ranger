@@ -1,6 +1,65 @@
 # Operator Prerequisites
 
-This page explains where Ranger should run, what it needs to reach, and what an operator should have ready before starting a run.
+This page explains how to install AzureLocalRanger from source today, where it should run, what it needs to reach, and what must be in place before starting a run. For the canonical prerequisite checklist, see [Prerequisites](../prerequisites.md).
+
+## Operator Journey
+
+![Operator Journey](../assets/diagrams/ranger-operator-journey.svg)
+
+## Quick-start Checklist
+
+Complete these steps once before your first run:
+
+- [ ] PowerShell 7.x installed on the execution machine
+- [ ] `Import-Module` from a local clone (or install from PSGallery once publication is complete)
+- [ ] `Test-AzureLocalRangerPrerequisites -InstallPrerequisites` passes all checks
+- [ ] WinRM TrustedHosts configured to include cluster node IPs and cluster VIP
+- [ ] Azure context established (`Connect-AzAccount`) or service-principal provided in config
+- [ ] Config file generated and required fields filled in
+
+See the sections below for details on each step.
+
+---
+
+## Installation
+
+### From PSGallery (after publication)
+
+```powershell
+Install-Module AzureLocalRanger -Scope CurrentUser
+```
+
+### From source (current path)
+
+```powershell
+git clone https://github.com/AzureLocal/azurelocal-ranger.git
+cd azurelocal-ranger
+Import-Module ./AzureLocalRanger.psd1 -Force
+```
+
+### Validate prerequisites after install
+
+The `-InstallPrerequisites` switch automatically installs RSAT ActiveDirectory and the required Az PowerShell modules when they are missing. An elevated (Administrator) session is required.
+
+```powershell
+# Check without installing
+Test-AzureLocalRangerPrerequisites
+
+# Check and auto-install missing components (elevated session required)
+Test-AzureLocalRangerPrerequisites -InstallPrerequisites
+```
+
+The command outputs a table showing which checks passed and which need attention.
+
+### Generate a config file
+
+```powershell
+New-AzureLocalRangerConfig -Path C:\ranger\ranger.yml
+```
+
+Open the file and fill in every field marked `[REQUIRED]`. See [Configuration](configuration.md) for a complete field reference.
+
+---
 
 ## Recommended Execution Environment
 

@@ -3,7 +3,7 @@
 Azure Local Ranger is intentionally two things at once:
 
 - a public MkDocs documentation site
-- a future PowerShell module repository
+- a PowerShell module repository
 
 The repository structure needs to support both without mixing public explanation and internal implementation concerns together.
 
@@ -57,7 +57,7 @@ The implementation side should remain module-oriented.
 | `Modules/Outputs/Diagrams` | Diagram renderers |
 | `Modules/Internal` | Shared internal models and helpers |
 
-That layout is more honest than a generic `src/` tree because Ranger is meant to become a publishable PowerShell module.
+That layout is more honest than a generic `src/` tree because Ranger is a publishable PowerShell module.
 
 ## Supporting Repository Areas
 

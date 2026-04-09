@@ -6,6 +6,21 @@ All Pester tests run with Pester 5. **No live Azure or WinRM connections are req
 
 For live field testing against a real Azure Local environment, see the **Operation TRAILHEAD** methodology in [`repo-management/plans/field-testing.md`](../repo-management/plans/field-testing.md) and the cycle-creation script at [`repo-management/scripts/New-RangerFieldTestCycle.ps1`](../repo-management/scripts/New-RangerFieldTestCycle.ps1).
 
+## Two Test Lanes
+
+- **Pester lane** — fast, fixture-backed unit and integration tests under `tests/`; safe to run on any workstation with no live dependencies.
+- **TRAILHEAD lane** — live field validation against a real Azure Local environment; used as the release gate when a milestone is ready to close.
+
+## Milestone-End Validation Policy
+
+Every delivery milestone should end with an **Operation TRAILHEAD** gate issue before the milestone is closed.
+
+- Create the gate issue from `.github/ISSUE_TEMPLATE/trailhead_milestone_gate.md`.
+- Run `Invoke-Pester -Path .\tests` as the baseline regression pass.
+- If the milestone changed collectors, auth, remoting, manifest logic, reports, diagrams, packaging, or publishing, run the full TRAILHEAD P0-P7 cycle.
+- If the milestone is narrower in scope, run the impacted TRAILHEAD phases and document any waived phases in the issue.
+- Do not close the milestone until the TRAILHEAD gate issue is closed or explicitly waived with rationale.
+
 ## Directory Layout
 
 ```

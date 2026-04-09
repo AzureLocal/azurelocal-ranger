@@ -1,6 +1,6 @@
 # Repository Structure
 
-Azure Local Ranger is intentionally both a public documentation site and a future PowerShell module repository.
+Azure Local Ranger is intentionally both a public documentation site and a PowerShell module repository.
 
 That means the repo structure has to support the current documentation-first phase without confusing that with the long-term module layout.
 
@@ -74,7 +74,7 @@ The new canonical implementation audit lives under `repo-management/reports/`, w
 
 The documentation side of the repo should stay GitHub Pages and MkDocs friendly.
 
-The implementation side of the repo should stay publishable as a PowerShell module when collector work begins.
+The implementation side of the repo stays publishable as a PowerShell module as collectors and renderers evolve.
 
 ## Read Next
 

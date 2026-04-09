@@ -76,7 +76,7 @@ Ranger discovers everything that makes up, runs on, secures, manages, monitors, 
 |-------|-------------------|
 | Physical platform | Nodes, hardware, firmware, BMC, NICs, disks, GPUs, TPM |
 | Cluster and fabric | Cluster identity, quorum, fault domains, update posture, registration |
-| Storage | S2D, pools, volumes, CSVs, SOFS, storage health and replication |
+| Storage | S2D, pools, volumes, CSVs, storage health, QoS, and replication |
 | Networking | Virtual switches, host vNICs, RDMA, ATC, SDN, DNS, proxy, firewall posture |
 | Workloads | VM inventory, placement, density, Arc VM overlays, workload families |
 | Identity and security | AD or local identity, certificates, BitLocker, WDAC, Defender, audit posture |

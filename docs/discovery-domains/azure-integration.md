@@ -32,6 +32,15 @@ The v1 collector writes to these named sections of the `azureIntegration` manife
 | `siteRecovery` | Azure Site Recovery replication state, protected VMs, and failover readiness where configured |
 | `policy` | Azure Policy assignments that directly govern the Azure Local cluster or its Arc-enrolled nodes |
 
+## Current Collector Depth
+
+Current v1 collection also covers:
+
+- Arc Resource Bridge, custom location, and extension state used to explain Azure-side platform control.
+- AKS, Arc data, backup, and recovery overlays derived from Azure resource inventory.
+- Policy-compliance and monitoring context tied directly to the Azure Local deployment.
+- Workload-family signals inferred from Azure resources rather than a dedicated AVD host-pool collector.
+
 ## Why It Matters
 
 Azure Local creates and depends on Azure-side resources. Those resources are part of the documented deployment and must appear in Ranger outputs.

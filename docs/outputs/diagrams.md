@@ -19,6 +19,8 @@ Planned asset layout:
 - `docs/assets/diagrams/*.drawio` for editable source
 - `docs/assets/diagrams/*.svg` for published output and embedding
 
+The operator journey flowchart is an operator-guide diagram rather than a discovered-environment output. It is embedded in the quickstart and runtime pages to explain the execution path from input to package generation.
+
 ## Full Diagram Catalog
 
 ### Baseline Set (Diagrams 1–6)
@@ -93,3 +95,5 @@ All diagrams should include:
 - Ranger version watermark
 
 Diagram outputs should remain legible, consistent, and obviously product documentation rather than scratch engineering sketches.
+
+When documenting the product itself, prefer draw.io source exported to SVG so the editable source and published artifact stay aligned.

@@ -20,6 +20,7 @@ function Invoke-RangerStorageNetworkingCollector {
 
     $storageSnapshot = Invoke-RangerSafeAction -Label 'Storage inventory snapshot' -DefaultValue ([ordered]@{}) -ScriptBlock {
         Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -SingleTarget -ScriptBlock {
+            $rangerDiagnostics = New-Object System.Collections.Generic.List[string]
             [ordered]@{
                 # Issue #58: Expanded pool, physical disk, virtual disk, volume collections
                 pools = if (Get-Command -Name Get-StoragePool -ErrorAction SilentlyContinue) {
@@ -104,17 +105,27 @@ function Invoke-RangerStorageNetworkingCollector {
                     @(try { Get-DedupStatus -ErrorAction Stop | Select-Object Volume, SavingsRate, SavedSpace, OptimizedFilesCount, LastOptimizationTime, Status } catch { @() })
                 } else { @() }
                 cacheConfig = if (Get-Command -Name Get-ClusterS2D -ErrorAction SilentlyContinue) {
-                    try { Get-ClusterS2D -ErrorAction Stop | Select-Object CacheState, CacheBehavior, CacheModeSSD, CacheModeHDD, CachePageSizeKBytes, CacheMetadataReserveBytes, AutoConfig } catch { $null }
+                    $cacheWarnings = @()
+                    try {
+                        $cacheConfig = Get-ClusterS2D -ErrorAction Stop -WarningAction SilentlyContinue -WarningVariable +cacheWarnings | Select-Object CacheState, CacheBehavior, CacheModeSSD, CacheModeHDD, CachePageSizeKBytes, CacheMetadataReserveBytes, AutoConfig
+                        foreach ($cacheWarning in @($cacheWarnings)) {
+                            [void]$rangerDiagnostics.Add("Get-ClusterS2D: $([string]$(if ($cacheWarning -is [System.Management.Automation.WarningRecord]) { $cacheWarning.Message } else { $cacheWarning }))")
+                        }
+                        $cacheConfig
+                    } catch {
+                        [void]$rangerDiagnostics.Add("Get-ClusterS2D: $($_.Exception.Message)")
+                        $null
+                    }
                 } else { $null }
                 scrubSchedule = if (Get-Command -Name Get-ScheduledTask -ErrorAction SilentlyContinue) {
                     @(try { Get-ScheduledTask -TaskPath '\Microsoft\Windows\Data Integrity Scan\' -ErrorAction SilentlyContinue | Select-Object TaskName, TaskPath, State, Description } catch { @() })
                 } else { @() }
-                tiers = if (Get-Command -Name Get-StorageTier -ErrorAction SilentlyContinue) { Get-StorageTier | Select-Object FriendlyName, MediaType, ResiliencySettingName, Size, FootprintOnPool } else { @() }
-                subsystems = if (Get-Command -Name Get-StorageSubSystem -ErrorAction SilentlyContinue) { Get-StorageSubSystem | Select-Object FriendlyName, Model, SerialNumber, HealthStatus } else { @() }
-                resiliency = if (Get-Command -Name Get-ResiliencySetting -ErrorAction SilentlyContinue) { Get-ResiliencySetting | Select-Object Name, NumberOfDataCopiesDefault, PhysicalDiskRedundancyDefault } else { @() }
-                jobs = if (Get-Command -Name Get-StorageJob -ErrorAction SilentlyContinue) { Get-StorageJob | Select-Object Name, JobState, PercentComplete, BytesProcessed } else { @() }
-                csvs = if (Get-Command -Name Get-ClusterSharedVolume -ErrorAction SilentlyContinue) { Get-ClusterSharedVolume | Select-Object Name, State, OwnerNode } else { @() }
-                qos = if (Get-Command -Name Get-StorageQosPolicy -ErrorAction SilentlyContinue) { Get-StorageQosPolicy | Select-Object Name, PolicyId, PolicyType, MinimumIops, MaximumIops, MaximumIoBandwidth } else { @() }
+                tiers = if (Get-Command -Name Get-StorageTier -ErrorAction SilentlyContinue) { @(try { Get-StorageTier -ErrorAction Stop | Select-Object FriendlyName, MediaType, ResiliencySettingName, Size, FootprintOnPool } catch { @() }) } else { @() }
+                subsystems = if (Get-Command -Name Get-StorageSubSystem -ErrorAction SilentlyContinue) { @(try { Get-StorageSubSystem -ErrorAction Stop | Select-Object FriendlyName, Model, SerialNumber, HealthStatus } catch { @() }) } else { @() }
+                resiliency = if (Get-Command -Name Get-ResiliencySetting -ErrorAction SilentlyContinue) { @(try { Get-ResiliencySetting -ErrorAction Stop | Select-Object Name, NumberOfDataCopiesDefault, PhysicalDiskRedundancyDefault } catch { @() }) } else { @() }
+                jobs = if (Get-Command -Name Get-StorageJob -ErrorAction SilentlyContinue) { @(try { Get-StorageJob -ErrorAction Stop | Select-Object Name, JobState, PercentComplete, BytesProcessed } catch { @() }) } else { @() }
+                csvs = if (Get-Command -Name Get-ClusterSharedVolume -ErrorAction SilentlyContinue) { @(try { Get-ClusterSharedVolume -ErrorAction Stop | Select-Object Name, State, OwnerNode } catch { @() }) } else { @() }
+                qos = if (Get-Command -Name Get-StorageQosPolicy -ErrorAction SilentlyContinue) { @(try { Get-StorageQosPolicy -ErrorAction Stop | Select-Object Name, PolicyId, PolicyType, MinimumIops, MaximumIops, MaximumIoBandwidth } catch { @() }) } else { @() }
                 qosFlows = if (Get-Command -Name Get-StorageQosFlow -ErrorAction SilentlyContinue) {
                     @(try { Get-StorageQosFlow -ErrorAction Stop | Select-Object Initiator, InitiatorName, PolicyId, FilePath, StorageNodeIops, Status } catch { @() })
                 } else { @() }
@@ -122,32 +133,21 @@ function Invoke-RangerStorageNetworkingCollector {
                     @(try { Get-HealthFault -ErrorAction Stop | Select-Object FaultType, FaultingObjectDescription, FaultingObjectLocation, FaultingObjectUniqueId, PerceivedSeverity, Reason, RecommendedActions, FaultTime } catch { @() })
                 } else { @() }
                 scrubSettings = if (Get-Command -Name Get-StorageSubSystem -ErrorAction SilentlyContinue) {
-                    $subsys = Get-StorageSubSystem -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match 'S2D|Spaces' } | Select-Object -First 1
-                    if ($subsys) {
-                        $scrub = try { $subsys | Get-StoragePool | Get-PhysicalDisk | Get-StorageReliabilityCounter -ErrorAction Stop | Select-Object -First 1 ReadErrors, WriteErrors, Temperature } catch { $null }
-                        [ordered]@{
-                            scrubData = if ($scrub) { ConvertTo-Json $scrub -Compress } else { $null }
-                        }
-                    }
-                }
-                sofs = if (Get-Command -Name Get-SmbShare -ErrorAction SilentlyContinue) { Get-SmbShare | Where-Object { $_.ContinuouslyAvailable } | Select-Object Name, Path, ScopeName, ContinuouslyAvailable, FolderEnumerationMode, Description } else { @() }
-                sofsDetail = if (Get-Command -Name Get-SmbShare -ErrorAction SilentlyContinue) {
-                    @(Get-SmbShare -ErrorAction SilentlyContinue | Where-Object { $_.ContinuouslyAvailable } | ForEach-Object {
-                        $share = $_
-                        $acl = try { Get-SmbShareAccess -Name $share.Name -ErrorAction Stop | Select-Object Name, AccountName, AccessRight, AccessControlType } catch { @() }
-                        $quota = if (Get-Command -Name Get-FsrmQuota -ErrorAction SilentlyContinue) {
-                            try { Get-FsrmQuota -Path $share.Path -ErrorAction Stop | Select-Object Path, Size, SoftLimit, Disabled, Description } catch { $null }
-                        }
-                        [ordered]@{
-                            name                   = $share.Name
-                            path                   = $share.Path
-                            scopeName              = $share.ScopeName
-                            accessBasedEnumeration = ($share.FolderEnumerationMode -eq 'AccessBased')
-                            access                 = @($acl)
-                            quota                  = $quota
-                        }
-                    })
-                } else { @() }
+                    try {
+                        $subsys = Get-StorageSubSystem -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match 'S2D|Spaces' } | Select-Object -First 1
+                        if ($subsys) {
+                            $scrub = try { $subsys | Get-StoragePool -ErrorAction Stop | Get-PhysicalDisk -ErrorAction Stop | Get-StorageReliabilityCounter -ErrorAction Stop | Select-Object -First 1 DeviceId, ReadErrors, WriteErrors, Temperature, Wear, PowerOnHours } catch { $null }
+                            [ordered]@{
+                                deviceId     = if ($scrub) { $scrub.DeviceId } else { $null }
+                                readErrors   = if ($scrub) { $scrub.ReadErrors } else { $null }
+                                writeErrors  = if ($scrub) { $scrub.WriteErrors } else { $null }
+                                temperature  = if ($scrub) { $scrub.Temperature } else { $null }
+                                wear         = if ($scrub) { $scrub.Wear } else { $null }
+                                powerOnHours = if ($scrub) { $scrub.PowerOnHours } else { $null }
+                            }
+                        } else { $null }
+                    } catch { $null }
+                } else { $null }
                 replicaDepth = if (Get-Command -Name Get-SRGroup -ErrorAction SilentlyContinue) {
                     @(try {
                         $srPartnerships = @(try { Get-SRPartnership -ErrorAction Stop } catch { @() })
@@ -168,8 +168,9 @@ function Invoke-RangerStorageNetworkingCollector {
                         }
                     } catch { @() })
                 } else { @() }
-                replica = if (Get-Command -Name Get-SRGroup -ErrorAction SilentlyContinue) { Get-SRGroup | Select-Object Name, ReplicationMode, LastInSyncTime, State } else { @() }
-                clusterNetworks = if (Get-Command -Name Get-ClusterNetwork -ErrorAction SilentlyContinue) { Get-ClusterNetwork | Select-Object Name, Role, Address, AddressMask, State } else { @() }
+                replica = if (Get-Command -Name Get-SRGroup -ErrorAction SilentlyContinue) { @(try { Get-SRGroup -ErrorAction Stop | Select-Object Name, ReplicationMode, LastInSyncTime, State } catch { @() }) } else { @() }
+                clusterNetworks = if (Get-Command -Name Get-ClusterNetwork -ErrorAction SilentlyContinue) { @(try { Get-ClusterNetwork -ErrorAction Stop | Select-Object Name, Role, Address, AddressMask, State } catch { @() }) } else { @() }
+                rangerDiagnostics = @($rangerDiagnostics)
             }
         }
     }
@@ -177,6 +178,7 @@ function Invoke-RangerStorageNetworkingCollector {
     $networkNodes = @(
         Invoke-RangerSafeAction -Label 'Networking inventory snapshot' -DefaultValue @() -ScriptBlock {
             Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -ScriptBlock {
+                $rangerDiagnostics = New-Object System.Collections.Generic.List[string]
                 # Issue #59: Expand proxy to structured fields early so it can be used below
                 $proxyRaw = try { netsh winhttp show proxy | Out-String } catch { $null }
                 $proxyEnvHttp = [System.Environment]::GetEnvironmentVariable('HTTP_PROXY')
@@ -352,24 +354,30 @@ function Invoke-RangerStorageNetworkingCollector {
                     } else { @() }
                     # Issue #59: Expanded host vNIC with RDMA, IP, VLAN
                     hostVirtualNics = if (Get-Command -Name Get-VMNetworkAdapter -ErrorAction SilentlyContinue) {
-                        @(Get-VMNetworkAdapter -ManagementOS -ErrorAction SilentlyContinue | ForEach-Object {
-                            $vnic = $_
-                            $rdmaAdapter = if (Get-Command -Name Get-NetAdapterRdma -ErrorAction SilentlyContinue) { try { Get-NetAdapterRdma -Name $vnic.Name -ErrorAction Stop } catch { $null } } else { $null }
-                            $ipConf = try { Get-NetIPConfiguration -InterfaceAlias $vnic.Name -ErrorAction Stop | Select-Object -First 1 } catch { $null }
-                            $vlan = try { Get-VMNetworkAdapterVlan -ManagementOS -VMNetworkAdapterName $vnic.Name -ErrorAction Stop | Select-Object -First 1 } catch { $null }
-                            [ordered]@{
-                                name            = $vnic.Name
-                                switchName      = $vnic.SwitchName
-                                status          = [string]$vnic.Status
-                                ipAddresses     = @($vnic.IPAddresses)
-                                ipAddress       = if ($ipConf) { $ipConf.IPv4Address.IPAddress } else { $null }
-                                prefixLength    = if ($ipConf) { $ipConf.IPv4Address.PrefixLength } else { $null }
-                                vlanId          = if ($vlan) { $vlan.AccessVlanId } else { $null }
-                                rdmaEnabled     = if ($rdmaAdapter) { $rdmaAdapter.Enabled } else { $null }
-                                rdmaOperational = if ($rdmaAdapter) { $rdmaAdapter.OperationalState -eq 'Active' } else { $null }
-                                isManagementNic = $vnic.IsManagementOS
-                            }
-                        })
+                        try {
+                            @(Get-VMNetworkAdapter -ManagementOS -ErrorAction SilentlyContinue | ForEach-Object {
+                                $vnic = $_
+                                $rdmaAdapter = if (Get-Command -Name Get-NetAdapterRdma -ErrorAction SilentlyContinue) { try { Get-NetAdapterRdma -Name $vnic.Name -ErrorAction Stop } catch { $null } } else { $null }
+                                $ipConf = try { Get-NetIPConfiguration -InterfaceAlias $vnic.Name -ErrorAction Stop | Select-Object -First 1 } catch { [void]$rangerDiagnostics.Add("Get-NetIPConfiguration '$($vnic.Name)': $($_.Exception.Message)"); $null }
+                                $vlan = try { Get-VMNetworkAdapterVlan -ManagementOS -VMNetworkAdapterName $vnic.Name -ErrorAction Stop | Select-Object -First 1 } catch { $null }
+                                [ordered]@{
+                                    name            = $vnic.Name
+                                    switchName      = $vnic.SwitchName
+                                    status          = [string]$vnic.Status
+                                    ipAddresses     = @($vnic.IPAddresses)
+                                    ipAddress       = if ($ipConf) { $ipConf.IPv4Address.IPAddress } else { $null }
+                                    prefixLength    = if ($ipConf) { $ipConf.IPv4Address.PrefixLength } else { $null }
+                                    vlanId          = if ($vlan) { $vlan.AccessVlanId } else { $null }
+                                    rdmaEnabled     = if ($rdmaAdapter) { $rdmaAdapter.Enabled } else { $null }
+                                    rdmaOperational = if ($rdmaAdapter) { $rdmaAdapter.OperationalState -eq 'Active' } else { $null }
+                                    isManagementNic = $vnic.IsManagementOS
+                                }
+                            })
+                        }
+                        catch {
+                            [void]$rangerDiagnostics.Add("Host vNIC discovery: $($_.Exception.Message)")
+                            @()
+                        }
                     } else { @() }
                     smbConfig     = $smbConfig
                     liveMigration = $liveMigration
@@ -388,6 +396,7 @@ function Invoke-RangerStorageNetworkingCollector {
                     firewall      = if (Get-Command -Name Get-NetFirewallProfile -ErrorAction SilentlyContinue) { Get-NetFirewallProfile | Select-Object Name, Enabled, DefaultInboundAction, DefaultOutboundAction } else { @() }
                     firewallRuleAudit = @($firewallRuleAudit)
                     inboxDriverAdapters = @($inboxDriverAdapters)
+                    rangerDiagnostics = @($rangerDiagnostics)
                     # Issue #60: Full SDN discovery
                     sdn           = if (Get-Command -Name Get-NetworkController -ErrorAction SilentlyContinue) {
                         $ncObj = try { Get-NetworkController -ErrorAction Stop } catch { $null }
@@ -428,6 +437,27 @@ function Invoke-RangerStorageNetworkingCollector {
         throw 'Storage and networking collector did not return any usable data.'
     }
 
+    foreach ($diagnostic in @($storageSnapshot.rangerDiagnostics)) {
+        if (-not [string]::IsNullOrWhiteSpace($diagnostic)) {
+            Write-RangerLog -Level warn -Message $diagnostic
+        }
+    }
+    if ($storageSnapshot -is [System.Collections.IDictionary] -and $storageSnapshot.Contains('rangerDiagnostics')) {
+        $storageSnapshot.Remove('rangerDiagnostics') | Out-Null
+    }
+
+    foreach ($networkNode in @($networkNodes)) {
+        foreach ($diagnostic in @($networkNode.rangerDiagnostics)) {
+            if (-not [string]::IsNullOrWhiteSpace($diagnostic)) {
+                $nodeName = if ($networkNode.node) { $networkNode.node } else { 'unknown-node' }
+                Write-RangerLog -Level warn -Message "[$nodeName] $diagnostic"
+            }
+        }
+        if ($networkNode -is [System.Collections.IDictionary] -and $networkNode.Contains('rangerDiagnostics')) {
+            $networkNode.Remove('rangerDiagnostics') | Out-Null
+        }
+    }
+
     # Import optional offline device configs provided via hints
     $deviceImport = Invoke-RangerNetworkDeviceConfigImport -Config $Config
 
@@ -450,11 +480,11 @@ function Invoke-RangerStorageNetworkingCollector {
     $dnsForwardersByNode = @($networkNodes | ForEach-Object { [ordered]@{ node = $_.node; forwarders = $_.dnsForwarders; conditionalForwarders = $_.dnsConditionalForwarders } })
 
     $storageSummary = [ordered]@{
-        poolCount           = @($storageSnapshot.pools).Count
-        physicalDiskCount   = @($storageSnapshot.physicalDisks).Count
-        virtualDiskCount    = @($storageSnapshot.virtualDisks).Count
-        volumeCount         = @($storageSnapshot.volumes).Count
-        csvCount            = @($storageSnapshot.csvs).Count
+        poolCount           = if ($storageSnapshot.pools) { @($storageSnapshot.pools).Count } else { 0 }
+        physicalDiskCount   = if ($storageSnapshot.physicalDisks) { @($storageSnapshot.physicalDisks).Count } else { 0 }
+        virtualDiskCount    = if ($storageSnapshot.virtualDisks) { @($storageSnapshot.virtualDisks).Count } else { 0 }
+        volumeCount         = if ($storageSnapshot.volumes) { @($storageSnapshot.volumes).Count } else { 0 }
+        csvCount            = if ($storageSnapshot.csvs) { @($storageSnapshot.csvs).Count } else { 0 }
         totalPoolCapacityGiB = [math]::Round((@($storageSnapshot.pools | Where-Object { $null -ne $_.sizeGiB } | Measure-Object -Property sizeGiB -Sum).Sum), 2)
         allocatedPoolCapacityGiB = [math]::Round((@($storageSnapshot.pools | Where-Object { $null -ne $_.allocatedSizeGiB } | Measure-Object -Property allocatedSizeGiB -Sum).Sum), 2)
         diskMediaTypes      = @(Get-RangerGroupedCount -Items $storageSnapshot.physicalDisks -PropertyName 'mediaType')
@@ -462,14 +492,13 @@ function Invoke-RangerStorageNetworkingCollector {
         canPoolDisks        = @($storageSnapshot.physicalDisks | Where-Object { $_.canPool }).Count
         retiredDisks        = @($storageSnapshot.physicalDisks | Where-Object { $_.operationalStatus -match 'Retiring|PredictiveFailure' }).Count
         resiliencyModes     = @(Get-RangerGroupedCount -Items $storageSnapshot.virtualDisks -PropertyName 'resiliencySettingName')
-        tierCount           = @($storageSnapshot.tiers).Count
-        storageJobCount     = @($storageSnapshot.jobs).Count
-        activeHealthFaultCount = @($storageSnapshot.healthFaults).Count
-        sofsShareCount      = @($storageSnapshot.sofs).Count
-        replicaGroupCount   = @($storageSnapshot.replicaDepth).Count
-        qosFlowCount        = @($storageSnapshot.qosFlows).Count
+        tierCount           = if ($storageSnapshot.tiers) { @($storageSnapshot.tiers).Count } else { 0 }
+        storageJobCount     = if ($storageSnapshot.jobs) { @($storageSnapshot.jobs).Count } else { 0 }
+        activeHealthFaultCount = if ($storageSnapshot.healthFaults) { @($storageSnapshot.healthFaults).Count } else { 0 }
+        replicaGroupCount   = if ($storageSnapshot.replicaDepth) { @($storageSnapshot.replicaDepth).Count } else { 0 }
+        qosFlowCount        = if ($storageSnapshot.qosFlows) { @($storageSnapshot.qosFlows).Count } else { 0 }
         cacheEnabled        = if ($storageSnapshot.cacheConfig) { $storageSnapshot.cacheConfig.CacheState -eq 'Enabled' } else { $null }
-        dedupVolumes        = @($storageSnapshot.dedupStatus | Where-Object { $_.Status -ne 'Disabled' }).Count
+        dedupVolumes        = if ($storageSnapshot.dedupStatus) { @($storageSnapshot.dedupStatus | Where-Object { $_.Status -ne 'Disabled' }).Count } else { 0 }
     }
 
     $networkSummary = [ordered]@{
@@ -548,8 +577,6 @@ function Invoke-RangerStorageNetworkingCollector {
                 qos                = ConvertTo-RangerHashtable -InputObject $storageSnapshot.qos
                 qosFlows           = ConvertTo-RangerHashtable -InputObject $storageSnapshot.qosFlows
                 healthFaults       = ConvertTo-RangerHashtable -InputObject $storageSnapshot.healthFaults
-                sofs               = ConvertTo-RangerHashtable -InputObject $storageSnapshot.sofs
-                sofsDetail         = ConvertTo-RangerHashtable -InputObject $storageSnapshot.sofsDetail
                 replica            = ConvertTo-RangerHashtable -InputObject $storageSnapshot.replica
                 replicaDepth       = ConvertTo-RangerHashtable -InputObject $storageSnapshot.replicaDepth
                 summary            = $storageSummary

@@ -73,7 +73,7 @@ The cluster has intermittent or proxy-mediated connectivity to Azure. Some Azure
 |-------|-------------|---------------|
 | Storage Spaces Direct (S2D) | Converged storage on cluster nodes | Standard storage discovery path |
 | SAN-backed (multi-rack) | External SAN storage, no S2D | S2D collectors return no data; storage discovery shifts to Azure-managed storage resources |
-| SOFS-present | Scale-Out File Server role active | Additional file-share and SMB discovery |
+| CA-SMB workload present | Continuously available SMB share workload detected | Additional workload and share-context interpretation |
 | Storage Replica-present | Synchronous or asynchronous replication between sites or volumes | Replication partnership and site-awareness discovery |
 
 ## Network Architectures

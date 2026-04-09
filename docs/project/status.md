@@ -1,8 +1,12 @@
 # Project Status
 
-## Current Release — v0.5.0
+## Current Release Track — v1.0.0
 
-Azure Local Ranger is in active field validation. The core module structure, collector architecture, and documentation framework are all in place. Testing against a live Azure Local environment is in progress under **Operation TRAILHEAD**.
+AzureLocalRanger v1.0.0 feature work is implemented in this repository. The remaining release-management items are milestone-close validation and PSGallery publication.
+
+```powershell
+Import-Module .\AzureLocalRanger.psd1 -Force
+```
 
 | Area | State |
 |---|---|
@@ -16,20 +20,22 @@ Azure Local Ranger is in active field validation. The core module structure, col
 | GPO collectors | ✅ Complete |
 | Manifest assembly | ✅ Complete |
 | Pester test suite | ✅ 29+ passing |
-| Field validation (TRAILHEAD) | 🔄 In progress |
-| Report output (HTML/CSV) | 🔄 In progress |
-| Diagram output (SVG) | 🔄 In progress |
-| PSGallery release | ⬜ Pending field sign-off |
+| Field validation (TRAILHEAD) | 🔄 Release gate still open |
+| Report output (HTML/Markdown/JSON/DOCX/XLSX/PDF) | ✅ Complete |
+| Diagram output (SVG/draw.io) | ✅ Complete |
+| PSGallery release | 🔄 Workflow prepared, publish not yet completed |
+| Arc-first node inventory | ✅ Complete |
+| Domain auto-detection | ✅ Complete |
+| Parameter-first input model | ✅ Complete |
+| File-based logging | ✅ Complete |
 
 ## Operation TRAILHEAD
 
-Field validation is structured as **Operation TRAILHEAD** — an eight-phase test cycle that covers preflight, authentication, connectivity, individual collectors, data quality, reporting, and end-to-end scenarios.
-
-See the [testing methodology](https://github.com/AzureLocal/azurelocal-ranger/tree/main/repo-management/plans/field-testing.md) for the full plan.
+Field validation is structured as **Operation TRAILHEAD** — an eight-phase test cycle covering preflight, authentication, connectivity, individual collectors, data quality, reporting, and end-to-end scenarios. The gate issue remains the milestone-close checkpoint.
 
 ## Roadmap
 
-See the [Roadmap](roadmap.md) for what is planned after field validation completes, including PSGallery release, PowerPoint output, firewall collector, and Spectre.Console TUI enhancements.
+See the [Roadmap](roadmap.md) for post-v1 work, including PowerPoint output, firewall collector expansion, and richer operator experiences.
 
 ## Changelog
 

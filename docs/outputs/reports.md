@@ -18,6 +18,17 @@ Every report tier should include:
 - stable finding severity labels
 - clear distinction between observed facts and derived recommendations
 
+## Supported Formats
+
+Ranger renders narrative reports from the cached manifest in these formats:
+
+- `html`
+- `markdown`
+- `docx`
+- `pdf`
+
+The report pipeline is render-only. It does not reconnect to WinRM, Azure, or Redfish when generating alternate formats.
+
 ## Findings Model
 
 Findings should use these severities:
@@ -86,6 +97,16 @@ Typical content:
 - security and certificate detail
 - event-pattern and performance-baseline detail
 - complete findings set and supporting context
+
+## Office-Format Deliverables
+
+The v1 renderer also produces formal handoff formats without requiring a locally installed Office desktop application.
+
+- `docx` outputs are generated for the executive, management, and technical tiers.
+- `pdf` outputs are generated from the same saved report payloads used by the HTML and Word renderers.
+- `xlsx` output is generated as a technical workbook of inventories, findings, and collector status registers.
+
+The Excel workbook is domain-oriented and includes stable worksheet ordering with filterable header rows.
 
 ## Current-State vs As-Built
 

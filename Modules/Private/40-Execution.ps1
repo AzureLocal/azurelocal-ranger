@@ -4,7 +4,11 @@ function Invoke-RangerRetry {
         [scriptblock]$ScriptBlock,
 
         [int]$RetryCount = 2,
-        [int]$DelaySeconds = 1
+        [int]$DelaySeconds = 1,
+        [string]$Label = 'operation',
+        [string]$Target,
+        [string[]]$RetryOnExceptionType = @(),
+        [switch]$Exponential
     )
 
     $attempt = 0
@@ -14,11 +18,16 @@ function Invoke-RangerRetry {
         }
         catch {
             $attempt++
-            if ($attempt -gt $RetryCount) {
+            $exceptionType = if ($_.Exception) { $_.Exception.GetType().FullName } else { 'UnknownException' }
+            $shouldRetry = $RetryOnExceptionType.Count -eq 0 -or $exceptionType -in $RetryOnExceptionType
+            if (-not $shouldRetry -or $attempt -gt $RetryCount) {
                 throw
             }
 
-            Start-Sleep -Seconds $DelaySeconds
+            $delay = if ($Exponential) { [math]::Pow(2, $attempt - 1) * $DelaySeconds } else { $DelaySeconds }
+            Write-RangerLog -Level debug -Message "Retry attempt $attempt/$RetryCount for '$Label'$(if ($Target) { " on '$Target'" }) after ${exceptionType}: $($_.Exception.Message)"
+            Add-RangerRetryDetail -Target $Target -Label $Label -Attempt $attempt -ExceptionType $exceptionType -Message $_.Exception.Message
+            Start-Sleep -Seconds $delay
         }
     } while ($true)
 }
@@ -33,7 +42,8 @@ function Invoke-RangerRemoteCommand {
 
         [PSCredential]$Credential,
         [object[]]$ArgumentList,
-        [int]$RetryCount = 1
+        [int]$RetryCount = 1,
+        [int]$TimeoutSeconds = 0
     )
 
     $retryBlock = {
@@ -50,10 +60,39 @@ function Invoke-RangerRemoteCommand {
             $invokeParams.ArgumentList = $ArgumentList
         }
 
-        Invoke-Command @invokeParams
+        # Issue #113: apply per-session operation timeout when configured
+        if ($TimeoutSeconds -gt 0) {
+            $sessionOption = New-PSSessionOption -OperationTimeout ($TimeoutSeconds * 1000) -OpenTimeout ($TimeoutSeconds * 1000)
+            $invokeParams.SessionOption = $sessionOption
+        }
+
+        $rangerRemoteWarnings = @()
+        $rangerLogPath = $script:RangerLogPath
+        $rangerCurrentLogLevel = if ($script:RangerLogLevel) { [string]$script:RangerLogLevel } else { 'info' }
+        $rangerShouldLogWarn = $rangerCurrentLogLevel -in @('debug', 'info', 'warn')
+        $rangerRemoteResult = Invoke-Command @invokeParams -WarningAction SilentlyContinue -WarningVariable +rangerRemoteWarnings -ErrorAction Stop
+        foreach ($w in @($rangerRemoteWarnings)) {
+            $warningMessage = if ($w -is [System.Management.Automation.WarningRecord]) { [string]$w.Message } else { [string]$w }
+            if ($rangerShouldLogWarn -and -not [string]::IsNullOrWhiteSpace($warningMessage) -and $rangerLogPath) {
+                try {
+                    Add-Content -LiteralPath $rangerLogPath -Value "[$((Get-Date).ToString('s'))][WARN] [$($ComputerName -join ',')] $warningMessage" -Encoding UTF8 -ErrorAction Stop
+                }
+                catch {
+                }
+            }
+        }
+        $rangerRemoteResult
     }.GetNewClosure()
 
-    Invoke-RangerRetry -RetryCount $RetryCount -ScriptBlock $retryBlock
+    $transientExceptions = @(
+        'System.Net.WebException',
+        'System.TimeoutException',
+        'System.Net.Http.HttpRequestException',
+        'Microsoft.Management.Infrastructure.CimException',
+        'System.Management.Automation.Remoting.PSRemotingTransportException'
+    )
+
+    Invoke-RangerRetry -RetryCount $RetryCount -DelaySeconds 1 -Exponential -ScriptBlock $retryBlock -Label 'Invoke-RangerRemoteCommand' -Target ($ComputerName -join ',') -RetryOnExceptionType $transientExceptions
 }
 
 function Invoke-RangerRedfishRequest {

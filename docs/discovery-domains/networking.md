@@ -38,6 +38,15 @@ The v1 collector writes to these named sections of the `networking` manifest dom
 | `firewallConfig` | Firewall ACL configuration imported from vendor config files when `networkDeviceConfigs` hints are provided |
 | `summary` | Aggregate counts — nodes, adapters, vSwitches, intents, DNS servers, VLANs |
 
+## Current Collector Depth
+
+Current v1 collection also covers:
+
+- DCB and RDMA posture for host adapters and virtual NIC relationships.
+- Network ATC intent and override detail when intent-driven networking is configured.
+- LLDP or neighbour-discovery evidence where the host exposes it.
+- Firewall, proxy, DNS, and route posture needed for platform and Azure connectivity review.
+
 ## Why It Matters
 
 Inherited Azure Local environments are frequently hard to understand because the networking assumptions are implicit. Ranger should make those assumptions explicit.

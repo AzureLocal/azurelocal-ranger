@@ -2,19 +2,57 @@ function Get-RangerTimestamp {
     (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmssZ')
 }
 
+function Resolve-RangerLogLevel {
+    param(
+        [AllowNull()]
+        [string]$Level
+    )
+
+    switch (($Level ?? 'info').ToLowerInvariant()) {
+        'verbose' { 'debug' }
+        'warning' { 'warn' }
+        default { ($Level ?? 'info').ToLowerInvariant() }
+    }
+}
+
 function Get-RangerLogLevelRank {
     param(
         [Parameter(Mandatory = $true)]
         [string]$Level
     )
 
-    switch ($Level.ToLowerInvariant()) {
+    switch (Resolve-RangerLogLevel -Level $Level) {
         'debug' { 0 }
         'info' { 1 }
         'warn' { 2 }
         'error' { 3 }
         default { 1 }
     }
+}
+
+function ConvertTo-RangerLogMessage {
+    param(
+        [AllowNull()]
+        $InputObject
+    )
+
+    if ($null -eq $InputObject) {
+        return ''
+    }
+
+    if ($InputObject -is [System.Management.Automation.WarningRecord]) {
+        return [string]$InputObject.Message
+    }
+
+    if ($InputObject -is [System.Management.Automation.ErrorRecord]) {
+        return [string]$InputObject.ToString()
+    }
+
+    if ($InputObject -is [System.Management.Automation.InformationRecord]) {
+        return [string]$InputObject.MessageData
+    }
+
+    return [string]$InputObject
 }
 
 function Write-RangerLog {
@@ -26,13 +64,45 @@ function Write-RangerLog {
         [string]$Level = 'info'
     )
 
-    $currentLevel = if ($script:RangerLogLevel) { $script:RangerLogLevel } else { 'info' }
-    if ((Get-RangerLogLevelRank -Level $Level) -lt (Get-RangerLogLevelRank -Level $currentLevel)) {
+    $normalizedLevel = Resolve-RangerLogLevel -Level $Level
+    $currentLevel = Resolve-RangerLogLevel -Level $(if ($script:RangerLogLevel) { $script:RangerLogLevel } else { 'info' })
+    if ((Get-RangerLogLevelRank -Level $normalizedLevel) -lt (Get-RangerLogLevelRank -Level $currentLevel)) {
         return
     }
 
     $timestamp = (Get-Date).ToString('s')
-    Write-Verbose "[$timestamp][$($Level.ToUpperInvariant())] $Message"
+    $levelTag = $normalizedLevel.ToUpperInvariant().PadRight(5)
+    $line = "[$timestamp][$levelTag] $Message"
+
+    Write-Verbose $line
+
+    # Issue #109: write to file log when package root is known
+    if ($script:RangerLogPath) {
+        try {
+            Add-Content -LiteralPath $script:RangerLogPath -Value $line -Encoding UTF8 -ErrorAction Stop
+        }
+        catch {
+            # Swallow file write errors — never let logging crash the run
+        }
+    }
+}
+
+function Initialize-RangerFileLog {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$PackageRoot
+    )
+
+    $logPath = Join-Path -Path $PackageRoot -ChildPath 'ranger.log'
+    $script:RangerLogPath = $logPath
+    $header = "# AzureLocalRanger log — started $(Get-Date -Format 'o')"
+    try {
+        Set-Content -LiteralPath $logPath -Value $header -Encoding UTF8 -ErrorAction Stop
+    }
+    catch {
+        $script:RangerLogPath = $null
+    }
+    return $logPath
 }
 
 function ConvertTo-RangerHashtable {
@@ -271,4 +341,27 @@ function Get-RangerAverageValue {
     }
 
     return [math]::Round((($numbers | Measure-Object -Average).Average), 2)
+}
+
+function Add-RangerRetryDetail {
+    param(
+        [string]$Target,
+        [string]$Label,
+        [int]$Attempt,
+        [string]$ExceptionType,
+        [string]$Message
+    )
+
+    if ($script:RangerRetryDetails -isnot [System.Collections.IList]) {
+        return
+    }
+
+    [void]$script:RangerRetryDetails.Add([ordered]@{
+        timestampUtc  = (Get-Date).ToUniversalTime().ToString('o')
+        target        = $Target
+        label         = $Label
+        attempt       = $Attempt
+        exceptionType = $ExceptionType
+        message       = $Message
+    })
 }

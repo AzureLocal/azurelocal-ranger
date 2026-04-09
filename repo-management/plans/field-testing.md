@@ -17,6 +17,16 @@ Each field-testing cycle uses the codename **Operation TRAILHEAD**.
 - After significant changes to collectors, credential resolution, or output generation
 - When validating Ranger against a new environment type for the first time
 
+## Milestone Exit Policy
+
+Every delivery milestone should have a corresponding **TRAILHEAD gate issue** before the milestone is closed.
+
+- Create the issue from `.github/ISSUE_TEMPLATE/trailhead_milestone_gate.md`.
+- Run `Invoke-Pester -Path .\tests` for the baseline regression check.
+- Run a full P0-P7 cycle for milestones that affect live discovery, authentication, execution, rendering, packaging, or release automation.
+- For narrower milestones, execute only the impacted TRAILHEAD phases and document any waived phases in the gate issue.
+- Do not close the release milestone until the gate issue is closed or explicitly waived.
+
 ## What is NOT Tested
 
 The following are **explicitly excluded** from all TRAILHEAD phases by default:

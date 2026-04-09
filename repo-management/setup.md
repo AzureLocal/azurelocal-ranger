@@ -46,6 +46,7 @@ Issue intake is standardized with repo-local templates under `.github/ISSUE_TEMP
 - `bug_report.md`
 - `feature_request.md`
 - `docs_issue.md`
+- `trailhead_milestone_gate.md`
 - `config.yml`
 
 These templates align Ranger with the shared AzureLocal intake model while still allowing Ranger-specific issue content.

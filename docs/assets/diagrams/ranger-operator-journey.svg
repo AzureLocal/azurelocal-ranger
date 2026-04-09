@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1500" viewBox="0 0 1600 1500" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#4b5563" />
+    </marker>
+  </defs>
+
+  <rect x="20" y="80" width="320" height="1360" rx="16" fill="#eef6ff" stroke="#7aa6d8" stroke-width="2" />
+  <rect x="350" y="80" width="420" height="1360" rx="16" fill="#fff8e6" stroke="#d4b35f" stroke-width="2" />
+  <rect x="780" y="80" width="480" height="1360" rx="16" fill="#eff8ef" stroke="#79aa79" stroke-width="2" />
+  <rect x="1270" y="80" width="310" height="1360" rx="16" fill="#f5effd" stroke="#9b83c9" stroke-width="2" />
+
+  <rect x="20" y="80" width="320" height="44" rx="16" fill="#d7e8fb" stroke="#7aa6d8" stroke-width="2" />
+  <rect x="350" y="80" width="420" height="44" rx="16" fill="#fdecb8" stroke="#d4b35f" stroke-width="2" />
+  <rect x="780" y="80" width="480" height="44" rx="16" fill="#dff0df" stroke="#79aa79" stroke-width="2" />
+  <rect x="1270" y="80" width="310" height="44" rx="16" fill="#e8ddfb" stroke="#9b83c9" stroke-width="2" />
+
+  <text x="180" y="108" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2937">Operator</text>
+  <text x="560" y="108" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2937">Ranger Runtime</text>
+  <text x="1020" y="108" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2937">Targets and Collection</text>
+  <text x="1425" y="108" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2937">Outputs</text>
+
+  <text x="30" y="46" font-size="26" font-weight="700" fill="#111827">AzureLocalRanger Operator Journey</text>
+  <text x="30" y="68" font-size="13" fill="#4b5563">From config and credential input to manifest validation, offline rendering, and the final package path.</text>
+
+  <polygon points="70,150 280,150 255,220 45,220" fill="#d9ebff" stroke="#5b8fc4" stroke-width="2" />
+  <text x="162" y="176" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Config file</text>
+  <text x="162" y="196" text-anchor="middle" font-size="12" fill="#374151">ConfigPath / ConfigObject</text>
+
+  <polygon points="70,250 280,250 255,320 45,320" fill="#d9ebff" stroke="#5b8fc4" stroke-width="2" />
+  <text x="162" y="276" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">CLI parameters</text>
+  <text x="162" y="296" text-anchor="middle" font-size="12" fill="#374151">ClusterFqdn, nodes, Azure target overrides</text>
+
+  <polygon points="70,350 280,350 255,420 45,420" fill="#d9ebff" stroke="#5b8fc4" stroke-width="2" />
+  <text x="162" y="376" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Interactive answers</text>
+  <text x="162" y="396" text-anchor="middle" font-size="12" fill="#374151">Only when prompting is enabled and available</text>
+
+  <rect x="60" y="520" width="240" height="110" rx="14" fill="#ffffff" stroke="#5b8fc4" stroke-width="2" />
+  <text x="180" y="548" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Credential material</text>
+  <text x="180" y="570" text-anchor="middle" font-size="12" fill="#374151">Cluster / domain / BMC creds</text>
+  <text x="180" y="590" text-anchor="middle" font-size="12" fill="#374151">Azure context or service principal</text>
+  <text x="180" y="610" text-anchor="middle" font-size="12" fill="#374151">Key Vault references where used</text>
+
+  <rect x="410" y="190" width="290" height="86" rx="14" fill="#ffffff" stroke="#c79e2b" stroke-width="2" />
+  <text x="555" y="218" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Merge config object</text>
+  <text x="555" y="238" text-anchor="middle" font-size="12" fill="#374151">parameters -> config -> prompt -> defaults</text>
+  <text x="555" y="258" text-anchor="middle" font-size="12" fill="#374151">one resolved runtime view</text>
+
+  <polygon points="555,315 655,385 555,455 455,385" fill="#fff2b3" stroke="#c79e2b" stroke-width="2" />
+  <text x="555" y="378" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2937">All required</text>
+  <text x="555" y="398" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2937">fields present?</text>
+
+  <rect x="410" y="500" width="290" height="116" rx="14" fill="#ffffff" stroke="#c79e2b" stroke-width="2" />
+  <text x="555" y="528" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Resolve Azure auth</text>
+  <text x="555" y="550" text-anchor="middle" font-size="12" fill="#374151">existing-context -> valid context? -> use</text>
+  <text x="555" y="570" text-anchor="middle" font-size="12" fill="#374151">device-code -> interactive login</text>
+  <text x="555" y="590" text-anchor="middle" font-size="12" fill="#374151">service-principal / managed-identity</text>
+  <text x="555" y="610" text-anchor="middle" font-size="12" fill="#374151">Azure CLI fallback when enabled</text>
+
+  <rect x="410" y="650" width="290" height="116" rx="14" fill="#ffffff" stroke="#c79e2b" stroke-width="2" />
+  <text x="555" y="678" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Resolve cluster / domain / BMC creds</text>
+  <text x="555" y="700" text-anchor="middle" font-size="12" fill="#374151">parameter override -> passwordRef -> prompt</text>
+  <text x="555" y="720" text-anchor="middle" font-size="12" fill="#374151">missing optional credential can remain null</text>
+  <text x="555" y="740" text-anchor="middle" font-size="12" fill="#374151">required paths fail only when needed</text>
+
+  <rect x="410" y="800" width="290" height="100" rx="14" fill="#ffffff" stroke="#c79e2b" stroke-width="2" />
+  <text x="555" y="828" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Select domains</text>
+  <text x="555" y="850" text-anchor="middle" font-size="12" fill="#374151">apply include / exclude filters</text>
+  <text x="555" y="870" text-anchor="middle" font-size="12" fill="#374151">queue only enabled collectors</text>
+
+  <polygon points="555,945 655,1015 555,1085 455,1015" fill="#fff2b3" stroke="#c79e2b" stroke-width="2" />
+  <text x="555" y="1008" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2937">Required targets</text>
+  <text x="555" y="1028" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2937">configured?</text>
+
+  <rect x="410" y="1120" width="290" height="96" rx="14" fill="#ffffff" stroke="#c79e2b" stroke-width="2" />
+  <text x="555" y="1148" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Collect with retry rules</text>
+  <text x="555" y="1170" text-anchor="middle" font-size="12" fill="#374151">transient errors retry with backoff</text>
+  <text x="555" y="1190" text-anchor="middle" font-size="12" fill="#374151">optional domains skip, core failures surface</text>
+
+  <rect x="410" y="1250" width="290" height="88" rx="14" fill="#fff0d8" stroke="#d1822c" stroke-width="2" />
+  <text x="555" y="1278" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Normalize manifest</text>
+  <text x="555" y="1298" text-anchor="middle" font-size="12" fill="#374151">facts, findings, relationships, artifacts</text>
+  <text x="555" y="1318" text-anchor="middle" font-size="12" fill="#374151">write audit-manifest.json</text>
+
+  <polygon points="555,1360 655,1430 555,1490 455,1430" fill="#fff2b3" stroke="#c79e2b" stroke-width="2" />
+  <text x="555" y="1424" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2937">Schema valid /</text>
+  <text x="555" y="1444" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2937">continue rendering?</text>
+
+  <rect x="820" y="200" width="190" height="100" rx="14" fill="#ffffff" stroke="#6c9f6c" stroke-width="2" />
+  <text x="915" y="228" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Cluster + topology</text>
+  <text x="915" y="250" text-anchor="middle" font-size="12" fill="#374151">WinRM / CIM / cluster cmdlets</text>
+  <text x="915" y="270" text-anchor="middle" font-size="12" fill="#374151">Arc-first node resolution</text>
+
+  <rect x="1030" y="200" width="190" height="100" rx="14" fill="#ffffff" stroke="#6c9f6c" stroke-width="2" />
+  <text x="1125" y="228" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Storage + networking</text>
+  <text x="1125" y="250" text-anchor="middle" font-size="12" fill="#374151">WinRM, S2D, host networking</text>
+  <text x="1125" y="270" text-anchor="middle" font-size="12" fill="#374151">optional offline device configs</text>
+
+  <rect x="820" y="330" width="190" height="100" rx="14" fill="#ffffff" stroke="#6c9f6c" stroke-width="2" />
+  <text x="915" y="358" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Identity + security</text>
+  <text x="915" y="380" text-anchor="middle" font-size="12" fill="#374151">WinRM + AD / workgroup logic</text>
+  <text x="915" y="400" text-anchor="middle" font-size="12" fill="#374151">certs, BitLocker, WDAC, Defender</text>
+
+  <rect x="1030" y="330" width="190" height="100" rx="14" fill="#ffffff" stroke="#6c9f6c" stroke-width="2" />
+  <text x="1125" y="358" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Azure integration</text>
+  <text x="1125" y="380" text-anchor="middle" font-size="12" fill="#374151">Az PowerShell / REST</text>
+  <text x="1125" y="400" text-anchor="middle" font-size="12" fill="#374151">Arc, policy, monitoring, update</text>
+
+  <rect x="820" y="460" width="190" height="100" rx="14" fill="#ffffff" stroke="#6c9f6c" stroke-width="2" />
+  <text x="915" y="488" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Hardware + OEM</text>
+  <text x="915" y="510" text-anchor="middle" font-size="12" fill="#374151">Redfish / BMC / OEM tooling</text>
+  <text x="915" y="530" text-anchor="middle" font-size="12" fill="#374151">optional when endpoints exist</text>
+
+  <rect x="1030" y="460" width="190" height="100" rx="14" fill="#ffffff" stroke="#6c9f6c" stroke-width="2" />
+  <text x="1125" y="488" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Management + performance</text>
+  <text x="1125" y="510" text-anchor="middle" font-size="12" fill="#374151">WinRM host tooling + event digest</text>
+  <text x="1125" y="530" text-anchor="middle" font-size="12" fill="#374151">short-horizon health baseline</text>
+
+  <rect x="840" y="620" width="360" height="84" rx="14" fill="#f7fff7" stroke="#6c9f6c" stroke-width="2" />
+  <text x="1020" y="648" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Collector outcomes</text>
+  <text x="1020" y="670" text-anchor="middle" font-size="12" fill="#374151">success -> evidence, optional fail -> skipped, core fail -> failed</text>
+  <text x="1020" y="690" text-anchor="middle" font-size="12" fill="#374151">retry details written to manifest.run.retryDetails</text>
+
+  <rect x="1300" y="250" width="250" height="96" rx="14" fill="#ffffff" stroke="#8b6ec0" stroke-width="2" />
+  <text x="1425" y="278" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Manifest-only path</text>
+  <text x="1425" y="300" text-anchor="middle" font-size="12" fill="#374151">NoRender or strict-stop case</text>
+  <text x="1425" y="320" text-anchor="middle" font-size="12" fill="#374151">audit-manifest.json + package-index.json</text>
+
+  <rect x="1300" y="390" width="250" height="116" rx="14" fill="#ffffff" stroke="#8b6ec0" stroke-width="2" />
+  <text x="1425" y="418" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2937">Render selected outputs</text>
+  <text x="1425" y="440" text-anchor="middle" font-size="12" fill="#374151">HTML / Markdown / DOCX / PDF</text>
+  <text x="1425" y="460" text-anchor="middle" font-size="12" fill="#374151">XLSX registers / SVG / draw.io</text>
+  <text x="1425" y="480" text-anchor="middle" font-size="12" fill="#374151">README, package index, ranger.log</text>
+
+  <rect x="1300" y="1240" width="250" height="96" rx="18" fill="#fee2e2" stroke="#c0392b" stroke-width="2" />
+  <text x="1425" y="1270" text-anchor="middle" font-size="16" font-weight="700" fill="#7f1d1d">Failed / blocked</text>
+  <text x="1425" y="1292" text-anchor="middle" font-size="12" fill="#7f1d1d">missing required input, strict schema failure,</text>
+  <text x="1425" y="1312" text-anchor="middle" font-size="12" fill="#7f1d1d">or unrecoverable core collector failure</text>
+
+  <rect x="1300" y="1365" width="250" height="102" rx="18" fill="#dcfce7" stroke="#1f8d49" stroke-width="2" />
+  <text x="1425" y="1395" text-anchor="middle" font-size="16" font-weight="700" fill="#14532d">Package ready</text>
+  <text x="1425" y="1417" text-anchor="middle" font-size="12" fill="#14532d">C:\AzureLocalRanger\&lt;package-name&gt;\</text>
+  <text x="1425" y="1437" text-anchor="middle" font-size="12" fill="#14532d">reports, diagrams, manifest, logs, evidence</text>
+
+  <line x1="280" y1="185" x2="410" y2="225" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="280" y1="285" x2="410" y2="225" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="280" y1="385" x2="455" y2="385" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="300" y1="575" x2="410" y2="708" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+
+  <line x1="555" y1="276" x2="555" y2="315" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="555" y1="455" x2="555" y2="500" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="455" y1="385" x2="300" y2="385" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <text x="352" y="370" font-size="12" fill="#6b7280">No -> prompt or fail</text>
+
+  <line x1="555" y1="616" x2="555" y2="650" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="555" y1="766" x2="555" y2="945" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+
+  <line x1="655" y1="1015" x2="820" y2="250" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="655" y1="1015" x2="1030" y2="250" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="655" y1="1015" x2="820" y2="380" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="655" y1="1015" x2="1030" y2="380" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="655" y1="1015" x2="820" y2="510" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="655" y1="1015" x2="1030" y2="510" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <text x="668" y="998" font-size="12" fill="#6b7280">Yes</text>
+  <line x1="455" y1="1015" x2="1300" y2="1288" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <text x="972" y="1108" font-size="12" fill="#6b7280">No -> required target missing</text>
+
+  <line x1="915" y1="300" x2="555" y2="1120" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="1125" y1="300" x2="555" y2="1120" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="915" y1="430" x2="555" y2="1120" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="1125" y1="430" x2="555" y2="1120" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="915" y1="560" x2="555" y2="1120" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="1125" y1="560" x2="555" y2="1120" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+
+  <line x1="555" y1="1216" x2="555" y2="1250" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="555" y1="1338" x2="555" y2="1360" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="655" y1="1430" x2="1300" y2="448" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <text x="960" y="1020" font-size="12" fill="#6b7280">Yes -> render</text>
+  <line x1="555" y1="1360" x2="1425" y2="1240" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <text x="920" y="1328" font-size="12" fill="#6b7280">No -> stop or fail</text>
+
+  <line x1="1425" y1="346" x2="1425" y2="1365" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="1425" y1="506" x2="1425" y2="1365" stroke="#4b5563" stroke-width="2" marker-end="url(#arrow)" />
+
+  <text x="30" y="1478" font-size="12" fill="#6b7280">Happy path: merged input -> auth resolution -> domain selection -> retry-aware collection -> manifest validation -> offline render -> package path.</text>
+</svg>

@@ -108,23 +108,26 @@ Examples:
 
 ## Runtime Flow
 
-![Ranger runtime flow](../assets/diagrams/ranger-runtime-flow.svg)
+![Ranger operator journey](../assets/diagrams/ranger-operator-journey.svg)
 
 A normal run follows this sequence:
 
-1. **Load configuration**
-   Ranger loads parameters, config-file values, domain filters, output settings, and any Key Vault references.
+1. **Merge input sources**
+   Ranger merges runtime parameters, config-file values, and interactive prompts into one resolved config object.
 2. **Resolve credentials**
    Ranger resolves Azure, cluster, domain, and BMC credentials independently.
-3. **Classify topology**
-   Ranger determines whether the environment is hyperconverged, switchless, rack-aware, local identity with Key Vault, disconnected, or multi-rack preview.
+3. **Select domains and validate targets**
+   Ranger applies include/exclude filters, verifies required targets, and decides which collectors can run.
+4. **Classify topology**
+   Ranger determines whether the environment is hyperconverged, switchless, rack-aware, local identity with Azure Key Vault, disconnected, or multi-rack preview.
+5. **Collect by domain**
 4. **Collect by domain**
-   Each domain runs independently, records its own evidence, and reports its own status.
+6. **Normalize into the manifest**
 5. **Normalize into the manifest**
-   Raw evidence is translated into normalized facts, relationships, findings, and run metadata.
+7. **Persist artifacts**
 6. **Persist artifacts**
-   Ranger writes the manifest and any supporting evidence exports to disk.
-7. **Render outputs**
+8. **Render outputs**
+   Reports, Office-format deliverables, diagrams, and package exports consume the saved manifest rather than live targets.
    Reports, diagrams, and package exports consume the saved manifest rather than live targets.
 
 ## Current-State and As-Built Modes

@@ -75,7 +75,11 @@ function Invoke-RangerClusterCommand {
         return & $ScriptBlock @ArgumentList
     }
 
-    return Invoke-RangerRemoteCommand -ComputerName $targets -Credential $Credential -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList -RetryCount 1
+    # Issue #113: honour behavior.retryCount and behavior.timeoutSeconds from config
+    $retryCount = if ($Config.behavior -and $Config.behavior.retryCount -gt 0) { [int]$Config.behavior.retryCount } else { 1 }
+    $timeoutSec  = if ($Config.behavior -and $Config.behavior.timeoutSeconds -gt 0) { [int]$Config.behavior.timeoutSeconds } else { 0 }
+
+    return Invoke-RangerRemoteCommand -ComputerName $targets -Credential $Credential -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList -RetryCount $retryCount -TimeoutSeconds $timeoutSec
 }
 
 function Invoke-RangerSafeAction {
@@ -87,10 +91,23 @@ function Invoke-RangerSafeAction {
         [string]$Label,
 
         [AllowNull()]
-        $DefaultValue = $null
+        $DefaultValue = $null,
+
+        [string[]]$RetryOnExceptionType = @(
+            'System.Net.WebException',
+            'System.TimeoutException',
+            'System.Net.Http.HttpRequestException',
+            'Microsoft.Management.Infrastructure.CimException',
+            'System.Management.Automation.Remoting.PSRemotingTransportException'
+        )
     )
 
     try {
+        $retryCount = if ($script:RangerBehaviorRetryCount -gt 0) { [int]$script:RangerBehaviorRetryCount } else { 0 }
+        if ($retryCount -gt 0) {
+            return Invoke-RangerRetry -ScriptBlock $ScriptBlock -RetryCount $retryCount -DelaySeconds 1 -Exponential -Label $Label -Target $Label -RetryOnExceptionType $RetryOnExceptionType
+        }
+
         return & $ScriptBlock
     }
     catch {

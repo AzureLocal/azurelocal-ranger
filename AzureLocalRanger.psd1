@@ -1,12 +1,12 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '0.5.0'
-    CompatiblePSEditions = @('Desktop', 'Core')
+    ModuleVersion     = '1.0.0'
+    CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
     CompanyName       = 'Azure Local Cloud'
-    Copyright         = '(c) 2026 Azure Local Cloud. All rights reserved.'
-    Description       = 'Azure Local Ranger is a PowerShell module for documenting, auditing, and producing as-built outputs for Azure Local environments, including the on-prem platform, hosted workloads, and Azure resources tied to the deployment.'
+    Copyright         = '(c) 2025 Azure Local Cloud. All rights reserved.'
+    Description       = 'AzureLocalRanger performs automated, read-only discovery and reporting against Azure Local (formerly Azure Stack HCI) clusters. It collects cluster topology, storage and networking health, VM workload inventory, security posture, and Azure Arc registration state — then renders HTML, Markdown, JSON, and SVG as-built report packages. Run from any Windows machine with WinRM access to the cluster.'
     PowerShellVersion = '7.0'
     FunctionsToExport = @(
         'Invoke-AzureLocalRanger',
@@ -23,16 +23,58 @@
             Tags = @(
                 'AzureLocal',
                 'AzureStackHCI',
+                'HCI',
                 'Arc',
+                'ArcEnabledInfrastructure',
                 'PowerShell',
                 'Documentation',
                 'Inventory',
                 'Audit',
-                'AsBuilt'
+                'AsBuilt',
+                'Report',
+                'Discovery',
+                'HealthCheck',
+                'Cluster',
+                'FailoverClustering',
+                'Windows',
+                'WindowsServer',
+                'Hyper-V',
+                'StorageSpacesDirect',
+                'S2D'
             )
-            LicenseUri = 'https://github.com/AzureLocal/azurelocal-ranger/blob/main/LICENSE'
-            ProjectUri = 'https://github.com/AzureLocal/azurelocal-ranger'
-            ReleaseNotes = 'Adds the initial Ranger runtime, grouped collectors, manifest persistence, and cached output generation for reports and diagrams.'
+            LicenseUri   = 'https://github.com/AzureLocal/azurelocal-ranger/blob/main/LICENSE'
+            ProjectUri   = 'https://github.com/AzureLocal/azurelocal-ranger'
+            HelpInfoUri  = 'https://azurelocal.github.io/azurelocal-ranger'
+            ExternalModuleDependencies = @(
+                'Az.Accounts',
+                'Az.Resources'
+            )
+            ReleaseNotes = @'
+## v1.0.0 — PSGallery Launch
+
+### New Features
+- **Parameter-first input model** — pass ClusterFqdn, ClusterNodes, SubscriptionId,
+  TenantId, and ResourceGroup directly to Invoke-AzureLocalRanger without a config file.
+- **Arc-first node inventory** — cluster nodes are auto-resolved from Azure Arc resource
+  properties before falling back to direct WinRM scan or static config.
+- **Domain auto-detection** — domain FQDN is resolved from Arc, CIM, or credential hints;
+  workgroup clusters are handled gracefully with an informational finding.
+- **File-based logging** — every run writes a plain-text ranger.log alongside reports.
+- **Self-documenting config scaffold** — New-AzureLocalRangerConfig emits YAML with inline
+  comments and [REQUIRED] markers on all mandatory fields.
+- **Unreachable-node finding** — a warning finding is raised for any configured node that
+  does not respond to WinRM during the topology collection pass.
+- **Comment-based help** — Get-Help is now fully populated for all four public commands.
+
+### Bug Fixes
+- Fixed null-reference crashes in the storage collector when any sub-section
+  (tiers, subsystems, resiliency, jobs, csvs, qos, sofs, replica, clusterNetworks)
+  throws during a remote session.
+
+### Improvements
+- retryCount and timeoutSeconds from config are now applied to every WinRM operation.
+- PSGallery manifest metadata, tags, and description updated for discoverability.
+'@
         }
     }
 }

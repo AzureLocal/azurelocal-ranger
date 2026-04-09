@@ -28,6 +28,15 @@ The v1 collector writes to these named sections of the `performance` manifest do
 | `events` | Recent Health Service events and cluster health faults |
 | `summary` | Aggregate performance risk signals — high-CPU nodes, high-memory nodes, and alert counts |
 
+## Current Collector Depth
+
+Current v1 collection also covers:
+
+- RDMA and host-network performance counters where available.
+- CSV cache and storage-latency context used for platform health interpretation.
+- Event-log aggregation and outlier detection across the nodes.
+- Point-in-time performance baselines that feed management and technical report sections.
+
 ## Why It Matters
 
 Ranger should not stop at static inventory. A short-horizon operational baseline helps explain whether a healthy-looking design is currently under stress, degraded, or simply under-observed.

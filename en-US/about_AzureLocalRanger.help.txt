@@ -1,0 +1,117 @@
+TOPIC
+    about_AzureLocalRanger
+
+SHORT DESCRIPTION
+    AzureLocalRanger is a PowerShell module that performs automated, read-only
+    discovery and reporting against Azure Local (formerly Azure Stack HCI) clusters.
+
+LONG DESCRIPTION
+    AzureLocalRanger collects cluster topology, storage and networking health,
+    VM workload inventory, security posture, and Azure Arc / registration state from
+    a target Azure Local environment. Results are written to a dated report package
+    containing HTML, Markdown, JSON, and SVG diagram outputs.
+
+    The module is designed to run from any Windows machine that has:
+      * PowerShell 7 or later
+      * WinRM / network access to the cluster nodes
+      * An Azure context (Connect-AzAccount) or service-principal credentials
+      * RSAT ActiveDirectory PowerShell module (for identity / domain collection)
+
+GETTING STARTED
+
+    1. Import the module from a local clone today, or install from PSGallery
+       once publication is complete:
+
+           Import-Module .\AzureLocalRanger.psd1 -Force
+
+       Or later:
+
+           Install-Module AzureLocalRanger
+
+       Or verify prerequisites on an existing install:
+
+           Test-AzureLocalRangerPrerequisites -InstallPrerequisites
+
+    2. Generate a starter configuration file:
+
+           New-AzureLocalRangerConfig -Path C:\ranger\ranger.yml
+
+       Open the file and replace all values marked [REQUIRED] with your environment's
+       actual values (cluster FQDN, node names, subscription ID, etc.).
+
+    3. Run the assessment:
+
+           Invoke-AzureLocalRanger -ConfigPath C:\ranger\ranger.yml
+
+       Reports are written to C:\AzureLocalRanger\<date-stamp>\ by default.
+
+QUICK START (NO CONFIG FILE)
+
+    You can pass the most common settings directly as parameters — no config file needed:
+
+        Invoke-AzureLocalRanger `
+            -ClusterFqdn    azlocal-prod.contoso.com `
+            -ClusterNodes   azl-n01.contoso.com, azl-n02.contoso.com `
+            -ClusterCredential (Get-Credential) `
+            -SubscriptionId '<your-subscription-id>' `
+            -ResourceGroup  rg-azlocal-prod
+
+COMMANDS
+
+    Invoke-AzureLocalRanger
+        Runs the full discovery and reporting pipeline.
+
+    New-AzureLocalRangerConfig
+        Generates a self-documenting YAML or JSON configuration file.
+
+    Export-AzureLocalRangerReport
+        Re-renders reports from an existing run manifest without re-collecting data.
+
+    Test-AzureLocalRangerPrerequisites
+        Validates all requirements; optionally installs missing components.
+
+CONFIGURATION FILE
+
+    The YAML config file controls every aspect of Ranger's behaviour. Key sections:
+
+      environment   — friendly name and description used in report filenames
+      targets       — cluster FQDN, node list, and Azure subscription details
+      credentials   — WinRM, AD, BMC, and Azure authentication settings
+      domains       — include/exclude lists for domain-scoped collection
+      output        — report formats, output directory, and diagram format
+      behavior      — retries, timeouts, logging level, and rendering flags
+
+    Values marked [REQUIRED] must be set before the first run. All other fields
+    have working defaults. Use New-AzureLocalRangerConfig to get a pre-annotated
+    copy of the default configuration.
+
+OUTPUT PACKAGE
+
+    Each Invoke-AzureLocalRanger run creates a directory under output.rootPath:
+
+        C:\AzureLocalRanger\
+          <environment-name>-<date>-<time>\
+            ranger-manifest.json      — raw run manifest with all collected data
+            ranger.log                — plain-text run log
+            report.html               — HTML report (if html format requested)
+            report.md                 — Markdown report
+            topology.svg              — architecture diagram
+            report.json               — machine-readable structured report
+
+CREDENTIALS AND SECURITY
+
+    Ranger performs read-only operations. It never modifies cluster state.
+    Credentials are never written to disk. The minimum required permissions are:
+
+      * WinRM read access (typically domain user with local admin on cluster nodes)
+      * Azure Reader on the subscription or resource group
+      * Active Directory read access (for identity domain collection)
+
+    For non-interactive / pipeline use, store credentials in Azure Key Vault and
+    reference them in the config via passwordRef: keyvault://<vault>/<secret-name>.
+
+LINKS
+
+    Project documentation: https://azurelocal.github.io/azurelocal-ranger
+    GitHub repository:     https://github.com/azure-local/azurelocal-ranger
+    Report issues:         https://github.com/azure-local/azurelocal-ranger/issues

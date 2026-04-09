@@ -29,13 +29,14 @@ If you are new to Ranger, the cleanest path through the docs is:
 
 ## Current Project Phase
 
-This repository is in a **documentation and planning phase**. The product definition, scope boundary, architecture model, and public documentation are being stabilised before implementation begins.
+AzureLocalRanger is in the **v1.0.0 release-candidate phase**. The collectors, manifest pipeline, report renderers, and docs set are implemented in this repository; PSGallery publication is tracked separately from the feature work.
 
-The immediate priorities are:
+```powershell
+Import-Module .\AzureLocalRanger.psd1 -Force
+Invoke-AzureLocalRanger -ConfigPath .\ranger.yml
+```
 
-1. Lock the product definition and scope boundary.
-2. Publish the architecture and execution model.
-3. Begin collector implementation once the manifest schema is stable.
+See the [Prerequisites](prerequisites.md), [Quickstart](operator/quickstart.md), and [Command Reference](operator/command-reference.md) pages for installation and first-run instructions.
 
 ## Where To Start
 

@@ -20,6 +20,15 @@ The v1 collector writes to these named sections of the `oemIntegration` manifest
 | `endpoints` | OEM management endpoint inventory — BMC addresses, node associations, and reachability |
 | `managementPosture` | OEM platform-management tool detection — Dell OpenManage, Lenovo XClarity, HPE tooling, or absence of OEM management |
 
+## Current Collector Depth
+
+Current v1 collection also covers:
+
+- Redfish-derived firmware and hardware signals needed for as-built inventory.
+- Per-DIMM and GPU paths where the OEM interface exposes them.
+- BMC certificate and management-endpoint metadata.
+- Vendor-specific corroboration that complements host-side hardware discovery.
+
 ## Why It Matters
 
 OEM tooling often holds the most actionable hardware lifecycle and support signals in a real environment. That information belongs in the complete estate story.

@@ -26,18 +26,22 @@ function Invoke-RangerNetworkDeviceConfigImport {
     }
 
     foreach ($hint in $deviceConfigHints) {
+        if ($null -eq $hint) {
+            continue
+        }
+
         $path   = $hint.path
         $vendor = $hint.vendor
         $role   = $hint.role
 
         if (-not $path) {
-            Write-Warning "networkDeviceConfigs hint is missing a 'path' field — skipping entry."
+            Write-RangerLog -Level warn -Message "networkDeviceConfigs hint is missing a 'path' field — skipping entry."
             continue
         }
 
         $resolvedPath = Resolve-RangerPath -Path $path
         if (-not (Test-Path -Path $resolvedPath)) {
-            Write-Warning "networkDeviceConfigs: file not found at '$resolvedPath' — skipping."
+            Write-RangerLog -Level warn -Message "networkDeviceConfigs: file not found at '$resolvedPath' — skipping."
             continue
         }
 
@@ -48,7 +52,7 @@ function Invoke-RangerNetworkDeviceConfigImport {
             'cisco-nxos'  { ConvertFrom-RangerCiscoNxosConfig -RawContent $rawContent -FilePath $resolvedPath -Role $role }
             'cisco-ios'   { ConvertFrom-RangerCiscoIosConfig  -RawContent $rawContent -FilePath $resolvedPath -Role $role }
             default {
-                Write-Warning "networkDeviceConfigs: vendor '$vendor' is not supported — recording file reference only."
+                Write-RangerLog -Level warn -Message "networkDeviceConfigs: vendor '$vendor' is not supported — recording file reference only."
                 [ordered]@{
                     sourceFile = [System.IO.Path]::GetFileName($resolvedPath)
                     vendor     = $vendor

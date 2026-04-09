@@ -11,7 +11,7 @@ The storage domain should document:
 - cache and capacity relationships
 - virtual disks, resiliency, and allocation posture
 - CSV layout and ownership
-- SOFS, Storage Replica, and QoS features when configured
+- Storage Replica, QoS, and related storage features when configured
 - repair jobs, faults, and health signals
 
 ## Manifest Sub-Domains
@@ -26,9 +26,17 @@ The v1 collector writes to these named sections of the `storage` manifest domain
 | `volumes` | Volume inventory — drive letter, label, file system, health, and size |
 | `csvs` | Cluster Shared Volume inventory — name, state, and owning node |
 | `qos` | Storage QoS policy definitions and IOPS limits |
-| `sofs` | Scale-Out File Server share inventory when SOFS is deployed |
 | `replica` | Storage Replica group replication state and sync signals |
 | `summary` | Aggregate counts — pools, disks, virtual disks, volumes, CSVs, total capacity, and disk media types |
+
+## Current Collector Depth
+
+Current v1 collection also covers:
+
+- Health-fault inventory for active storage issues.
+- QoS policy and QoS flow detail when those features are enabled.
+- Scrub, cache, and dedup posture for the S2D storage stack.
+- Storage Replica group and partnership detail when replication is configured.
 
 ## Why It Matters
 

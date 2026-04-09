@@ -24,9 +24,18 @@ The v1 collector writes to these named sections of the `virtualMachines` manifes
 |---|---|
 | `inventory` | VM inventory — name, generation, state, vCPU, memory, disk, network adapters, and host |
 | `placement` | VM-to-host placement mappings and anti-affinity group memberships |
-| `workloadFamilies` | Detected workload families — AVD host pools, AKS nodepool members, Arc VMs, Arc Data Services, and Microsoft 365 Local indicators |
+| `workloadFamilies` | Detected workload families and overlays inferred from VM inventory and Azure resource context — AKS nodepool members, Arc VMs, Arc Data Services, Microsoft 365 Local indicators, and other workload signals |
 | `replication` | Hyper-V Replica state for protected VMs when replication is configured |
 | `summary` | Aggregate counts — VM count by state, total vCPU, memory, density, and overcommit signals |
+
+## Current Collector Depth
+
+Current v1 collection also covers:
+
+- VM checkpoint inventory and related snapshot signals.
+- SR-IOV and advanced network-adapter detail where exposed by Hyper-V.
+- Placement-density and overcommit calculations used in management and technical reports.
+- Guest-cluster and workload-family heuristics inferred from VM and Azure resource evidence.
 
 ## Why It Matters
 

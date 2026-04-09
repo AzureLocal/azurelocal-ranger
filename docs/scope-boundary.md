@@ -110,7 +110,7 @@ This capability is tracked as [Decision #32 — manual import workflow](https://
 
 ### 3. Storage, Networking, and Virtualization
 
-- S2D, pools, volumes, CSVs, SOFS, storage health, replication
+- S2D, pools, volumes, CSVs, storage health, QoS, and replication
 - virtual switches, SET, host vNICs, RDMA, ATC, SDN, logical networks
 - VM inventory, placement, disks, networking, workload density
 

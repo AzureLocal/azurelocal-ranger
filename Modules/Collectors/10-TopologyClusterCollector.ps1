@@ -18,6 +18,16 @@ function Invoke-RangerTopologyClusterCollector {
         return ConvertTo-RangerHashtable -InputObject $fixture
     }
 
+    # Issue #110: Arc-first node inventory resolution
+    $nodeInventory = Resolve-RangerNodeInventory -Config $Config -ClusterCredential $CredentialMap.cluster
+    if ($nodeInventory.Nodes.Count -gt 0) {
+        # Update config so all subsequent Invoke-RangerClusterCommand calls use the resolved list
+        $Config.targets.cluster.nodes = @($nodeInventory.Nodes)
+    }
+    if ($nodeInventory.Discrepancies.Count -gt 0) {
+        Write-RangerLog -Level warn -Message "Topology collector: Arc and direct node lists differ — discrepancies: $($nodeInventory.Discrepancies -join ', ')"
+    }
+
     $clusterSnapshot = Invoke-RangerSafeAction -Label 'Cluster foundation snapshot' -DefaultValue $null -ScriptBlock {
         Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -SingleTarget -ScriptBlock {
             $cluster = if (Get-Command -Name Get-Cluster -ErrorAction SilentlyContinue) {
@@ -248,7 +258,7 @@ function Invoke-RangerTopologyClusterCollector {
                     lastBootUpTime      = $operatingSystem.LastBootUpTime
                     manufacturer        = $computerSystem.Manufacturer
                     model               = $computerSystem.Model
-                    totalMemoryGiB      = if ($computerSystem.TotalPhysicalMemory) { ConvertTo-RangerGiB -Value $computerSystem.TotalPhysicalMemory } else { $null }
+                    totalMemoryGiB      = if ($computerSystem.TotalPhysicalMemory) { [math]::Round(([double]$computerSystem.TotalPhysicalMemory / 1GB), 2) } else { $null }
                     logicalProcessorCount = @($processors | ForEach-Object { $_.NumberOfLogicalProcessors } | Measure-Object -Sum).Sum
                     partOfDomain        = [bool]$computerSystem.PartOfDomain
                     domain              = $computerSystem.Domain
@@ -266,6 +276,15 @@ function Invoke-RangerTopologyClusterCollector {
             }
         }
     )
+
+    # Issue #106: Detect nodes listed in config that did not respond to WinRM
+    $respondedNodeNames = @($nodeSnapshots | ForEach-Object { ($_.name -split '\.')[0].ToUpperInvariant() })
+    $unreachableNodes = @()
+    if ($Config.targets.cluster.nodes) {
+        $unreachableNodes = @($Config.targets.cluster.nodes | Where-Object {
+            ($_ -split '\.')[0].ToUpperInvariant() -notin $respondedNodeNames
+        })
+    }
 
     if (-not $clusterSnapshot -and $nodeSnapshots.Count -eq 0) {
         throw 'Cluster topology collector could not gather any usable data.'
@@ -372,6 +391,26 @@ function Invoke-RangerTopologyClusterCollector {
         [void]$findings.Add((New-RangerFinding -Severity warning -Title 'Pending solution updates detected on the cluster' -Description "The collector found $(@($clusterSnapshot.pendingSolutionUpdates).Count) solution update(s) in ReadyToInstall or Staged state." -AffectedComponents @($clusterSnapshot.cluster.Name) -CurrentState "$(@($clusterSnapshot.pendingSolutionUpdates).Count) pending updates" -Recommendation 'Review pending solution updates and schedule an appropriate maintenance window to apply them.'))
     }
 
+    # Issue #106: emit finding for unreachable cluster nodes
+    if ($unreachableNodes.Count -gt 0) {
+        [void]$findings.Add((New-RangerFinding -Severity warning `
+            -Title 'One or more cluster nodes did not respond' `
+            -Description "Ranger attempted to collect data from $($unreachableNodes.Count) node(s) that did not respond via WinRM. These nodes are listed in the configuration but returned no inventory data." `
+            -AffectedComponents @($unreachableNodes) `
+            -CurrentState "Unreachable: $($unreachableNodes -join ', ')" `
+            -Recommendation 'Verify that each node is online, that the WinRM service is running, and that the cluster credential has permission to connect. Check firewall rules allowing port 5985/5986.'))
+    }
+
+    # Issue #110: emit finding when Arc and direct node lists disagree
+    if ($nodeInventory.Discrepancies.Count -gt 0) {
+        [void]$findings.Add((New-RangerFinding -Severity warning `
+            -Title 'Arc and cluster node lists disagree' `
+            -Description 'Ranger detected nodes present in one source (Azure Arc or direct cluster scan) but missing in the other. This may indicate a recently decommissioned node or an Arc registration sync lag.' `
+            -AffectedComponents @($nodeInventory.Discrepancies) `
+            -CurrentState "Discrepant nodes: $($nodeInventory.Discrepancies -join ', ')" `
+            -Recommendation 'Verify that all registered nodes are Arc-connected and participating in the cluster. Investigate any nodes not present in both sources.'))
+    }
+
     return @{
         Status        = if ($healthSummary.unhealthy -gt 0) { 'partial' } else { 'success' }
         Topology      = [ordered]@{
@@ -457,8 +496,14 @@ function Invoke-RangerTopologyClusterCollector {
         Findings      = @($findings)
         Relationships = @()
         RawEvidence   = [ordered]@{
-            cluster = ConvertTo-RangerHashtable -InputObject $clusterSnapshot
-            nodes   = ConvertTo-RangerHashtable -InputObject $nodeSnapshots
+            cluster       = ConvertTo-RangerHashtable -InputObject $clusterSnapshot
+            nodes         = ConvertTo-RangerHashtable -InputObject $nodeSnapshots
+            nodeInventory = [ordered]@{
+                resolvedNodes = @($nodeInventory.Nodes)
+                sources       = @($nodeInventory.Sources)
+                discrepancies = @($nodeInventory.Discrepancies)
+                arcResourceId = if ($nodeInventory.ArcResource) { $nodeInventory.ArcResource.ResourceId } else { $null }
+            }
         }
     }
 }

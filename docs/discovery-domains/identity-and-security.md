@@ -32,6 +32,15 @@ The v1 collector writes to these named sections of the `identitySecurity` manife
 In AD-backed deployments the `activeDirectory` section is populated from the domain collector.
 In local-identity deployments where no AD is present, `activeDirectory` records a `not-applicable` reason and the `keyVault` section carries the primary secret and trust signals.
 
+## Current Collector Depth
+
+Current v1 collection also covers:
+
+- BitLocker enablement and protector-type signals where they can be discovered safely.
+- WDAC posture, enforcement hints, and broader secured-core indicators.
+- Defender and endpoint-security detail used to describe host protection posture.
+- Domain auto-detection and workgroup handling so collection behaves correctly outside classic AD joins.
+
 ## Why It Matters
 
 Security and trust posture are part of both operational understanding and handoff-quality documentation. This domain should explain not only what is enabled, but also what identity model the environment actually relies on.

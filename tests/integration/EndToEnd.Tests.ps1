@@ -11,6 +11,7 @@ Describe 'Azure Local Ranger end-to-end fixture package' {
         }
 
         $config.output.rootPath = Join-Path $TestDrive 'packages'
+        $config.output.formats = @('html', 'markdown', 'docx', 'xlsx', 'pdf', 'svg')
         $config.behavior.promptForMissingCredentials = $false
         $config.behavior.continueToRendering = $true
         $config.credentials.cluster = $null
@@ -28,6 +29,9 @@ Describe 'Azure Local Ranger end-to-end fixture package' {
         $result = Invoke-AzureLocalRanger -ConfigObject $config -OutputPath (Join-Path $TestDrive 'packages')
         Test-Path -Path $result.ManifestPath | Should -BeTrue
         (Get-ChildItem -Path (Join-Path $result.PackageRoot 'reports') -Filter '*.html').Count | Should -Be 3
+        (Get-ChildItem -Path (Join-Path $result.PackageRoot 'reports') -Filter '*.docx').Count | Should -Be 3
+        (Get-ChildItem -Path (Join-Path $result.PackageRoot 'reports') -Filter '*.pdf').Count | Should -Be 3
+        (Get-ChildItem -Path (Join-Path $result.PackageRoot 'reports') -Filter '*.xlsx').Count | Should -Be 1
         (Get-ChildItem -Path (Join-Path $result.PackageRoot 'diagrams') -Filter '*.drawio').Count | Should -BeGreaterThan 0
         Test-Path -Path (Join-Path $result.PackageRoot 'README.md') | Should -BeTrue
         Test-Path -Path (Join-Path $result.PackageRoot 'package-index.json') | Should -BeTrue

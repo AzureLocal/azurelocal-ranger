@@ -114,7 +114,6 @@ function Get-RangerReservedDomainPayloads {
             volumes       = @()
             csvs          = @()
             qos           = @()
-            sofs          = @()
             replica       = @()
             summary       = [ordered]@{}
         }

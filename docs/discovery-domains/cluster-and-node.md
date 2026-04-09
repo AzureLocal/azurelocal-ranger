@@ -37,6 +37,15 @@ The v1 collector writes to these named sections of the `clusterNode` manifest do
 | `faultDomainSummary` | Rack count and node distribution across fault domains |
 | `networkSummary` | Cluster network count and role breakdown |
 
+## Current Collector Depth
+
+Current v1 collection also covers:
+
+- Cluster-Aware Updating posture and owner data where available.
+- Solution-update and lifecycle-manager signals that affect the maintenance story.
+- Arc-backed node-resolution and cluster-registration context used to reconcile Azure and WinRM views.
+- Unreachable-node findings when configured nodes do not answer over WinRM.
+
 ## Why It Matters
 
 This domain is the control point for:

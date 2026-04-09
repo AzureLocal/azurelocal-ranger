@@ -1,6 +1,6 @@
 # Getting Started
 
-This repository is currently in a planning and documentation phase.
+This repository contains the implemented v1 module, the public documentation site, and the supporting test suite.
 
 ## What Contributors Should Do First
 
