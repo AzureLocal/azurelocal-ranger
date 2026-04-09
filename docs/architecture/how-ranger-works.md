@@ -108,7 +108,9 @@ Examples:
 
 ## Runtime Flow
 
-![Ranger operator journey](../assets/diagrams/ranger-operator-journey.svg)
+![Ranger technical flow](../assets/diagrams/ranger-technical-flow.svg)
+
+For the simplified operator sequence, see the [high-level operator journey](../assets/diagrams/ranger-operator-journey.svg). The diagram below is the contributor-facing code-reading companion.
 
 A normal run follows this sequence:
 
@@ -121,14 +123,13 @@ A normal run follows this sequence:
 4. **Classify topology**
    Ranger determines whether the environment is hyperconverged, switchless, rack-aware, local identity with Azure Key Vault, disconnected, or multi-rack preview.
 5. **Collect by domain**
-4. **Collect by domain**
+   Each collector runs with retry-aware transport helpers, graceful degradation wrappers, and explicit status capture.
 6. **Normalize into the manifest**
-5. **Normalize into the manifest**
+   Ranger merges collector payloads, validates the manifest schema, and optionally compares the result with a baseline manifest for drift.
 7. **Persist artifacts**
-6. **Persist artifacts**
+   The package includes `audit-manifest.json`, `package-index.json`, `run-status.json`, and any rendered outputs.
 8. **Render outputs**
-   Reports, Office-format deliverables, diagrams, and package exports consume the saved manifest rather than live targets.
-   Reports, diagrams, and package exports consume the saved manifest rather than live targets.
+   Reports, Office-format deliverables, diagrams, drift analysis, and package exports consume the saved manifest rather than live targets.
 
 ## Current-State and As-Built Modes
 

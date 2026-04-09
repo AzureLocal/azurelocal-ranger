@@ -1,3 +1,158 @@
+function Get-RangerCollectorPropertyValue {
+    param(
+        $InputObject,
+
+        [string[]]$CandidateNames
+    )
+
+    if ($null -eq $InputObject) {
+        return $null
+    }
+
+    foreach ($name in @($CandidateNames | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })) {
+        if ($InputObject -is [System.Collections.IDictionary] -and $InputObject.Contains($name)) {
+            return $InputObject[$name]
+        }
+
+        $property = $InputObject.PSObject.Properties[$name]
+        if ($property) {
+            return $property.Value
+        }
+    }
+
+    return $null
+}
+
+function Test-RangerIpAddressString {
+    param(
+        [string]$Value
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        return $false
+    }
+
+    $parsed = $null
+    return [System.Net.IPAddress]::TryParse($Value, [ref]$parsed)
+}
+
+function Get-RangerArcNetworkProfileAddresses {
+    param(
+        $NetworkProfile
+    )
+
+    if ($null -eq $NetworkProfile) {
+        return @()
+    }
+
+    $interfaceSets = @()
+    foreach ($candidateName in @('networkInterfaces', 'NetworkInterfaces', 'networkInterface', 'NetworkInterface', 'interfaces', 'Interfaces')) {
+        $candidateValue = Get-RangerCollectorPropertyValue -InputObject $NetworkProfile -CandidateNames @($candidateName)
+        if ($null -ne $candidateValue) {
+            $interfaceSets = @($candidateValue)
+            break
+        }
+    }
+
+    if (@($interfaceSets).Count -eq 0 -and $NetworkProfile -is [System.Collections.IEnumerable] -and $NetworkProfile -isnot [string]) {
+        $interfaceSets = @($NetworkProfile)
+    }
+
+    $ipAddresses = New-Object System.Collections.ArrayList
+    foreach ($networkInterface in @($interfaceSets)) {
+        foreach ($addressProperty in @('ipAddresses', 'IPAddresses', 'ipv4Addresses', 'IPv4Addresses', 'ipv6Addresses', 'IPv6Addresses', 'addresses', 'Addresses')) {
+            $rawValues = Get-RangerCollectorPropertyValue -InputObject $networkInterface -CandidateNames @($addressProperty)
+            foreach ($value in @($rawValues)) {
+                if ($value -is [string]) {
+                    if (Test-RangerIpAddressString -Value $value) {
+                        [void]$ipAddresses.Add($value)
+                    }
+                    continue
+                }
+
+                $candidateIp = Get-RangerCollectorPropertyValue -InputObject $value -CandidateNames @('address', 'ipAddress', 'IPAddress', 'privateIpAddress', 'privateIPAddress')
+                if (Test-RangerIpAddressString -Value ([string]$candidateIp)) {
+                    [void]$ipAddresses.Add([string]$candidateIp)
+                }
+            }
+        }
+    }
+
+    return @($ipAddresses | Where-Object { Test-RangerIpAddressString -Value ([string]$_) } | Select-Object -Unique)
+}
+
+function Get-RangerVmHyperVIpAddresses {
+    param(
+        $VirtualMachine
+    )
+
+    $ipAddresses = New-Object System.Collections.ArrayList
+    foreach ($nic in @(Get-RangerCollectorPropertyValue -InputObject $VirtualMachine -CandidateNames @('nicDetail'))) {
+        foreach ($value in @(Get-RangerCollectorPropertyValue -InputObject $nic -CandidateNames @('ipAddresses', 'IPAddresses'))) {
+            if (Test-RangerIpAddressString -Value ([string]$value)) {
+                [void]$ipAddresses.Add([string]$value)
+            }
+        }
+    }
+
+    return @($ipAddresses | Select-Object -Unique)
+}
+
+function Resolve-RangerEsuOsEligibility {
+    param(
+        [string]$OsName,
+
+        [string]$OsVersion
+    )
+
+    $normalizedName = if ($OsName) { $OsName.ToLowerInvariant() } else { '' }
+    $normalizedVersion = if ($OsVersion) { $OsVersion.ToLowerInvariant() } else { '' }
+    $detectedOs = $null
+    $isEligible = $false
+
+    if ($normalizedName -match '2012\s*r2') {
+        $detectedOs = 'Windows Server 2012 R2'
+        $isEligible = $true
+    }
+    elseif ($normalizedName -match '2012') {
+        $detectedOs = 'Windows Server 2012'
+        $isEligible = $true
+    }
+    elseif ($normalizedName -match '2016') {
+        $detectedOs = 'Windows Server 2016'
+        $isEligible = $true
+    }
+    elseif ($normalizedName -match '2019') {
+        $detectedOs = 'Windows Server 2019'
+        $isEligible = $true
+    }
+    elseif ($normalizedVersion -match '^6\.2') {
+        $detectedOs = 'Windows Server 2012'
+        $isEligible = $true
+    }
+    elseif ($normalizedVersion -match '^6\.3') {
+        $detectedOs = 'Windows Server 2012 R2'
+        $isEligible = $true
+    }
+    elseif ($normalizedVersion -match '^10\.0\.14393') {
+        $detectedOs = 'Windows Server 2016'
+        $isEligible = $true
+    }
+    elseif ($normalizedVersion -match '^10\.0\.17763') {
+        $detectedOs = 'Windows Server 2019'
+        $isEligible = $true
+    }
+    elseif ($normalizedName -match '2022' -or $normalizedVersion -match '^10\.0\.20348') {
+        $detectedOs = 'Windows Server 2022'
+        $isEligible = $false
+    }
+
+    [ordered]@{
+        detectedOs = $detectedOs
+        isEligible = $isEligible
+    }
+}
+
 function Invoke-RangerWorkloadIdentityAzureCollector {
     param(
         [Parameter(Mandatory = $true)]
@@ -575,7 +730,74 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
             Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if (-not (Get-Command -Name Get-AzConnectedMachine -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
-                @(Get-AzConnectedMachine -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue | Select-Object Name, Status, AgentVersion, OsName, OsVersion, Location, LastStatusChange, ProvisioningState)
+                @(Get-AzConnectedMachine -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue | ForEach-Object {
+                    $machine = $_
+                    $networkProfile = Get-RangerCollectorPropertyValue -InputObject $machine -CandidateNames @('NetworkProfile', 'networkProfile')
+                    [ordered]@{
+                        Name               = $machine.Name
+                        Status             = $machine.Status
+                        AgentVersion       = $machine.AgentVersion
+                        OsName             = $machine.OsName
+                        OsVersion          = $machine.OsVersion
+                        Location           = $machine.Location
+                        LastStatusChange   = $machine.LastStatusChange
+                        ProvisioningState  = $machine.ProvisioningState
+                        ResourceId         = if ($machine.Id) { $machine.Id } else { $machine.ResourceId }
+                        NetworkProfile     = ConvertTo-RangerHashtable -InputObject $networkProfile
+                        NetworkIpAddresses = @(Get-RangerArcNetworkProfileAddresses -NetworkProfile $networkProfile)
+                    }
+                })
+            }
+        }
+    )
+
+    $arcEsuProfiles = @(
+        Invoke-RangerSafeAction -Label 'Arc ESU license profile' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+                param($SubscriptionId, $ResourceGroup)
+
+                if (-not (Get-Command -Name Get-AzConnectedMachine -ErrorAction SilentlyContinue) -or
+                    -not (Get-Command -Name Get-AzResource -ErrorAction SilentlyContinue) -or
+                    [string]::IsNullOrWhiteSpace($ResourceGroup)) {
+                    return @()
+                }
+
+                $profileResults = New-Object System.Collections.ArrayList
+                foreach ($machine in @(Get-AzConnectedMachine -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue)) {
+                    $machineResourceId = if ($machine.Id) { $machine.Id } else { $machine.ResourceId }
+                    if ([string]::IsNullOrWhiteSpace($machineResourceId)) {
+                        continue
+                    }
+
+                    $queryStatus = 'not-found'
+                    $queryMessage = $null
+                    $assignedLicense = $null
+                    $esuEligibility = $null
+
+                    try {
+                        $licenseProfile = Get-AzResource -ResourceId "$machineResourceId/licenseProfiles/default" -ExpandProperties -ErrorAction Stop
+                        $licenseProps = Get-RangerCollectorPropertyValue -InputObject $licenseProfile -CandidateNames @('Properties', 'properties')
+                        $esuProfile = Get-RangerCollectorPropertyValue -InputObject $licenseProps -CandidateNames @('esuProfile', 'EsuProfile')
+                        $assignedLicense = Get-RangerCollectorPropertyValue -InputObject $esuProfile -CandidateNames @('assignedLicense', 'AssignedLicense')
+                        $esuEligibility = Get-RangerCollectorPropertyValue -InputObject $esuProfile -CandidateNames @('esuEligibility', 'EsuEligibility')
+                        $queryStatus = 'success'
+                    }
+                    catch {
+                        $queryStatus = 'unavailable'
+                        $queryMessage = $_.Exception.Message
+                    }
+
+                    [void]$profileResults.Add([ordered]@{
+                        name            = $machine.Name
+                        resourceId      = $machineResourceId
+                        queryStatus     = $queryStatus
+                        queryMessage    = $queryMessage
+                        assignedLicense = $assignedLicense
+                        esuEligibility  = $esuEligibility
+                    })
+                }
+
+                @($profileResults)
             }
         }
     )
@@ -716,17 +938,93 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
     )
 
     # Issue #63: Correlate Arc Connected Machines to local VM inventory by name
+    $arcEsuProfileByName = @{}
+    foreach ($profile in @($arcEsuProfiles)) {
+        $profileName = [string](Get-RangerCollectorPropertyValue -InputObject $profile -CandidateNames @('name', 'Name'))
+        if (-not [string]::IsNullOrWhiteSpace($profileName)) {
+            $arcEsuProfileByName[$profileName.ToUpperInvariant()] = $profile
+        }
+    }
+
     $vmInventory = @($vmInventory | ForEach-Object {
         $vm = $_
         $arcMatch = $arcMachineDetail | Where-Object { $_.Name -eq $vm.name } | Select-Object -First 1
         if (-not $arcMatch) { $arcMatch = $arcMachines | Where-Object { $_.Name -eq $vm.name } | Select-Object -First 1 }
+        $hyperVIpAddresses = @(Get-RangerVmHyperVIpAddresses -VirtualMachine $vm)
+        $arcNetworkProfile = if ($arcMatch) { Get-RangerCollectorPropertyValue -InputObject $arcMatch -CandidateNames @('NetworkProfile', 'networkProfile') } else { $null }
+        $arcIpAddresses = if ($arcMatch) {
+            $networkIpAddresses = @(Get-RangerCollectorPropertyValue -InputObject $arcMatch -CandidateNames @('NetworkIpAddresses', 'networkIpAddresses'))
+            if (@($networkIpAddresses).Count -gt 0) {
+                @($networkIpAddresses | Where-Object { Test-RangerIpAddressString -Value ([string]$_) } | Select-Object -Unique)
+            }
+            else {
+                @(Get-RangerArcNetworkProfileAddresses -NetworkProfile $arcNetworkProfile)
+            }
+        } else { @() }
+        $effectiveIpAddresses = if (@($hyperVIpAddresses).Count -gt 0) { $hyperVIpAddresses } else { $arcIpAddresses }
         $vm['arcAgentInstalled']    = $null -ne $arcMatch
         $vm['arcAgentVersion']      = if ($arcMatch) { $arcMatch.AgentVersion } else { $null }
         $vm['arcLastHeartbeat']     = if ($arcMatch) { $arcMatch.LastStatusChange } else { $null }
         $vm['arcProvisioningState'] = if ($arcMatch) { $arcMatch.ProvisioningState } else { $null }
         $vm['arcExtensions']        = @($arcExtensionsDetail | Where-Object { $_.machineName -eq $vm.name })
+        $vm['guestOsName']          = if ($arcMatch) { Get-RangerCollectorPropertyValue -InputObject $arcMatch -CandidateNames @('OsName', 'osName') } else { $null }
+        $vm['guestOsVersion']       = if ($arcMatch) { Get-RangerCollectorPropertyValue -InputObject $arcMatch -CandidateNames @('OsVersion', 'osVersion') } else { $null }
+        $vm['hypervIpAddresses']    = @($hyperVIpAddresses)
+        $vm['arcIpAddresses']       = @($arcIpAddresses)
+        $vm['effectiveIpAddresses'] = @($effectiveIpAddresses)
+        $vm['primaryIpAddress']     = if (@($effectiveIpAddresses).Count -gt 0) { @($effectiveIpAddresses)[0] } else { $null }
+        $vm['ipAddressSource']      = if (@($hyperVIpAddresses).Count -gt 0) { 'hyper-v-data-exchange' } elseif (@($arcIpAddresses).Count -gt 0) { 'arc-network-profile' } else { 'not-collected' }
+        $vm['arcIpFallbackUsed']    = (@($hyperVIpAddresses).Count -eq 0 -and @($arcIpAddresses).Count -gt 0)
         $vm
     })
+
+    $esuInventory = New-Object System.Collections.ArrayList
+    $esuApiUnavailable = $false
+    foreach ($vm in @($vmInventory)) {
+        if (-not [bool]$vm.arcAgentInstalled) {
+            continue
+        }
+
+        $esuEligibility = Resolve-RangerEsuOsEligibility -OsName ([string]$vm.guestOsName) -OsVersion ([string]$vm.guestOsVersion)
+        $profile = if (-not [string]::IsNullOrWhiteSpace([string]$vm.name) -and $arcEsuProfileByName.ContainsKey(([string]$vm.name).ToUpperInvariant())) {
+            $arcEsuProfileByName[([string]$vm.name).ToUpperInvariant()]
+        } else { $null }
+        $assignedLicense = Get-RangerCollectorPropertyValue -InputObject $profile -CandidateNames @('assignedLicense', 'AssignedLicense')
+        $profileEligibility = Get-RangerCollectorPropertyValue -InputObject $profile -CandidateNames @('esuEligibility', 'EsuEligibility')
+        $queryStatus = [string](Get-RangerCollectorPropertyValue -InputObject $profile -CandidateNames @('queryStatus', 'QueryStatus'))
+        $queryMessage = [string](Get-RangerCollectorPropertyValue -InputObject $profile -CandidateNames @('queryMessage', 'QueryMessage'))
+
+        if ($queryStatus -eq 'unavailable') {
+            $esuApiUnavailable = $true
+        }
+
+        $finalEligibility = if (-not [string]::IsNullOrWhiteSpace($profileEligibility)) { $profileEligibility } elseif ($esuEligibility.isEligible) { 'Eligible' } elseif ($esuEligibility.detectedOs) { 'Ineligible' } else { 'Unknown' }
+        $enrollmentStatus = if ($queryStatus -eq 'unavailable') {
+            'not-collected'
+        }
+        elseif ($assignedLicense) {
+            'enrolled'
+        }
+        elseif ($esuEligibility.isEligible) {
+            'not-enrolled'
+        }
+        else {
+            'ineligible'
+        }
+
+        [void]$esuInventory.Add([ordered]@{
+            name                = $vm.name
+            osName              = $vm.guestOsName
+            osVersion           = $vm.guestOsVersion
+            detectedOs          = $esuEligibility.detectedOs
+            arcEnrollmentStatus = if ($vm.arcAgentInstalled) { 'enrolled' } else { 'not-enrolled' }
+            esuEligibility      = $finalEligibility
+            esuProfileStatus    = $enrollmentStatus
+            assignedLicenseId   = $assignedLicense
+            queryStatus         = if ([string]::IsNullOrWhiteSpace($queryStatus)) { 'not-found' } else { $queryStatus }
+            queryMessage        = $queryMessage
+        })
+    }
 
     $resourceSummary = [ordered]@{
         totalResources  = @($azureResources).Count
@@ -767,6 +1065,7 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
         avgVmsPerNode          = if (@($vmInventory).Count -gt 0) { [math]::Round(@($vmInventory).Count / [math]::Max(1, @($vmInventory | ForEach-Object { $_['hostNode'] } | Select-Object -Unique).Count), 1) } else { 0 }
         highestDensityNode     = ($vmInventory | Group-Object -Property { $_['hostNode'] } | Sort-Object Count -Descending | Select-Object -First 1).Name
         arcConnectedVms        = @($vmInventory | Where-Object { $_.arcAgentInstalled -eq $true }).Count
+        vmsUsingArcIpFallback  = @($vmInventory | Where-Object { $_.arcIpFallbackUsed -eq $true }).Count
     }
 
     $identitySummary = [ordered]@{
@@ -859,6 +1158,19 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
         [void]$findings.Add((New-RangerFinding -Severity warning -Title 'Azure Policy non-compliant resources detected' -Description "Policy compliance assessment returned non-compliant resources in the scoped resource group." -CurrentState "$($identitySnapshots.Count) non-compliant policy states found" -Recommendation 'Review non-compliant policy assignments and resolve policy drift before handoff.'))
     }
 
+    foreach ($esuItem in @($esuInventory)) {
+        if ($esuItem.esuProfileStatus -eq 'not-enrolled') {
+            [void]$findings.Add((New-RangerFinding -Severity warning -Title "Eligible VM is not enrolled in Arc ESU: $($esuItem.name)" -Description 'This Arc-connected VM is running an ESU-eligible Windows Server release, but Ranger did not find an assigned ESU license profile.' -CurrentState "$($esuItem.detectedOs) detected; Arc connected; ESU status = not-enrolled" -Recommendation 'Review the Arc machine license profile and enroll the VM in the free ESU benefit where appropriate.'))
+        }
+        elseif ($esuItem.esuProfileStatus -eq 'enrolled') {
+            [void]$findings.Add((New-RangerFinding -Severity informational -Title "Eligible VM is enrolled in Arc ESU: $($esuItem.name)" -Description 'This Arc-connected VM is running an ESU-eligible Windows Server release and an assigned ESU license profile was detected.' -CurrentState "$($esuItem.detectedOs) detected; Arc connected; ESU status = enrolled" -Recommendation 'Retain this ESU enrollment as part of cost and patch lifecycle reviews.'))
+        }
+    }
+
+    if ($esuApiUnavailable) {
+        [void]$findings.Add((New-RangerFinding -Severity informational -Title 'Arc ESU license profile data could not be collected for one or more machines' -Description 'Ranger attempted to query the Arc machine license profile endpoint, but one or more requests failed. ESU enrollment data is therefore incomplete.' -CurrentState 'ESU profile query status = unavailable for at least one Arc machine' -Recommendation 'Verify Microsoft.HybridCompute license profile API access and reader permissions, then rerun Ranger to complete the ESU assessment.'))
+    }
+
     return @{
         Status        = if ($findings.Count -gt 0) { 'partial' } else { 'success' }
         Domains       = @{
@@ -871,7 +1183,7 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                 guestClusters    = ConvertTo-RangerHashtable -InputObject @($vmInventory | Where-Object { $_.guestClusterCandidate } | ForEach-Object { [ordered]@{ vm = $_.name; hostNode = $_.hostNode } })
                 vmImages         = ConvertTo-RangerHashtable -InputObject $vmImages
                 isoImages        = ConvertTo-RangerHashtable -InputObject $isoImages
-                arcCorrelation   = ConvertTo-RangerHashtable -InputObject @($vmInventory | ForEach-Object { [ordered]@{ vm = $_.name; arcAgentInstalled = $_.arcAgentInstalled; arcAgentVersion = $_.arcAgentVersion; arcProvisioningState = $_.arcProvisioningState } })
+                arcCorrelation   = ConvertTo-RangerHashtable -InputObject @($vmInventory | ForEach-Object { [ordered]@{ vm = $_.name; arcAgentInstalled = $_.arcAgentInstalled; arcAgentVersion = $_.arcAgentVersion; arcProvisioningState = $_.arcProvisioningState; guestOsName = $_.guestOsName; guestOsVersion = $_.guestOsVersion; ipAddressSource = $_.ipAddressSource; primaryIpAddress = $_.primaryIpAddress; effectiveIpAddresses = @($_.effectiveIpAddresses) } })
                 summary          = $vmSummary
             }
             identitySecurity = [ordered]@{
@@ -918,6 +1230,15 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                 vmManagementResources = ConvertTo-RangerHashtable -InputObject $vmManagementResources
                 arcDataServices     = ConvertTo-RangerHashtable -InputObject $arcDataServices
                 iotOperations       = ConvertTo-RangerHashtable -InputObject $iotOperations
+                costAnalysis        = [ordered]@{
+                    esuInventory = ConvertTo-RangerHashtable -InputObject $esuInventory
+                    summary      = [ordered]@{
+                        eligibleVmCount    = @($esuInventory | Where-Object { $_.esuEligibility -eq 'Eligible' }).Count
+                        enrolledVmCount    = @($esuInventory | Where-Object { $_.esuProfileStatus -eq 'enrolled' }).Count
+                        notEnrolledVmCount = @($esuInventory | Where-Object { $_.esuProfileStatus -eq 'not-enrolled' }).Count
+                        ineligibleVmCount  = @($esuInventory | Where-Object { $_.esuProfileStatus -eq 'ineligible' }).Count
+                    }
+                }
                 resourceSummary     = $resourceSummary
                 resourceLocations   = ConvertTo-RangerHashtable -InputObject $resourceSummary.byLocation
                 policySummary       = [ordered]@{

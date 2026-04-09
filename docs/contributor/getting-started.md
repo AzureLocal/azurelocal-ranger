@@ -12,6 +12,7 @@ This repository contains the implemented v1 module, the public documentation sit
 - read the operator pages if your change affects how Ranger will be run
 - read the [Roadmap](../project/roadmap.md) before proposing structural or scope changes
 - review the grouped discovery-domain and output docs only after the core architecture story is clear
+- keep the [technical runtime flow diagram](../architecture/how-ranger-works.md) open while reading `Modules/Core/20-Runtime.ps1` and the collector files
 
 ## Contribution Focus Right Now
 

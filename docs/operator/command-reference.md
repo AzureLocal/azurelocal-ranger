@@ -21,12 +21,37 @@ Parameter  ->  Config file  ->  Interactive prompt  ->  Default  ->  Error
 | `-DomainCredential` | `PSCredential` | No | Override `credentials.domain` |
 | `-BmcCredential` | `PSCredential` | No | Override `credentials.bmc` |
 | `-NoRender` | `switch` | No | Collect only and skip report generation |
+| `-Unattended` | `switch` | No | Disable interactive prompts and return a non-zero process exit when collectors fail |
+| `-BaselineManifestPath` | `string` | No | Compare the new run with a previous `audit-manifest.json` and emit `drift-report.json` |
 | `-ClusterFqdn` | `string` | No | Override `targets.cluster.fqdn` |
 | `-ClusterNodes` | `string[]` | No | Override `targets.cluster.nodes` |
 | `-EnvironmentName` | `string` | No | Override `environment.name` |
 | `-SubscriptionId` | `string` | No | Override `targets.azure.subscriptionId` |
 | `-TenantId` | `string` | No | Override `targets.azure.tenantId` |
 | `-ResourceGroup` | `string` | No | Override `targets.azure.resourceGroup` |
+
+## Scheduled Runs
+
+Use `-Unattended` for Task Scheduler, GitHub Actions, and other non-interactive runners.
+
+Recommended pattern:
+
+- store Azure secrets in Key Vault and reference them through `keyvault://<vault>/<secret>`
+- use a service principal, managed identity, or existing Az context for Azure authentication
+- keep cluster, domain, and BMC credentials pre-resolved in config or injected by the scheduler
+- set `-OutputPath` to a central share or artifact folder when multiple runs must be retained
+
+Example:
+
+```powershell
+Invoke-AzureLocalRanger \
+	-ConfigPath .\ranger.yml \
+	-Unattended \
+	-OutputPath \\fileserver\AzureLocalRanger \
+	-BaselineManifestPath .\baseline\audit-manifest.json
+```
+
+Ranger writes `run-status.json` for scheduler monitoring and `manifest\drift-report.json` when a baseline manifest is supplied. Sample scheduler templates live under `samples/`.
 
 ## Data Domain Names
 

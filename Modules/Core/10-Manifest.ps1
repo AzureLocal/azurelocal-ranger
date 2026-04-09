@@ -17,10 +17,17 @@ function New-RangerManifest {
             startTimeUtc         = (Get-Date).ToUniversalTime().ToString('o')
             endTimeUtc           = $null
             mode                 = $Config.output.mode
+            unattended           = $false
             runner               = $env:COMPUTERNAME
             includeDomains       = @($Config.domains.include)
             excludeDomains       = @($Config.domains.exclude)
             selectedCollectors   = @($SelectedCollectors | ForEach-Object { $_.Id })
+            baselineManifestPath = $null
+            drift                = [ordered]@{
+                status        = 'not-requested'
+                summary       = [ordered]@{}
+                skippedReason = $null
+            }
             schemaValidation     = [ordered]@{ isValid = $null; errors = @(); warnings = @() }
         }
         target = [ordered]@{

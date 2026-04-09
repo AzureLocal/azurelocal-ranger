@@ -110,6 +110,98 @@ Describe 'Azure Local Ranger runtime' {
         $result.ManifestSchema.IsValid | Should -BeTrue
     }
 
+    It 'runs unattended without interactive prompts and writes run status metadata' {
+        $config = InModuleScope AzureLocalRanger {
+            Get-RangerDefaultConfig
+        }
+
+        $config.output.rootPath = Join-Path $TestDrive 'unattended-artifacts'
+        $config.behavior.promptForMissingCredentials = $true
+        $config.behavior.continueToRendering = $false
+        $config.credentials.cluster = $null
+        $config.credentials.domain = $null
+        $config.credentials.bmc = $null
+        $config.domains.hints.fixtures = [ordered]@{
+            'topology-cluster' = (Join-Path $fixtureRoot 'topology-cluster.json')
+            'hardware' = (Join-Path $fixtureRoot 'hardware.json')
+            'storage-networking' = (Join-Path $fixtureRoot 'storage-networking.json')
+            'workload-identity-azure' = (Join-Path $fixtureRoot 'workload-identity-azure.json')
+            'monitoring-observability' = (Join-Path $fixtureRoot 'monitoring-observability.json')
+            'management-performance' = (Join-Path $fixtureRoot 'management-performance.json')
+        }
+
+        InModuleScope AzureLocalRanger {
+            param($TestConfig, $OutputRoot)
+
+            Mock Invoke-RangerInteractiveInput { throw 'interactive input should not run in unattended mode' }
+            Mock Get-Credential { throw 'credential prompt should not run in unattended mode' }
+
+            $result = Invoke-AzureLocalRanger -ConfigObject $TestConfig -OutputPath $OutputRoot -NoRender -Unattended
+            $runStatus = Get-Content -Path (Join-Path $result.PackageRoot 'run-status.json') -Raw | ConvertFrom-Json -Depth 100
+
+            $result.Manifest.run.unattended | Should -BeTrue
+            $runStatus.unattended | Should -BeTrue
+            $runStatus.status | Should -Be 'success'
+
+            Assert-MockCalled Invoke-RangerInteractiveInput -Times 0 -Exactly
+            Assert-MockCalled Get-Credential -Times 0 -Exactly
+        } -Parameters @{ TestConfig = $config; OutputRoot = (Join-Path $TestDrive 'unattended-output') }
+    }
+
+    It 'writes a drift report and renders a drift section when a baseline manifest is supplied' {
+        $baselineConfig = InModuleScope AzureLocalRanger {
+            Get-RangerDefaultConfig
+        }
+
+        $baselineConfig.output.rootPath = Join-Path $TestDrive 'baseline-artifacts'
+        $baselineConfig.behavior.promptForMissingCredentials = $false
+        $baselineConfig.behavior.continueToRendering = $false
+        $baselineConfig.credentials.cluster = $null
+        $baselineConfig.credentials.domain = $null
+        $baselineConfig.credentials.bmc = $null
+        $baselineConfig.domains.hints.fixtures = [ordered]@{
+            'topology-cluster' = (Join-Path $fixtureRoot 'topology-cluster.json')
+            'hardware' = (Join-Path $fixtureRoot 'hardware.json')
+            'storage-networking' = (Join-Path $fixtureRoot 'storage-networking.json')
+            'workload-identity-azure' = (Join-Path $fixtureRoot 'workload-identity-azure.json')
+            'monitoring-observability' = (Join-Path $fixtureRoot 'monitoring-observability.json')
+            'management-performance' = (Join-Path $fixtureRoot 'management-performance.json')
+        }
+
+        $baselineResult = Invoke-AzureLocalRanger -ConfigObject $baselineConfig -OutputPath (Join-Path $TestDrive 'baseline-output') -NoRender
+
+        $driftConfig = InModuleScope AzureLocalRanger {
+            Get-RangerDefaultConfig
+        }
+
+        $driftConfig.output.rootPath = Join-Path $TestDrive 'drift-artifacts'
+        $driftConfig.output.formats = @('html')
+        $driftConfig.behavior.promptForMissingCredentials = $false
+        $driftConfig.behavior.continueToRendering = $true
+        $driftConfig.credentials.cluster = $null
+        $driftConfig.credentials.domain = $null
+        $driftConfig.credentials.bmc = $null
+        $driftConfig.domains.hints.fixtures = [ordered]@{
+            'topology-cluster' = (Join-Path $fixtureRoot 'topology-cluster.json')
+            'hardware' = (Join-Path $fixtureRoot 'hardware.json')
+            'storage-networking' = (Join-Path $fixtureRoot 'storage-networking-degraded.json')
+            'workload-identity-azure' = (Join-Path $fixtureRoot 'workload-identity-azure.json')
+            'monitoring-observability' = (Join-Path $fixtureRoot 'monitoring-observability.json')
+            'management-performance' = (Join-Path $fixtureRoot 'management-performance.json')
+        }
+
+        $driftResult = Invoke-AzureLocalRanger -ConfigObject $driftConfig -OutputPath (Join-Path $TestDrive 'drift-output') -BaselineManifestPath $baselineResult.ManifestPath
+        $driftReport = Get-Content -Path (Join-Path $driftResult.PackageRoot 'manifest\drift-report.json') -Raw | ConvertFrom-Json -Depth 100
+        $technicalHtml = Get-ChildItem -Path (Join-Path $driftResult.PackageRoot 'reports') -Filter '*Technical-Deep-Dive.html' | Select-Object -First 1
+        $technicalHtmlContent = Get-Content -Path $technicalHtml.FullName -Raw
+
+        $driftResult.Manifest.run.drift.status | Should -Be 'generated'
+        $driftReport.status | Should -Be 'generated'
+        $driftReport.summary.totalChanges | Should -BeGreaterThan 0
+        $technicalHtmlContent | Should -Match 'Drift Analysis'
+        $technicalHtmlContent | Should -Match 'Total detected changes'
+    }
+
     It 'caches failed WinRM preflight results and avoids repeated probes' -Skip:(-not $IsWindows) {
         InModuleScope AzureLocalRanger {
             $script:RangerWinRmProbeCache = @{}

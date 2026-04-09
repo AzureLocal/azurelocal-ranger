@@ -295,7 +295,8 @@ function New-RangerReportPayload {
             "AKS clusters: $(@($Manifest.domains.azureIntegration.aksClusters).Count)",
             "Arc-connected machines: $(@($Manifest.domains.azureIntegration.arcMachineDetail).Count)",
             "Update compliance: $(if ($Manifest.domains.azureIntegration.summary.updateCount -gt 0) { "$($Manifest.domains.azureIntegration.summary.updateCount) update resource(s) tracked" } else { 'No update resources tracked' })",
-            "Licensing: $(if ($Manifest.domains.azureIntegration.costLicensing.subscriptionName) { $Manifest.domains.azureIntegration.costLicensing.subscriptionName } else { 'Not collected' })"
+            "Licensing: $(if ($Manifest.domains.azureIntegration.costLicensing.subscriptionName) { $Manifest.domains.azureIntegration.costLicensing.subscriptionName } else { 'Not collected' })",
+            "VMs using Arc IP fallback: $(if ($Manifest.domains.virtualMachines.summary.vmsUsingArcIpFallback -ge 0) { $Manifest.domains.virtualMachines.summary.vmsUsingArcIpFallback } else { 'Not collected' })"
         )
     })
 
@@ -305,14 +306,20 @@ function New-RangerReportPayload {
         body    = @(
             "Storage total raw: $([math]::Round($summary.StorageTotalRawGiB / 1024, 2)) TiB",
             "Storage total usable: $([math]::Round($summary.StorageTotalUsableGiB / 1024, 2)) TiB",
-            "Storage utilization: $($summary.StorageUtilizationPct)% of usable capacity allocated",
+            "Storage used by workloads: $([math]::Round($summary.StorageUsedUsableGiB / 1024, 2)) TiB ($($summary.StorageUtilizationPct)% of usable)",
+            "Storage reserve target: $([math]::Round($summary.StorageReserveTargetGiB / 1024, 2)) TiB ($($summary.StorageReservePercent)% of usable)",
+            "Storage free usable: $([math]::Round($summary.StorageFreeUsableGiB / 1024, 2)) TiB",
+            "Projected safe allocatable: $([math]::Round($summary.StorageSafeAllocatableGiB / 1024, 2)) TiB",
+            "Thin provisioning ratio: $(if ($null -ne $summary.StorageThinProvisioningRatio) { "$($summary.StorageThinProvisioningRatio)x" } else { 'Not computed' })",
             "vCPU:pCPU overcommit ratio: $(if ($summary.VcpuOvercommitRatio) { $summary.VcpuOvercommitRatio } else { 'Not computed' })",
             "Memory overcommit ratio: $(if ($summary.MemoryOvercommitRatio) { $summary.MemoryOvercommitRatio } else { 'Not computed' })",
             "Average VMs per node: $(if ($summary.AvgVmsPerNode) { $summary.AvgVmsPerNode } else { 'N/A' })"
         )
         _visualStats = [ordered]@{
             bars = @(
-                [ordered]@{ label = 'Storage utilization'; percent = $summary.StorageUtilizationPct }
+                [ordered]@{ label = 'Storage used'; percent = $summary.StorageUtilizationPct }
+                [ordered]@{ label = 'Storage reserve target'; percent = $summary.StorageReservePercent }
+                [ordered]@{ label = 'Safe allocatable headroom'; percent = $summary.StorageSafePercent }
             )
         }
     })
@@ -341,10 +348,43 @@ function New-RangerReportPayload {
                 "vCPU:pCPU overcommit ratio: $(if ($summary.VcpuOvercommitRatio) { $summary.VcpuOvercommitRatio } else { 'Not computed' })",
                 "Memory overcommit ratio: $(if ($summary.MemoryOvercommitRatio) { $summary.MemoryOvercommitRatio } else { 'Not computed' })",
                 "Arc-connected VMs: $($Manifest.domains.virtualMachines.summary.arcConnectedVms)",
+                "VMs using Arc IP fallback: $($Manifest.domains.virtualMachines.summary.vmsUsingArcIpFallback)",
                 "Avg CPU utilization (all nodes): $($Manifest.domains.performance.summary.averageCpuUtilizationPercent)%",
                 "Avg available memory (all nodes): $([math]::Round([double]$Manifest.domains.performance.summary.averageAvailableMemoryMb / 1024, 1)) GiB"
             )
         })
+
+        $poolAnalysis = @($Manifest.domains.storage.poolAnalysis)
+        if ($poolAnalysis.Count -gt 0) {
+            [void]$sections.Add([ordered]@{
+                heading = 'Storage Capacity Analysis'
+                body    = @(
+                    "Pool posture counts: $((@($Manifest.domains.storage.summary.poolPostureCounts | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', '))",
+                    "Recommended reserve total: $([math]::Round($summary.StorageReserveTargetGiB, 0)) GiB",
+                    "Free usable total: $([math]::Round($summary.StorageFreeUsableGiB, 0)) GiB",
+                    "Projected safe allocatable total: $([math]::Round($summary.StorageSafeAllocatableGiB, 0)) GiB",
+                    @($poolAnalysis | ForEach-Object {
+                        "- $($_.friendlyName): raw=$([math]::Round([double]$_.rawCapacityGiB, 0)) GiB, usable=$([math]::Round([double]$_.usableCapacityGiB, 0)) GiB, used=$([math]::Round([double]$_.usedUsableCapacityGiB, 0)) GiB, reserve=$([math]::Round([double]$_.recommendedReserveGiB, 0)) GiB, safe allocatable=$([math]::Round([double]$_.projectedSafeAllocatableCapacityGiB, 0)) GiB, posture=$($_.posture)"
+                    })
+                )
+            })
+        }
+
+        $esuInventory = @($Manifest.domains.azureIntegration.costAnalysis.esuInventory)
+        if ($esuInventory.Count -gt 0) {
+            [void]$sections.Add([ordered]@{
+                heading = 'ESU Enrollment'
+                body    = @(
+                    "Eligible Arc-connected VMs: $($Manifest.domains.azureIntegration.costAnalysis.summary.eligibleVmCount)",
+                    "Enrolled in ESU: $($Manifest.domains.azureIntegration.costAnalysis.summary.enrolledVmCount)",
+                    "Not enrolled in ESU: $($Manifest.domains.azureIntegration.costAnalysis.summary.notEnrolledVmCount)",
+                    "Ineligible: $($Manifest.domains.azureIntegration.costAnalysis.summary.ineligibleVmCount)",
+                    @($esuInventory | Select-Object -First 10 | ForEach-Object {
+                        "- $($_.name): $(if ($_.detectedOs) { $_.detectedOs } else { $_.osName }) | eligibility=$($_.esuEligibility) | profile=$($_.esuProfileStatus)"
+                    })
+                )
+            })
+        }
 
         # Issue #73: Coverage Assessment (management + technical)
         [void]$sections.Add([ordered]@{
@@ -392,6 +432,18 @@ function New-RangerReportPayload {
     }
 
     if ($Tier -eq 'technical') {
+        if ($Manifest.run.drift -and $Manifest.run.drift.status -ne 'not-requested') {
+            $driftDomainCounts = @($Manifest.run.drift.summary.domainCounts)
+            [void]$sections.Add([ordered]@{
+                heading = 'Drift Analysis'
+                body    = @(
+                    "Drift status: $($Manifest.run.drift.status)",
+                    $(if ($Manifest.run.drift.status -eq 'generated') { "Total detected changes: $($summary.DriftChangeCount)" } else { "Skip reason: $($Manifest.run.drift.skippedReason)" }),
+                    $(if ($driftDomainCounts.Count -gt 0) { @($driftDomainCounts | ForEach-Object { "- $($_.domain): total=$($_.total), added=$($_.added), removed=$($_.removed), changed=$($_.changed)" }) } else { '- No domain-level drift counts were recorded.' })
+                )
+            })
+        }
+
         [void]$sections.Add([ordered]@{
             heading = 'Domain Inventory'
             body    = @(
@@ -415,7 +467,8 @@ function New-RangerReportPayload {
                 "VM generations: $((@($Manifest.domains.virtualMachines.summary.byGeneration | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', '))",
                 "Azure resource types: $((@($Manifest.domains.azureIntegration.resourceSummary.byType | Select-Object -First 6 | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', '))",
                 "Monitoring summary: telemetry=$($Manifest.domains.monitoring.summary.telemetryCount), ama=$($Manifest.domains.monitoring.summary.amaCount), dcr=$($Manifest.domains.monitoring.summary.dcrCount)",
-                "Performance summary: avg CPU=$($Manifest.domains.performance.summary.averageCpuUtilizationPercent), avg available memory MB=$($Manifest.domains.performance.summary.averageAvailableMemoryMb)"
+                "Performance summary: avg CPU=$($Manifest.domains.performance.summary.averageCpuUtilizationPercent), avg available memory MB=$($Manifest.domains.performance.summary.averageAvailableMemoryMb)",
+                "ESU enrollment summary: eligible=$($Manifest.domains.azureIntegration.costAnalysis.summary.eligibleVmCount), enrolled=$($Manifest.domains.azureIntegration.costAnalysis.summary.enrolledVmCount), not enrolled=$($Manifest.domains.azureIntegration.costAnalysis.summary.notEnrolledVmCount)"
             )
         })
 
@@ -424,28 +477,13 @@ function New-RangerReportPayload {
             "Storage resiliency math (approximate — actual usable depends on pool resiliency settings):",
             "  Total raw capacity: $([math]::Round($summary.StorageTotalRawGiB, 0)) GiB ($([math]::Round($summary.StorageTotalRawGiB / 1024, 2)) TiB)",
             "  Total usable capacity (after resiliency): $([math]::Round($summary.StorageTotalUsableGiB, 0)) GiB ($([math]::Round($summary.StorageTotalUsableGiB / 1024, 2)) TiB)",
-            "  Overhead ratio: $(if ($summary.StorageTotalRawGiB -gt 0) { [math]::Round((1 - $summary.StorageTotalUsableGiB / $summary.StorageTotalRawGiB) * 100, 1) } else { 'N/A' })% consumed by resiliency"
+            "  Overhead ratio: $(if ($summary.StorageTotalRawGiB -gt 0) { [math]::Round((1 - $summary.StorageTotalUsableGiB / $summary.StorageTotalRawGiB) * 100, 1) } else { 'N/A' })% consumed by resiliency",
+            "  Recommended reserve target: $([math]::Round($summary.StorageReserveTargetGiB, 0)) GiB",
+            "  Projected safe allocatable capacity: $([math]::Round($summary.StorageSafeAllocatableGiB, 0)) GiB"
         )
-        foreach ($pool in @($Manifest.domains.storage.pools | Where-Object { $_ -ne $null })) {
-            # Use bracket notation: works for both Hashtable and OrderedDictionary regardless of
-            # whether pools was a single item or array in the manifest (in-memory or deserialized).
-            $rawGiB           = [double]($pool['sizeGiB'] ?? $pool['totalCapacityGiB'] ?? 0)
-            $resiliencyName   = [string]($pool['resiliencySettingName'] ?? $pool['resiliencyType'] ?? '')
-            $numCopies        = if ($pool['numberOfDataCopies']) { [int]$pool['numberOfDataCopies'] } else { 0 }
-            # Build human-readable label: Mirror (3-way), Mirror (2-way), Parity, etc.
-            $resiliencyDisplay = if (-not $resiliencyName) { 'unknown' }
-                                 elseif ($resiliencyName -ieq 'Mirror' -and $numCopies -gt 0) { "Mirror ($numCopies-way)" }
-                                 else { $resiliencyName }
-            # Efficiency: Mirror 3-way=33%, Mirror 2-way=50%, Parity~60%, Dual Parity~72%, Simple=100%
-            $approxPct = if (-not $resiliencyName)                           { 50 }
-                         elseif ($resiliencyName -ieq 'Mirror' -and $numCopies -ge 3) { 33 }
-                         elseif ($resiliencyName -ieq 'Mirror')              { 50 }
-                         elseif ($resiliencyName -ieq 'Parity')              { 60 }
-                         elseif ($resiliencyName -ieq 'DualParity')          { 72 }
-                         elseif ($resiliencyName -ieq 'Simple')              { 100 }
-                         else                                                 { 50 }
-            $approxUsableGiB = [math]::Round($rawGiB * $approxPct / 100, 0)
-            $storageMathLines += "  Pool '$($pool['friendlyName'])': $rawGiB GiB raw, resiliency=$resiliencyDisplay, ~$approxUsableGiB GiB usable (~$approxPct% efficiency)"
+        foreach ($analysis in @($Manifest.domains.storage.poolAnalysis | Where-Object { $_ -ne $null })) {
+            $storageMathLines += "  Pool '$($analysis['friendlyName'])': raw=$([math]::Round([double]$analysis['rawCapacityGiB'], 0)) GiB, usable=$([math]::Round([double]$analysis['usableCapacityGiB'], 0)) GiB, reserve=$([math]::Round([double]$analysis['recommendedReserveGiB'], 0)) GiB, free usable=$([math]::Round([double]$analysis['freeUsableCapacityGiB'], 0)) GiB, safe allocatable=$([math]::Round([double]$analysis['projectedSafeAllocatableCapacityGiB'], 0)) GiB, posture=$($analysis['posture'])"
+            $storageMathLines += "    Disk count=$($analysis['diskCount']); media=$((@($analysis['diskCountByMediaType'] | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', ')); assumptions=$($analysis['assumptions'])"
         }
         [void]$sections.Add([ordered]@{
             heading = 'Storage Pool Math'
@@ -540,7 +578,9 @@ function New-RangerReportPayload {
                 [ordered]@{ label = 'Monitoring Coverage'; color = if ($summary.MonitoringCoveragePercent -ge 100) { 'green' } elseif ($summary.MonitoringCoveragePercent -gt 0) { 'yellow' } else { 'gray' } }
             )
             capacityBars = @(
-                [ordered]@{ label = 'Storage utilization';  percent = $summary.StorageUtilizationPct }
+                [ordered]@{ label = 'Storage used';         percent = $summary.StorageUtilizationPct }
+                [ordered]@{ label = 'Storage reserve';      percent = $summary.StorageReservePercent }
+                [ordered]@{ label = 'Safe allocatable';     percent = $summary.StorageSafePercent }
                 [ordered]@{ label = 'Monitoring coverage';  percent = $summary.MonitoringCoveragePercent }
                 [ordered]@{ label = 'Backup coverage';      percent = $summary.BackupCoveragePercent }
             )
@@ -561,6 +601,7 @@ function Get-RangerManifestSummary {
     $vmSummary  = $Manifest.domains.virtualMachines.summary
     $storageSummary = $Manifest.domains.storage.summary
     $monitorSummary = $Manifest.domains.monitoring.summary
+    $driftSummary = $Manifest.run.drift
 
     # Issue #73: Monitoring coverage — use nodesWithAmaAgent (OS-level service count) not
     # amaCount (Azure extension records which includes many non-node resources).
@@ -572,10 +613,16 @@ function Get-RangerManifestSummary {
     $backupCoveragePct = if ($vmCount -gt 0) { [math]::Min(100, [math]::Round($backupItemCount / $vmCount * 100, 0)) } else { 0 }
 
     # Issue #73: Storage utilization
-    $storageTotalRaw    = if ($storageSummary -and $storageSummary.totalRawCapacityGiB)    { [double]$storageSummary.totalRawCapacityGiB }    else { 0 }
+    $storageTotalRaw    = if ($storageSummary -and $storageSummary.totalRawCapacityGiB) { [double]$storageSummary.totalRawCapacityGiB } else { 0 }
     $storageTotalUsable = if ($storageSummary -and $storageSummary.totalUsableCapacityGiB) { [double]$storageSummary.totalUsableCapacityGiB } else { 0 }
     $storageAllocated   = if ($storageSummary -and $storageSummary.totalAllocatedCapacityGiB) { [double]$storageSummary.totalAllocatedCapacityGiB } else { 0 }
-    $storageUtilPct     = if ($storageTotalUsable -gt 0) { [math]::Round($storageAllocated / $storageTotalUsable * 100, 1) } else { 0 }
+    $storageUsed        = if ($storageSummary -and $storageSummary.totalUsedUsableCapacityGiB) { [double]$storageSummary.totalUsedUsableCapacityGiB } else { $storageAllocated }
+    $storageFree        = if ($storageSummary -and $storageSummary.totalFreeUsableCapacityGiB) { [double]$storageSummary.totalFreeUsableCapacityGiB } else { [math]::Max($storageTotalUsable - $storageUsed, 0) }
+    $storageReserve     = if ($storageSummary -and $storageSummary.totalReserveTargetGiB) { [double]$storageSummary.totalReserveTargetGiB } else { 0 }
+    $storageSafeAlloc   = if ($storageSummary -and $storageSummary.totalSafeAllocatableCapacityGiB) { [double]$storageSummary.totalSafeAllocatableCapacityGiB } else { [math]::Max($storageFree - $storageReserve, 0) }
+    $storageUtilPct     = if ($storageTotalUsable -gt 0) { [math]::Round($storageUsed / $storageTotalUsable * 100, 1) } else { 0 }
+    $storageReservePct  = if ($storageTotalUsable -gt 0) { [math]::Round($storageReserve / $storageTotalUsable * 100, 1) } else { 0 }
+    $storageSafePct     = if ($storageTotalUsable -gt 0) { [math]::Round($storageSafeAlloc / $storageTotalUsable * 100, 1) } else { 0 }
 
     # Issue #73: Overall health color (red=any critical, yellow=>2 warnings, green=clean)
     $criticalCount  = @($Manifest.findings | Where-Object { $_.severity -eq 'critical' }).Count
@@ -619,7 +666,16 @@ function Get-RangerManifestSummary {
         # Issue #73: Storage capacity
         StorageTotalRawGiB        = $storageTotalRaw
         StorageTotalUsableGiB     = $storageTotalUsable
+        StorageUsedUsableGiB      = $storageUsed
+        StorageFreeUsableGiB      = $storageFree
+        StorageReserveTargetGiB   = $storageReserve
+        StorageSafeAllocatableGiB = $storageSafeAlloc
         StorageUtilizationPct     = $storageUtilPct
+        StorageReservePercent     = $storageReservePct
+        StorageSafePercent        = $storageSafePct
+        StorageThinProvisioningRatio = if ($storageSummary -and $null -ne $storageSummary.thinProvisioningRatio) { $storageSummary.thinProvisioningRatio } else { $null }
+        DriftStatus               = if ($driftSummary) { $driftSummary.status } else { 'not-requested' }
+        DriftChangeCount          = if ($driftSummary -and $driftSummary.summary -and $null -ne $driftSummary.summary.totalChanges) { [int]$driftSummary.summary.totalChanges } else { 0 }
         # Issue #73: Health status colors (for traffic lights)
         OverallHealthColor        = $overallColor
         AzureIntegrationColor     = $azureColor

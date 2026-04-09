@@ -75,6 +75,24 @@ Export-AzureLocalRangerReport \
 
 That reuses the saved manifest and does not reconnect to the cluster or Azure.
 
+## Step 7: Schedule an Unattended Run
+
+For recurring runs, use `-Unattended` so Ranger never prompts for input and emits a scheduler-friendly `run-status.json` file.
+
+```powershell
+Invoke-AzureLocalRanger \
+  -ConfigPath .\ranger.yml \
+  -Unattended \
+  -OutputPath \\fileserver\AzureLocalRanger \
+  -BaselineManifestPath .\baseline\audit-manifest.json
+```
+
+Recommended unattended credential posture:
+
+- Azure: service principal, managed identity, or pre-existing Az context
+- Secrets: `keyvault://` references instead of inline passwords
+- Scheduler templates: see `samples/task-scheduler-azurelocalranger.xml` and `samples/github-actions-scheduled-ranger.yml`
+
 ## Read Next
 
 - [Prerequisites](../prerequisites.md)

@@ -544,6 +544,8 @@ function Get-RangerExcelSheetDefinitions {
                 VcpuCount      = ConvertTo-RangerOfficeText -Value (Get-RangerObjectValue -InputObject $_ -CandidateNames @('processorCount', 'vcpuCount'))
                 MemoryStartup  = ConvertTo-RangerOfficeText -Value (Get-RangerObjectValue -InputObject $_ -CandidateNames @('memoryStartupGb', 'memoryStartupGiB', 'memoryStartupMb'))
                 Checkpoints    = ConvertTo-RangerOfficeText -Value (Get-RangerObjectValue -InputObject $_ -CandidateNames @('checkpointCount'))
+                GuestIp        = ConvertTo-RangerOfficeText -Value (Get-RangerObjectValue -InputObject $_ -CandidateNames @('primaryIpAddress'))
+                IpSource       = ConvertTo-RangerOfficeText -Value (Get-RangerObjectValue -InputObject $_ -CandidateNames @('ipAddressSource'))
                 WorkloadFamily = ConvertTo-RangerOfficeText -Value (Get-RangerObjectValue -InputObject $_ -CandidateNames @('workloadFamily'))
             }
         }
@@ -593,7 +595,7 @@ function Get-RangerExcelSheetDefinitions {
         [ordered]@{ Name = 'Nodes'; Columns = @('Node', 'State', 'Manufacturer', 'Model', 'Serial', 'CPU', 'MemoryGiB', 'OS'); Rows = $nodeRows }
         [ordered]@{ Name = 'Storage'; Columns = @('Disk', 'MediaType', 'HealthStatus', 'Operational', 'SizeGiB', 'Usage', 'Serial', 'Slot'); Rows = $storageRows }
         [ordered]@{ Name = 'Networking'; Columns = @('Node', 'Adapter', 'Status', 'LinkSpeedGbps', 'MacAddress', 'VirtualSwitch', 'RdmaEnabled', 'DriverVersion'); Rows = $networkRows }
-        [ordered]@{ Name = 'VirtualMachines'; Columns = @('VM', 'Host', 'State', 'Generation', 'VcpuCount', 'MemoryStartup', 'Checkpoints', 'WorkloadFamily'); Rows = $vmRows }
+        [ordered]@{ Name = 'VirtualMachines'; Columns = @('VM', 'Host', 'State', 'Generation', 'VcpuCount', 'MemoryStartup', 'Checkpoints', 'GuestIp', 'IpSource', 'WorkloadFamily'); Rows = $vmRows }
         [ordered]@{ Name = 'AzureResources'; Columns = @('Name', 'ResourceType', 'Location', 'ResourceGroup', 'Subscription', 'Id'); Rows = $azureRows }
         [ordered]@{ Name = 'Findings'; Columns = @('Severity', 'Title', 'Description', 'CurrentState', 'Recommendation', 'AffectedComponents'); Rows = $findingRows }
         [ordered]@{ Name = 'Collectors'; Columns = @('Collector', 'Status', 'TargetScope', 'DurationMs', 'Evidence'); Rows = $collectorRows }

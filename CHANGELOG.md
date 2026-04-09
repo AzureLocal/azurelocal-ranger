@@ -13,6 +13,10 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 - **Issue #36** — Offline network device config import via `domains.hints.networkDeviceConfigs` hints: Cisco NX-OS and IOS parser extracting VLANs, port-channels/LAGs, interfaces, and ACLs. New `switchConfig` and `firewallConfig` keys added to the `networking` manifest domain. New private module `Modules/Private/60-NetworkDeviceParser.ps1`. 7 new Pester tests in `tests/maproom/unit/NetworkDevice.Tests.ps1` including IIC NX-OS fixture at `tests/maproom/Fixtures/network-configs/switch-nxos-sample.txt`.
 - **Issue #38** — As-built mode now produces differentiated report content: Document Control block, Installation Register, and Sign-Off table injected into each tier report when `mode = as-built`. New `Modules/Outputs/Templates/10-AsBuilt.ps1` with three template section functions. `Modules/Outputs/Templates/` added to module load path in `AzureLocalRanger.psm1`. 2 new simulation tests covering as-built document control and sign-off content.
 - **Issue #37** — Full documentation audit: Manifest Sub-Domains tables added to all 8 domain pages that were missing them (`networking`, `cluster-and-node`, `storage`, `hardware`, `virtual-machines`, `management-tools`, `performance-baseline`, `oem-integration`). New contributor docs: `simulation-testing.md` (complete simulation framework guide, IIC canonical data standard, fixture regeneration), `template-authoring.md` (template system design, how to add new report sections). `contributor/getting-started.md` updated to remove deleted page references and reflect current implementation focus. MkDocs nav updated for new contributor pages.
+- **Issues #123 and #124** — Unattended and repeatable discovery runs: `Invoke-AzureLocalRanger` now supports `-Unattended` and `-BaselineManifestPath`, writes `run-status.json`, emits `manifest/drift-report.json`, and includes scheduler-ready samples for Task Scheduler and GitHub Actions.
+- **Issue #153** — Storage reserve and provisioning analysis: the storage collector now models raw, usable, used, free, reserve-target, and safe-allocatable capacity per pool, surfaces thin-provisioning exposure, and adds storage posture findings to the manifest and reports.
+- **Issues #132 and #134** — Arc-backed guest intelligence: VM inventory now falls back to Arc network-profile IP data when Hyper-V guest IPs are unavailable, and Azure integration inventory now tracks Arc ESU eligibility and enrollment state for supported Windows Server guests.
+- **Issues #118, #131, and #77** — Delivery guidance for the next phase: added the detailed technical runtime flow diagram, recorded the update-mode design, and completed the terminal TUI alternatives survey with `PwshSpectreConsole` selected as the preferred rich-terminal path.
 
 ### Fixed
 
@@ -26,7 +30,9 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 - `domains.hints.networkDeviceConfigs` added to `Get-RangerDefaultConfig` default hints structure
 - `networking` domain reserved template now includes `switchConfig` and `firewallConfig` keys
 - `networking` domain summary now includes `importedSwitchConfigCount` and `importedFirewallConfigCount` counts
-- Tests: 18 → 27 → 28 total (7 new network device tests + 2 new simulation tests; 1 additional regression test)
+- Report payloads now expose drift state, storage reserve headroom, safe allocatable capacity, Arc IP fallback usage, and Arc ESU enrollment summaries across HTML, Markdown, and Office exports.
+- Fixture-backed storage snapshots are normalized through the same storage analysis pipeline as live data so reserve and posture math stay consistent across real and simulated runs.
+- Tests: 18 → 27 → 28 → 41 total, including new runtime, drift detection, storage analysis, and workload/Azure collector coverage.
 
 ### Known Issues
 

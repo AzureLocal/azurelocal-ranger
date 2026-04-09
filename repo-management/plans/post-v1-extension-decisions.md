@@ -239,7 +239,7 @@ Implementation dependency:
 ## #76 Spectre.Console TUI Rendering
 
 Decision:
-Spectre.Console is the preferred library candidate for both scan progress display and interactive wizard prompts. The decision is pending the alternatives survey (#77).
+Spectre.Console is the selected library for both scan progress display and interactive wizard prompts. The alternatives survey in #77 confirms it is the best fit when used through the `PwshSpectreConsole` PowerShell wrapper.
 
 If the survey confirms Spectre.Console:
 
@@ -269,16 +269,57 @@ Explicit non-goals for this feature:
 ## #77 Terminal TUI Alternatives Survey
 
 Decision:
-This is a research task only. No code is written until the survey is complete and a library recommendation is recorded here.
+The survey is complete. Ranger should standardize on `PwshSpectreConsole` as the preferred rich terminal rendering layer, with plain `Host.UI` and `Write-Verbose` fallbacks for non-interactive or ANSI-limited sessions.
 
-Evaluation must cover at minimum:
+Survey scope covered these candidates:
 
 - PwshSpectreConsole (Spectre.Console wrapper)
 - Microsoft.PowerShell.ConsoleGuiTools (Out-ConsoleGridView, uses Terminal.Gui)
 - Sharprompt (prompt-only .NET library)
 - PSWriteColor (lightweight colour output)
 
-The evaluation matrix must score each candidate against:
-interactive prompts, progress display, table rendering, PS 7.2+ compatibility, cross-platform support, graceful degradation, maintenance health, PSGallery availability, license, and module weight.
+Evaluation criteria:
 
-The recommended library becomes the implementation target for #76. If no single library satisfies all criteria, the survey should identify a composition (e.g., Spectre.Console for progress + plain Host.UI for prompts).
+- interactive prompts
+- progress display
+- table rendering
+- PowerShell 7.2+ compatibility
+- cross-platform support
+- graceful degradation
+- maintenance health
+- PSGallery availability
+- license
+- module weight
+
+Evaluation matrix:
+
+| Candidate | Interactive prompts | Progress display | Table rendering | PS 7.2+ | Cross-platform | Graceful degradation | Maintenance health | PSGallery | License | Module weight | Verdict |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| `PwshSpectreConsole` | Strong | Strong | Strong | Strong | Strong | Medium | Strong | Strong | MIT-compatible | Medium | Best overall fit |
+| `ConsoleGuiTools` | Medium | Weak | Medium | Strong | Medium | Weak | Medium | Strong | MIT-compatible | Medium | Useful for list selection, not full Ranger flow |
+| `Sharprompt` | Strong | Weak | Weak | Medium | Medium | Medium | Medium | Weak | MIT-compatible | Light | Prompt-only helper, not enough by itself |
+| `PSWriteColor` | Weak | Weak | Medium | Strong | Medium | Strong | Strong | Strong | MIT-compatible | Light | Good fallback output, not a TUI foundation |
+
+Assessment notes:
+
+- `PwshSpectreConsole` is the only surveyed option that covers the full Ranger need set without dropping either prompts, live progress, or formatted tables.
+- `ConsoleGuiTools` is useful for grid-style selection, but it behaves more like a transient console application than a script-friendly run-and-exit rendering layer.
+- `Sharprompt` solves prompts only. Ranger would still need a separate progress and layout solution, which adds integration cost without improving the end result.
+- `PSWriteColor` is valuable as a lightweight fallback pattern, but it is not sufficient as the primary interactive layer.
+
+Recommendation:
+
+- Confirm `PwshSpectreConsole` as the implementation target for #76.
+- Keep all TUI calls behind Ranger-owned wrapper functions so the dependency stays isolated.
+- Use plain `Host.UI` prompts plus `Write-Verbose` and `Write-Host` output as the fallback path when ANSI, CI, or redirected output makes the rich path inappropriate.
+
+Implementation guardrails for #76 and #75:
+
+- Do not hard-require a rich terminal for collection success.
+- Detect non-interactive execution early and skip TUI features cleanly.
+- Treat queue-based status updates as the internal contract so future parallel collection does not depend on Spectre.Console threading behavior.
+
+Outcome:
+
+- #76 is confirmed rather than superseded.
+- No additional survey work is needed before implementation.

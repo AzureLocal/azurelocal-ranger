@@ -1,0 +1,44 @@
+name: Scheduled Azure Local Ranger
+
+on:
+  schedule:
+    - cron: '0 4 * * 0'
+  workflow_dispatch:
+
+jobs:
+  ranger:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install PowerShell dependencies
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module Az.Accounts -Scope CurrentUser -Force
+          Install-Module Az.Resources -Scope CurrentUser -Force
+
+      - name: Connect to Azure with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Run Azure Local Ranger
+        shell: pwsh
+        run: |
+          Import-Module ./AzureLocalRanger.psd1 -Force
+          Invoke-AzureLocalRanger `
+            -ConfigPath ./ranger.yml `
+            -OutputPath ./artifacts `
+            -BaselineManifestPath ./baseline/audit-manifest.json `
+            -Unattended `
+            -ErrorAction Stop
+
+      - name: Upload output package
+        uses: actions/upload-artifact@v4
+        with:
+          name: azurelocal-ranger-package
+          path: artifacts/**

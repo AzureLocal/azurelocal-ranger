@@ -88,6 +88,314 @@ function New-RangerPackageRoot {
     return $packageRoot
 }
 
+function Test-RangerDriftDictionaryLike {
+    param(
+        $Value
+    )
+
+    return $Value -is [System.Collections.IDictionary]
+}
+
+function Test-RangerDriftEnumerableLike {
+    param(
+        $Value
+    )
+
+    return $Value -is [System.Collections.IEnumerable] -and -not ($Value -is [string]) -and -not ($Value -is [System.Collections.IDictionary])
+}
+
+function Get-RangerDriftItemIdentity {
+    param(
+        $Item
+    )
+
+    if (-not (Test-RangerDriftDictionaryLike -Value $Item)) {
+        return $null
+    }
+
+    foreach ($propertyName in @('name', 'friendlyName', 'id', 'resourceId', 'uniqueId', 'node', 'path', 'driveLetter', 'interface', 'interfaceAlias', 'taskName', 'policyId', 'filePath', 'serialNumber')) {
+        if ($Item.Contains($propertyName) -and -not [string]::IsNullOrWhiteSpace([string]$Item[$propertyName])) {
+            return '{0}:{1}' -f $propertyName, [string]$Item[$propertyName]
+        }
+    }
+
+    return $null
+}
+
+function Add-RangerDriftChangeRecord {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ref]$Changes,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Domain,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('added', 'removed', 'changed')]
+        [string]$ChangeType,
+
+        $BaselineValue,
+        $CurrentValue
+    )
+
+    [void]$Changes.Value.Add([ordered]@{
+        domain        = $Domain
+        path          = $Path
+        changeType    = $ChangeType
+        baselineValue = $BaselineValue
+        currentValue  = $CurrentValue
+    })
+}
+
+function Compare-RangerDriftValue {
+    param(
+        $Baseline,
+        $Current,
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $true)]
+        [string]$Domain,
+        [Parameter(Mandatory = $true)]
+        [ref]$Changes
+    )
+
+    if ($null -eq $Baseline -and $null -eq $Current) {
+        return
+    }
+
+    if ($null -eq $Baseline) {
+        Add-RangerDriftChangeRecord -Changes $Changes -Domain $Domain -Path $Path -ChangeType 'added' -BaselineValue $null -CurrentValue $Current
+        return
+    }
+
+    if ($null -eq $Current) {
+        Add-RangerDriftChangeRecord -Changes $Changes -Domain $Domain -Path $Path -ChangeType 'removed' -BaselineValue $Baseline -CurrentValue $null
+        return
+    }
+
+    $baselineIsDictionary = Test-RangerDriftDictionaryLike -Value $Baseline
+    $currentIsDictionary = Test-RangerDriftDictionaryLike -Value $Current
+    $baselineIsEnumerable = Test-RangerDriftEnumerableLike -Value $Baseline
+    $currentIsEnumerable = Test-RangerDriftEnumerableLike -Value $Current
+
+    if (($baselineIsDictionary -and $currentIsEnumerable) -or ($baselineIsEnumerable -and $currentIsDictionary)) {
+        if ($baselineIsDictionary -and -not $baselineIsEnumerable) {
+            $normalizedBaseline = New-Object object[] 1
+            $normalizedBaseline[0] = $Baseline
+        }
+        else {
+            $normalizedBaseline = $Baseline
+        }
+
+        if ($currentIsDictionary -and -not $currentIsEnumerable) {
+            $normalizedCurrent = New-Object object[] 1
+            $normalizedCurrent[0] = $Current
+        }
+        else {
+            $normalizedCurrent = $Current
+        }
+
+        Compare-RangerDriftValue -Baseline $normalizedBaseline -Current $normalizedCurrent -Path $Path -Domain $Domain -Changes $Changes
+        return
+    }
+
+    if ($baselineIsDictionary -and $currentIsDictionary) {
+        $keys = @($Baseline.Keys + $Current.Keys | Sort-Object -Unique)
+        foreach ($key in $keys) {
+            $childPath = if ([string]::IsNullOrWhiteSpace($Path)) { [string]$key } else { '{0}.{1}' -f $Path, $key }
+            $baselineChild = if ($Baseline.Contains($key)) { $Baseline[$key] } else { $null }
+            $currentChild = if ($Current.Contains($key)) { $Current[$key] } else { $null }
+            Compare-RangerDriftValue -Baseline $baselineChild -Current $currentChild -Path $childPath -Domain $Domain -Changes $Changes
+        }
+        return
+    }
+
+    if ($baselineIsEnumerable -and $currentIsEnumerable) {
+        $baselineItems = @($Baseline)
+        $currentItems = @($Current)
+        $identityProperty = $null
+
+        if ($baselineItems.Count -gt 0 -or $currentItems.Count -gt 0) {
+            $combinedItems = @($baselineItems) + @($currentItems)
+            $sampleItem = @($combinedItems | Where-Object { $_ -ne $null } | Select-Object -First 1)[0]
+            $sampleIdentity = Get-RangerDriftItemIdentity -Item $sampleItem
+            if ($sampleIdentity) {
+                $identityProperty = ($sampleIdentity -split ':', 2)[0]
+            }
+        }
+
+        if ($identityProperty) {
+            $baselineMap = [ordered]@{}
+            foreach ($item in $baselineItems) {
+                $identity = Get-RangerDriftItemIdentity -Item $item
+                if ($identity) {
+                    $baselineMap[$identity] = $item
+                }
+            }
+
+            $currentMap = [ordered]@{}
+            foreach ($item in $currentItems) {
+                $identity = Get-RangerDriftItemIdentity -Item $item
+                if ($identity) {
+                    $currentMap[$identity] = $item
+                }
+            }
+
+            $keys = @($baselineMap.Keys + $currentMap.Keys | Sort-Object -Unique)
+            foreach ($key in $keys) {
+                $label = $key.Substring($identityProperty.Length + 1)
+                $childPath = '{0}[{1}]' -f $Path, $label
+                $baselineChild = if ($baselineMap.Contains($key)) { $baselineMap[$key] } else { $null }
+                $currentChild = if ($currentMap.Contains($key)) { $currentMap[$key] } else { $null }
+                Compare-RangerDriftValue -Baseline $baselineChild -Current $currentChild -Path $childPath -Domain $Domain -Changes $Changes
+            }
+            return
+        }
+
+        $baselineJson = $baselineItems | ConvertTo-Json -Depth 100 -Compress
+        $currentJson = $currentItems | ConvertTo-Json -Depth 100 -Compress
+        if ($baselineJson -ne $currentJson) {
+            Add-RangerDriftChangeRecord -Changes $Changes -Domain $Domain -Path $Path -ChangeType 'changed' -BaselineValue $baselineItems -CurrentValue $currentItems
+        }
+        return
+    }
+
+    $baselineJson = $Baseline | ConvertTo-Json -Depth 20 -Compress
+    $currentJson = $Current | ConvertTo-Json -Depth 20 -Compress
+    if ($baselineJson -ne $currentJson) {
+        Add-RangerDriftChangeRecord -Changes $Changes -Domain $Domain -Path $Path -ChangeType 'changed' -BaselineValue $Baseline -CurrentValue $Current
+    }
+}
+
+function New-RangerDriftReport {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$CurrentManifest,
+
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$BaselineManifest,
+
+        [Parameter(Mandatory = $true)]
+        [string]$BaselineManifestPath
+    )
+
+    if ($BaselineManifest.run.schemaVersion -ne $CurrentManifest.run.schemaVersion) {
+        return [ordered]@{
+            status                = 'skipped'
+            generatedAtUtc        = (Get-Date).ToUniversalTime().ToString('o')
+            baselineManifestPath  = $BaselineManifestPath
+            baselineSchemaVersion = $BaselineManifest.run.schemaVersion
+            currentSchemaVersion  = $CurrentManifest.run.schemaVersion
+            comparedDomains       = @()
+            skippedReason         = "Baseline schema version '$($BaselineManifest.run.schemaVersion)' does not match current schema version '$($CurrentManifest.run.schemaVersion)'."
+            summary               = [ordered]@{
+                totalChanges = 0
+                added        = 0
+                removed      = 0
+                changed      = 0
+                domainCounts = @()
+            }
+            changes               = @()
+        }
+    }
+
+    $domainsToCompare = @('clusterNode', 'hardware', 'storage', 'networking', 'virtualMachines', 'azureIntegration', 'identitySecurity')
+    $changes = New-Object System.Collections.ArrayList
+    foreach ($domainName in $domainsToCompare) {
+        $baselineDomain = if ($BaselineManifest.domains.Contains($domainName)) { $BaselineManifest.domains[$domainName] } else { $null }
+        $currentDomain = if ($CurrentManifest.domains.Contains($domainName)) { $CurrentManifest.domains[$domainName] } else { $null }
+        Compare-RangerDriftValue -Baseline $baselineDomain -Current $currentDomain -Path $domainName -Domain $domainName -Changes ([ref]$changes)
+    }
+
+    $changeList = @($changes)
+    $domainCounts = @(
+        $changeList |
+            Group-Object domain |
+            Sort-Object Name |
+            ForEach-Object {
+                [ordered]@{
+                    domain   = $_.Name
+                    added    = @($_.Group | Where-Object { $_.changeType -eq 'added' }).Count
+                    removed  = @($_.Group | Where-Object { $_.changeType -eq 'removed' }).Count
+                    changed  = @($_.Group | Where-Object { $_.changeType -eq 'changed' }).Count
+                    total    = $_.Count
+                }
+            }
+    )
+
+    [ordered]@{
+        status                = 'generated'
+        generatedAtUtc        = (Get-Date).ToUniversalTime().ToString('o')
+        baselineManifestPath  = $BaselineManifestPath
+        baselineSchemaVersion = $BaselineManifest.run.schemaVersion
+        currentSchemaVersion  = $CurrentManifest.run.schemaVersion
+        comparedDomains       = @($domainsToCompare)
+        skippedReason         = $null
+        summary               = [ordered]@{
+            totalChanges = $changeList.Count
+            added        = @($changeList | Where-Object { $_.changeType -eq 'added' }).Count
+            removed      = @($changeList | Where-Object { $_.changeType -eq 'removed' }).Count
+            changed      = @($changeList | Where-Object { $_.changeType -eq 'changed' }).Count
+            domainCounts = $domainCounts
+        }
+        changes               = $changeList
+    }
+}
+
+function Write-RangerJsonArtifact {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$PackageRoot,
+
+        [Parameter(Mandatory = $true)]
+        [string]$RelativePath,
+
+        [Parameter(Mandatory = $true)]
+        $Content
+    )
+
+    $artifactPath = Join-Path -Path $PackageRoot -ChildPath $RelativePath
+    New-Item -ItemType Directory -Path (Split-Path -Parent $artifactPath) -Force | Out-Null
+    $Content | ConvertTo-Json -Depth 100 | Set-Content -Path $artifactPath -Encoding UTF8
+    return $artifactPath
+}
+
+function New-RangerRunStatus {
+    param(
+        [Parameter(Mandatory = $true)]
+        [bool]$Unattended,
+
+        [string]$Status = 'success',
+        [string]$ErrorMessage,
+        [System.Collections.IDictionary]$Manifest,
+        [string]$ManifestPath,
+        [string]$LogPath,
+        [string]$DriftStatus = 'not-requested'
+    )
+
+    $collectorEntries = if ($Manifest -and $Manifest.collectors) { @($Manifest.collectors.Values) } else { @() }
+    [ordered]@{
+        status          = $Status
+        unattended      = $Unattended
+        generatedAtUtc  = (Get-Date).ToUniversalTime().ToString('o')
+        manifestPath    = $ManifestPath
+        logPath         = $LogPath
+        driftStatus     = $DriftStatus
+        errorMessage    = $ErrorMessage
+        collectorCounts = [ordered]@{
+            total         = $collectorEntries.Count
+            success       = @($collectorEntries | Where-Object { $_.status -eq 'success' }).Count
+            partial       = @($collectorEntries | Where-Object { $_.status -eq 'partial' }).Count
+            failed        = @($collectorEntries | Where-Object { $_.status -eq 'failed' }).Count
+            skipped       = @($collectorEntries | Where-Object { $_.status -eq 'skipped' }).Count
+            notApplicable = @($collectorEntries | Where-Object { $_.status -eq 'not-applicable' }).Count
+        }
+    }
+}
+
 function Invoke-RangerDiscoveryRuntime {
     param(
         [string]$ConfigPath,
@@ -98,7 +406,9 @@ function Invoke-RangerDiscoveryRuntime {
         [string[]]$ExcludeDomains,
         [switch]$NoRender,
         [hashtable]$StructuralOverrides,
-        [switch]$AllowInteractiveInput
+        [switch]$AllowInteractiveInput,
+        [switch]$Unattended,
+        [string]$BaselineManifestPath
     )
 
     $config = Import-RangerConfiguration -ConfigPath $ConfigPath -ConfigObject $ConfigObject
@@ -110,6 +420,10 @@ function Invoke-RangerDiscoveryRuntime {
 
     if ($ExcludeDomains) {
         $config.domains.exclude = @($ExcludeDomains)
+    }
+
+    if ($Unattended) {
+        $config.behavior.promptForMissingCredentials = $false
     }
 
     if ($AllowInteractiveInput) {
@@ -126,12 +440,18 @@ function Invoke-RangerDiscoveryRuntime {
     $selectedCollectors = Resolve-RangerSelectedCollectors -Config $config
     $credentialMap = Resolve-RangerCredentialMap -Config $config -Overrides $CredentialOverrides
     $basePath = if ($ConfigPath) { Split-Path -Parent (Resolve-RangerPath -Path $ConfigPath) } else { (Get-Location).Path }
+    $resolvedBaselineManifestPath = if (-not [string]::IsNullOrWhiteSpace($BaselineManifestPath)) { Resolve-RangerPath -Path $BaselineManifestPath -BasePath $basePath } else { $null }
     $packageRoot = New-RangerPackageRoot -Config $config -OutputPathOverride $OutputPath -BasePath $basePath
     $script:RangerLogPath = $null
     $script:RangerRetryDetails = New-Object System.Collections.ArrayList
     $script:RangerWinRmProbeCache = @{}
     $logPath = Initialize-RangerFileLog -PackageRoot $packageRoot
     $transcriptPath = Join-Path -Path $packageRoot -ChildPath 'ranger.transcript.log'
+    $manifest = $null
+    $manifestPath = $null
+    $manifestValidation = $null
+    $driftReport = $null
+    $runStatusPath = $null
     $script:_rangerPrevVerbosePreference = $VerbosePreference
     $script:_rangerPrevDebugPreference = $DebugPreference
     $script:_rangerPrevInformationPreference = $InformationPreference
@@ -193,6 +513,8 @@ function Invoke-RangerDiscoveryRuntime {
 
         Write-RangerLog -Level info -Message "AzureLocalRanger run started — package: $(Split-Path -Leaf $packageRoot)"
         $manifest = New-RangerManifest -Config $config -SelectedCollectors $selectedCollectors
+        $manifest.run.unattended = [bool]$Unattended
+        $manifest.run.baselineManifestPath = $resolvedBaselineManifestPath
         $manifest.run.retryDetails = @()
         $manifestPath = Join-Path -Path $packageRoot -ChildPath 'manifest\audit-manifest.json'
         $evidenceRoot = Join-Path -Path $packageRoot -ChildPath 'evidence'
@@ -225,6 +547,38 @@ function Invoke-RangerDiscoveryRuntime {
             )
         }
 
+        if ($resolvedBaselineManifestPath) {
+            if (-not (Test-Path -Path $resolvedBaselineManifestPath)) {
+                throw "Baseline manifest file not found: $resolvedBaselineManifestPath"
+            }
+
+            $baselineManifest = Get-Content -Path $resolvedBaselineManifestPath -Raw | ConvertFrom-Json -AsHashtable -Depth 100
+            $driftReport = New-RangerDriftReport -CurrentManifest $manifest -BaselineManifest (ConvertTo-RangerHashtable -InputObject $baselineManifest) -BaselineManifestPath $resolvedBaselineManifestPath
+            $manifest.run.drift = [ordered]@{
+                status        = $driftReport.status
+                summary       = $driftReport.summary
+                skippedReason = $driftReport.skippedReason
+            }
+
+            $driftArtifactPath = Write-RangerJsonArtifact -PackageRoot $packageRoot -RelativePath 'manifest\drift-report.json' -Content $driftReport
+            $manifest.artifacts += @(
+                New-RangerArtifactRecord -Type 'drift-report' -RelativePath ([System.IO.Path]::GetRelativePath($packageRoot, $driftArtifactPath)) -Status $(if ($driftReport.status -eq 'generated') { 'generated' } else { 'skipped' }) -Audience 'all' -Reason $driftReport.skippedReason
+            )
+
+            if ($driftReport.status -eq 'generated') {
+                foreach ($change in @($driftReport.changes)) {
+                    $manifest.findings += @(
+                        New-RangerFinding -Severity informational -Title "Detected manifest drift: $($change.changeType)" -Description "Detected a $($change.changeType) change at $($change.path)." -CurrentState $(if ($null -ne $change.baselineValue -and $null -ne $change.currentValue) { "baseline=$($change.baselineValue | ConvertTo-Json -Depth 5 -Compress); current=$($change.currentValue | ConvertTo-Json -Depth 5 -Compress)" } elseif ($null -ne $change.currentValue) { "current=$($change.currentValue | ConvertTo-Json -Depth 5 -Compress)" } else { "baseline=$($change.baselineValue | ConvertTo-Json -Depth 5 -Compress)" }) -Recommendation 'Review whether this environment drift was expected and update the baseline manifest after the change is approved.'
+                    )
+                }
+            }
+            else {
+                $manifest.findings += @(
+                    New-RangerFinding -Severity informational -Title 'Baseline comparison was skipped' -Description 'Ranger received a baseline manifest path but did not generate a drift comparison.' -CurrentState $driftReport.skippedReason -Recommendation 'Confirm the baseline manifest schema version matches the current run before relying on drift analysis.'
+                )
+            }
+        }
+
         Save-RangerManifest -Manifest $manifest -Path $manifestPath
         $manifest.artifacts += @(New-RangerArtifactRecord -Type 'manifest-json' -RelativePath ([System.IO.Path]::GetRelativePath($packageRoot, $manifestPath)) -Status generated -Audience 'all')
 
@@ -249,7 +603,15 @@ function Invoke-RangerDiscoveryRuntime {
             $manifest.artifacts += @(New-RangerArtifactRecord -Type 'run-log' -RelativePath ([System.IO.Path]::GetRelativePath($packageRoot, $logPath)) -Status generated -Audience 'all')
         }
 
+        $runStatus = New-RangerRunStatus -Unattended ([bool]$Unattended) -Status 'success' -Manifest $manifest -ManifestPath $manifestPath -LogPath $logPath -DriftStatus $(if ($driftReport) { $driftReport.status } else { 'not-requested' })
+        $runStatusPath = Write-RangerJsonArtifact -PackageRoot $packageRoot -RelativePath 'run-status.json' -Content $runStatus
+        $manifest.artifacts += @(New-RangerArtifactRecord -Type 'run-status' -RelativePath ([System.IO.Path]::GetRelativePath($packageRoot, $runStatusPath)) -Status generated -Audience 'all')
+
         Save-RangerManifest -Manifest $manifest -Path $manifestPath
+
+        if ($Unattended -and @($manifest.collectors.Values | Where-Object { $_.status -eq 'failed' }).Count -gt 0) {
+            throw 'Unattended run completed with one or more failed collectors. See run-status.json and ranger.log for details.'
+        }
 
         [ordered]@{
             Config       = $config
@@ -260,6 +622,25 @@ function Invoke-RangerDiscoveryRuntime {
             Validation   = $validation
             ManifestSchema = $manifestValidation
         }
+    }
+    catch {
+        if ($packageRoot) {
+            $failureDriftStatus = if ($driftReport) { $driftReport.status } else { 'not-requested' }
+            $failureRunStatus = New-RangerRunStatus -Unattended ([bool]$Unattended) -Status 'failed' -ErrorMessage $_.Exception.Message -Manifest $manifest -ManifestPath $manifestPath -LogPath $logPath -DriftStatus $failureDriftStatus
+            $runStatusPath = Write-RangerJsonArtifact -PackageRoot $packageRoot -RelativePath 'run-status.json' -Content $failureRunStatus
+
+            if ($manifest) {
+                if (-not @($manifest.artifacts | Where-Object { $_.type -eq 'run-status' -and $_.relativePath -eq ([System.IO.Path]::GetRelativePath($packageRoot, $runStatusPath)) }).Count) {
+                    $manifest.artifacts += @(New-RangerArtifactRecord -Type 'run-status' -RelativePath ([System.IO.Path]::GetRelativePath($packageRoot, $runStatusPath)) -Status generated -Audience 'all')
+                }
+
+                if ($manifestPath) {
+                    Save-RangerManifest -Manifest $manifest -Path $manifestPath
+                }
+            }
+        }
+
+        throw
     }
     finally {
         try {

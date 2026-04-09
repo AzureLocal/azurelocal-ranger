@@ -1,3 +1,276 @@
+function ConvertTo-RangerGiBValue {
+    param(
+        $Value
+    )
+
+    if ($null -eq $Value -or [string]::IsNullOrWhiteSpace([string]$Value)) {
+        return $null
+    }
+
+    $numericValue = [double]$Value
+    if ($numericValue -gt 1048576) {
+        return [math]::Round($numericValue / 1GB, 2)
+    }
+
+    return [math]::Round($numericValue, 2)
+}
+
+function Get-RangerStorageResiliencyEfficiencyPercent {
+    param(
+        [string]$ResiliencySettingName,
+        [int]$NumberOfDataCopies
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ResiliencySettingName)) {
+        if ($NumberOfDataCopies -gt 0) {
+            return [math]::Round(100 / $NumberOfDataCopies, 1)
+        }
+
+        return 50
+    }
+
+    switch ($ResiliencySettingName.ToLowerInvariant()) {
+        'mirror' {
+            if ($NumberOfDataCopies -ge 3) {
+                return 33.3
+            }
+
+            return 50
+        }
+        'parity' {
+            return 60
+        }
+        'dualparity' {
+            return 72
+        }
+        'simple' {
+            return 100
+        }
+        default {
+            if ($NumberOfDataCopies -gt 0) {
+                return [math]::Round(100 / $NumberOfDataCopies, 1)
+            }
+
+            return 50
+        }
+    }
+}
+
+function Get-RangerStoragePoolAnalysis {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Pool,
+
+        [object[]]$PhysicalDisks,
+        [object[]]$VirtualDisks,
+        [double]$TotalVolumeUsedGiB,
+        [double]$TotalUsableAcrossPoolsGiB,
+        [int]$PoolCount
+    )
+
+    $poolName = [string]$Pool['friendlyName']
+    $poolPhysicalDisks = @(
+        $PhysicalDisks | Where-Object {
+            ($_.Contains('storagePoolFriendlyName') -and $_['storagePoolFriendlyName'] -eq $poolName) -or
+            ($PoolCount -eq 1 -and [string]::IsNullOrWhiteSpace([string]$_['storagePoolFriendlyName']))
+        }
+    )
+    $poolVirtualDisks = @(
+        $VirtualDisks | Where-Object {
+            ($_.Contains('storagePoolFriendlyName') -and $_['storagePoolFriendlyName'] -eq $poolName) -or
+            ($PoolCount -eq 1 -and [string]::IsNullOrWhiteSpace([string]$_['storagePoolFriendlyName']))
+        }
+    )
+
+    $rawCapacityGiB = [double](ConvertTo-RangerGiBValue -Value ($Pool['sizeGiB'] ?? $Pool['size'] ?? 0))
+    $allocatedCapacityGiB = [double](ConvertTo-RangerGiBValue -Value ($Pool['allocatedSizeGiB'] ?? $Pool['allocatedSize'] ?? 0))
+    $provisionedCapacityGiB = ConvertTo-RangerGiBValue -Value ($Pool['provisionedCapacityGiB'] ?? $Pool['provisionedCapacity'])
+    if ($null -eq $provisionedCapacityGiB) {
+        $provisionedCapacityGiB = [math]::Round((@($poolVirtualDisks | ForEach-Object { [double](ConvertTo-RangerGiBValue -Value $_['sizeGiB']) }) | Measure-Object -Sum).Sum, 2)
+    }
+
+    $usableCapacityGiB = [math]::Round((@($poolVirtualDisks | ForEach-Object { [double](ConvertTo-RangerGiBValue -Value $_['sizeGiB']) }) | Measure-Object -Sum).Sum, 2)
+    if ($usableCapacityGiB -le 0) {
+        $efficiencyPercent = Get-RangerStorageResiliencyEfficiencyPercent -ResiliencySettingName ([string]$Pool['resiliencySettingName']) -NumberOfDataCopies $(if ($Pool['numberOfDataCopies']) { [int]$Pool['numberOfDataCopies'] } else { 0 })
+        $usableCapacityGiB = [math]::Round($rawCapacityGiB * $efficiencyPercent / 100, 2)
+    }
+
+    $largestDiskGiB = [double]((@($poolPhysicalDisks | ForEach-Object { [double](ConvertTo-RangerGiBValue -Value $_['sizeGiB']) }) | Measure-Object -Maximum).Maximum)
+    $maintenanceReserveGiB = [math]::Round($usableCapacityGiB * 0.1, 2)
+    $reserveFloorGiB = [math]::Round($usableCapacityGiB * 0.2, 2)
+    $recommendedReserveGiB = [math]::Round([math]::Max([math]::Max($largestDiskGiB, $maintenanceReserveGiB), $reserveFloorGiB), 2)
+    $usedUsableCapacityGiB = if ($PoolCount -le 1) {
+        [math]::Round($TotalVolumeUsedGiB, 2)
+    }
+    elseif ($TotalUsableAcrossPoolsGiB -gt 0) {
+        [math]::Round($TotalVolumeUsedGiB * ($usableCapacityGiB / $TotalUsableAcrossPoolsGiB), 2)
+    }
+    else {
+        0
+    }
+    $freeUsableCapacityGiB = [math]::Round([math]::Max($usableCapacityGiB - $usedUsableCapacityGiB, 0), 2)
+    $projectedSafeAllocatableCapacityGiB = [math]::Round([math]::Max($freeUsableCapacityGiB - $recommendedReserveGiB, 0), 2)
+    $thinProvisioningRatio = if ($usableCapacityGiB -gt 0) { [math]::Round($provisionedCapacityGiB / $usableCapacityGiB, 2) } else { $null }
+    $thinProvisionedVirtualDisks = @($poolVirtualDisks | Where-Object { $_['provisioningType'] -eq 'Thin' }).Count
+    $reserveStatus = if ($freeUsableCapacityGiB -lt $recommendedReserveGiB) {
+        'below-threshold'
+    }
+    elseif ($freeUsableCapacityGiB -lt [math]::Round($recommendedReserveGiB * 1.2, 2)) {
+        'near-threshold'
+    }
+    else {
+        'healthy'
+    }
+    $posture = if ($reserveStatus -eq 'below-threshold' -or ($thinProvisioningRatio -and $thinProvisioningRatio -gt 1.1)) {
+        'over-provisioned'
+    }
+    elseif ($projectedSafeAllocatableCapacityGiB -gt [math]::Round($usableCapacityGiB * 0.35, 2)) {
+        'under-provisioned'
+    }
+    else {
+        'within safe range'
+    }
+
+    [ordered]@{
+        friendlyName                         = $poolName
+        healthStatus                         = [string]$Pool['healthStatus']
+        operationalStatus                    = [string]$Pool['operationalStatus']
+        resiliencySettingName                = [string]$Pool['resiliencySettingName']
+        numberOfDataCopies                   = if ($Pool['numberOfDataCopies']) { [int]$Pool['numberOfDataCopies'] } else { $null }
+        diskCount                            = $poolPhysicalDisks.Count
+        diskCountByMediaType                 = @(Get-RangerGroupedCount -Items $poolPhysicalDisks -PropertyName 'mediaType')
+        rawCapacityGiB                       = $rawCapacityGiB
+        usableCapacityGiB                    = $usableCapacityGiB
+        resiliencyOverheadGiB                = [math]::Round([math]::Max($rawCapacityGiB - $usableCapacityGiB, 0), 2)
+        allocatedCapacityGiB                 = $allocatedCapacityGiB
+        unallocatedCapacityGiB               = [math]::Round([math]::Max($rawCapacityGiB - $allocatedCapacityGiB, 0), 2)
+        provisionedCapacityGiB               = $provisionedCapacityGiB
+        usedUsableCapacityGiB                = $usedUsableCapacityGiB
+        freeUsableCapacityGiB                = $freeUsableCapacityGiB
+        recommendedReserveGiB                = $recommendedReserveGiB
+        rebuildReserveRequirementGiB         = $largestDiskGiB
+        maintenanceReserveRequirementGiB     = $maintenanceReserveGiB
+        projectedSafeAllocatableCapacityGiB  = $projectedSafeAllocatableCapacityGiB
+        thinProvisioningRatio                = $thinProvisioningRatio
+        thinProvisionedVirtualDiskCount      = $thinProvisionedVirtualDisks
+        cacheDeviceCount                     = @($poolPhysicalDisks | Where-Object { $_['usage'] -match 'Journal|Cache' }).Count
+        capacityDeviceCount                  = @($poolPhysicalDisks | Where-Object { $_['usage'] -notmatch 'Journal|Cache' }).Count
+        reserveStatus                        = $reserveStatus
+        posture                              = $posture
+        assumptions                          = 'Reserve model uses the greater of one-disk rebuild reserve, 10% maintenance reserve, and 20% free usable capacity.'
+    }
+}
+
+function Update-RangerStorageDomainAnalysis {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$StorageDomain
+    )
+
+    $pools = @($StorageDomain.pools)
+    $physicalDisks = @($StorageDomain.physicalDisks)
+    $virtualDisks = @($StorageDomain.virtualDisks)
+    $volumes = @($StorageDomain.volumes)
+
+    foreach ($pool in $pools) {
+        $pool['sizeGiB'] = ConvertTo-RangerGiBValue -Value ($pool['sizeGiB'] ?? $pool['size'])
+        $pool['allocatedSizeGiB'] = ConvertTo-RangerGiBValue -Value ($pool['allocatedSizeGiB'] ?? $pool['allocatedSize'])
+        $pool['provisionedCapacityGiB'] = ConvertTo-RangerGiBValue -Value ($pool['provisionedCapacityGiB'] ?? $pool['provisionedCapacity'])
+    }
+
+    foreach ($disk in $physicalDisks) {
+        $disk['sizeGiB'] = ConvertTo-RangerGiBValue -Value ($disk['sizeGiB'] ?? $disk['size'])
+        if (-not $disk.Contains('storagePoolFriendlyName')) {
+            $disk['storagePoolFriendlyName'] = $disk['StoragePoolFriendlyName']
+        }
+    }
+
+    foreach ($virtualDisk in $virtualDisks) {
+        $virtualDisk['sizeGiB'] = ConvertTo-RangerGiBValue -Value ($virtualDisk['sizeGiB'] ?? $virtualDisk['size'])
+        $virtualDisk['footprintOnPoolGiB'] = ConvertTo-RangerGiBValue -Value ($virtualDisk['footprintOnPoolGiB'] ?? $virtualDisk['footprintOnPool'])
+        if (-not $virtualDisk.Contains('storagePoolFriendlyName')) {
+            $virtualDisk['storagePoolFriendlyName'] = $virtualDisk['StoragePoolFriendlyName']
+        }
+    }
+
+    foreach ($volume in $volumes) {
+        $volume['sizeGiB'] = ConvertTo-RangerGiBValue -Value ($volume['sizeGiB'] ?? $volume['size'])
+        $volume['sizeRemainingGiB'] = ConvertTo-RangerGiBValue -Value ($volume['sizeRemainingGiB'] ?? $volume['sizeRemaining'])
+    }
+
+    $totalVolumeUsedGiB = [math]::Round((@($volumes | ForEach-Object { [math]::Max(([double]($_['sizeGiB'] ?? 0) - [double]($_['sizeRemainingGiB'] ?? 0)), 0) }) | Measure-Object -Sum).Sum, 2)
+    $totalUsableAcrossPoolsGiB = [math]::Round((@($virtualDisks | ForEach-Object { [double]($_['sizeGiB'] ?? 0) }) | Measure-Object -Sum).Sum, 2)
+    $poolAnalysis = @(
+        foreach ($pool in $pools) {
+            Get-RangerStoragePoolAnalysis -Pool $pool -PhysicalDisks $physicalDisks -VirtualDisks $virtualDisks -TotalVolumeUsedGiB $totalVolumeUsedGiB -TotalUsableAcrossPoolsGiB $totalUsableAcrossPoolsGiB -PoolCount $pools.Count
+        }
+    )
+
+    $summary = if ($StorageDomain.summary) { ConvertTo-RangerHashtable -InputObject $StorageDomain.summary } else { [ordered]@{} }
+    $summary.poolCount = $pools.Count
+    $summary.physicalDiskCount = $physicalDisks.Count
+    $summary.virtualDiskCount = $virtualDisks.Count
+    $summary.volumeCount = $volumes.Count
+    $summary.csvCount = @($StorageDomain.csvs).Count
+    $summary.totalRawCapacityGiB = [math]::Round((@($poolAnalysis | ForEach-Object { [double]$_['rawCapacityGiB'] }) | Measure-Object -Sum).Sum, 2)
+    $summary.totalUsableCapacityGiB = [math]::Round((@($poolAnalysis | ForEach-Object { [double]$_['usableCapacityGiB'] }) | Measure-Object -Sum).Sum, 2)
+    $summary.totalAllocatedCapacityGiB = [math]::Round((@($poolAnalysis | ForEach-Object { [double]$_['allocatedCapacityGiB'] }) | Measure-Object -Sum).Sum, 2)
+    $summary.totalProvisionedCapacityGiB = [math]::Round((@($poolAnalysis | ForEach-Object { [double]$_['provisionedCapacityGiB'] }) | Measure-Object -Sum).Sum, 2)
+    $summary.totalUsedUsableCapacityGiB = [math]::Round((@($poolAnalysis | ForEach-Object { [double]$_['usedUsableCapacityGiB'] }) | Measure-Object -Sum).Sum, 2)
+    $summary.totalFreeUsableCapacityGiB = [math]::Round((@($poolAnalysis | ForEach-Object { [double]$_['freeUsableCapacityGiB'] }) | Measure-Object -Sum).Sum, 2)
+    $summary.totalReserveTargetGiB = [math]::Round((@($poolAnalysis | ForEach-Object { [double]$_['recommendedReserveGiB'] }) | Measure-Object -Sum).Sum, 2)
+    $summary.totalSafeAllocatableCapacityGiB = [math]::Round((@($poolAnalysis | ForEach-Object { [double]$_['projectedSafeAllocatableCapacityGiB'] }) | Measure-Object -Sum).Sum, 2)
+    $summary.diskMediaTypes = @(Get-RangerGroupedCount -Items $physicalDisks -PropertyName 'mediaType')
+    $summary.unhealthyDisks = @($physicalDisks | Where-Object { $_['healthStatus'] -and $_['healthStatus'] -ne 'Healthy' }).Count
+    $summary.canPoolDisks = @($physicalDisks | Where-Object { $_['canPool'] }).Count
+    $summary.retiredDisks = @($physicalDisks | Where-Object { [string]$_['operationalStatus'] -match 'Retiring|PredictiveFailure' }).Count
+    $summary.resiliencyModes = @(Get-RangerGroupedCount -Items $virtualDisks -PropertyName 'resiliencySettingName')
+    $summary.tierCount = @($StorageDomain.tiers).Count
+    $summary.storageJobCount = @($StorageDomain.jobs).Count
+    $summary.activeHealthFaultCount = @($StorageDomain.healthFaults).Count
+    $summary.replicaGroupCount = @($StorageDomain.replicaDepth).Count
+    $summary.qosFlowCount = @($StorageDomain.qosFlows).Count
+    $summary.cacheEnabled = if ($StorageDomain.cacheConfig) { $StorageDomain.cacheConfig.CacheState -eq 'Enabled' } else { $null }
+    $summary.dedupVolumes = @($StorageDomain.dedupStatus | Where-Object { $_.Status -ne 'Disabled' }).Count
+    $summary.thinProvisioningRatio = if ($summary.totalUsableCapacityGiB -gt 0) { [math]::Round($summary.totalProvisionedCapacityGiB / $summary.totalUsableCapacityGiB, 2) } else { $null }
+    $summary.poolPostureCounts = @($poolAnalysis | Group-Object posture | Sort-Object Name | ForEach-Object { [ordered]@{ name = $_.Name; count = $_.Count } })
+
+    $StorageDomain.pools = ConvertTo-RangerHashtable -InputObject $pools
+    $StorageDomain.physicalDisks = ConvertTo-RangerHashtable -InputObject $physicalDisks
+    $StorageDomain.virtualDisks = ConvertTo-RangerHashtable -InputObject $virtualDisks
+    $StorageDomain.volumes = ConvertTo-RangerHashtable -InputObject $volumes
+    $StorageDomain.poolAnalysis = ConvertTo-RangerHashtable -InputObject $poolAnalysis
+    $StorageDomain.summary = $summary
+    return $StorageDomain
+}
+
+function New-RangerStorageAnalysisFindings {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$StorageDomain
+    )
+
+    $findings = New-Object System.Collections.ArrayList
+    foreach ($poolAnalysis in @($StorageDomain.poolAnalysis)) {
+        if ($poolAnalysis.reserveStatus -eq 'below-threshold') {
+            [void]$findings.Add((New-RangerFinding -Severity warning -Title "Storage reserve is below the recommended threshold for pool '$($poolAnalysis.friendlyName)'" -Description 'The pool does not currently retain the recommended amount of free usable capacity for rebuild and maintenance safety.' -CurrentState "free usable $($poolAnalysis.freeUsableCapacityGiB) GiB; reserve target $($poolAnalysis.recommendedReserveGiB) GiB" -Recommendation 'Reduce allocation pressure, expand the pool, or reclaim capacity before additional workload placement.'))
+        }
+        elseif ($poolAnalysis.reserveStatus -eq 'near-threshold') {
+            [void]$findings.Add((New-RangerFinding -Severity informational -Title "Storage reserve is near the threshold for pool '$($poolAnalysis.friendlyName)'" -Description 'The pool is operating close to its recommended reserve target.' -CurrentState "free usable $($poolAnalysis.freeUsableCapacityGiB) GiB; reserve target $($poolAnalysis.recommendedReserveGiB) GiB" -Recommendation 'Plan capacity expansion or cleanup before the next maintenance cycle or failure event.'))
+        }
+
+        if ($poolAnalysis.thinProvisionedVirtualDiskCount -gt 0 -and $poolAnalysis.thinProvisioningRatio -gt 1) {
+            [void]$findings.Add((New-RangerFinding -Severity warning -Title "Thin provisioning exceeds current usable capacity for pool '$($poolAnalysis.friendlyName)'" -Description 'Thin-provisioned virtual disks currently expose more provisioned capacity than the pool can safely back with usable capacity.' -CurrentState "thin provisioning ratio $($poolAnalysis.thinProvisioningRatio)x" -Recommendation 'Review virtual disk growth controls and keep additional free reserve before consuming more capacity.'))
+        }
+
+        if ($poolAnalysis.posture -eq 'over-provisioned' -and $poolAnalysis.reserveStatus -ne 'below-threshold') {
+            [void]$findings.Add((New-RangerFinding -Severity warning -Title "Storage pool '$($poolAnalysis.friendlyName)' is operating in an over-provisioned posture" -Description 'Pool allocation and provisioned capacity reduce the remaining safe allocatable headroom.' -CurrentState "provisioned $($poolAnalysis.provisionedCapacityGiB) GiB; safe allocatable $($poolAnalysis.projectedSafeAllocatableCapacityGiB) GiB" -Recommendation 'Rebalance growth expectations against usable capacity and reserve targets before additional workload placement.'))
+        }
+    }
+
+    return @($findings)
+}
+
 function Invoke-RangerStorageNetworkingCollector {
     param(
         [Parameter(Mandatory = $true)]
@@ -15,7 +288,23 @@ function Invoke-RangerStorageNetworkingCollector {
 
     $fixture = Get-RangerCollectorFixtureData -Config $Config -CollectorId $Definition.Id
     if ($fixture) {
-        return ConvertTo-RangerHashtable -InputObject $fixture
+        $fixtureResult = ConvertTo-RangerHashtable -InputObject $fixture
+        if ($fixtureResult.Contains('Domains') -and $fixtureResult.Domains.Contains('storage')) {
+            $fixtureResult.Domains.storage = Update-RangerStorageDomainAnalysis -StorageDomain (ConvertTo-RangerHashtable -InputObject $fixtureResult.Domains.storage)
+            $fixtureStorageFindings = @(New-RangerStorageAnalysisFindings -StorageDomain $fixtureResult.Domains.storage)
+            if (-not $fixtureResult.Contains('Findings')) {
+                $fixtureResult['Findings'] = @()
+            }
+
+            if ($fixtureStorageFindings.Count -gt 0) {
+                $fixtureResult.Findings = @($fixtureResult.Findings) + $fixtureStorageFindings
+                if ($fixtureResult.Status -eq 'success') {
+                    $fixtureResult.Status = 'partial'
+                }
+            }
+        }
+
+        return $fixtureResult
     }
 
     $storageSnapshot = Invoke-RangerSafeAction -Label 'Storage inventory snapshot' -DefaultValue ([ordered]@{}) -ScriptBlock {
@@ -66,6 +355,7 @@ function Invoke-RangerStorageNetworkingCollector {
                             slotNumber         = $d.SlotNumber
                             canPool            = $d.CanPool
                             cannotPoolReason   = $d.CannotPoolReason
+                            storagePoolFriendlyName = $d.StoragePoolFriendlyName
                             busType            = [string]$d.BusType
                             manufacturer       = $d.Manufacturer
                             model              = $d.Model
@@ -91,6 +381,7 @@ function Invoke-RangerStorageNetworkingCollector {
                             isEnclosureAware   = $vd.IsEnclosureAware
                             provisioningType   = [string]$vd.ProvisioningType
                             writeCacheSize     = $vd.WriteCacheSize
+                            storagePoolFriendlyName = $vd.StoragePoolFriendlyName
                             uniqueId           = $vd.UniqueId
                         }
                     })
@@ -496,30 +787,28 @@ function Invoke-RangerStorageNetworkingCollector {
     $smbByNode = @($networkNodes | ForEach-Object { [ordered]@{ node = $_.node; smbConfig = $_.smbConfig; liveMigration = $_.liveMigration } })
     $dnsForwardersByNode = @($networkNodes | ForEach-Object { [ordered]@{ node = $_.node; forwarders = $_.dnsForwarders; conditionalForwarders = $_.dnsConditionalForwarders } })
 
-    $storageSummary = [ordered]@{
-        poolCount           = if ($storageSnapshot.pools) { @($storageSnapshot.pools).Count } else { 0 }
-        physicalDiskCount   = if ($storageSnapshot.physicalDisks) { @($storageSnapshot.physicalDisks).Count } else { 0 }
-        virtualDiskCount    = if ($storageSnapshot.virtualDisks) { @($storageSnapshot.virtualDisks).Count } else { 0 }
-        volumeCount         = if ($storageSnapshot.volumes) { @($storageSnapshot.volumes).Count } else { 0 }
-        csvCount            = if ($storageSnapshot.csvs) { @($storageSnapshot.csvs).Count } else { 0 }
-        # Note: Measure-Object -Property fails on deserialized OrderedDictionary from WinRM —
-        # use ForEach-Object to extract scalar values first, then pipe to Measure-Object -Sum.
-        totalRawCapacityGiB       = [math]::Round((@($storageSnapshot.pools | Where-Object { $null -ne $_['sizeGiB'] } | ForEach-Object { [double]$_['sizeGiB'] } | Measure-Object -Sum).Sum), 2)
-        totalUsableCapacityGiB    = [math]::Round((@($storageSnapshot.virtualDisks | Where-Object { $null -ne $_['sizeGiB'] } | ForEach-Object { [double]$_['sizeGiB'] } | Measure-Object -Sum).Sum), 2)
-        totalAllocatedCapacityGiB = [math]::Round((@($storageSnapshot.pools | Where-Object { $null -ne $_['allocatedSizeGiB'] } | ForEach-Object { [double]$_['allocatedSizeGiB'] } | Measure-Object -Sum).Sum), 2)
-        diskMediaTypes      = @(Get-RangerGroupedCount -Items $storageSnapshot.physicalDisks -PropertyName 'mediaType')
-        unhealthyDisks      = @($storageSnapshot.physicalDisks | Where-Object { $_.healthStatus -and $_.healthStatus -ne 'Healthy' }).Count
-        canPoolDisks        = @($storageSnapshot.physicalDisks | Where-Object { $_.canPool }).Count
-        retiredDisks        = @($storageSnapshot.physicalDisks | Where-Object { $_.operationalStatus -match 'Retiring|PredictiveFailure' }).Count
-        resiliencyModes     = @(Get-RangerGroupedCount -Items $storageSnapshot.virtualDisks -PropertyName 'resiliencySettingName')
-        tierCount           = if ($storageSnapshot.tiers) { @($storageSnapshot.tiers).Count } else { 0 }
-        storageJobCount     = if ($storageSnapshot.jobs) { @($storageSnapshot.jobs).Count } else { 0 }
-        activeHealthFaultCount = if ($storageSnapshot.healthFaults) { @($storageSnapshot.healthFaults).Count } else { 0 }
-        replicaGroupCount   = if ($storageSnapshot.replicaDepth) { @($storageSnapshot.replicaDepth).Count } else { 0 }
-        qosFlowCount        = if ($storageSnapshot.qosFlows) { @($storageSnapshot.qosFlows).Count } else { 0 }
-        cacheEnabled        = if ($storageSnapshot.cacheConfig) { $storageSnapshot.cacheConfig.CacheState -eq 'Enabled' } else { $null }
-        dedupVolumes        = if ($storageSnapshot.dedupStatus) { @($storageSnapshot.dedupStatus | Where-Object { $_.Status -ne 'Disabled' }).Count } else { 0 }
-    }
+    $storageDomain = Update-RangerStorageDomainAnalysis -StorageDomain ([ordered]@{
+        pools                 = ConvertTo-RangerHashtable -InputObject $storageSnapshot.pools
+        physicalDisks         = ConvertTo-RangerHashtable -InputObject $storageSnapshot.physicalDisks
+        physicalDiskReliability = ConvertTo-RangerHashtable -InputObject $storageSnapshot.physicalDiskReliability
+        virtualDisks          = ConvertTo-RangerHashtable -InputObject $storageSnapshot.virtualDisks
+        volumes               = ConvertTo-RangerHashtable -InputObject $storageSnapshot.volumes
+        dedupStatus           = ConvertTo-RangerHashtable -InputObject $storageSnapshot.dedupStatus
+        cacheConfig           = ConvertTo-RangerHashtable -InputObject $storageSnapshot.cacheConfig
+        scrubSchedule         = ConvertTo-RangerHashtable -InputObject $storageSnapshot.scrubSchedule
+        tiers                 = ConvertTo-RangerHashtable -InputObject $storageSnapshot.tiers
+        subsystems            = ConvertTo-RangerHashtable -InputObject $storageSnapshot.subsystems
+        resiliency            = ConvertTo-RangerHashtable -InputObject $storageSnapshot.resiliency
+        jobs                  = ConvertTo-RangerHashtable -InputObject $storageSnapshot.jobs
+        csvs                  = ConvertTo-RangerHashtable -InputObject $storageSnapshot.csvs
+        qos                   = ConvertTo-RangerHashtable -InputObject $storageSnapshot.qos
+        qosFlows              = ConvertTo-RangerHashtable -InputObject $storageSnapshot.qosFlows
+        healthFaults          = ConvertTo-RangerHashtable -InputObject $storageSnapshot.healthFaults
+        replica               = ConvertTo-RangerHashtable -InputObject $storageSnapshot.replica
+        replicaDepth          = ConvertTo-RangerHashtable -InputObject $storageSnapshot.replicaDepth
+        summary               = [ordered]@{}
+    })
+    $storageSummary = $storageDomain.summary
 
     $networkSummary = [ordered]@{
         nodeCount         = @($networkNodes).Count
@@ -577,30 +866,14 @@ function Invoke-RangerStorageNetworkingCollector {
         [void]$findings.Add((New-RangerFinding -Severity warning -Title 'Physical disks flagged for retirement' -Description "$($retiredDisks.Count) disk(s) have an operational status indicating predictive failure or retirement." -AffectedComponents (@($retiredDisks | ForEach-Object { $_.friendlyName })) -CurrentState "$($retiredDisks.Count) disks in Retiring/PredictiveFailure state" -Recommendation 'Replace disks flagged for retirement before formal handoff to prevent data loss.'))
     }
 
+    foreach ($storageFinding in @(New-RangerStorageAnalysisFindings -StorageDomain $storageDomain)) {
+        [void]$findings.Add($storageFinding)
+    }
+
     return @{
         Status        = if ($findings.Count -gt 0) { 'partial' } else { 'success' }
         Domains       = @{
-            storage = [ordered]@{
-                pools              = ConvertTo-RangerHashtable -InputObject $storageSnapshot.pools
-                physicalDisks      = ConvertTo-RangerHashtable -InputObject $storageSnapshot.physicalDisks
-                physicalDiskReliability = ConvertTo-RangerHashtable -InputObject $storageSnapshot.physicalDiskReliability
-                virtualDisks       = ConvertTo-RangerHashtable -InputObject $storageSnapshot.virtualDisks
-                volumes            = ConvertTo-RangerHashtable -InputObject $storageSnapshot.volumes
-                dedupStatus        = ConvertTo-RangerHashtable -InputObject $storageSnapshot.dedupStatus
-                cacheConfig        = ConvertTo-RangerHashtable -InputObject $storageSnapshot.cacheConfig
-                scrubSchedule      = ConvertTo-RangerHashtable -InputObject $storageSnapshot.scrubSchedule
-                tiers              = ConvertTo-RangerHashtable -InputObject $storageSnapshot.tiers
-                subsystems         = ConvertTo-RangerHashtable -InputObject $storageSnapshot.subsystems
-                resiliency         = ConvertTo-RangerHashtable -InputObject $storageSnapshot.resiliency
-                jobs               = ConvertTo-RangerHashtable -InputObject $storageSnapshot.jobs
-                csvs               = ConvertTo-RangerHashtable -InputObject $storageSnapshot.csvs
-                qos                = ConvertTo-RangerHashtable -InputObject $storageSnapshot.qos
-                qosFlows           = ConvertTo-RangerHashtable -InputObject $storageSnapshot.qosFlows
-                healthFaults       = ConvertTo-RangerHashtable -InputObject $storageSnapshot.healthFaults
-                replica            = ConvertTo-RangerHashtable -InputObject $storageSnapshot.replica
-                replicaDepth       = ConvertTo-RangerHashtable -InputObject $storageSnapshot.replicaDepth
-                summary            = $storageSummary
-            }
+            storage = $storageDomain
             networking = [ordered]@{
                 nodes                = ConvertTo-RangerHashtable -InputObject $networkNodes
                 clusterNetworks      = ConvertTo-RangerHashtable -InputObject $storageSnapshot.clusterNetworks

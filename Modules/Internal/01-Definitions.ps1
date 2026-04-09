@@ -157,6 +157,7 @@ function Get-RangerReservedDomainPayloads {
             backup            = @()
             update            = @()
             cost              = @()
+            costAnalysis      = [ordered]@{ esuInventory = @(); summary = [ordered]@{} }
             resourceBridge    = @()
             customLocations   = @()
             extensions        = @()

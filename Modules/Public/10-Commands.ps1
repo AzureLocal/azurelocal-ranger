@@ -45,6 +45,14 @@ function Invoke-AzureLocalRanger {
     .PARAMETER NoRender
         Collect data but skip report rendering. The raw manifest JSON is still written.
 
+    .PARAMETER Unattended
+        Suppress interactive prompts and fail the PowerShell process when a collector ends in
+        the failed state. Intended for Task Scheduler, CI, and other scheduled runs.
+
+    .PARAMETER BaselineManifestPath
+        Path to a previous audit-manifest.json file. When provided, Ranger compares the new
+        manifest against the baseline and writes drift-report.json into the package.
+
     .PARAMETER ClusterFqdn
         FQDN or NetBIOS name of the cluster name object (CNO). Overrides
         config targets.cluster.fqdn.
@@ -89,6 +97,10 @@ function Invoke-AzureLocalRanger {
         # Collect only; skip report rendering
         Invoke-AzureLocalRanger -ConfigPath .\ranger.yml -NoRender
 
+    .EXAMPLE
+        # Run non-interactively on a schedule and compare with a prior manifest
+        Invoke-AzureLocalRanger -ConfigPath .\ranger.yml -Unattended -BaselineManifestPath .\baseline\audit-manifest.json
+
     .LINK
         https://azurelocal.github.io/azurelocal-ranger/prerequisites/
 
@@ -106,6 +118,8 @@ function Invoke-AzureLocalRanger {
         [PSCredential]$DomainCredential,
         [PSCredential]$BmcCredential,
         [switch]$NoRender,
+        [switch]$Unattended,
+        [string]$BaselineManifestPath,
 
         # Issue #115: structural overrides — any of these win over the config file value
         [string]$ClusterFqdn,
@@ -130,7 +144,7 @@ function Invoke-AzureLocalRanger {
     if ($PSBoundParameters.ContainsKey('TenantId'))        { $structuralOverrides['TenantId']        = $TenantId }
     if ($PSBoundParameters.ContainsKey('ResourceGroup'))   { $structuralOverrides['ResourceGroup']   = $ResourceGroup }
 
-    Invoke-RangerDiscoveryRuntime -ConfigPath $ConfigPath -ConfigObject $ConfigObject -OutputPath $OutputPath -CredentialOverrides $credentialOverrides -IncludeDomains $IncludeDomain -ExcludeDomains $ExcludeDomain -NoRender:$NoRender -StructuralOverrides $structuralOverrides -AllowInteractiveInput
+    Invoke-RangerDiscoveryRuntime -ConfigPath $ConfigPath -ConfigObject $ConfigObject -OutputPath $OutputPath -CredentialOverrides $credentialOverrides -IncludeDomains $IncludeDomain -ExcludeDomains $ExcludeDomain -NoRender:$NoRender -StructuralOverrides $structuralOverrides -AllowInteractiveInput:(-not $Unattended) -Unattended:$Unattended -BaselineManifestPath $BaselineManifestPath
 }
 
 function New-AzureLocalRangerConfig {
