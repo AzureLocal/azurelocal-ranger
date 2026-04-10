@@ -100,7 +100,6 @@ Use the naming pattern `vX.Y.Z — Short Title` with a one-line sprint descripti
 
 - Every enhancement or bug fix should be tracked as an issue **before** implementation begins.
 - Issues are assigned to the milestone for the version they target.
-- The [Product Plan Implementation Tracker](https://github.com/AzureLocal/azurelocal-ranger/blob/main/repo-management/reports/product-plan-implementation-tracker.md) provides a human-readable cross-reference between issues, features, and versions separate from GitHub's milestone view.
 - Do not merge implementation PRs without a milestone-assigned issue. Commit messages reference `#issue-number` to keep history traceable.
 
 ---
