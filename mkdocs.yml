@@ -21,13 +21,13 @@ theme:
   palette:
     - scheme: default
       primary: blue
-      accent: teal
+      accent: blue
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - scheme: slate
       primary: blue
-      accent: teal
+      accent: blue
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
