@@ -8,46 +8,26 @@ on:
   workflow_dispatch:
 
 jobs:
-  validate-docs-and-module:
+  docs-build:
+    name: Docs build check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Install MkDocs Material
-        run: |
-          python -m pip install --upgrade pip
-          pip install mkdocs-material mkdocs-drawio
+      - run: pip install mkdocs-material mkdocs-drawio
 
-      - name: Validate MkDocs build
-        run: mkdocs build --strict
+      - run: mkdocs build --strict
 
-      - name: Validate module manifest
-        shell: pwsh
-        run: |
-          Test-ModuleManifest -Path ./AzureLocalRanger.psd1 | Out-Null
-
-      - name: Import root module
-        shell: pwsh
-        run: |
-          Import-Module ./AzureLocalRanger.psd1 -Force
-          Get-Module AzureLocalRanger | Format-List Name,Version,Path
-
-      - name: Checkout platform repo
-        uses: actions/checkout@v4
-        with:
-          repository: AzureLocal/platform
-          path: _platform
-          ref: main
-
-      - name: Import AzureLocal.Maproom
-        shell: pwsh
-        run: |
-          Import-Module .\_platform\testing\maproom\AzureLocal.Maproom.psd1 -Force
-          Get-Module AzureLocal.Maproom | Format-List Name, Version
-          Write-Host "AzureLocal.Maproom imported successfully."
+  module-ci:
+    uses: AzureLocal/platform/.github/workflows/reusable-ps-module-ci.yml@main
+    with:
+      module-manifest: AzureLocalRanger.psd1
+      run-psscriptanalyzer: false
+      run-pester: false
+      validate-maproom: false
