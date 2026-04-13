@@ -37,3 +37,17 @@ jobs:
         run: |
           Import-Module ./AzureLocalRanger.psd1 -Force
           Get-Module AzureLocalRanger | Format-List Name,Version,Path
+
+      - name: Checkout platform repo
+        uses: actions/checkout@v4
+        with:
+          repository: AzureLocal/platform
+          path: _platform
+          ref: main
+
+      - name: Import AzureLocal.Maproom
+        shell: pwsh
+        run: |
+          Import-Module .\_platform\testing\maproom\AzureLocal.Maproom.psd1 -Force
+          Get-Module AzureLocal.Maproom | Format-List Name, Version
+          Write-Host "AzureLocal.Maproom imported successfully."
