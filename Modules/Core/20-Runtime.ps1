@@ -519,6 +519,39 @@ function Invoke-RangerDiscoveryRuntime {
         $manifestPath = Join-Path -Path $packageRoot -ChildPath 'manifest\audit-manifest.json'
         $evidenceRoot = Join-Path -Path $packageRoot -ChildPath 'evidence'
 
+        # Issue #139 — WinRM preflight: probe all cluster targets before any collector runs.
+        # Fails the run immediately when any configured target is unreachable.
+        $preflightTargets = [System.Collections.Generic.List[string]]::new()
+        if (-not [string]::IsNullOrWhiteSpace([string]$config.targets.cluster.fqdn)) {
+            $preflightTargets.Add([string]$config.targets.cluster.fqdn)
+        }
+        foreach ($node in @($config.targets.cluster.nodes)) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$node) -and $node -notin $preflightTargets) {
+                $preflightTargets.Add([string]$node)
+            }
+        }
+
+        if ($preflightTargets.Count -gt 0 -and $credentialMap.cluster) {
+            Write-RangerLog -Level info -Message "WinRM preflight probing $($preflightTargets.Count) target(s): $($preflightTargets -join ', ')"
+            $preflightResults = @($preflightTargets | ForEach-Object {
+                [ordered]@{ target = $_; result = Test-RangerWinRmTarget -ComputerName $_ -Credential $credentialMap.cluster }
+            })
+            $failedPreflight = @($preflightResults | Where-Object { -not $_.result.Reachable })
+            if ($failedPreflight.Count -gt 0) {
+                $detail = @($preflightResults | ForEach-Object {
+                    if ($_.result.Reachable) {
+                        "$($_.target): reachable over $($_.result.Transport.ToUpperInvariant())/$($_.result.Port)"
+                    } else {
+                        "$($_.target): $($_.result.Message)"
+                    }
+                }) -join ' | '
+                throw [System.InvalidOperationException]::new("WinRM preflight failed — collection cannot begin. $detail")
+            }
+            foreach ($pr in $preflightResults) {
+                Write-RangerLog -Level info -Message "WinRM preflight: '$($pr.target)' reachable over $($pr.result.Transport.ToUpperInvariant())/$($pr.result.Port)"
+            }
+        }
+
         foreach ($collector in $selectedCollectors) {
             Write-RangerLog -Level info -Message "Collector '$($collector.Id)' starting"
             $collectorResult = Invoke-RangerCollectorExecution -Definition $collector -Config $config -CredentialMap $credentialMap -PackageRoot $packageRoot

@@ -261,4 +261,59 @@ Describe 'Azure Local Ranger runtime' {
             Assert-MockCalled Test-WSMan -Times 1 -Exactly -ParameterFilter { $UseSSL }
         }
     }
+
+    It 'caches successful WinRM preflight result and does not re-probe on second call' -Skip:(-not $IsWindows) {
+        InModuleScope AzureLocalRanger {
+            $script:RangerWinRmProbeCache = @{}
+
+            Mock Test-RangerCommandAvailable {
+                param($Name)
+                $Name -in @('Test-NetConnection', 'Test-WSMan')
+            }
+
+            Mock Test-NetConnection {
+                [pscustomobject]@{ TcpTestSucceeded = $true }
+            }
+
+            Mock Test-WSMan {
+                [pscustomobject]@{ ProductVersion = 'OS: 0.0.0 SP: 0.0 Stack: 3.0' }
+            }
+
+            $result1 = Test-RangerWinRmTarget -ComputerName 'node01.contoso.com' -Credential $null
+            $result2 = Test-RangerWinRmTarget -ComputerName 'node01.contoso.com' -Credential $null
+
+            $result1.Reachable | Should -BeTrue
+            $result2.Reachable | Should -BeTrue
+            $result1.Transport | Should -Be 'http'
+            $result2.Transport | Should -Be 'http'
+            Assert-MockCalled Test-NetConnection -Times 1 -Exactly
+            Assert-MockCalled Test-WSMan -Times 1 -Exactly
+        }
+    }
+
+    It 'reports unreachable when WSMan authentication fails on all transports' -Skip:(-not $IsWindows) {
+        InModuleScope AzureLocalRanger {
+            $script:RangerWinRmProbeCache = @{}
+
+            Mock Test-RangerCommandAvailable {
+                param($Name)
+                $Name -in @('Test-NetConnection', 'Test-WSMan')
+            }
+
+            Mock Test-NetConnection {
+                [pscustomobject]@{ TcpTestSucceeded = $true }
+            }
+
+            Mock Test-WSMan {
+                throw 'WinRM cannot complete the operation. (Access is denied.)'
+            }
+
+            $result = Test-RangerWinRmTarget -ComputerName 'node01.contoso.com' -Credential $null
+
+            $result.Reachable | Should -BeFalse
+            $result.Message | Should -Match 'Access is denied'
+            Assert-MockCalled Test-NetConnection -Times 2 -Exactly
+            Assert-MockCalled Test-WSMan -Times 2 -Exactly
+        }
+    }
 }

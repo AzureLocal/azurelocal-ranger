@@ -17,6 +17,7 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 - **Issue #153** — Storage reserve and provisioning analysis: the storage collector now models raw, usable, used, free, reserve-target, and safe-allocatable capacity per pool, surfaces thin-provisioning exposure, and adds storage posture findings to the manifest and reports.
 - **Issues #132 and #134** — Arc-backed guest intelligence: VM inventory now falls back to Arc network-profile IP data when Hyper-V guest IPs are unavailable, and Azure integration inventory now tracks Arc ESU eligibility and enrollment state for supported Windows Server guests.
 - **Issues #118, #131, and #77** — Delivery guidance for the next phase: added the detailed technical runtime flow diagram, recorded the update-mode design, and completed the terminal TUI alternatives survey with `PwshSpectreConsole` selected as the preferred rich-terminal path.
+- **Issue #139** — WinRM preflight validation: `Invoke-AzureLocalRanger` now probes all configured cluster targets (VIP + nodes) via TCP 5985/5986 and `Test-WSMan` before any collector runs, and throws immediately with a human-readable per-target error summary if any target is unreachable. `Test-AzureLocalRangerPrerequisites` includes the same per-target probe in its "Cluster WinRM connectivity" check. Probe results are cached per `(ComputerName, credential)` for the duration of the run so subsequent `Invoke-Command` calls do not re-probe. 2 new unit tests: successful probe cached on second call, WSMan authentication failure.
 
 ### Fixed
 
@@ -32,7 +33,7 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 - `networking` domain summary now includes `importedSwitchConfigCount` and `importedFirewallConfigCount` counts
 - Report payloads now expose drift state, storage reserve headroom, safe allocatable capacity, Arc IP fallback usage, and Arc ESU enrollment summaries across HTML, Markdown, and Office exports.
 - Fixture-backed storage snapshots are normalized through the same storage analysis pipeline as live data so reserve and posture math stay consistent across real and simulated runs.
-- Tests: 18 → 27 → 28 → 41 total, including new runtime, drift detection, storage analysis, and workload/Azure collector coverage.
+- Tests: 18 → 27 → 28 → 41 → 42 total, including new runtime, drift detection, storage analysis, and workload/Azure collector coverage.
 - CI (`validate.yml` and new `ci.yml`) now runs all 41 unit tests via `run-pester: true` and PSScriptAnalyzer via `run-psscriptanalyzer: true` on every PR and push to main. Previously tests were disabled in CI. `tests/maproom/integration/` (requires live cluster) is excluded from automated runs.
 
 ### Known Issues
