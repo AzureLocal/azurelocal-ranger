@@ -33,6 +33,7 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 - Report payloads now expose drift state, storage reserve headroom, safe allocatable capacity, Arc IP fallback usage, and Arc ESU enrollment summaries across HTML, Markdown, and Office exports.
 - Fixture-backed storage snapshots are normalized through the same storage analysis pipeline as live data so reserve and posture math stay consistent across real and simulated runs.
 - Tests: 18 → 27 → 28 → 41 total, including new runtime, drift detection, storage analysis, and workload/Azure collector coverage.
+- CI (`validate.yml` and new `ci.yml`) now runs all 41 unit tests via `run-pester: true` and PSScriptAnalyzer via `run-psscriptanalyzer: true` on every PR and push to main. Previously tests were disabled in CI. `tests/maproom/integration/` (requires live cluster) is excluded from automated runs.
 
 ### Known Issues
 
