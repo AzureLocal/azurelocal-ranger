@@ -55,6 +55,18 @@ jobs:
               Copy-Item -Path $src -Destination $stagingDir -Recurse -Force
             }
           }
+          $manifest = Test-ModuleManifest -Path (Join-Path $stagingDir 'AzureLocalRanger.psd1') -ErrorAction Stop
+          $existing = $null
+          try {
+            $existing = Find-Module -Name $manifest.Name -Repository PSGallery -RequiredVersion $manifest.Version -ErrorAction Stop
+          }
+          catch {
+            $existing = $null
+          }
+          if ($existing) {
+            Write-Host "Module $($manifest.Name) v$($manifest.Version) is already published to PSGallery. Skipping publish."
+            exit 0
+          }
           Publish-Module -Path $stagingDir -NuGetApiKey $env:PSGALLERY_API_KEY -Repository PSGallery -Verbose
 
       - name: Dry-run summary
