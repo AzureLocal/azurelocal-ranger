@@ -46,9 +46,15 @@ jobs:
           if (-not $env:PSGALLERY_API_KEY) {
             throw 'PSGALLERY_API_KEY secret is not set. Cannot publish.'
           }
-          # Publish-Module requires the directory to be named after the module
+          # Stage only the module payload expected by PowerShell Gallery.
           $stagingDir = Join-Path $env:RUNNER_TEMP 'staging' 'AzureLocalRanger'
-          Copy-Item -Path $env:GITHUB_WORKSPACE -Destination $stagingDir -Recurse -Force
+          New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null
+          foreach ($item in @('AzureLocalRanger.psd1','AzureLocalRanger.psm1','Modules','en-US','LICENSE','README.md')) {
+            $src = Join-Path $env:GITHUB_WORKSPACE $item
+            if (Test-Path $src) {
+              Copy-Item -Path $src -Destination $stagingDir -Recurse -Force
+            }
+          }
           Publish-Module -Path $stagingDir -NuGetApiKey $env:PSGALLERY_API_KEY -Repository PSGallery -Verbose
 
       - name: Dry-run summary
