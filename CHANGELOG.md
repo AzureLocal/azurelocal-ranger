@@ -8,6 +8,8 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-04-15
+
 ### Added
 
 - **Issue #36** — Offline network device config import via `domains.hints.networkDeviceConfigs` hints: Cisco NX-OS and IOS parser extracting VLANs, port-channels/LAGs, interfaces, and ACLs. New `switchConfig` and `firewallConfig` keys added to the `networking` manifest domain. New private module `Modules/Private/60-NetworkDeviceParser.ps1`. 7 new Pester tests in `tests/maproom/unit/NetworkDevice.Tests.ps1` including IIC NX-OS fixture at `tests/maproom/Fixtures/network-configs/switch-nxos-sample.txt`.
@@ -18,6 +20,7 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 - **Issues #132 and #134** — Arc-backed guest intelligence: VM inventory now falls back to Arc network-profile IP data when Hyper-V guest IPs are unavailable, and Azure integration inventory now tracks Arc ESU eligibility and enrollment state for supported Windows Server guests.
 - **Issues #118, #131, and #77** — Delivery guidance for the next phase: added the detailed technical runtime flow diagram, recorded the update-mode design, and completed the terminal TUI alternatives survey with `PwshSpectreConsole` selected as the preferred rich-terminal path.
 - **Issue #139** — WinRM preflight validation: `Invoke-AzureLocalRanger` now probes all configured cluster targets (VIP + nodes) via TCP 5985/5986 and `Test-WSMan` before any collector runs, and throws immediately with a human-readable per-target error summary if any target is unreachable. `Test-AzureLocalRangerPrerequisites` includes the same per-target probe in its "Cluster WinRM connectivity" check. Probe results are cached per `(ComputerName, credential)` for the duration of the run so subsequent `Invoke-Command` calls do not re-probe. 2 new unit tests: successful probe cached on second call, WSMan authentication failure.
+- **Issue #156** — Intelligent remoting credential selection for non-domain-joined runners: Ranger now probes authorization with current context, cluster credentials, and domain credentials in priority order, records the selected remote execution identity in `manifest.run.remoteExecution`, and falls back from `Get-AzKeyVaultSecret` to `az keyvault secret show` when Az PowerShell secret resolution is unavailable on the runner.
 
 ### Fixed
 
@@ -25,6 +28,7 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 - **Issue #105** — Workload/identity/Azure collector: Changed `Select-Object -ExpandProperty hostNode` to `ForEach-Object { $_['hostNode'] }` and `Group-Object -Property hostNode` to `Group-Object -Property { $_['hostNode'] }` to fix hashtable VM inventory property access producing incorrect `avgVmsPerNode` and always-empty `highestDensityNode`.
 - **Issue #107** — Diagram generation: `Get-RangerSafeName` now accepts null/empty input (returns `'unnamed'`), SVG layout loop skips nodes with null/empty id, SVG edge loop skips edges with null/empty source or target. Prevents storage-architecture diagram crash when storage pool/CSV has no friendly name.
 - **Issue #108** — `Test-RangerTargetConfigured`: Fixed `@($null).Count -gt 0` returning true when `targets.cluster` is absent; added explicit null check before testing for fqdn/nodes; node and endpoint lists filtered for null/empty entries before count check.
+- **Issue #121** — v1.1.0 milestone-close validation: live `tplabs` validation now succeeds from the standard config path, including automatic BMC endpoint hydration from sibling `variables.yml` when `targets.bmc.endpoints` is omitted, and collectors now preserve actionable findings without downgrading an otherwise complete collection to `partial`.
 
 ### Changed
 

@@ -6,7 +6,7 @@ function New-RangerManifest {
         [Parameter(Mandatory = $true)]
         [object[]]$SelectedCollectors,
 
-        [string]$ToolVersion = '0.2.0'
+        [string]$ToolVersion = '1.1.0'
     )
 
     $targetNodes = @($Config.targets.cluster.nodes)

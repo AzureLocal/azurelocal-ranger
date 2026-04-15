@@ -202,6 +202,7 @@ Describe 'Azure Local Ranger workload collector' {
             $result = Invoke-RangerWorkloadIdentityAzureCollector -Config $TestConfig -CredentialMap $TestCredentialMap -Definition $TestDefinition -PackageRoot $TestPackageRoot
             $esuInventory = @($result.Domains.azureIntegration.costAnalysis.esuInventory)
 
+            $result.Status | Should -Be 'success'
             (@($esuInventory | Where-Object { $_.name -eq 'vm-2016' }).Count) | Should -Be 1
             (@($esuInventory | Where-Object { $_.name -eq 'vm-2019' }).Count) | Should -Be 1
             (@($esuInventory | Where-Object { $_.name -eq 'vm-2022' }).Count) | Should -Be 1

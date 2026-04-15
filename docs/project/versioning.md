@@ -68,8 +68,8 @@ Each GitHub milestone maps to one planned release. An issue assigned to a milest
 
 | Milestone | Target version | Sprint focus |
 | --- | --- | --- |
-| [v1.0.0 — PSGallery Launch](https://github.com/AzureLocal/azurelocal-ranger/milestone/3) | `1.0.0` | Live-estate validation, PSGallery publish, and final polish |
-| [v1.1.0 — Post-Release Sprint](https://github.com/AzureLocal/azurelocal-ranger/milestone/6) | `1.1.0` | Interactive wizard, TUI, Arc Run Command, disconnected mode, WAF, PDF |
+| v1.1.0 — Post-Release Sprint | `1.1.0` | Closed: auth hardening, BMC fallback, and milestone-close live validation |
+| [v1.2.0 — UX & Transport](https://github.com/AzureLocal/azurelocal-ranger/milestone/7) | `1.2.0` | Interactive wizard, TUI, Arc Run Command, disconnected discovery |
 | [v2.0.0 — Extended Platform Coverage](https://github.com/AzureLocal/azurelocal-ranger/milestone/4) | `2.0.0` | Switches, firewalls, OEM hardware, multi-rack, cost analysis, PowerPoint |
 
 ### When to Create a New Milestone

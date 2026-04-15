@@ -4,6 +4,56 @@ BeforeAll {
 }
 
 Describe 'Azure Local Ranger storage analysis' {
+    It 'keeps fixture-backed storage findings as success when collection data is complete' {
+        $config = InModuleScope AzureLocalRanger {
+            Get-RangerDefaultConfig
+        }
+
+        $definition = [pscustomobject]@{ Id = 'storage-networking' }
+        $credentialMap = [ordered]@{ cluster = $null; azure = $null }
+
+        InModuleScope AzureLocalRanger {
+            param($TestConfig, $TestDefinition, $TestCredentialMap, $TestPackageRoot)
+
+            Mock Get-RangerCollectorFixtureData {
+                [ordered]@{
+                    Status   = 'success'
+                    Domains  = [ordered]@{
+                        storage = [ordered]@{
+                            pools = @([ordered]@{ friendlyName = 'Pool02'; healthStatus = 'Warning'; operationalStatus = 'Degraded'; sizeGiB = 300; allocatedSizeGiB = 200; provisionedCapacityGiB = 210; resiliencySettingName = 'Parity'; numberOfDataCopies = 1 })
+                            physicalDisks = @(
+                                1..6 | ForEach-Object { [ordered]@{ friendlyName = "Disk$_"; storagePoolFriendlyName = 'Pool02'; mediaType = 'HDD'; sizeGiB = 50; usage = 'Capacity'; healthStatus = 'Healthy'; operationalStatus = 'OK' } }
+                            )
+                            virtualDisks = @([ordered]@{ friendlyName = 'VD02'; storagePoolFriendlyName = 'Pool02'; resiliencySettingName = 'Parity'; numberOfDataCopies = 1; sizeGiB = 180; provisioningType = 'Thin' })
+                            volumes = @([ordered]@{ sizeGiB = 180; sizeRemainingGiB = 10 })
+                            csvs = @()
+                            dedupStatus = @()
+                            cacheConfig = [ordered]@{ CacheState = 'Enabled' }
+                            scrubSchedule = @()
+                            tiers = @()
+                            subsystems = @()
+                            resiliency = @()
+                            jobs = @()
+                            qos = @()
+                            qosFlows = @()
+                            healthFaults = @()
+                            replica = @()
+                            replicaDepth = @()
+                            summary = [ordered]@{}
+                        }
+                    }
+                    Findings = @()
+                }
+            }
+
+            $result = Invoke-RangerStorageNetworkingCollector -Config $TestConfig -CredentialMap $TestCredentialMap -Definition $TestDefinition -PackageRoot $TestPackageRoot
+
+            $result.Status | Should -Be 'success'
+            (@($result.Findings | Where-Object { $_.title -like 'Storage reserve is below*' })).Count | Should -Be 1
+            (@($result.Findings | Where-Object { $_.title -like 'Thin provisioning exceeds*' })).Count | Should -Be 1
+        } -Parameters @{ TestConfig = $config; TestDefinition = $definition; TestCredentialMap = $credentialMap; TestPackageRoot = $TestDrive }
+    }
+
     It 'models a healthy mirror pool reserve posture' {
         InModuleScope AzureLocalRanger {
             $storageDomain = [ordered]@{

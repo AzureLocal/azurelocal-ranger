@@ -53,6 +53,130 @@ Describe 'Azure Local Ranger runtime' {
         $result.SelectedCollectors | Should -Contain 'management-performance'
     }
 
+    It 'prefers the cluster credential when remote authorization succeeds' {
+        $clusterCredential = [pscredential]::new('CONTOSO\cluster-read', (ConvertTo-SecureString 'cluster-secret' -AsPlainText -Force))
+        $domainCredential = [pscredential]::new('CONTOSO\svc.azl_admin', (ConvertTo-SecureString 'domain-secret' -AsPlainText -Force))
+
+        InModuleScope AzureLocalRanger {
+            param($TestClusterCredential, $TestDomainCredential)
+
+            Mock Test-RangerRemoteAuthorization {
+                param($ComputerName, $Credential)
+
+                if ($Credential.UserName -ne $TestClusterCredential.UserName) {
+                    throw 'unexpected credential'
+                }
+
+                [ordered]@{
+                    Target             = $ComputerName
+                    CredentialUserName = $Credential.UserName
+                    RemoteComputerName = $ComputerName
+                    RemoteIdentity     = $Credential.UserName
+                }
+            }
+
+            $result = Resolve-RangerRemoteExecutionCredential -Targets @('node01.contoso.com', 'node02.contoso.com') -ClusterCredential $TestClusterCredential -DomainCredential $TestDomainCredential
+
+            $result.SelectedSource | Should -Be 'cluster'
+            $result.UserName | Should -Be $TestClusterCredential.UserName
+            @($result.Results).Count | Should -Be 2
+            Assert-MockCalled Test-RangerRemoteAuthorization -Times 2 -Exactly -ParameterFilter { $Credential.UserName -eq $TestClusterCredential.UserName }
+            Assert-MockCalled Test-RangerRemoteAuthorization -Times 0 -Exactly -ParameterFilter { $Credential -and $Credential.UserName -eq $TestDomainCredential.UserName }
+        } -Parameters @{ TestClusterCredential = $clusterCredential; TestDomainCredential = $domainCredential }
+    }
+
+    It 'falls back to the domain credential when cluster authorization is denied' {
+        $clusterCredential = [pscredential]::new('localadmin', (ConvertTo-SecureString 'cluster-secret' -AsPlainText -Force))
+        $domainCredential = [pscredential]::new('CONTOSO\svc.azl_admin', (ConvertTo-SecureString 'domain-secret' -AsPlainText -Force))
+
+        InModuleScope AzureLocalRanger {
+            param($TestClusterCredential, $TestDomainCredential)
+
+            Mock Test-RangerRemoteAuthorization {
+                param($ComputerName, $Credential)
+
+                if ($Credential.UserName -eq $TestClusterCredential.UserName) {
+                    throw 'Access is denied.'
+                }
+
+                [ordered]@{
+                    Target             = $ComputerName
+                    CredentialUserName = $Credential.UserName
+                    RemoteComputerName = $ComputerName
+                    RemoteIdentity     = $Credential.UserName
+                }
+            }
+
+            $result = Resolve-RangerRemoteExecutionCredential -Targets @('node01.contoso.com', 'node02.contoso.com') -ClusterCredential $TestClusterCredential -DomainCredential $TestDomainCredential
+
+            $result.SelectedSource | Should -Be 'domain'
+            $result.UserName | Should -Be $TestDomainCredential.UserName
+            $result.Detail | Should -Match 'Selected domain remoting credential'
+            Assert-MockCalled Test-RangerRemoteAuthorization -Times 2 -Exactly -ParameterFilter { $Credential.UserName -eq $TestClusterCredential.UserName }
+            Assert-MockCalled Test-RangerRemoteAuthorization -Times 2 -Exactly -ParameterFilter { $Credential.UserName -eq $TestDomainCredential.UserName }
+        } -Parameters @{ TestClusterCredential = $clusterCredential; TestDomainCredential = $domainCredential }
+    }
+
+    It 'throws actionable guidance when no remoting credential can authorize' {
+        $clusterCredential = [pscredential]::new('localadmin', (ConvertTo-SecureString 'cluster-secret' -AsPlainText -Force))
+        $domainCredential = [pscredential]::new('CONTOSO\svc.azl_admin', (ConvertTo-SecureString 'domain-secret' -AsPlainText -Force))
+
+        InModuleScope AzureLocalRanger {
+            param($TestClusterCredential, $TestDomainCredential)
+
+            Mock Test-RangerRemoteAuthorization {
+                param($ComputerName, $Credential)
+                throw "Access is denied for $($Credential.UserName) on $ComputerName"
+            }
+
+            Mock Get-RangerExecutionHostContext {
+                [ordered]@{
+                    ComputerName   = 'runner01'
+                    Domain         = $null
+                    IsDomainJoined = $false
+                }
+            }
+
+            $message = $null
+            try {
+                Resolve-RangerRemoteExecutionCredential -Targets @('node01.contoso.com') -ClusterCredential $TestClusterCredential -DomainCredential $TestDomainCredential | Out-Null
+            }
+            catch {
+                $message = $_.Exception.Message
+            }
+
+            $message | Should -Match 'No remoting credential could authorize on all targets'
+            $message | Should -Match 'cluster credential'
+            $message | Should -Match 'domain credential'
+            $message | Should -Match "Execution host 'runner01' is not domain-joined"
+        } -Parameters @{ TestClusterCredential = $clusterCredential; TestDomainCredential = $domainCredential }
+    }
+
+    It 'uses the current context when no explicit remoting credentials are configured' {
+        InModuleScope AzureLocalRanger {
+            Mock Test-RangerRemoteAuthorization {
+                param($ComputerName, $Credential)
+
+                if ($null -ne $Credential) {
+                    throw 'expected current context'
+                }
+
+                [ordered]@{
+                    Target             = $ComputerName
+                    CredentialUserName = '<current-context>'
+                    RemoteComputerName = $ComputerName
+                    RemoteIdentity     = 'runner\current-user'
+                }
+            }
+
+            $result = Resolve-RangerRemoteExecutionCredential -Targets @('node01.contoso.com') -ClusterCredential $null -DomainCredential $null
+
+            $result.SelectedSource | Should -Be 'current-context'
+            $result.UserName | Should -Be '<current-context>'
+            Assert-MockCalled Test-RangerRemoteAuthorization -Times 1 -Exactly -ParameterFilter { $null -eq $Credential }
+        }
+    }
+
     It 'validates manifests against the standalone schema contract' {
         $config = InModuleScope AzureLocalRanger {
             Get-RangerDefaultConfig

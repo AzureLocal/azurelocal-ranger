@@ -366,11 +366,11 @@ function Test-AzureLocalRangerPrerequisites {
     try {
         $probeCredentialMap = Resolve-RangerCredentialMap -Config $probeConfig -Overrides @{}
         $probeTargets = [System.Collections.Generic.List[string]]::new()
-        if (-not [string]::IsNullOrWhiteSpace($probeConfig.targets.cluster.fqdn)) {
+        if (-not [string]::IsNullOrWhiteSpace($probeConfig.targets.cluster.fqdn) -and -not (Test-RangerPlaceholderValue -Value $probeConfig.targets.cluster.fqdn -FieldName 'targets.cluster.fqdn')) {
             $probeTargets.Add([string]$probeConfig.targets.cluster.fqdn)
         }
         foreach ($node in @($probeConfig.targets.cluster.nodes)) {
-            if (-not [string]::IsNullOrWhiteSpace([string]$node) -and $node -notin $probeTargets) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$node) -and -not (Test-RangerPlaceholderValue -Value $node -FieldName 'targets.cluster.node') -and $node -notin $probeTargets) {
                 $probeTargets.Add([string]$node)
             }
         }
@@ -378,23 +378,14 @@ function Test-AzureLocalRangerPrerequisites {
         if ($probeTargets.Count -eq 0) {
             $clusterConnectivityDetail = 'No cluster WinRM targets are configured.'
         }
-        elseif (-not $probeCredentialMap.cluster) {
-            $clusterConnectivityDetail = 'Cluster credential could not be resolved; connectivity was not tested.'
-        }
         else {
-            $probeResults = @($probeTargets | ForEach-Object {
-                [ordered]@{ target = $_; result = Test-RangerWinRmTarget -ComputerName $_ -Credential $probeCredentialMap.cluster }
-            })
-            $clusterConnectivityPassed = @($probeResults | Where-Object { $_.result.Reachable }).Count -gt 0
-            $clusterConnectivityDetail = @($probeResults | ForEach-Object {
-                $status = if ($_.result.Reachable) {
-                    "reachable over $($_.result.Transport.ToUpperInvariant())/$($_.result.Port)"
-                }
-                else {
-                    $_.result.Message
-                }
-                "$($_.target): $status"
-            }) -join '; '
+            $retryCount = if ($probeConfig.behavior -and $probeConfig.behavior.retryCount -gt 0) { [int]$probeConfig.behavior.retryCount } else { 1 }
+            $timeoutSec = if ($probeConfig.behavior -and $probeConfig.behavior.timeoutSeconds -gt 0) { [int]$probeConfig.behavior.timeoutSeconds } else { 0 }
+            $remoteExecution = Resolve-RangerRemoteExecutionCredential -Targets $probeTargets -ClusterCredential $probeCredentialMap.cluster -DomainCredential $probeCredentialMap.domain -RetryCount $retryCount -TimeoutSeconds $timeoutSec
+            $clusterConnectivityPassed = $true
+            $clusterConnectivityDetail = "$($remoteExecution.Detail) " + (@($remoteExecution.Results | ForEach-Object {
+                "$($_.Target): $($_.RemoteIdentity)"
+            }) -join '; ')
         }
     }
     catch {

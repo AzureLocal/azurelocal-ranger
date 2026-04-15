@@ -295,7 +295,7 @@ function Invoke-RangerMonitoringCollector {
     }
 
     return @{
-        Status        = if ($findings.Count -gt 0) { 'partial' } else { 'success' }
+        Status        = 'success'
         Domains       = @{
             monitoring = [ordered]@{
                 telemetry               = ConvertTo-RangerHashtable -InputObject $telemetry

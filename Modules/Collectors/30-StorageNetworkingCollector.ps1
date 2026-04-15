@@ -298,9 +298,6 @@ function Invoke-RangerStorageNetworkingCollector {
 
             if ($fixtureStorageFindings.Count -gt 0) {
                 $fixtureResult.Findings = @($fixtureResult.Findings) + $fixtureStorageFindings
-                if ($fixtureResult.Status -eq 'success') {
-                    $fixtureResult.Status = 'partial'
-                }
             }
         }
 
@@ -871,7 +868,7 @@ function Invoke-RangerStorageNetworkingCollector {
     }
 
     return @{
-        Status        = if ($findings.Count -gt 0) { 'partial' } else { 'success' }
+        Status        = 'success'
         Domains       = @{
             storage = $storageDomain
             networking = [ordered]@{

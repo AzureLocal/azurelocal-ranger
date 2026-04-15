@@ -29,7 +29,7 @@ If you are new to Ranger, the cleanest path through the docs is:
 
 ## Current Project Phase
 
-AzureLocalRanger is in the **v1.0.0 release-candidate phase**. The collectors, manifest pipeline, report renderers, and docs set are implemented in this repository; PSGallery publication is tracked separately from the feature work.
+AzureLocalRanger is at **v1.1.0**. The milestone-close validation work is complete, the live `tplabs` field run passed on the final code, and the current documentation reflects the shipped post-release sprint baseline.
 
 ```powershell
 Import-Module .\AzureLocalRanger.psd1 -Force

@@ -1,8 +1,8 @@
 # Project Status
 
-## Current Release Track — v1.0.0
+## Current Release Track — v1.1.0
 
-AzureLocalRanger v1.0.0 feature work is implemented in this repository. The remaining release-management items are milestone-close validation and PSGallery publication.
+AzureLocalRanger v1.1.0 is complete in this repository. Milestone-close validation succeeded, the v1.1.0 milestone is closed, and the next release track now moves to post-v1.1 feature delivery.
 
 ```powershell
 Import-Module .\AzureLocalRanger.psd1 -Force
@@ -19,11 +19,11 @@ Import-Module .\AzureLocalRanger.psd1 -Force
 | Hyper-V collectors | ✅ Complete |
 | GPO collectors | ✅ Complete |
 | Manifest assembly | ✅ Complete |
-| Pester test suite | ✅ 29+ passing |
-| Field validation (TRAILHEAD) | 🔄 Release gate still open |
+| Pester test suite | ✅ 31 focused milestone-close tests passing |
+| Field validation (TRAILHEAD) | ✅ v1.1.0 gate closed on live tplabs validation |
 | Report output (HTML/Markdown/JSON/DOCX/XLSX/PDF) | ✅ Complete |
 | Diagram output (SVG/draw.io) | ✅ Complete |
-| PSGallery release | 🔄 Workflow prepared, publish not yet completed |
+| PSGallery release | 🔄 Publication workflow remains separate from milestone-close validation |
 | Arc-first node inventory | ✅ Complete |
 | Domain auto-detection | ✅ Complete |
 | Parameter-first input model | ✅ Complete |

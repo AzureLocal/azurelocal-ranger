@@ -53,6 +53,20 @@ function Invoke-RangerHardwareCollector {
     foreach ($endpoint in $usableEndpoints) {
         $host = $endpoint.host
         $nodeName = if ($endpoint.node) { $endpoint.node } else { $host }
+        $remoteNodeTarget = @(
+            @($Config.targets.cluster.nodes) |
+                Where-Object {
+                    -not [string]::IsNullOrWhiteSpace([string]$_) -and (
+                        [string]$_ -ieq [string]$nodeName -or
+                        (($_ -split '\.')[0] -ieq [string]$nodeName)
+                    )
+                } |
+                Select-Object -First 1
+        )[0]
+
+        if ([string]::IsNullOrWhiteSpace([string]$remoteNodeTarget)) {
+            $remoteNodeTarget = $nodeName
+        }
         try {
             $systemUri = "https://$host/redfish/v1/Systems/System.Embedded.1"
             $system = Invoke-RangerRedfishRequest -Uri $systemUri -Credential $CredentialMap.bmc
@@ -203,8 +217,16 @@ function Invoke-RangerHardwareCollector {
             # GPU / Accelerators via Redfish PCIeDevices (and OS-side via WinRM if available)
             $gpuDevices = @(
                 Invoke-RangerSafeAction -Label "GPU/accelerator inventory for $host" -DefaultValue @() -ScriptBlock {
-                    $pcieCollection = Invoke-RangerSafeAction -Label "Redfish PCIe devices for $host" -DefaultValue $null -ScriptBlock {
+                    $pcieCollection = try {
                         Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/Systems/System.Embedded.1/PCIeDevices" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                    }
+                    catch {
+                        if ($_.Exception.Message -match '404') {
+                            $null
+                        }
+                        else {
+                            throw
+                        }
                     }
                     if ($pcieCollection -and $pcieCollection.Members) {
                         @($pcieCollection.Members | ForEach-Object {
@@ -233,7 +255,13 @@ function Invoke-RangerHardwareCollector {
                     $certUri = $certCollection.Members[0].'@odata.id'
                     $certDetail = Invoke-RangerRedfishRequest -Uri "https://$host$certUri" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
                     if ($certDetail) {
-                        $expiryDate = if ($certDetail.ValidNotAfter) { [datetime]::ParseExact($certDetail.ValidNotAfter, 'yyyy-MM-ddTHH:mm:ssZ', $null, [System.Globalization.DateTimeStyles]::AssumeUniversal) } else { $null }
+                        $expiryDate = $null
+                        if ($certDetail.ValidNotAfter) {
+                            $parsedExpiry = [datetimeoffset]::MinValue
+                            if ([datetimeoffset]::TryParse([string]$certDetail.ValidNotAfter, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::AssumeUniversal, [ref]$parsedExpiry)) {
+                                $expiryDate = $parsedExpiry.UtcDateTime
+                            }
+                        }
                         [ordered]@{
                             subject        = $certDetail.Subject
                             issuer         = $certDetail.Issuer
@@ -291,7 +319,7 @@ function Invoke-RangerHardwareCollector {
 
             # VBS sub-components (OS-level — requires WinRM on the node)
             $vbsPosture = Invoke-RangerSafeAction -Label "VBS sub-component posture for $nodeName" -DefaultValue $null -ScriptBlock {
-                Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -NodeName $nodeName -ScriptBlock {
+                Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -NodeName $remoteNodeTarget -ScriptBlock {
                     $dg = Get-CimInstance -Namespace 'root\Microsoft\Windows\DeviceGuard' -ClassName Win32_DeviceGuard -ErrorAction SilentlyContinue
                     # Issue #57: DDA and GPU-P capability
                     $partitionableGpu = @(try { Get-VMHostPartitionableGpu -ErrorAction Stop } catch { try { Get-VMPartitionableGpu -ErrorAction Stop } catch { @() } })

@@ -139,6 +139,174 @@ function Test-RangerWinRmTarget {
     return $state
 }
 
+function Get-RangerExecutionHostContext {
+    $computerName = $env:COMPUTERNAME
+    $domain = $null
+    $isDomainJoined = $null
+
+    try {
+        $computerSystem = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop
+        $computerName = if (-not [string]::IsNullOrWhiteSpace([string]$computerSystem.Name)) { [string]$computerSystem.Name } else { $computerName }
+        $domain = if (-not [string]::IsNullOrWhiteSpace([string]$computerSystem.Domain)) { [string]$computerSystem.Domain } else { $null }
+        $isDomainJoined = [bool]$computerSystem.PartOfDomain
+    }
+    catch {
+    }
+
+    [ordered]@{
+        ComputerName    = $computerName
+        Domain          = $domain
+        IsDomainJoined  = $isDomainJoined
+    }
+}
+
+function Get-RangerRemoteCredentialCandidates {
+    param(
+        [PSCredential]$ClusterCredential,
+
+        [PSCredential]$DomainCredential
+    )
+
+    $candidates = New-Object System.Collections.Generic.List[object]
+    $seenUsers = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    if ($ClusterCredential) {
+        [void]$seenUsers.Add([string]$ClusterCredential.UserName)
+        [void]$candidates.Add([ordered]@{
+            Name       = 'cluster'
+            Credential = $ClusterCredential
+            UserName   = [string]$ClusterCredential.UserName
+        })
+    }
+
+    if ($DomainCredential -and $seenUsers.Add([string]$DomainCredential.UserName)) {
+        [void]$candidates.Add([ordered]@{
+            Name       = 'domain'
+            Credential = $DomainCredential
+            UserName   = [string]$DomainCredential.UserName
+        })
+    }
+
+    if (-not $ClusterCredential -and -not $DomainCredential) {
+        [void]$candidates.Add([ordered]@{
+            Name       = 'current-context'
+            Credential = $null
+            UserName   = '<current-context>'
+        })
+    }
+
+    return $candidates.ToArray()
+}
+
+function Test-RangerRemoteAuthorization {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ComputerName,
+
+        [PSCredential]$Credential,
+
+        [int]$RetryCount = 1,
+        [int]$TimeoutSeconds = 0
+    )
+
+    $result = @(
+        Invoke-RangerRemoteCommand -ComputerName @($ComputerName) -Credential $Credential -RetryCount $RetryCount -TimeoutSeconds $TimeoutSeconds -ScriptBlock {
+            $identity = try { [System.Security.Principal.WindowsIdentity]::GetCurrent().Name } catch { $env:USERNAME }
+            [ordered]@{
+                computerName = $env:COMPUTERNAME
+                identity     = $identity
+            }
+        }
+    ) | Select-Object -First 1
+
+    if ($null -eq $result) {
+        throw "Authorization probe returned no data from '$ComputerName'."
+    }
+
+    return [ordered]@{
+        Target             = $ComputerName
+        CredentialUserName = if ($Credential) { [string]$Credential.UserName } else { '<current-context>' }
+        RemoteComputerName = [string]$result.computerName
+        RemoteIdentity     = [string]$result.identity
+    }
+}
+
+function Resolve-RangerRemoteExecutionCredential {
+    param(
+        [string[]]$Targets,
+
+        [PSCredential]$ClusterCredential,
+
+        [PSCredential]$DomainCredential,
+
+        [int]$RetryCount = 1,
+
+        [int]$TimeoutSeconds = 0
+    )
+
+    $candidateResults = New-Object System.Collections.Generic.List[object]
+    $targets = @($Targets | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+    $candidates = @(Get-RangerRemoteCredentialCandidates -ClusterCredential $ClusterCredential -DomainCredential $DomainCredential)
+
+    if ($targets.Count -eq 0) {
+        return [ordered]@{
+            SelectedSource = 'none'
+            Credential     = $null
+            UserName       = $null
+            Detail         = 'No remoting targets are configured.'
+            Results        = @()
+        }
+    }
+
+    foreach ($candidate in $candidates) {
+        $authorizationResults = New-Object System.Collections.Generic.List[object]
+        $failures = New-Object System.Collections.Generic.List[string]
+
+        foreach ($target in $targets) {
+            try {
+                $authorization = Test-RangerRemoteAuthorization -ComputerName $target -Credential $candidate.Credential -RetryCount $RetryCount -TimeoutSeconds $TimeoutSeconds
+                [void]$authorizationResults.Add($authorization)
+            }
+            catch {
+                [void]$failures.Add(("{0}: {1}" -f $target, $_.Exception.Message))
+            }
+        }
+
+        if ($failures.Count -eq 0) {
+            return [ordered]@{
+                SelectedSource = [string]$candidate.Name
+                Credential     = $candidate.Credential
+                UserName       = [string]$candidate.UserName
+                Detail         = "Selected $($candidate.Name) remoting credential '$($candidate.UserName)' after authorization preflight succeeded on $($targets.Count) target(s)."
+                Results        = $authorizationResults.ToArray()
+            }
+        }
+
+        [void]$candidateResults.Add([ordered]@{
+            Name     = [string]$candidate.Name
+            UserName = [string]$candidate.UserName
+            Failures = $failures.ToArray()
+        })
+    }
+
+    $hostContext = Get-RangerExecutionHostContext
+    $hostGuidance = if ($hostContext.IsDomainJoined -eq $false) {
+        "Execution host '$($hostContext.ComputerName)' is not domain-joined. Prefer a qualified domain account (DOMAIN\\user or user@fqdn.domain), FQDN targets, and WinRM paths validated against actual remote command execution."
+    }
+    elseif ($hostContext.IsDomainJoined -eq $true) {
+        "Execution host '$($hostContext.ComputerName)' is domain-joined to '$($hostContext.Domain)'. The failure is more likely the selected remoting credential or target-side authorization than runner domain membership."
+    }
+    else {
+        "Execution host domain-join state could not be determined."
+    }
+
+    $failureSummary = @($candidateResults | ForEach-Object {
+        "{0} credential '{1}' failed authorization: {2}" -f $_.Name, $_.UserName, ($_.Failures -join ' | ')
+    }) -join ' '
+
+    throw "No remoting credential could authorize on all targets. $failureSummary $hostGuidance"
+}
+
 function Invoke-RangerRemoteCommand {
     param(
         [Parameter(Mandatory = $true)]

@@ -37,6 +37,125 @@ Describe 'Azure Local Ranger configuration helpers' {
         Test-Path -Path $path | Should -BeTrue
     }
 
+    It 'hydrates BMC endpoints from sibling variables.yml when the Ranger config leaves them empty' {
+        $fixtureRoot = Join-Path $TestDrive 'bmc-fallback'
+        New-Item -ItemType Directory -Path $fixtureRoot -Force | Out-Null
+        $configPath = Join-Path $fixtureRoot 'ranger-config.yml'
+        $variablesPath = Join-Path $fixtureRoot 'variables.yml'
+
+        @'
+environment:
+  name: tplabs
+targets:
+  cluster:
+    fqdn: tplabs-clus01.azrl.mgmt
+    nodes:
+      - tplabs-01-n01.azrl.mgmt
+  azure:
+    subscriptionId: 22222222-2222-2222-2222-222222222222
+    resourceGroup: rg-tplabs
+    tenantId: 33333333-3333-3333-3333-333333333333
+  bmc:
+    endpoints: []
+credentials:
+  azure:
+    method: existing-context
+    useAzureCliFallback: true
+  bmc:
+    username: idrac_azl_admin
+    passwordRef: keyvault://kv-ranger/idrac-password
+domains:
+  include: []
+  exclude: []
+  hints:
+    fixtures: {}
+output:
+  mode: current-state
+  formats:
+    - html
+behavior:
+  promptForMissingCredentials: false
+'@ | Set-Content -Path $configPath -Encoding UTF8
+
+        @'
+security:
+  infrastructure_credentials:
+    idrac:
+      devices:
+        - tplabs-01-n01 (192.168.214.11)
+        - tplabs-01-n02 (192.168.214.12)
+'@ | Set-Content -Path $variablesPath -Encoding UTF8
+
+        InModuleScope AzureLocalRanger {
+            param($Path)
+
+            $config = Import-RangerConfiguration -ConfigPath $Path
+            @($config.targets.bmc.endpoints).Count | Should -Be 2
+            $config.targets.bmc.endpoints[0].host | Should -Be '192.168.214.11'
+            $config.targets.bmc.endpoints[0].node | Should -Be 'tplabs-01-n01'
+            $config.targets.bmc.endpoints[1].host | Should -Be '192.168.214.12'
+            $config.targets.bmc.endpoints[1].node | Should -Be 'tplabs-01-n02'
+            Test-RangerTargetConfigured -Config $config -TargetName 'bmc' | Should -BeTrue
+        } -Parameters @{ Path = $configPath }
+    }
+
+    It 'preserves explicit BMC endpoints from Ranger config over sibling variables.yml fallback data' {
+        $fixtureRoot = Join-Path $TestDrive 'bmc-explicit'
+        New-Item -ItemType Directory -Path $fixtureRoot -Force | Out-Null
+        $configPath = Join-Path $fixtureRoot 'ranger-config.yml'
+        $variablesPath = Join-Path $fixtureRoot 'variables.yml'
+
+        @'
+environment:
+  name: tplabs
+targets:
+  cluster:
+    fqdn: tplabs-clus01.azrl.mgmt
+    nodes:
+      - tplabs-01-n01.azrl.mgmt
+  azure:
+    subscriptionId: 22222222-2222-2222-2222-222222222222
+    resourceGroup: rg-tplabs
+    tenantId: 33333333-3333-3333-3333-333333333333
+  bmc:
+    endpoints:
+      - host: idrac-node-01.azrl.mgmt
+        node: tplabs-01-n01
+credentials:
+  azure:
+    method: existing-context
+    useAzureCliFallback: true
+domains:
+  include: []
+  exclude: []
+  hints:
+    fixtures: {}
+output:
+  mode: current-state
+  formats:
+    - html
+behavior:
+  promptForMissingCredentials: false
+'@ | Set-Content -Path $configPath -Encoding UTF8
+
+        @'
+security:
+  infrastructure_credentials:
+    idrac:
+      devices:
+        - tplabs-01-n01 (192.168.214.11)
+'@ | Set-Content -Path $variablesPath -Encoding UTF8
+
+        InModuleScope AzureLocalRanger {
+            param($Path)
+
+            $config = Import-RangerConfiguration -ConfigPath $Path
+            @($config.targets.bmc.endpoints).Count | Should -Be 1
+            $config.targets.bmc.endpoints[0].host | Should -Be 'idrac-node-01.azrl.mgmt'
+            $config.targets.bmc.endpoints[0].node | Should -Be 'tplabs-01-n01'
+        } -Parameters @{ Path = $configPath }
+    }
+
         It 'normalizes inline empty YAML lists into empty collections' {
                 $path = Join-Path $TestDrive 'inline-empty-config.yml'
                 @'
@@ -125,6 +244,69 @@ behavior:
             $settings.subscriptionId | Should -Be $TestConfig.targets.azure.subscriptionId
             $settings.useAzureCliFallback | Should -BeTrue
         } -Parameters @{ TestConfig = $config }
+    }
+
+    It 'falls back to Azure CLI when Az.KeyVault secret resolution fails' {
+        InModuleScope AzureLocalRanger {
+            function global:az {
+                param([Parameter(ValueFromRemainingArguments = $true)]$Arguments)
+                $global:LASTEXITCODE = 0
+                'mock-secret-from-cli'
+            }
+
+            Mock Test-RangerCommandAvailable {
+                param($Name)
+                $Name -in @('Get-AzKeyVaultSecret', 'az')
+            }
+
+            Mock Get-AzKeyVaultSecret {
+                throw 'Az context expired'
+            }
+
+            try {
+                $value = Get-RangerSecretFromUri -Uri 'keyvault://kv-ranger/cluster-read' -AsPlainText
+                $value | Should -Be 'mock-secret-from-cli'
+                Assert-MockCalled Get-AzKeyVaultSecret -Times 1 -Exactly
+            }
+            finally {
+                Remove-Item Function:\global:az -ErrorAction SilentlyContinue
+            }
+        }
+    }
+
+    It 'reports both provider failures when no Key Vault secret provider succeeds' {
+        InModuleScope AzureLocalRanger {
+            function global:az {
+                param([Parameter(ValueFromRemainingArguments = $true)]$Arguments)
+                $global:LASTEXITCODE = 1
+                'cli failure'
+            }
+
+            Mock Test-RangerCommandAvailable {
+                param($Name)
+                $Name -in @('Get-AzKeyVaultSecret', 'az')
+            }
+
+            Mock Get-AzKeyVaultSecret {
+                throw 'Az context expired'
+            }
+
+            try {
+                $message = $null
+                try {
+                    Get-RangerSecretFromUri -Uri 'keyvault://kv-ranger/cluster-read' -AsPlainText | Out-Null
+                }
+                catch {
+                    $message = $_.Exception.Message
+                }
+
+                $message | Should -Match 'Az\.KeyVault failed: Az context expired'
+                $message | Should -Match 'Azure CLI failed: Azure CLI exited with code 1'
+            }
+            finally {
+                Remove-Item Function:\global:az -ErrorAction SilentlyContinue
+            }
+        }
     }
 
     It 'resolves domain context through remoting when a cluster credential is supplied' {

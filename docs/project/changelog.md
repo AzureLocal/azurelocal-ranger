@@ -2,13 +2,13 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
-## v1.0.0 Highlights
+## v1.1.0 Highlights
 
-- parameter-first input model for cluster and Azure targets
-- Arc-first node resolution and domain auto-detection
-- persistent `ranger.log` output with retry detail tracking
-- HTML, Markdown, DOCX, XLSX, PDF, and SVG render support
-- expanded operator docs, quickstart flow, and command reference
+- intelligent remoting credential selection and authorization preflight for non-domain-joined runners
+- Key Vault credential fallback via Azure CLI when Az PowerShell secret resolution is unavailable
+- automatic BMC endpoint hydration from sibling `variables.yml`
+- collector status semantics aligned so advisory findings do not downgrade successful collection to `partial`
+- live v1.1.0 milestone validation closed on `tplabs` with all 6 collectors successful
 
 ## Root Changelog
 

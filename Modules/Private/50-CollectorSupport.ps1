@@ -66,10 +66,16 @@ function Invoke-RangerClusterCommand {
 
         [PSCredential]$Credential,
         [object[]]$ArgumentList,
+        [string]$NodeName,
         [switch]$SingleTarget
     )
 
-    $targets = Get-RangerClusterTargets -Config $Config -SingleTarget:$SingleTarget
+    $targets = if (-not [string]::IsNullOrWhiteSpace($NodeName)) {
+        @($NodeName)
+    }
+    else {
+        Get-RangerClusterTargets -Config $Config -SingleTarget:$SingleTarget
+    }
     $currentNames = @($env:COMPUTERNAME, [System.Net.Dns]::GetHostName()) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
     if ($targets.Count -eq 1 -and $targets[0] -in $currentNames -and -not $Credential) {
         return & $ScriptBlock @ArgumentList

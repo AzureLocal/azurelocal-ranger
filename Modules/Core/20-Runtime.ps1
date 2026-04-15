@@ -522,33 +522,33 @@ function Invoke-RangerDiscoveryRuntime {
         # Issue #139 — WinRM preflight: probe all cluster targets before any collector runs.
         # Fails the run immediately when any configured target is unreachable.
         $preflightTargets = [System.Collections.Generic.List[string]]::new()
-        if (-not [string]::IsNullOrWhiteSpace([string]$config.targets.cluster.fqdn)) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$config.targets.cluster.fqdn) -and -not (Test-RangerPlaceholderValue -Value $config.targets.cluster.fqdn -FieldName 'targets.cluster.fqdn')) {
             $preflightTargets.Add([string]$config.targets.cluster.fqdn)
         }
         foreach ($node in @($config.targets.cluster.nodes)) {
-            if (-not [string]::IsNullOrWhiteSpace([string]$node) -and $node -notin $preflightTargets) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$node) -and -not (Test-RangerPlaceholderValue -Value $node -FieldName 'targets.cluster.node') -and $node -notin $preflightTargets) {
                 $preflightTargets.Add([string]$node)
             }
         }
 
-        if ($preflightTargets.Count -gt 0 -and $credentialMap.cluster) {
+        if ($preflightTargets.Count -gt 0) {
+            $retryCount = if ($config.behavior -and $config.behavior.retryCount -gt 0) { [int]$config.behavior.retryCount } else { 1 }
+            $timeoutSec = if ($config.behavior -and $config.behavior.timeoutSeconds -gt 0) { [int]$config.behavior.timeoutSeconds } else { 0 }
             Write-RangerLog -Level info -Message "WinRM preflight probing $($preflightTargets.Count) target(s): $($preflightTargets -join ', ')"
-            $preflightResults = @($preflightTargets | ForEach-Object {
-                [ordered]@{ target = $_; result = Test-RangerWinRmTarget -ComputerName $_ -Credential $credentialMap.cluster }
-            })
-            $failedPreflight = @($preflightResults | Where-Object { -not $_.result.Reachable })
-            if ($failedPreflight.Count -gt 0) {
-                $detail = @($preflightResults | ForEach-Object {
-                    if ($_.result.Reachable) {
-                        "$($_.target): reachable over $($_.result.Transport.ToUpperInvariant())/$($_.result.Port)"
-                    } else {
-                        "$($_.target): $($_.result.Message)"
-                    }
-                }) -join ' | '
-                throw [System.InvalidOperationException]::new("WinRM preflight failed — collection cannot begin. $detail")
+            $remoteExecution = Resolve-RangerRemoteExecutionCredential -Targets $preflightTargets -ClusterCredential $credentialMap.cluster -DomainCredential $credentialMap.domain -RetryCount $retryCount -TimeoutSeconds $timeoutSec
+            $manifest.run.remoteExecution = [ordered]@{
+                selectedSource = $remoteExecution.SelectedSource
+                userName       = $remoteExecution.UserName
+                detail         = $remoteExecution.Detail
+                targets        = @($preflightTargets)
+                results        = @($remoteExecution.Results)
             }
-            foreach ($pr in $preflightResults) {
-                Write-RangerLog -Level info -Message "WinRM preflight: '$($pr.target)' reachable over $($pr.result.Transport.ToUpperInvariant())/$($pr.result.Port)"
+            if ($remoteExecution.Credential -or $remoteExecution.SelectedSource -eq 'current-context') {
+                $credentialMap.cluster = $remoteExecution.Credential
+            }
+            Write-RangerLog -Level info -Message $remoteExecution.Detail
+            foreach ($rr in @($remoteExecution.Results)) {
+                Write-RangerLog -Level info -Message "Remote authorization preflight: '$($rr.Target)' reached '$($rr.RemoteComputerName)' as '$($rr.RemoteIdentity)' via $($remoteExecution.SelectedSource) credential '$($remoteExecution.UserName)'"
             }
         }
 

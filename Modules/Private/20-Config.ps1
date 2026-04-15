@@ -364,6 +364,91 @@ function Normalize-RangerConfiguration {
     return $Config
 }
 
+function Get-RangerCompanionVariablesPath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ConfigPath
+    )
+
+    $configDirectory = Split-Path -Parent $ConfigPath
+    foreach ($candidateName in @('variables.yml', 'variables.yaml')) {
+        $candidatePath = Join-Path -Path $configDirectory -ChildPath $candidateName
+        if (Test-Path -Path $candidatePath) {
+            return $candidatePath
+        }
+    }
+
+    return $null
+}
+
+function Resolve-RangerBmcEndpointsFromVariablesData {
+    param(
+        $VariablesData
+    )
+
+    if ($null -eq $VariablesData) {
+        return @()
+    }
+
+    $variables = ConvertTo-RangerHashtable -InputObject $VariablesData
+    $devices = @()
+
+    if ($variables.security -and $variables.security.infrastructure_credentials -and $variables.security.infrastructure_credentials.idrac) {
+        $devices = @($variables.security.infrastructure_credentials.idrac.devices)
+    }
+
+    $endpoints = @(
+        foreach ($device in $devices) {
+            $text = [string]$device
+            if ([string]::IsNullOrWhiteSpace($text)) {
+                continue
+            }
+
+            if ($text -match '^\s*(?<node>[^()]+?)\s*\((?<host>[^()]+)\)\s*$') {
+                [ordered]@{
+                    host = $matches.host.Trim()
+                    node = $matches.node.Trim()
+                }
+                continue
+            }
+
+            [ordered]@{
+                host = $text.Trim()
+                node = $null
+            }
+        }
+    )
+
+    return @($endpoints)
+}
+
+function Apply-RangerCompanionConfigurationFallbacks {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Config,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ConfigPath
+    )
+
+    if (@($Config.targets.bmc.endpoints).Count -gt 0) {
+        return $Config
+    }
+
+    $variablesPath = Get-RangerCompanionVariablesPath -ConfigPath $ConfigPath
+    if ([string]::IsNullOrWhiteSpace($variablesPath)) {
+        return $Config
+    }
+
+    $variablesData = Import-RangerYamlFile -Path $variablesPath
+    $fallbackEndpoints = @(Resolve-RangerBmcEndpointsFromVariablesData -VariablesData $variablesData)
+    if ($fallbackEndpoints.Count -gt 0) {
+        $Config.targets.bmc.endpoints = $fallbackEndpoints
+    }
+
+    return $Config
+}
+
 function Import-RangerConfiguration {
     param(
         [string]$ConfigPath,
@@ -402,7 +487,8 @@ function Import-RangerConfiguration {
         }
     }
 
-    return Normalize-RangerConfiguration -Config (Merge-RangerConfiguration -BaseConfig (Get-RangerDefaultConfig) -OverrideConfig (ConvertTo-RangerHashtable -InputObject $loaded))
+    $config = Normalize-RangerConfiguration -Config (Merge-RangerConfiguration -BaseConfig (Get-RangerDefaultConfig) -OverrideConfig (ConvertTo-RangerHashtable -InputObject $loaded))
+    return Apply-RangerCompanionConfigurationFallbacks -Config $config -ConfigPath $resolvedConfigPath
 }
 
 function Set-RangerStructuralOverrides {

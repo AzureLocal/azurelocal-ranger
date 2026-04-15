@@ -8,9 +8,9 @@ Ranger supports two outcomes through one discovery engine:
 - **Current-state** — recurring operational snapshot of a live Azure Local deployment
 - **As-built** — formal documentation package for customer or operational handoff
 
-## Current Release — v0.5.0
+## Current Release — v1.1.0
 
-Released April 2026. Pre-release ahead of PSGallery `1.0.0`.
+Released April 2026. Post-release sprint complete with live milestone validation closed.
 
 | Area | What shipped |
 | --- | --- |
@@ -23,23 +23,22 @@ Released April 2026. Pre-release ahead of PSGallery `1.0.0`.
 | Authentication | Five methods: existing context, managed identity, device-code, service principal, Azure CLI fallback |
 | Key Vault credential refs | `keyvault://` URI pattern resolved at runtime — no secrets in config files |
 | `-OutputPath` parameter | User-controlled export destination overrides the config default |
-| Testing | 18 Pester tests: schema, degraded scenarios, cached outputs, end-to-end, and 7 simulation tests against a synthetic IIC 3-node fixture |
+| Testing | Focused milestone-close suite passing on final code plus live tplabs validation with all 6 collectors successful |
 | Simulation framework | Full output pipeline validated without live connections via `New-RangerSyntheticManifest.ps1` and committed fixture |
 | Public documentation | Product, architecture, operator, discovery domain, output, and contributor docs under `docs/` |
 
-## Next Release — v1.0.0 (PSGallery)
+## Next Release — v1.2.0
 
-Focus: live-estate proof, PSGallery publish, and polish.
+Focus: UX and alternate transport improvements after the v1.1.0 milestone closeout.
 
 | Item | Detail | Status |
 | --- | --- | --- |
-| Live environment validation | Run Ranger against a real Azure Local cluster and reconcile generated package against known facts ([#34](https://github.com/AzureLocal/azurelocal-ranger/issues/34)) | 🔵 In progress |
-| PSGallery publish | Publish `AzureLocalRanger` module to PowerShell Gallery at `1.0.0` | 🔵 Planned |
-| As-built mode report differentiation | Mode-specific report sections so `as-built` output differs meaningfully from `current-state` | 🔵 Planned |
-| Topology collector summary fields | Compute `csvSummary`, `updatePosture`, and `eventSummary` objects currently collected as raw evidence only | 🔵 Planned |
-| Network device config import ([#36](https://github.com/AzureLocal/azurelocal-ranger/issues/36)) | Import switch and firewall config from external sources for environments where direct interrogation is not possible | 🔵 Planned |
-| Output template improvements ([#38](https://github.com/AzureLocal/azurelocal-ranger/issues/38)) | Richer output template definitions aligned to full collector data inventory | 🔵 Planned |
-| Docs audit ([#37](https://github.com/AzureLocal/azurelocal-ranger/issues/37)) | Verify all public docs reflect the current implementation and remove any planning-era stale content | 🔵 Planned |
+| Interactive configuration wizard | Guided terminal wizard with parameter passthrough for headless and assisted runs ([#75](https://github.com/AzureLocal/azurelocal-ranger/issues/75)) | 🔵 Planned |
+| Terminal TUI scan progress | Rich live progress display for collection and findings ([#76](https://github.com/AzureLocal/azurelocal-ranger/issues/76)) | 🔵 Planned |
+| Arc Run Command transport | Alternate collection path when WinRM is blocked ([#26](https://github.com/AzureLocal/azurelocal-ranger/issues/26)) | 🔵 Planned |
+| Disconnected / semi-connected discovery | Graceful degradation and disconnected-mode coverage ([#30](https://github.com/AzureLocal/azurelocal-ranger/issues/30)) | 🔵 Planned |
+| WAF assessment integration | Workload architecture assessment correlation ([#94](https://github.com/AzureLocal/azurelocal-ranger/issues/94)) | 🔵 Planned |
+| PDF output hardening | Full report PDF path completion and publication polish ([#96](https://github.com/AzureLocal/azurelocal-ranger/issues/96)) | 🔵 Planned |
 
 ## Backlog
 

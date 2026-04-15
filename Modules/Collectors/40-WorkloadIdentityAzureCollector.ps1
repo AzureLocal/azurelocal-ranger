@@ -1172,7 +1172,7 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
     }
 
     return @{
-        Status        = if ($findings.Count -gt 0) { 'partial' } else { 'success' }
+        Status        = 'success'
         Domains       = @{
             virtualMachines = [ordered]@{
                 inventory        = ConvertTo-RangerHashtable -InputObject $vmInventory

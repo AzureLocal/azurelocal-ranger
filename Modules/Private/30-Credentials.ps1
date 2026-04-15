@@ -38,41 +38,57 @@ function Get-RangerSecretFromUri {
     )
 
     $parsed = ConvertFrom-RangerKeyVaultUri -Uri $Uri
+    $providerFailures = [System.Collections.Generic.List[string]]::new()
+
     if (Test-RangerCommandAvailable -Name 'Get-AzKeyVaultSecret') {
-        $secretParams = @{
-            VaultName   = $parsed.VaultName
-            Name        = $parsed.SecretName
-            ErrorAction = 'Stop'
-        }
+        try {
+            $secretParams = @{
+                VaultName   = $parsed.VaultName
+                Name        = $parsed.SecretName
+                ErrorAction = 'Stop'
+            }
 
-        if ($parsed.Version) {
-            $secretParams.Version = $parsed.Version
-        }
+            if ($parsed.Version) {
+                $secretParams.Version = $parsed.Version
+            }
 
-        $secret = Get-AzKeyVaultSecret @secretParams
-        if ($AsPlainText) {
-            return ConvertTo-RangerPlainText -Value $secret.SecretValue
-        }
+            $secret = Get-AzKeyVaultSecret @secretParams
+            if ($AsPlainText) {
+                return ConvertTo-RangerPlainText -Value $secret.SecretValue
+            }
 
-        return $secret.SecretValue
+            return $secret.SecretValue
+        }
+        catch {
+            [void]$providerFailures.Add("Az.KeyVault failed: $($_.Exception.Message)")
+        }
     }
 
     if (Test-RangerCommandAvailable -Name 'az') {
-        $arguments = @('keyvault', 'secret', 'show', '--vault-name', $parsed.VaultName, '--name', $parsed.SecretName, '--query', 'value', '-o', 'tsv')
-        if ($parsed.Version) {
-            $arguments += @('--version', $parsed.Version)
-        }
+        try {
+            $arguments = @('keyvault', 'secret', 'show', '--vault-name', $parsed.VaultName, '--name', $parsed.SecretName, '--query', 'value', '-o', 'tsv')
+            if ($parsed.Version) {
+                $arguments += @('--version', $parsed.Version)
+            }
 
-        $value = & az @arguments
-        if ($LASTEXITCODE -ne 0) {
-            throw "Azure CLI failed to resolve Key Vault secret '$Uri'."
-        }
+            $value = & az @arguments
+            if ($LASTEXITCODE -ne 0) {
+                throw "Azure CLI exited with code $LASTEXITCODE."
+            }
 
-        if ($AsPlainText) {
-            return $value
-        }
+            if ($AsPlainText) {
+                return $value
+            }
 
-        return (ConvertTo-SecureString -String $value -AsPlainText -Force)
+            return (ConvertTo-SecureString -String $value -AsPlainText -Force)
+        }
+        catch {
+            [void]$providerFailures.Add("Azure CLI failed: $($_.Exception.Message)")
+        }
+    }
+
+    if ($providerFailures.Count -gt 0) {
+        throw "Could not resolve Key Vault secret '$Uri'. $($providerFailures -join ' ')"
     }
 
     throw 'Neither Az.KeyVault nor the Azure CLI is available for Key Vault secret resolution.'
