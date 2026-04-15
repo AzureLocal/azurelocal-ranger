@@ -27,7 +27,7 @@ jobs:
   module-ci:
     uses: AzureLocal/platform/.github/workflows/reusable-ps-module-ci.yml@main
     with:
-      module-manifest: AzureLocalRanger.psd1
+      module-manifest: ./AzureLocalRanger.psd1
       run-psscriptanalyzer: true
       psscriptanalyzer-path: Modules
       run-pester: true

@@ -29,6 +29,24 @@ function ConvertFrom-RangerKeyVaultUri {
     }
 }
 
+function ConvertTo-RangerSecureString {
+    param(
+        [AllowNull()]
+        [string]$Value
+    )
+
+    if ($null -eq $Value) {
+        return $null
+    }
+
+    $secureValue = [System.Security.SecureString]::new()
+    foreach ($character in $Value.ToCharArray()) {
+        $secureValue.AppendChar($character)
+    }
+    $secureValue.MakeReadOnly()
+    return $secureValue
+}
+
 function Get-RangerSecretFromUri {
     param(
         [Parameter(Mandatory = $true)]
@@ -80,7 +98,7 @@ function Get-RangerSecretFromUri {
                 return $value
             }
 
-            return (ConvertTo-SecureString -String $value -AsPlainText -Force)
+            return (ConvertTo-RangerSecureString -Value $value)
         }
         catch {
             [void]$providerFailures.Add("Azure CLI failed: $($_.Exception.Message)")
@@ -108,7 +126,7 @@ function Resolve-RangerPasswordValue {
     }
 
     if ($CredentialBlock.password) {
-        return (ConvertTo-SecureString -String ([string]$CredentialBlock.password) -AsPlainText -Force)
+        return (ConvertTo-RangerSecureString -Value ([string]$CredentialBlock.password))
     }
 
     if ($CredentialBlock.passwordRef) {
@@ -183,7 +201,7 @@ function Resolve-RangerAzureCredentialSettings {
             $settings.clientSecretSecureString = Get-RangerSecretFromUri -Uri $settings.clientSecretRef
         }
         elseif ($settings.clientSecret) {
-            $settings.clientSecretSecureString = ConvertTo-SecureString -String ([string]$settings.clientSecret) -AsPlainText -Force
+            $settings.clientSecretSecureString = ConvertTo-RangerSecureString -Value ([string]$settings.clientSecret)
         }
     }
 

@@ -285,26 +285,26 @@ function Normalize-RangerConfiguration {
             }
 
             if ($endpoint -is [string]) {
-                $host = [string]$endpoint
-                if ([string]::IsNullOrWhiteSpace($host) -or $host -in @('[]', '{}')) {
+                $endpointHost = [string]$endpoint
+                if ([string]::IsNullOrWhiteSpace($endpointHost) -or $endpointHost -in @('[]', '{}')) {
                     continue
                 }
 
                 [ordered]@{
-                    host = $host
+                    host = $endpointHost
                     node = $null
                 }
                 continue
             }
 
-            $host = if ($endpoint -is [System.Collections.IDictionary]) { $endpoint['host'] } else { $endpoint.host }
+            $endpointHost = if ($endpoint -is [System.Collections.IDictionary]) { $endpoint['host'] } else { $endpoint.host }
             $node = if ($endpoint -is [System.Collections.IDictionary]) { $endpoint['node'] } else { $endpoint.node }
-            if ([string]::IsNullOrWhiteSpace([string]$host)) {
+            if ([string]::IsNullOrWhiteSpace([string]$endpointHost)) {
                 continue
             }
 
             [ordered]@{
-                host = [string]$host
+                host = [string]$endpointHost
                 node = if ([string]::IsNullOrWhiteSpace([string]$node)) { $null } else { [string]$node }
             }
         }
@@ -854,8 +854,8 @@ function Test-RangerTargetConfigured {
                     return -not [string]::IsNullOrWhiteSpace([string]$_) -and [string]$_ -notin @('[]', '{}')
                 }
 
-                $host = if ($_ -is [System.Collections.IDictionary]) { $_['host'] } else { $_.host }
-                return -not [string]::IsNullOrWhiteSpace([string]$host)
+                $endpointHost = if ($_ -is [System.Collections.IDictionary]) { $_['host'] } else { $_.host }
+                return -not [string]::IsNullOrWhiteSpace([string]$endpointHost)
             }).Count -gt 0
         }
         default {

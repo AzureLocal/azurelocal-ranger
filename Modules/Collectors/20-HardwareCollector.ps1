@@ -34,13 +34,13 @@ function Invoke-RangerHardwareCollector {
                 continue
             }
 
-            $host = if ($endpoint -is [System.Collections.IDictionary]) { $endpoint['host'] } else { $endpoint.host }
-            if ([string]::IsNullOrWhiteSpace([string]$host)) {
+            $bmcHost = if ($endpoint -is [System.Collections.IDictionary]) { $endpoint['host'] } else { $endpoint.host }
+            if ([string]::IsNullOrWhiteSpace([string]$bmcHost)) {
                 continue
             }
 
             [ordered]@{
-                host = [string]$host
+                host = [string]$bmcHost
                 node = if ($endpoint -is [System.Collections.IDictionary]) { $endpoint['node'] } else { $endpoint.node }
             }
         }
@@ -51,8 +51,8 @@ function Invoke-RangerHardwareCollector {
     }
 
     foreach ($endpoint in $usableEndpoints) {
-        $host = $endpoint.host
-        $nodeName = if ($endpoint.node) { $endpoint.node } else { $host }
+        $bmcHost = $endpoint.host
+        $nodeName = if ($endpoint.node) { $endpoint.node } else { $bmcHost }
         $remoteNodeTarget = @(
             @($Config.targets.cluster.nodes) |
                 Where-Object {
@@ -68,43 +68,43 @@ function Invoke-RangerHardwareCollector {
             $remoteNodeTarget = $nodeName
         }
         try {
-            $systemUri = "https://$host/redfish/v1/Systems/System.Embedded.1"
+            $systemUri = "https://$bmcHost/redfish/v1/Systems/System.Embedded.1"
             $system = Invoke-RangerRedfishRequest -Uri $systemUri -Credential $CredentialMap.bmc
-            $bios = Invoke-RangerSafeAction -Label "Redfish BIOS inventory for $host" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "$systemUri/Bios" -Credential $CredentialMap.bmc }
-            $manager = Invoke-RangerSafeAction -Label "Redfish manager inventory for $host" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/Managers/iDRAC.Embedded.1" -Credential $CredentialMap.bmc }
+            $bios = Invoke-RangerSafeAction -Label "Redfish BIOS inventory for $bmcHost" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "$systemUri/Bios" -Credential $CredentialMap.bmc }
+            $manager = Invoke-RangerSafeAction -Label "Redfish manager inventory for $bmcHost" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "https://$bmcHost/redfish/v1/Managers/iDRAC.Embedded.1" -Credential $CredentialMap.bmc }
             $processors = @(
-                Invoke-RangerSafeAction -Label "Redfish processor inventory for $host" -DefaultValue @() -ScriptBlock {
-                    Invoke-RangerRedfishCollection -CollectionUri "$systemUri/Processors" -Host $host -Credential $CredentialMap.bmc
+                Invoke-RangerSafeAction -Label "Redfish processor inventory for $bmcHost" -DefaultValue @() -ScriptBlock {
+                    Invoke-RangerRedfishCollection -CollectionUri "$systemUri/Processors" -Host $bmcHost -Credential $CredentialMap.bmc
                 }
             )
             $memory = @(
-                Invoke-RangerSafeAction -Label "Redfish memory inventory for $host" -DefaultValue @() -ScriptBlock {
-                    Invoke-RangerRedfishCollection -CollectionUri "$systemUri/Memory" -Host $host -Credential $CredentialMap.bmc
+                Invoke-RangerSafeAction -Label "Redfish memory inventory for $bmcHost" -DefaultValue @() -ScriptBlock {
+                    Invoke-RangerRedfishCollection -CollectionUri "$systemUri/Memory" -Host $bmcHost -Credential $CredentialMap.bmc
                 }
             )
             $ethernet = @(
-                Invoke-RangerSafeAction -Label "Redfish Ethernet inventory for $host" -DefaultValue @() -ScriptBlock {
-                    Invoke-RangerRedfishCollection -CollectionUri "$systemUri/EthernetInterfaces" -Host $host -Credential $CredentialMap.bmc
+                Invoke-RangerSafeAction -Label "Redfish Ethernet inventory for $bmcHost" -DefaultValue @() -ScriptBlock {
+                    Invoke-RangerRedfishCollection -CollectionUri "$systemUri/EthernetInterfaces" -Host $bmcHost -Credential $CredentialMap.bmc
                 }
             )
             $storageControllers = @(
-                Invoke-RangerSafeAction -Label "Redfish storage inventory for $host" -DefaultValue @() -ScriptBlock {
-                    Invoke-RangerRedfishCollection -CollectionUri "$systemUri/Storage" -Host $host -Credential $CredentialMap.bmc
+                Invoke-RangerSafeAction -Label "Redfish storage inventory for $bmcHost" -DefaultValue @() -ScriptBlock {
+                    Invoke-RangerRedfishCollection -CollectionUri "$systemUri/Storage" -Host $bmcHost -Credential $CredentialMap.bmc
                 }
             )
             $firmwareInventory = @(
-                Invoke-RangerSafeAction -Label "Redfish firmware inventory for $host" -DefaultValue @() -ScriptBlock {
-                    Invoke-RangerRedfishCollection -CollectionUri "https://$host/redfish/v1/UpdateService/FirmwareInventory" -Host $host -Credential $CredentialMap.bmc
+                Invoke-RangerSafeAction -Label "Redfish firmware inventory for $bmcHost" -DefaultValue @() -ScriptBlock {
+                    Invoke-RangerRedfishCollection -CollectionUri "https://$bmcHost/redfish/v1/UpdateService/FirmwareInventory" -Host $bmcHost -Credential $CredentialMap.bmc
                 }
             )
-            $updateService = Invoke-RangerSafeAction -Label "Redfish update service for $host" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/UpdateService" -Credential $CredentialMap.bmc }
-            $dellLcService = Invoke-RangerSafeAction -Label "Dell lifecycle controller service for $host" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/Managers/iDRAC.Embedded.1/Oem/Dell/DellLCService" -Credential $CredentialMap.bmc }
-            $dellAttributes = Invoke-RangerSafeAction -Label "Dell manager attributes for $host" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/Managers/iDRAC.Embedded.1/Attributes" -Credential $CredentialMap.bmc }
+            $updateService = Invoke-RangerSafeAction -Label "Redfish update service for $bmcHost" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "https://$bmcHost/redfish/v1/UpdateService" -Credential $CredentialMap.bmc }
+            $dellLcService = Invoke-RangerSafeAction -Label "Dell lifecycle controller service for $bmcHost" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "https://$bmcHost/redfish/v1/Managers/iDRAC.Embedded.1/Oem/Dell/DellLCService" -Credential $CredentialMap.bmc }
+            $dellAttributes = Invoke-RangerSafeAction -Label "Dell manager attributes for $bmcHost" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "https://$bmcHost/redfish/v1/Managers/iDRAC.Embedded.1/Attributes" -Credential $CredentialMap.bmc }
 
             # Issue #57: Power supplies and thermal/fans from Redfish
             $powerSupplies = @(
-                Invoke-RangerSafeAction -Label "Power supply inventory for $host" -DefaultValue @() -ScriptBlock {
-                    $powerPayload = Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/Chassis/System.Embedded.1/Power" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                Invoke-RangerSafeAction -Label "Power supply inventory for $bmcHost" -DefaultValue @() -ScriptBlock {
+                    $powerPayload = Invoke-RangerRedfishRequest -Uri "https://$bmcHost/redfish/v1/Chassis/System.Embedded.1/Power" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
                     if ($powerPayload -and $powerPayload.PowerSupplies) {
                         @($powerPayload.PowerSupplies | ForEach-Object {
                             [ordered]@{
@@ -122,7 +122,7 @@ function Invoke-RangerHardwareCollector {
                     } else { @() }
                 }
             )
-            $thermalPayload = Invoke-RangerSafeAction -Label "Thermal inventory for $host" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/Chassis/System.Embedded.1/Thermal" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue }
+            $thermalPayload = Invoke-RangerSafeAction -Label "Thermal inventory for $bmcHost" -DefaultValue $null -ScriptBlock { Invoke-RangerRedfishRequest -Uri "https://$bmcHost/redfish/v1/Chassis/System.Embedded.1/Thermal" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue }
             $fans = if ($thermalPayload -and $thermalPayload.Fans) {
                 @($thermalPayload.Fans | ForEach-Object {
                     [ordered]@{
@@ -150,13 +150,13 @@ function Invoke-RangerHardwareCollector {
 
             # Issue #57: NIC detail from Redfish NetworkAdapters endpoint
             $networkAdaptersDetail = @(
-                Invoke-RangerSafeAction -Label "Redfish NetworkAdapters for $host" -DefaultValue @() -ScriptBlock {
+                Invoke-RangerSafeAction -Label "Redfish NetworkAdapters for $bmcHost" -DefaultValue @() -ScriptBlock {
                     $naCollection = Invoke-RangerRedfishRequest -Uri "$systemUri/NetworkAdapters" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
                     if ($naCollection -and $naCollection.Members) {
                         @($naCollection.Members | ForEach-Object {
                             $naUri = $_.'@odata.id'
                             $na = Invoke-RangerSafeAction -Label "NetworkAdapter $naUri" -DefaultValue $null -ScriptBlock {
-                                Invoke-RangerRedfishRequest -Uri "https://$host$naUri" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                                Invoke-RangerRedfishRequest -Uri "https://$bmcHost$naUri" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
                             }
                             if ($na) {
                                 [ordered]@{
@@ -170,12 +170,12 @@ function Invoke-RangerHardwareCollector {
                                     firmwareVersion = if ($na.Controllers) { @($na.Controllers)[0].ControllerCapabilities.DataCenterBridging } else { $null }
                                     networkPorts    = @(if ($na.NetworkPorts) {
                                         Invoke-RangerSafeAction -Label "NetworkPorts for $naUri" -DefaultValue @() -ScriptBlock {
-                                            $portsUri = "https://$host$naUri/NetworkPorts"
+                                            $portsUri = "https://$bmcHost$naUri/NetworkPorts"
                                             $ports = Invoke-RangerRedfishRequest -Uri $portsUri -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
                                             if ($ports -and $ports.Members) {
                                                 @($ports.Members | ForEach-Object {
                                                     $p = Invoke-RangerSafeAction -Label "Port $_.'@odata.id'" -DefaultValue $null -ScriptBlock {
-                                                        Invoke-RangerRedfishRequest -Uri "https://$host$($_.'@odata.id')" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                                                        Invoke-RangerRedfishRequest -Uri "https://$bmcHost$($_.'@odata.id')" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
                                                     }
                                                     if ($p) { [ordered]@{ id = $p.Id; linkStatus = $p.LinkStatus; currentLinkSpeedMbps = $p.CurrentLinkSpeedMbps; macAddress = $p.AssociatedNetworkAddresses; supportedLinkCapabilities = @($p.SupportedLinkCapabilities) } }
                                                 } | Where-Object { $_ })
@@ -192,7 +192,7 @@ function Invoke-RangerHardwareCollector {
 
             # Per-DIMM granularity from Redfish memory collection
             $memoryDimms = @(
-                Invoke-RangerSafeAction -Label "Redfish DIMM detail for $host" -DefaultValue @() -ScriptBlock {
+                Invoke-RangerSafeAction -Label "Redfish DIMM detail for $bmcHost" -DefaultValue @() -ScriptBlock {
                     @($memory | ForEach-Object {
                         $dimm = $_
                         [ordered]@{
@@ -216,9 +216,9 @@ function Invoke-RangerHardwareCollector {
 
             # GPU / Accelerators via Redfish PCIeDevices (and OS-side via WinRM if available)
             $gpuDevices = @(
-                Invoke-RangerSafeAction -Label "GPU/accelerator inventory for $host" -DefaultValue @() -ScriptBlock {
+                Invoke-RangerSafeAction -Label "GPU/accelerator inventory for $bmcHost" -DefaultValue @() -ScriptBlock {
                     $pcieCollection = try {
-                        Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/Systems/System.Embedded.1/PCIeDevices" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                        Invoke-RangerRedfishRequest -Uri "https://$bmcHost/redfish/v1/Systems/System.Embedded.1/PCIeDevices" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
                     }
                     catch {
                         if ($_.Exception.Message -match '404') {
@@ -232,7 +232,7 @@ function Invoke-RangerHardwareCollector {
                         @($pcieCollection.Members | ForEach-Object {
                             $pcieUri = $_.'@odata.id'
                             $pcieDev = Invoke-RangerSafeAction -Label "PCIe device detail $pcieUri" -DefaultValue $null -ScriptBlock {
-                                Invoke-RangerRedfishRequest -Uri "https://$host$pcieUri" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                                Invoke-RangerRedfishRequest -Uri "https://$bmcHost$pcieUri" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
                             }
                             if ($pcieDev -and $pcieDev.Name -match 'GPU|Accelerat|NVIDIA|AMD|Radeon') {
                                 [ordered]@{
@@ -249,11 +249,11 @@ function Invoke-RangerHardwareCollector {
             )
 
             # BMC SSL certificate detail
-            $bmcCert = Invoke-RangerSafeAction -Label "BMC SSL certificate for $host" -DefaultValue $null -ScriptBlock {
-                $certCollection = Invoke-RangerRedfishRequest -Uri "https://$host/redfish/v1/Managers/iDRAC.Embedded.1/NetworkProtocol/HTTPS/Certificates" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+            $bmcCert = Invoke-RangerSafeAction -Label "BMC SSL certificate for $bmcHost" -DefaultValue $null -ScriptBlock {
+                $certCollection = Invoke-RangerRedfishRequest -Uri "https://$bmcHost/redfish/v1/Managers/iDRAC.Embedded.1/NetworkProtocol/HTTPS/Certificates" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
                 if ($certCollection -and $certCollection.Members -and @($certCollection.Members).Count -gt 0) {
                     $certUri = $certCollection.Members[0].'@odata.id'
-                    $certDetail = Invoke-RangerRedfishRequest -Uri "https://$host$certUri" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                    $certDetail = Invoke-RangerRedfishRequest -Uri "https://$bmcHost$certUri" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
                     if ($certDetail) {
                         $expiryDate = $null
                         if ($certDetail.ValidNotAfter) {
@@ -276,18 +276,18 @@ function Invoke-RangerHardwareCollector {
 
             # Physical disk enumeration with slot/location depth
             $physicalDisksDetail = @(
-                Invoke-RangerSafeAction -Label "Physical disk detail for $host" -DefaultValue @() -ScriptBlock {
+                Invoke-RangerSafeAction -Label "Physical disk detail for $bmcHost" -DefaultValue @() -ScriptBlock {
                     @($storageControllers | ForEach-Object {
                         $ctrlUri = $_.'@odata.id'
                         if ($ctrlUri) {
                             $driveLinks = Invoke-RangerSafeAction -Label "Drive links for $ctrlUri" -DefaultValue $null -ScriptBlock {
-                                Invoke-RangerRedfishRequest -Uri "https://$host$ctrlUri" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                                Invoke-RangerRedfishRequest -Uri "https://$bmcHost$ctrlUri" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
                             }
                             if ($driveLinks -and $driveLinks.Drives) {
                                 @($driveLinks.Drives | ForEach-Object {
                                     $driveUri = $_.'@odata.id'
                                     $driveDetail = Invoke-RangerSafeAction -Label "Drive $driveUri" -DefaultValue $null -ScriptBlock {
-                                        Invoke-RangerRedfishRequest -Uri "https://$host$driveUri" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
+                                        Invoke-RangerRedfishRequest -Uri "https://$bmcHost$driveUri" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
                                     }
                                     if ($driveDetail) {
                                         [ordered]@{
@@ -372,7 +372,7 @@ function Invoke-RangerHardwareCollector {
             }
 
             # Issue #70: Structured Dell OEM data
-            $idracLicenseLevel = Invoke-RangerSafeAction -Label "iDRAC license level for $host" -DefaultValue $null -ScriptBlock {
+            $idracLicenseLevel = Invoke-RangerSafeAction -Label "iDRAC license level for $bmcHost" -DefaultValue $null -ScriptBlock {
                 if ($dellAttributes -and $dellAttributes.Attributes) {
                     $attrs = $dellAttributes.Attributes
                     # Try common Dell attribute paths for license level
@@ -382,7 +382,7 @@ function Invoke-RangerHardwareCollector {
                     $lic
                 }
             }
-            $lcVersion = Invoke-RangerSafeAction -Label "Lifecycle Controller version for $host" -DefaultValue $null -ScriptBlock {
+            $lcVersion = Invoke-RangerSafeAction -Label "Lifecycle Controller version for $bmcHost" -DefaultValue $null -ScriptBlock {
                 if ($dellLcService) {
                     $v = $dellLcService.LCVersion
                     if (-not $v) { $v = $dellLcService.Version }
@@ -390,7 +390,7 @@ function Invoke-RangerHardwareCollector {
                     else { $v }
                 }
             }
-            $supportAssistDetail = Invoke-RangerSafeAction -Label "SupportAssist data for $host" -DefaultValue $null -ScriptBlock {
+            $supportAssistDetail = Invoke-RangerSafeAction -Label "SupportAssist data for $bmcHost" -DefaultValue $null -ScriptBlock {
                 if ($dellAttributes -and $dellAttributes.Attributes) {
                     $attrs = $dellAttributes.Attributes
                     [ordered]@{
@@ -424,7 +424,7 @@ function Invoke-RangerHardwareCollector {
 
             [void]$nodes.Add([ordered]@{
                 node             = $nodeName
-                endpoint         = $host
+                endpoint         = $bmcHost
                 manufacturer     = $system.Manufacturer
                 model            = $system.Model
                 serviceTag       = $system.SKU
@@ -483,7 +483,7 @@ function Invoke-RangerHardwareCollector {
 
             [void]$managementPosture.Add([ordered]@{
                 node                    = $nodeName
-                endpoint                = $host
+                endpoint                = $bmcHost
                 managerModel            = $manager.Model
                 managerFirmwareVersion  = $manager.FirmwareVersion
                 lifecycleController     = if ($manager.Name) { $manager.Name } else { 'iDRAC' }
@@ -501,7 +501,7 @@ function Invoke-RangerHardwareCollector {
                 bmcCert                 = $bmcCert
             })
 
-            [void]$relationships.Add((New-RangerRelationship -SourceType 'bmc-endpoint' -SourceId $host -TargetType 'cluster-node' -TargetId $nodeName -RelationshipType 'manages' -Properties ([ordered]@{ manufacturer = $system.Manufacturer; model = $system.Model })))
+            [void]$relationships.Add((New-RangerRelationship -SourceType 'bmc-endpoint' -SourceId $bmcHost -TargetType 'cluster-node' -TargetId $nodeName -RelationshipType 'manages' -Properties ([ordered]@{ manufacturer = $system.Manufacturer; model = $system.Model })))
             [void]$rawEvidence.Add([ordered]@{
                 node              = $nodeName
                 system            = ConvertTo-RangerHashtable -InputObject $system
@@ -522,7 +522,7 @@ function Invoke-RangerHardwareCollector {
             })
         }
         catch {
-            [void]$findings.Add((New-RangerFinding -Severity warning -Title "BMC endpoint unavailable for $nodeName" -Description $_.Exception.Message -AffectedComponents @($nodeName, $host) -CurrentState 'hardware collector partial' -Recommendation 'Confirm BMC reachability, Redfish availability, and credential validity.'))
+            [void]$findings.Add((New-RangerFinding -Severity warning -Title "BMC endpoint unavailable for $nodeName" -Description $_.Exception.Message -AffectedComponents @($nodeName, $bmcHost) -CurrentState 'hardware collector partial' -Recommendation 'Confirm BMC reachability, Redfish availability, and credential validity.'))
         }
     }
 

@@ -8,6 +8,13 @@ on:
       - 'mkdocs.yml'
   workflow_dispatch:
 
+# Reusable workflow needs pages:write + id-token:write for actions/deploy-pages@v4.
+# Caller must grant these explicitly or the run fails during startup validation.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   docs:
     uses: AzureLocal/platform/.github/workflows/reusable-mkdocs-deploy.yml@main
