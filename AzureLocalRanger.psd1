@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '1.4.0'
+    ModuleVersion     = '1.4.1'
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
@@ -53,6 +53,14 @@
                 'Az.ConnectedMachine'
             )
             ReleaseNotes = @'
+## v1.4.1 — Patch
+
+### Fixed
+- **Invoke-RangerWizard interactive gate (#180)** — Wizard no longer throws in
+  VS Code terminal, Windows Terminal, and similar hosts. Removed the
+  `[Console]::IsInputRedirected` check from `Test-RangerInteractivePromptAvailable`;
+  gates on `[Environment]::UserInteractive` only.
+
 ## v1.4.0 — Report Quality
 
 ### Added

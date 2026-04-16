@@ -22,14 +22,15 @@ __pycache__/
 coverage/
 coverage.xml
 test-results/
+testResults.xml
 
 # Logs
 *.log
 logs/
 
-# Keep TRAILHEAD committed run logs (evidence artefacts)
-!repo-management/logs/
-!repo-management/logs/**
+# Keep committed TRAILHEAD run logs (evidence artifacts)
+!tests/trailhead/logs/
+!tests/trailhead/logs/**
 
 # Editor and OS files
 .DS_Store

@@ -1,8 +1,8 @@
 # Project Status
 
-## Current Release Track — v1.4.0
+## Current Release Track — v1.4.1
 
-AzureLocalRanger v1.4.0 is the current release — the Report Quality milestone. It delivers handoff-quality HTML reports with type-aware table rendering, improved SVG and draw.io diagram output, PDF cover pages, and WAF Assessment integration with an external rule engine.
+AzureLocalRanger v1.4.1 is the current release — patch fixing `Invoke-RangerWizard` in VS Code and Windows Terminal. It delivers handoff-quality HTML reports with type-aware table rendering, improved SVG and draw.io diagram output, PDF cover pages, and WAF Assessment integration with an external rule engine.
 
 ```powershell
 Install-Module AzureLocalRanger -Force
@@ -10,7 +10,7 @@ Import-Module AzureLocalRanger
 ```
 
 | Area | State |
-|---|---|
+| --- | --- |
 | Module structure | ✅ Complete |
 | Core orchestration | ✅ Complete |
 | Identity collectors | ✅ Complete |

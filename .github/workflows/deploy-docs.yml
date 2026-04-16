@@ -6,8 +6,6 @@ on:
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
-  release:
-    types: [published]
   workflow_dispatch:
 
 # Serialise all Pages deployments for this repo so push-to-main and release events

@@ -8,6 +8,12 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [1.4.1] — 2026-04-16
+
+### Fixed
+
+- **Invoke-RangerWizard interactive gate (#180)** — `Test-RangerInteractivePromptAvailable` previously checked `[Console]::IsInputRedirected`, which returns `true` in VS Code terminal and Windows Terminal even when a real user is present. Now gates on `[Environment]::UserInteractive` only. Two regression tests added to `Config.Tests.ps1`.
+
 ## [1.4.0] — 2026-04-16
 
 ### Added
