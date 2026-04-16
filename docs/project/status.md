@@ -1,8 +1,8 @@
 # Project Status
 
-## Current Release Track — v1.1.2
+## Current Release Track — v1.2.0
 
-AzureLocalRanger v1.1.2 is the current shipped patch release. It fixes 6 runtime regressions from v1.1.0/v1.1.1, adds 20 Pester unit tests covering all regression bugs, and closes the Trailhead field validation gate on the live tplabs cluster.
+AzureLocalRanger v1.2.0 is the current release — the v1.2.0 UX & Transport milestone. It delivers Arc Run Command transport, disconnected/semi-connected discovery, Spectre.Console TUI progress display, and the interactive configuration wizard.
 
 ```powershell
 Install-Module AzureLocalRanger -Force
@@ -20,11 +20,15 @@ Import-Module AzureLocalRanger
 | Hyper-V collectors | ✅ Complete |
 | GPO collectors | ✅ Complete |
 | Manifest assembly | ✅ Complete |
+| Arc Run Command transport | ✅ Complete — auto/winrm/arc transport modes, Az.ConnectedMachine fallback |
+| Disconnected discovery | ✅ Complete — pre-run connectivity matrix, graceful skip, posture classification |
+| Spectre TUI progress | ✅ Complete — PwshSpectreConsole live bars, Write-Progress fallback, CI-safe |
+| Interactive wizard | ✅ Complete — Invoke-RangerWizard guided config + run |
 | Pester test suite | ✅ 20 regression unit tests + 42 total tests passing |
 | Field validation (TRAILHEAD) | ✅ v1.1.2 gate closed — all 6 collectors succeeded, zero auth retries |
 | Report output (HTML/Markdown/JSON/DOCX/XLSX/PDF) | ✅ Complete |
 | Diagram output (SVG/draw.io) | ✅ Complete |
-| PSGallery release | ✅ `1.1.2` current on PSGallery |
+| PSGallery release | ✅ `1.2.0` current on PSGallery |
 | Arc-first node inventory | ✅ Complete |
 | Domain auto-detection | ✅ Complete |
 | Parameter-first input model | ✅ Complete |
