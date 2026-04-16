@@ -53,6 +53,17 @@ Describe 'Azure Local Ranger runtime' {
         $result.SelectedCollectors | Should -Contain 'management-performance'
     }
 
+    It 'supports prerequisite checks without a config' {
+        $result = Test-AzureLocalRangerPrerequisites
+
+        $result.Validation.IsValid | Should -BeTrue
+        @($result.SelectedCollectors).Count | Should -Be 0
+        @($result.Validation.Warnings).Count | Should -Be 1
+        $result.Validation.Warnings[0] | Should -Match 'No configuration was supplied'
+        ($result.Checks | Where-Object Name -eq 'Cluster WinRM connectivity').Passed | Should -BeTrue
+        ($result.Checks | Where-Object Name -eq 'Cluster WinRM connectivity').Detail | Should -Match 'Skipped'
+    }
+
     It 'prefers the cluster credential when remote authorization succeeds' {
         $clusterCredential = [pscredential]::new('CONTOSO\cluster-read', (ConvertTo-SecureString 'cluster-secret' -AsPlainText -Force))
         $domainCredential = [pscredential]::new('CONTOSO\svc.azl_admin', (ConvertTo-SecureString 'domain-secret' -AsPlainText -Force))

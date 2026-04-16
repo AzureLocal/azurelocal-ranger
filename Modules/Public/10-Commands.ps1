@@ -315,6 +315,14 @@ function Test-AzureLocalRangerPrerequisites {
         [string]$ResourceGroup
     )
 
+    $structuralOverrides = @{}
+    if ($PSBoundParameters.ContainsKey('ClusterFqdn'))     { $structuralOverrides['ClusterFqdn']     = $ClusterFqdn }
+    if ($PSBoundParameters.ContainsKey('ClusterNodes'))    { $structuralOverrides['ClusterNodes']    = $ClusterNodes }
+    if ($PSBoundParameters.ContainsKey('EnvironmentName')) { $structuralOverrides['EnvironmentName'] = $EnvironmentName }
+    if ($PSBoundParameters.ContainsKey('SubscriptionId'))  { $structuralOverrides['SubscriptionId']  = $SubscriptionId }
+    if ($PSBoundParameters.ContainsKey('TenantId'))        { $structuralOverrides['TenantId']        = $TenantId }
+    if ($PSBoundParameters.ContainsKey('ResourceGroup'))   { $structuralOverrides['ResourceGroup']   = $ResourceGroup }
+
     if ($InstallPrerequisites) {
         $isElevated = ([Security.Principal.WindowsPrincipal]::new(
             [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -347,49 +355,65 @@ function Test-AzureLocalRangerPrerequisites {
         }
     }
 
-    $config = Import-RangerConfiguration -ConfigPath $ConfigPath -ConfigObject $ConfigObject
-    $structuralOverrides = @{}
-    if ($PSBoundParameters.ContainsKey('ClusterFqdn'))     { $structuralOverrides['ClusterFqdn']     = $ClusterFqdn }
-    if ($PSBoundParameters.ContainsKey('ClusterNodes'))    { $structuralOverrides['ClusterNodes']    = $ClusterNodes }
-    if ($PSBoundParameters.ContainsKey('EnvironmentName')) { $structuralOverrides['EnvironmentName'] = $EnvironmentName }
-    if ($PSBoundParameters.ContainsKey('SubscriptionId'))  { $structuralOverrides['SubscriptionId']  = $SubscriptionId }
-    if ($PSBoundParameters.ContainsKey('TenantId'))        { $structuralOverrides['TenantId']        = $TenantId }
-    if ($PSBoundParameters.ContainsKey('ResourceGroup'))   { $structuralOverrides['ResourceGroup']   = $ResourceGroup }
-    $config = Set-RangerStructuralOverrides -Config $config -StructuralOverrides $structuralOverrides
-    $validation = Test-RangerConfiguration -Config $config -PassThru
-    $selectedCollectors = Resolve-RangerSelectedCollectors -Config $config
-    $probeConfig = ConvertTo-RangerHashtable -InputObject $config
-    $probeConfig.behavior.promptForMissingCredentials = $false
     $clusterConnectivityPassed = $false
     $clusterConnectivityDetail = 'Cluster WinRM connectivity not tested.'
+    $validation = [ordered]@{
+        IsValid  = $true
+        Errors   = @()
+        Warnings = @()
+    }
+    $selectedCollectors = @()
 
-    try {
-        $probeCredentialMap = Resolve-RangerCredentialMap -Config $probeConfig -Overrides @{}
-        $probeTargets = [System.Collections.Generic.List[string]]::new()
-        if (-not [string]::IsNullOrWhiteSpace($probeConfig.targets.cluster.fqdn) -and -not (Test-RangerPlaceholderValue -Value $probeConfig.targets.cluster.fqdn -FieldName 'targets.cluster.fqdn')) {
-            $probeTargets.Add([string]$probeConfig.targets.cluster.fqdn)
-        }
-        foreach ($node in @($probeConfig.targets.cluster.nodes)) {
-            if (-not [string]::IsNullOrWhiteSpace([string]$node) -and -not (Test-RangerPlaceholderValue -Value $node -FieldName 'targets.cluster.node') -and $node -notin $probeTargets) {
-                $probeTargets.Add([string]$node)
-            }
-        }
+    $hasConfigInput = $PSBoundParameters.ContainsKey('ConfigPath') -or $PSBoundParameters.ContainsKey('ConfigObject')
+    $shouldBuildConfig = $hasConfigInput -or $structuralOverrides.Count -gt 0
 
-        if ($probeTargets.Count -eq 0) {
-            $clusterConnectivityDetail = 'No cluster WinRM targets are configured.'
+    if ($shouldBuildConfig) {
+        if ($hasConfigInput) {
+            $config = Import-RangerConfiguration -ConfigPath $ConfigPath -ConfigObject $ConfigObject
         }
         else {
-            $retryCount = if ($probeConfig.behavior -and $probeConfig.behavior.retryCount -gt 0) { [int]$probeConfig.behavior.retryCount } else { 1 }
-            $timeoutSec = if ($probeConfig.behavior -and $probeConfig.behavior.timeoutSeconds -gt 0) { [int]$probeConfig.behavior.timeoutSeconds } else { 0 }
-            $remoteExecution = Resolve-RangerRemoteExecutionCredential -Targets $probeTargets -ClusterCredential $probeCredentialMap.cluster -DomainCredential $probeCredentialMap.domain -RetryCount $retryCount -TimeoutSeconds $timeoutSec
-            $clusterConnectivityPassed = $true
-            $clusterConnectivityDetail = "$($remoteExecution.Detail) " + (@($remoteExecution.Results | ForEach-Object {
-                "$($_.Target): $($_.RemoteIdentity)"
-            }) -join '; ')
+            $config = Get-RangerDefaultConfig
+        }
+
+        $config = Set-RangerStructuralOverrides -Config $config -StructuralOverrides $structuralOverrides
+        $validation = Test-RangerConfiguration -Config $config -PassThru
+        $selectedCollectors = Resolve-RangerSelectedCollectors -Config $config
+        $probeConfig = ConvertTo-RangerHashtable -InputObject $config
+        $probeConfig.behavior.promptForMissingCredentials = $false
+
+        try {
+            $probeCredentialMap = Resolve-RangerCredentialMap -Config $probeConfig -Overrides @{}
+            $probeTargets = [System.Collections.Generic.List[string]]::new()
+            if (-not [string]::IsNullOrWhiteSpace($probeConfig.targets.cluster.fqdn) -and -not (Test-RangerPlaceholderValue -Value $probeConfig.targets.cluster.fqdn -FieldName 'targets.cluster.fqdn')) {
+                $probeTargets.Add([string]$probeConfig.targets.cluster.fqdn)
+            }
+            foreach ($node in @($probeConfig.targets.cluster.nodes)) {
+                if (-not [string]::IsNullOrWhiteSpace([string]$node) -and -not (Test-RangerPlaceholderValue -Value $node -FieldName 'targets.cluster.node') -and $node -notin $probeTargets) {
+                    $probeTargets.Add([string]$node)
+                }
+            }
+
+            if ($probeTargets.Count -eq 0) {
+                $clusterConnectivityDetail = 'No cluster WinRM targets are configured.'
+            }
+            else {
+                $retryCount = if ($probeConfig.behavior -and $probeConfig.behavior.retryCount -gt 0) { [int]$probeConfig.behavior.retryCount } else { 1 }
+                $timeoutSec = if ($probeConfig.behavior -and $probeConfig.behavior.timeoutSeconds -gt 0) { [int]$probeConfig.behavior.timeoutSeconds } else { 0 }
+                $remoteExecution = Resolve-RangerRemoteExecutionCredential -Targets $probeTargets -ClusterCredential $probeCredentialMap.cluster -DomainCredential $probeCredentialMap.domain -RetryCount $retryCount -TimeoutSeconds $timeoutSec
+                $clusterConnectivityPassed = $true
+                $clusterConnectivityDetail = "$($remoteExecution.Detail) " + (@($remoteExecution.Results | ForEach-Object {
+                    "$($_.Target): $($_.RemoteIdentity)"
+                }) -join '; ')
+            }
+        }
+        catch {
+            $clusterConnectivityDetail = "Cluster WinRM connectivity probe failed: $($_.Exception.Message)"
         }
     }
-    catch {
-        $clusterConnectivityDetail = "Cluster WinRM connectivity probe failed: $($_.Exception.Message)"
+    else {
+        $clusterConnectivityPassed = $true
+        $clusterConnectivityDetail = 'Skipped: no configuration or cluster overrides were supplied.'
+        $validation.Warnings = @('No configuration was supplied. Config-specific validation and cluster connectivity checks were skipped.')
     }
 
     $checks = @(
