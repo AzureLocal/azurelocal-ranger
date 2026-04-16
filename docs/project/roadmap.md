@@ -8,7 +8,21 @@ Ranger supports two outcomes through one discovery engine:
 - **Current-state** — recurring operational snapshot of a live Azure Local deployment
 - **As-built** — formal documentation package for customer or operational handoff
 
-## Current Release — v1.2.1
+## Current Release — v1.3.0
+
+Released April 2026. Operator Experience milestone delivering full config parameter coverage and five new operator guide pages.
+
+| Area | What shipped |
+| --- | --- |
+| Full config parameter coverage (#171) | Every `behavior.*`, `output.*`, and `credentials.azure.*` config key is now a direct runtime parameter on `Invoke-AzureLocalRanger`; parameters take precedence over config file values |
+| First Run guide (#174) | Six-step linear guide from install to output with no decisions |
+| Wizard guide (#175) | Full `Invoke-RangerWizard` walkthrough with example inputs and generated YAML |
+| Command reference scenarios (#176) | Nine copy-paste examples and parameter precedence documentation |
+| Configuration reference (#177) | Every config key with type, default, required/optional, and Key Vault syntax |
+| Understanding output (#178) | Output directory tree, role-based reading path, collector status interpretation |
+| Discovery domain enhancements (#179) | All 10 domain pages include example manifest data, common findings, partial status guidance, and domain dependencies |
+
+## Previous Release — v1.2.1
 
 Released April 2026. Patch release fixing four regressions in the v1.2.0 UX & Transport milestone.
 
@@ -64,14 +78,6 @@ Released April 2026. Post-release patch for the no-config prerequisite-check reg
 | Simulation framework | Full output pipeline validated without live connections via `New-RangerSyntheticManifest.ps1` and committed fixture |
 | Public documentation | Product, architecture, operator, discovery domain, output, and contributor docs under `docs/` |
 | Patch hardening | `Test-AzureLocalRangerPrerequisites` no longer throws when run without a config object or path |
-
-## Next Release — v1.3.0
-
-Focus: Full config-parameter coverage — every configuration key exposed as a direct command parameter so operators can drive runs without a YAML file.
-
-| Item | Detail | Issue |
-| --- | --- | --- |
-| Full config parameter coverage | All `behavior.*`, `output.*`, `scope.*`, and `azure.*` config keys available as direct parameters on `Invoke-AzureLocalRanger` | [#171](https://github.com/AzureLocal/azurelocal-ranger/issues/171) |
 
 ## Backlog
 

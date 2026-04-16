@@ -1,8 +1,8 @@
 # Project Status
 
-## Current Release Track — v1.2.1
+## Current Release Track — v1.3.0
 
-AzureLocalRanger v1.2.1 is the current release — a patch on the v1.2.0 UX & Transport milestone. It delivers all v1.2.0 features plus fixes for Redfish 404 retry behaviour, hardware collector partial status, ShowProgress default-on, and prerequisite output formatting.
+AzureLocalRanger v1.3.0 is the current release — the Operator Experience milestone. It delivers full config parameter coverage on `Invoke-AzureLocalRanger`, five new operator guide pages, enhanced discovery domain docs, and all v1.2.x fixes.
 
 ```powershell
 Install-Module AzureLocalRanger -Force
@@ -24,11 +24,13 @@ Import-Module AzureLocalRanger
 | Disconnected discovery | ✅ Complete — pre-run connectivity matrix, graceful skip, posture classification |
 | Spectre TUI progress | ✅ Complete — PwshSpectreConsole live bars, Write-Progress fallback, CI-safe |
 | Interactive wizard | ✅ Complete — Invoke-RangerWizard guided config + run |
+| Full config parameter coverage | ✅ Complete — every config key is a runtime parameter on Invoke-AzureLocalRanger |
+| Operator guide docs | ✅ Complete — First Run, Wizard Guide, Configuration Reference, Understanding Output |
 | Pester test suite | ✅ 74 tests passing |
 | Field validation (TRAILHEAD) | ✅ v1.1.2 gate closed — all 6 collectors succeeded, zero auth retries |
 | Report output (HTML/Markdown/JSON/DOCX/XLSX/PDF) | ✅ Complete |
 | Diagram output (SVG/draw.io) | ✅ Complete |
-| PSGallery release | ✅ `1.2.1` current on PSGallery |
+| PSGallery release | ✅ `1.3.0` current on PSGallery |
 | Arc-first node inventory | ✅ Complete |
 | Domain auto-detection | ✅ Complete |
 | Parameter-first input model | ✅ Complete |
