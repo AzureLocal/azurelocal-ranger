@@ -588,11 +588,15 @@ function Test-RangerInteractivePromptAvailable {
         return $false
     }
 
-    # [Console]::IsInputRedirected returns true in VS Code terminal, Windows Terminal, and
-    # similar hosts even when a real user is present. Read-Host works correctly in all of
-    # these environments, so UserInteractive alone is the correct gate. IsInputRedirected
-    # is only meaningful for detecting non-interactive CI/service invocations, which
-    # [Environment]::UserInteractive already covers.
+    # $Host.Name is the most reliable indicator of an interactive shell. ConsoleHost is
+    # the standard pwsh/powershell.exe terminal; ISE and VS Code Host are also interactive.
+    # [Environment]::UserInteractive returns $false on Windows multi-session (AVD) hosts
+    # even when a real user is present at the prompt, so it cannot be used as the sole gate.
+    $interactiveHosts = @('ConsoleHost', 'Windows PowerShell ISE Host', 'Visual Studio Code Host')
+    if ($Host.Name -in $interactiveHosts) {
+        return $true
+    }
+
     return [Environment]::UserInteractive
 }
 
