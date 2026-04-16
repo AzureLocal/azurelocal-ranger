@@ -1,8 +1,8 @@
 # Project Status
 
-## Current Release Track — v1.1.0
+## Current Release Track — v1.1.1
 
-AzureLocalRanger v1.1.0 is complete in this repository. Milestone-close validation succeeded, the v1.1.0 milestone is closed, and the next release track now moves to post-v1.1 feature delivery.
+AzureLocalRanger v1.1.1 is the current shipped patch release. It carries the post-ship fix for the documented no-config prerequisite path while preserving the completed v1.1.0 milestone baseline.
 
 ```powershell
 Import-Module .\AzureLocalRanger.psd1 -Force
@@ -23,7 +23,7 @@ Import-Module .\AzureLocalRanger.psd1 -Force
 | Field validation (TRAILHEAD) | ✅ v1.1.0 gate closed on live tplabs validation |
 | Report output (HTML/Markdown/JSON/DOCX/XLSX/PDF) | ✅ Complete |
 | Diagram output (SVG/draw.io) | ✅ Complete |
-| PSGallery release | 🔄 Publication workflow remains separate from milestone-close validation |
+| PSGallery release | ✅ `1.1.1` current on PSGallery |
 | Arc-first node inventory | ✅ Complete |
 | Domain auto-detection | ✅ Complete |
 | Parameter-first input model | ✅ Complete |

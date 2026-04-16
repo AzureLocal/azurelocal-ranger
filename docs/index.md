@@ -29,7 +29,7 @@ If you are new to Ranger, the cleanest path through the docs is:
 
 ## Current Project Phase
 
-AzureLocalRanger is at **v1.1.0**. The milestone-close validation work is complete, the live `tplabs` field run passed on the final code, and the current documentation reflects the shipped post-release sprint baseline.
+AzureLocalRanger is at **v1.1.1**. This patch release ships the no-config prerequisite-check fix after the completed `v1.1.0` milestone closeout, and the current documentation reflects that shipped baseline.
 
 ```powershell
 Import-Module .\AzureLocalRanger.psd1 -Force

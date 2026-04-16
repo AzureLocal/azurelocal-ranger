@@ -8,6 +8,12 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-04-16
+
+### Fixed
+
+- `Test-AzureLocalRangerPrerequisites` now supports the documented no-config invocation path again. Running it with no arguments returns a structured prerequisite result and skips config-specific validation cleanly instead of throwing `Either ConfigPath or ConfigObject must be supplied.`
+
 ## [1.1.0] — 2026-04-15
 
 ### Added

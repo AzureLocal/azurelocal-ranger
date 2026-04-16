@@ -2,6 +2,11 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
+## v1.1.1 Highlights
+
+- fixed the installed-module regression where `Test-AzureLocalRangerPrerequisites` threw when run with no config arguments
+- restored the documented first-run flow for PSGallery users validating a runner before generating a config file
+
 ## v1.1.0 Highlights
 
 - intelligent remoting credential selection and authorization preflight for non-domain-joined runners

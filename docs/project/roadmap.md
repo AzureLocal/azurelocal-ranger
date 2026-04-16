@@ -8,9 +8,9 @@ Ranger supports two outcomes through one discovery engine:
 - **Current-state** — recurring operational snapshot of a live Azure Local deployment
 - **As-built** — formal documentation package for customer or operational handoff
 
-## Current Release — v1.1.0
+## Current Release — v1.1.1
 
-Released April 2026. Post-release sprint complete with live milestone validation closed.
+Released April 2026. Post-release sprint complete with live milestone validation closed, followed by a patch release for the no-config prerequisite-check fix.
 
 | Area | What shipped |
 | --- | --- |
@@ -26,6 +26,7 @@ Released April 2026. Post-release sprint complete with live milestone validation
 | Testing | Focused milestone-close suite passing on final code plus live tplabs validation with all 6 collectors successful |
 | Simulation framework | Full output pipeline validated without live connections via `New-RangerSyntheticManifest.ps1` and committed fixture |
 | Public documentation | Product, architecture, operator, discovery domain, output, and contributor docs under `docs/` |
+| Patch hardening | `Test-AzureLocalRangerPrerequisites` no longer throws when run without a config object or path |
 
 ## Next Release — v1.2.0
 
@@ -37,8 +38,6 @@ Focus: UX and alternate transport improvements after the v1.1.0 milestone closeo
 | Terminal TUI scan progress | Rich live progress display for collection and findings ([#76](https://github.com/AzureLocal/azurelocal-ranger/issues/76)) | 🔵 Planned |
 | Arc Run Command transport | Alternate collection path when WinRM is blocked ([#26](https://github.com/AzureLocal/azurelocal-ranger/issues/26)) | 🔵 Planned |
 | Disconnected / semi-connected discovery | Graceful degradation and disconnected-mode coverage ([#30](https://github.com/AzureLocal/azurelocal-ranger/issues/30)) | 🔵 Planned |
-| WAF assessment integration | Workload architecture assessment correlation ([#94](https://github.com/AzureLocal/azurelocal-ranger/issues/94)) | 🔵 Planned |
-| PDF output hardening | Full report PDF path completion and publication polish ([#96](https://github.com/AzureLocal/azurelocal-ranger/issues/96)) | 🔵 Planned |
 
 ## Backlog
 

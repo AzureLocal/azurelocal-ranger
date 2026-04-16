@@ -1,6 +1,6 @@
 # Documentation Roadmap
 
-The v1.1.0 documentation set is considered current. This page remains as a compact audit of page maturity so maintainers can spot regressions as new post-v1.1 features land.
+The v1.1.1 documentation set is considered current. This page remains as a compact audit of page maturity so maintainers can spot regressions as new post-v1.1 features land.
 
 ## Maturity Key
 
