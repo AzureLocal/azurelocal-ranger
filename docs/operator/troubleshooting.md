@@ -20,6 +20,56 @@ The manifest should clearly distinguish:
 
 ## Common Problems
 
+### Arc Run Command Transport Fails
+
+Symptoms:
+
+- collectors are attempted via Arc but return non-zero exit codes or empty output
+- manifest shows `status: skipped` with a message referencing Arc transport unavailability
+
+Check:
+
+- `Az.ConnectedMachine` module is installed: `Get-Module Az.ConnectedMachine -ListAvailable`
+- active Az context exists: `Get-AzContext`
+- nodes are registered as Arc-enabled servers in the configured subscription and resource group
+- the Az identity has `Microsoft.HybridCompute/machines/runCommands/action` on the machines
+- `behavior.transport` is set to `auto` or `arc` in config — `winrm` will not attempt Arc fallback
+
+### Connectivity Matrix Shows Unexpected Posture
+
+Symptoms:
+
+- run reports `disconnected` posture when cluster nodes should be reachable
+- collectors are skipped that you expected to run
+
+Check:
+
+- `manifest.run.connectivity.cluster.targets` — confirms which hosts were probed and whether they responded on ports 5985 or 5986
+- WinRM TrustedHosts configuration on the runner
+- DNS resolution for node FQDNs from the runner
+- `behavior.degradationMode` — set to `graceful` (skip) or `strict` (fail) as intended
+
+To inspect the connectivity matrix after a run:
+
+```powershell
+$m = Get-Content .\manifest\audit-manifest.json | ConvertFrom-Json
+$m.run.connectivity | ConvertTo-Json -Depth 5
+```
+
+### Progress Bars Not Showing
+
+Symptoms:
+
+- `-ShowProgress` was passed but no progress display appears
+
+Check:
+
+- `PwshSpectreConsole` is installed: `Get-Module PwshSpectreConsole -ListAvailable`
+- the session is interactive — progress is automatically suppressed in CI (`$env:CI`, `$env:GITHUB_ACTIONS`, etc.) and when `-Unattended` is set
+- the terminal supports ANSI escape sequences (Windows Terminal, VS Code terminal, or iTerm2 work; classic `cmd.exe` does not)
+
+If `PwshSpectreConsole` is absent, Ranger falls back to `Write-Progress` silently — this is expected.
+
 ### WinRM Access Fails
 
 Symptoms:

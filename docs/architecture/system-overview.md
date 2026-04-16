@@ -33,11 +33,12 @@ Ranger documents environments. It does not remediate, reconfigure, patch, or rot
 At a high level, one Ranger run looks like this:
 
 1. validate configuration, credentials, and execution environment
-2. classify topology and operating variant
-3. collect evidence by domain using the right protocol for each target
-4. normalize results into the audit manifest
-5. persist the manifest and supporting evidence references
-6. generate current-state or as-built outputs from the cached manifest
+2. probe all transport surfaces and record the connectivity matrix in `manifest.run.connectivity`
+3. classify topology and operating variant
+4. collect evidence by domain using the right protocol for each target
+5. normalize results into the audit manifest
+6. persist the manifest and supporting evidence references
+7. generate current-state or as-built outputs from the cached manifest
 
 ## Where Ranger Runs
 
@@ -52,8 +53,9 @@ That operating model is deliberate:
 ## Protocol Model
 
 | Protocol or tool | Primary use |
-|---|---|
+| --- | --- |
 | WinRM / PowerShell remoting | cluster, storage, networking, VM, security, management-tool, and performance collection |
+| Azure Arc Run Command | fallback transport when WinRM ports 5985/5986 are unreachable — routes workloads through the Azure control plane (v1.2.0+) |
 | Redfish REST API | Dell-first hardware and BMC discovery |
 | Az PowerShell / Azure CLI | Azure integration, policy, monitoring, update, backup, and related services |
 | Optional vendor APIs | future direct switch and firewall interrogation |
@@ -71,6 +73,16 @@ This mode emphasizes operational visibility, findings, and current posture.
 This mode emphasizes handoff-quality structure, richer diagrams, and a more formal package layout.
 
 The difference is in rendering and package composition, not in how discovery fundamentally works.
+
+## Entry Points
+
+Operators can start a run in three ways:
+
+| Entry point | Description |
+| --- | --- |
+| `Invoke-AzureLocalRanger -ConfigPath` | Standard path — pass a pre-built YAML config file |
+| `Invoke-RangerWizard` | Interactive guided wizard — builds the config through prompts and optionally launches the run immediately (v1.2.0+) |
+| `Invoke-AzureLocalRanger -ConfigObject` | Automation path — pass an in-memory config hashtable from a script or scheduler |
 
 ## Variant Awareness
 

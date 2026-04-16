@@ -110,6 +110,20 @@ If a required credential is missing and prompting is enabled, Ranger should prom
 
 Prompts should identify the target and the reason the credential is needed.
 
+## Arc Run Command Transport (v1.2.0+)
+
+When `behavior.transport` is set to `arc` or `auto`, Ranger routes WinRM workloads through the Azure Arc Run Command API instead of direct TCP connections. This path has its own credential requirements.
+
+**Azure identity requirements for Arc transport:**
+
+- an active Az PowerShell context (`Get-AzContext`) authenticated to the subscription containing the Arc-enabled servers
+- the calling identity must have `Microsoft.HybridCompute/machines/runCommands/action` on the Arc-enabled machine resources — this is included in the `Azure Connected Machine Resource Manager` role
+- the `Az.ConnectedMachine` module must be installed (`Install-Module Az.ConnectedMachine`)
+
+Arc transport does not replace or substitute the cluster WinRM credential for tasks that still require interactive credentials on the node. It is a transport alternative — the Azure identity authorizes the Arc Run Command delivery, and any credential-dependent operations within the script block still require the credential to be passed.
+
+In `auto` mode, Ranger falls back to Arc transport only when all WinRM targets are confirmed unreachable. The Azure credential that was already in use for Azure-side discovery is reused for the Arc transport path.
+
 ## Related Pages
 
 - [Operator Prerequisites](prerequisites.md)

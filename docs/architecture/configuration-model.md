@@ -111,9 +111,24 @@ output:
 
 behavior:
   promptForMissingCredentials: true
+  promptForMissingRequired: true
   skipUnavailableOptionalDomains: true
   failOnSchemaViolation: true
   logLevel: info
+  # v1.2.0 transport and degradation settings
+  transport: auto          # auto | winrm | arc
+  degradationMode: graceful  # graceful | strict
+
+output:
+  mode: current-state
+  formats:
+    - html
+    - markdown
+    - json
+  rootPath: ./artifacts
+  diagramFormat: svg
+  keepRawEvidence: true
+  showProgress: true       # v1.2.0 — requires PwshSpectreConsole; falls back to Write-Progress
 ```
 
 ## Credential References
@@ -188,6 +203,7 @@ The output block should control:
 - whether raw evidence exports are retained
 - whether executive-only subsets are generated
 - package naming and timestamp behavior
+- `showProgress` (v1.2.0): show a live per-collector progress display during collection — requires `PwshSpectreConsole`; falls back to `Write-Progress` when absent; automatically suppressed in CI and when `-Unattended` is set
 
 ## Behavior Settings
 
@@ -196,10 +212,12 @@ The behavior block should capture operator intent that is not itself discovery d
 Examples include:
 
 - retry counts and timeout posture
-- whether to prompt interactively for missing credentials
+- whether to prompt interactively for missing credentials or required structural fields
 - whether schema validation warnings fail the run
 - log verbosity
 - whether to stop after collection or continue into rendering
+- `transport` (v1.2.0): `auto` tries WinRM first and falls back to Arc Run Command when all nodes are unreachable; `winrm` forces WinRM only; `arc` forces Arc Run Command only
+- `degradationMode` (v1.2.0): `graceful` skips collectors whose transport is unreachable (default); `strict` fails the run when any core collector cannot reach its target
 
 ## Configuration Validation
 

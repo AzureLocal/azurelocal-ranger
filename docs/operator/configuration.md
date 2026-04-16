@@ -73,6 +73,32 @@ Parameter  ->  Config file  ->  Interactive prompt  ->  Default  ->  Error
 
 That rule applies to environment name, cluster addressing, and Azure target metadata. Credentials follow the same broad shape, but can also be resolved through `passwordRef` URIs.
 
+## v1.2.0 Config Keys
+
+Three new keys were added in v1.2.0:
+
+```yaml
+behavior:
+  # Transport mode for cluster WinRM workloads.
+  # auto   — try WinRM first; fall back to Arc Run Command when all nodes are unreachable
+  # winrm  — force WinRM only (fail if unreachable)
+  # arc    — force Arc Run Command only (requires Az.ConnectedMachine and active Az context)
+  transport: auto
+
+  # How to handle collectors whose required transport is confirmed unreachable.
+  # graceful — skip the collector with status: skipped (default)
+  # strict   — fail the run when any core collector cannot reach its target
+  degradationMode: graceful
+
+output:
+  # Show a live per-collector progress display during collection.
+  # Requires PwshSpectreConsole; falls back to Write-Progress if absent.
+  # Automatically suppressed in CI environments and when -Unattended is set.
+  showProgress: true
+```
+
+The `-ShowProgress` switch on `Invoke-AzureLocalRanger` overrides `output.showProgress` at runtime.
+
 ## Runtime Parameter Overrides
 
 The public commands support a parameter-first operating model. These parameters override config-file values when provided:
@@ -84,6 +110,7 @@ The public commands support a parameter-first operating model. These parameters 
 - `-DomainCredential`
 - `-BmcCredential`
 - `-NoRender`
+- `-ShowProgress`
 - `-ClusterFqdn`
 - `-ClusterNodes`
 - `-EnvironmentName`

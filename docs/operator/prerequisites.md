@@ -75,15 +75,21 @@ Running directly on a cluster node is not the preferred operating model.
 
 ## Software Prerequisites
 
-The planned runtime assumes:
+The runtime requires:
 
 - PowerShell 7.x
-- the Az PowerShell modules needed for Azure discovery
+- `Az.Accounts` and `Az.Resources` — for Azure-side discovery
 - RSAT ActiveDirectory PowerShell module (`Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0` on Windows client / multi-session; `RSAT-AD-PowerShell` on Windows Server)
-- Azure CLI when CLI-only or fallback workflows are needed
-- network access to WinRM, HTTPS Redfish endpoints, and Azure public or approved private endpoints as required by the selected domains
+- Azure CLI — optional, used as fallback when Az PowerShell context is unavailable
 
-Optional tools may be required for specific workflows later, but v1 planning assumes PowerShell plus Azure authentication tooling.
+The following modules are **optional** but unlock additional capabilities:
+
+| Module | Capability | Install |
+| --- | --- | --- |
+| `Az.ConnectedMachine` | Arc Run Command transport — WinRM fallback when ports 5985/5986 are blocked | `Install-Module Az.ConnectedMachine` |
+| `PwshSpectreConsole` | Live per-collector progress bars via `-ShowProgress`; falls back to `Write-Progress` if absent | `Install-Module PwshSpectreConsole` |
+
+Network access to WinRM, HTTPS Redfish endpoints, and Azure public or approved private endpoints is required as applicable to the selected domains.
 
 ## WinRM Client Configuration
 
@@ -189,13 +195,46 @@ Current Microsoft documentation describes multi-rack as a preview architecture w
 
 This is not a standard hyperconverged deployment and should be treated as variant-specific.
 
+## Arc Run Command Transport (v1.2.0+)
+
+When cluster nodes are unreachable on WinRM ports 5985/5986 — for example when running from outside the management VLAN — Ranger can fall back to Azure Arc Run Command, which routes commands through the Azure control plane instead.
+
+Requirements:
+
+- `Az.ConnectedMachine` module installed (`Install-Module Az.ConnectedMachine`)
+- Active Az PowerShell context with access to the cluster's subscription and resource group
+- Nodes registered as Arc-enabled servers
+
+Control the transport mode with `behavior.transport` in config (or leave as default `auto`):
+
+```yaml
+behavior:
+  transport: auto   # try WinRM first; fall back to Arc if all nodes are unreachable
+  # transport: winrm  # force WinRM only
+  # transport: arc    # force Arc Run Command only
+```
+
+When `transport: auto` and Arc is unavailable (module missing or no Az context), Ranger falls back to WinRM-only and logs the reason.
+
+## Pre-Run Connectivity Assessment
+
+Ranger probes all configured transport surfaces before any collector runs. The probe result is stored in `manifest.run.connectivity` and determines which collectors run or skip:
+
+| Posture | Meaning |
+| --- | --- |
+| `connected` | Cluster WinRM reachable; Azure management plane reachable (or not configured) |
+| `semi-connected` | Cluster WinRM reachable; Azure management plane unreachable |
+| `disconnected` | Cluster WinRM unreachable from this runner |
+
+Collectors whose transport surface is confirmed unreachable receive `status: skipped` rather than being attempted and failing. This behavior is controlled by `behavior.degradationMode: graceful` (default) or `strict`.
+
 ## Before You Run Ranger
 
 Before a meaningful run, verify:
 
 1. you are on the right workstation or jump box
 2. the WinRM service is running on the execution machine and cluster node IPs are in TrustedHosts (see [WinRM Client Configuration](#winrm-client-configuration) above)
-3. cluster WinRM access works (`Test-WSMan -ComputerName <node-ip> -Credential <domain-cred> -Authentication Negotiate`)
+3. cluster WinRM access works (`Test-WSMan -ComputerName <node-ip> -Credential <domain-cred> -Authentication Negotiate`), or Arc Run Command transport is configured as fallback
 4. Azure authentication works for the intended subscription and resource group
 5. BMC endpoints are reachable if hardware discovery is included
 6. DNS, proxy, and firewall posture allow the selected domains to communicate

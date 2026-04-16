@@ -1,6 +1,6 @@
 # Command Reference
 
-AzureLocalRanger exports four public commands.
+AzureLocalRanger exports five public commands.
 
 ## Input Resolution Precedence
 
@@ -29,6 +29,38 @@ Parameter  ->  Config file  ->  Interactive prompt  ->  Default  ->  Error
 | `-SubscriptionId` | `string` | No | Override `targets.azure.subscriptionId` |
 | `-TenantId` | `string` | No | Override `targets.azure.tenantId` |
 | `-ResourceGroup` | `string` | No | Override `targets.azure.resourceGroup` |
+| `-ShowProgress` | `switch` | No | Show live per-collector progress bars (requires `PwshSpectreConsole`; suppressed in CI and `-Unattended`) |
+
+## Invoke-RangerWizard
+
+Interactively builds a Ranger configuration and optionally launches a run. Requires an interactive host — throws `InvalidOperationException` in non-interactive sessions.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `-OutputConfigPath` | `string` | No | Pre-fill the save path for the generated config file |
+| `-SkipRun` | `switch` | No | Save the config but skip launching a run regardless of wizard choice |
+
+The wizard walks through:
+
+1. Environment name and cluster display name
+2. Cluster FQDN and node FQDNs
+3. Azure subscription ID, tenant ID, and resource group
+4. Credential strategy (current context or prompt at run time)
+5. Output path and report formats
+6. Domain scope — include or exclude specific data domains
+
+At the end it offers: **[S]** save only, **[R]** run immediately without saving, or **[B]** save and run.
+
+```powershell
+# Launch the wizard
+Invoke-RangerWizard
+
+# Pre-fill the save path
+Invoke-RangerWizard -OutputConfigPath C:\ranger\tplabs.yml
+
+# Save only, no run
+Invoke-RangerWizard -SkipRun
+```
 
 ## Scheduled Runs
 

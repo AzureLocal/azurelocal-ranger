@@ -12,7 +12,17 @@ Test-AzureLocalRangerPrerequisites
 
 Use `-InstallPrerequisites` in an elevated session if you want Ranger to install missing RSAT and Az dependencies.
 
-## Step 2: Generate a Config Scaffold
+## Step 2: Build a Config (Wizard or Manual)
+
+### Option A — Interactive wizard (recommended for first runs)
+
+```powershell
+Invoke-RangerWizard
+```
+
+The wizard walks through cluster addressing, Azure IDs, credentials, output path, and domain scope with prompted questions. At the end it can save a YAML config file, launch a run immediately, or both. No manual editing required.
+
+### Option B — Generate a scaffold and edit
 
 ```powershell
 New-AzureLocalRangerConfig -Path .\ranger.yml
@@ -20,7 +30,7 @@ New-AzureLocalRangerConfig -Path .\ranger.yml
 
 The generated YAML is annotated and marks mandatory values with `[REQUIRED]`.
 
-## Step 3: Fill in Required Values
+## Step 3: Fill in Required Values (Option B only)
 
 At minimum, update:
 
@@ -37,14 +47,25 @@ At minimum, update:
 Invoke-AzureLocalRanger -ConfigPath .\ranger.yml
 ```
 
+Add `-ShowProgress` for a live per-collector progress display (requires the optional `PwshSpectreConsole` module; automatically suppressed in CI and `-Unattended` mode):
+
+```powershell
+Invoke-AzureLocalRanger -ConfigPath .\ranger.yml -ShowProgress
+```
+
 You can override structural values at runtime, for example:
 
 ```powershell
-Invoke-AzureLocalRanger \
-  -ConfigPath .\ranger.yml \
-  -ClusterFqdn tplabs-clus01.contoso.com \
-  -EnvironmentName tplabs-prod-01
+Invoke-AzureLocalRanger `
+  -ConfigPath .\ranger.yml `
+  -ClusterFqdn tplabs-clus01.contoso.com `
+  -EnvironmentName tplabs-prod-01 `
+  -ShowProgress
 ```
+
+### Running in disconnected or semi-connected environments
+
+Ranger probes all transport surfaces before collectors run. If cluster nodes are unreachable on WinRM ports but are Arc-registered, it automatically falls back to Arc Run Command transport (requires `Az.ConnectedMachine` and an active Az context). Collectors whose transport is confirmed unavailable are skipped with `status: skipped` rather than failing the run.
 
 ## Step 5: Open the Output Package
 

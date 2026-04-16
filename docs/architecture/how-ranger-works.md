@@ -39,12 +39,12 @@ Ranger should treat runner locations in three tiers.
 
 Ranger uses different protocols for different domains.
 
-| Method | What it is used for | v1 posture |
+| Method | What it is used for | Posture |
 |---|---|---|
 | WinRM / PowerShell remoting | Cluster, node, storage, networking, VM, management-tool, and performance collection | Primary |
 | Redfish REST API | Dell-first OEM hardware and BMC discovery | Primary |
 | Az PowerShell / Azure CLI | Azure-side discovery for Arc, policy, monitoring, update, backup, and related services | Primary |
-| Azure Arc Run Command | Alternative path when WinRM is unavailable | Investigate, not a v1 dependency |
+| Azure Arc Run Command | Fallback transport when WinRM is unavailable on ports 5985/5986 — routes workloads through the Azure control plane | v1.2.0+ |
 | Vendor SSH / REST / SNMP | Direct switch and firewall interrogation | Optional future domain |
 
 ## Target Addressing and Credential Routing
@@ -104,7 +104,21 @@ Examples:
 - cluster, storage, networking, workload, identity, and Azure-integration domains are core
 - BMC, OEM, and direct network-device interrogation are optional
 - disconnected or multi-rack deep inspection is variant-specific
-- Arc Run Command-based collection remains an investigation item and not a v1 dependency
+- Arc Run Command transport is available in v1.2.0 as a fallback when WinRM is blocked
+
+## Pre-Run Connectivity Assessment
+
+Before any collector runs, Ranger probes all configured transport surfaces and stores the result in `manifest.run.connectivity`. This probe determines which collectors are eligible to run.
+
+| Posture | Meaning |
+| --- | --- |
+| `connected` | Cluster WinRM reachable; Azure management plane reachable (or not configured) |
+| `semi-connected` | Cluster WinRM reachable; Azure management plane unreachable |
+| `disconnected` | Cluster WinRM unreachable from this runner |
+
+When `behavior.transport` is `auto` and all WinRM targets are unreachable, Ranger also checks whether Arc Run Command is available. If the `Az.ConnectedMachine` module is present and an active Az context exists, Arc transport is activated as a fallback and the posture is updated accordingly.
+
+Collectors whose transport surface is confirmed unreachable receive `status: skipped` rather than being attempted and failing. The `behavior.degradationMode` setting controls whether this is silent (`graceful`) or causes the run to fail (`strict`).
 
 ## Runtime Flow
 
@@ -115,20 +129,22 @@ For the simplified operator sequence, see the [high-level operator journey](../a
 A normal run follows this sequence:
 
 1. **Merge input sources**
-   Ranger merges runtime parameters, config-file values, and interactive prompts into one resolved config object.
+   Ranger merges runtime parameters, config-file values, and interactive prompts into one resolved config object. The interactive wizard (`Invoke-RangerWizard`) is a guided alternative to manual config editing that produces the same resolved config object.
 2. **Resolve credentials**
    Ranger resolves Azure, cluster, domain, and BMC credentials independently.
-3. **Select domains and validate targets**
-   Ranger applies include/exclude filters, verifies required targets, and decides which collectors can run.
-4. **Classify topology**
+3. **Pre-run connectivity assessment**
+   Ranger probes all transport surfaces — WinRM ports, Azure management plane, and Arc transport availability — and records the result in `manifest.run.connectivity`. Collectors whose transport is confirmed unreachable are marked `skipped` before collection begins.
+4. **Select domains and validate targets**
+   Ranger applies include/exclude filters, verifies required targets, and decides which collectors can run based on the connectivity matrix.
+5. **Classify topology**
    Ranger determines whether the environment is hyperconverged, switchless, rack-aware, local identity with Azure Key Vault, disconnected, or multi-rack preview.
-5. **Collect by domain**
-   Each collector runs with retry-aware transport helpers, graceful degradation wrappers, and explicit status capture.
-6. **Normalize into the manifest**
+6. **Collect by domain**
+   Each collector runs with retry-aware transport helpers, graceful degradation wrappers, and explicit status capture. WinRM workloads fall back to Arc Run Command transport when configured.
+7. **Normalize into the manifest**
    Ranger merges collector payloads, validates the manifest schema, and optionally compares the result with a baseline manifest for drift.
-7. **Persist artifacts**
+8. **Persist artifacts**
    The package includes `audit-manifest.json`, `package-index.json`, `run-status.json`, and any rendered outputs.
-8. **Render outputs**
+9. **Render outputs**
    Reports, Office-format deliverables, diagrams, drift analysis, and package exports consume the saved manifest rather than live targets.
 
 ## Current-State and As-Built Modes

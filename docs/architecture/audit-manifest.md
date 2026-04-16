@@ -53,6 +53,7 @@ The `run` block should include:
 - execution mode (`current-state` or `as-built`)
 - workstation or jump-box identity when useful
 - selected include or exclude domain filters
+- connectivity assessment results (`run.connectivity`) — transport posture, per-target probe results, and Arc transport availability
 
 ### Target Metadata
 
@@ -161,44 +162,85 @@ The `artifacts` section should describe both generated and expected outputs.
 
 Artifact naming should include cluster name, mode, timestamp, and artifact type.
 
+## Connectivity Block
+
+The `run.connectivity` section records the pre-run transport probe results. Renderers and operators can inspect this to understand why collectors were skipped.
+
+```json
+"connectivity": {
+  "posture": "semi-connected",
+  "cluster": {
+    "reachable": true,
+    "transport": "winrm",
+    "targets": [
+      { "host": "192.168.211.11", "port": 5985, "reachable": true },
+      { "host": "192.168.211.12", "port": 5985, "reachable": true }
+    ]
+  },
+  "azure": {
+    "enabled": true,
+    "reachable": false,
+    "endpoint": "management.azure.com"
+  },
+  "arc": {
+    "available": false,
+    "reason": "Az.ConnectedMachine module not installed"
+  },
+  "bmc": {
+    "endpoints": [
+      { "host": "idrac-node-01.contoso.com", "reachable": true },
+      { "host": "idrac-node-02.contoso.com", "reachable": false }
+    ]
+  }
+}
+```
+
+`status: skipped` on a collector combined with a connectivity finding of type `transport-unavailable` indicates that the collector was gated out before it was attempted — not that it was attempted and failed.
+
 ## Representative Example
 
 The example below shows the intended shape for one representative hyperconverged run.
 
 ```json
 {
-	"run": {
-		"toolVersion": "0.1.0",
-		"schemaVersion": "1.0.0-draft",
-		"mode": "current-state"
-	},
-	"target": {
-		"clusterName": "azlocal-prod-01",
-		"resourceGroup": "rg-azlocal-prod-01"
-	},
-	"topology": {
-		"deploymentType": "hyperconverged",
-		"identityMode": "ad",
-		"controlPlaneMode": "connected"
-	},
-	"collectors": {
-		"cluster-node": { "status": "success" },
-		"hardware": { "status": "partial", "reason": "node-02 iDRAC unreachable" },
-		"firewall": { "status": "skipped", "reason": "no targets configured" }
-	},
-	"domains": {
-		"clusterNode": {},
-		"hardware": {},
-		"storage": {},
-		"networking": {}
-	},
-	"findings": [
-		{
-			"severity": "warning",
-			"title": "One hardware endpoint unavailable",
-			"affectedComponents": ["node-02"]
-		}
-	]
+  "run": {
+    "toolVersion": "1.2.0",
+    "schemaVersion": "1.0.0-draft",
+    "mode": "current-state",
+    "connectivity": {
+      "posture": "connected",
+      "cluster": { "reachable": true, "transport": "winrm" },
+      "azure": { "enabled": true, "reachable": true },
+      "arc": { "available": false }
+    }
+  },
+  "target": {
+    "clusterName": "azlocal-prod-01",
+    "resourceGroup": "rg-azlocal-prod-01"
+  },
+  "topology": {
+    "deploymentType": "hyperconverged",
+    "identityMode": "ad",
+    "controlPlaneMode": "connected"
+  },
+  "collectors": {
+    "cluster-node": { "status": "success" },
+    "hardware": { "status": "partial", "reason": "node-02 iDRAC unreachable" },
+    "firewall": { "status": "skipped", "reason": "no targets configured" }
+  },
+  "domains": {
+    "clusterNode": {},
+    "hardware": {},
+    "storage": {},
+    "networking": {}
+  },
+  "findings": [
+    {
+      "severity": "warning",
+      "title": "One hardware endpoint unavailable",
+      "affectedComponents": ["node-02"]
+    }
+  ]
 }
 ```
 
