@@ -90,35 +90,67 @@ Released April 2026. Post-release patch for the no-config prerequisite-check reg
 | Public documentation | Product, architecture, operator, discovery domain, output, and contributor docs under `docs/` |
 | Patch hardening | `Test-AzureLocalRangerPrerequisites` no longer throws when run without a config object or path |
 
-## Backlog
+## v2.0.0 — Extended Platform Coverage
 
-Open features tracked as GitHub issues. All are implementation targets — no item in this list is permanently deferred or off the table.
+Extended hardware and protocol coverage, deep Azure integration surfaces, workload analysis, and long-horizon output formats.
+
+### Hardware & Protocol Collectors
 
 | Item | Detail | Issue |
 | --- | --- | --- |
-| Direct switch interrogation | SSH/RESTCONF/NETCONF collection from Dell OS10, Arista EOS, Cisco Nexus, and other ToR switches | [#27](https://github.com/AzureLocal/azurelocal-ranger/issues/27) |
-| Direct firewall interrogation | Collect firewall policy directly from Palo Alto, FortiGate, Cisco ASA, pfSense, and other appliances | [#28](https://github.com/AzureLocal/azurelocal-ranger/issues/28) |
-| Non-Dell OEM hardware support | Hardware inventory collectors for HPE iLO, Lenovo XClarity, and DataON via Redfish | [#29](https://github.com/AzureLocal/azurelocal-ranger/issues/29) |
-| Multi-rack Azure Local discovery | Rack topology, SAN storage, compute rack correlation, northbound connectivity for rack-scale deployments | [#31](https://github.com/AzureLocal/azurelocal-ranger/issues/31) |
-| Azure-hosted automation worker | Run Ranger from an Azure Automation account or hosted runner without a local PowerShell session | [#25](https://github.com/AzureLocal/azurelocal-ranger/issues/25) |
-| Manual import workflows | Accept externally gathered data for environments where automated collection is not authorized | [#32](https://github.com/AzureLocal/azurelocal-ranger/issues/32) |
-| Windows PowerShell 5.1 compatibility | Assess and implement compatibility without distorting the PowerShell 7 architecture | [#33](https://github.com/AzureLocal/azurelocal-ranger/issues/33) |
-| Baseline comparison and drift detection | Compare a new discovery run against a previous manifest; surface added, removed, and changed findings | [#123](https://github.com/AzureLocal/azurelocal-ranger/issues/123) |
-| Scheduled and automated recurring discovery | Task Scheduler XML template, GitHub Actions sample, and unattended invocation mode for recurring runs | [#124](https://github.com/AzureLocal/azurelocal-ranger/issues/124) |
-| Incremental document update mode (research) | Design a supported update mode so teams can refresh an existing as-built or current-state package rather than generating net-new documents on every run | [#131](https://github.com/AzureLocal/azurelocal-ranger/issues/131) |
-| ESU eligibility and enrollment detection | Flag VMs running WS2012/2016/2019 on Azure Local that qualify for free Arc Extended Security Updates but are not yet enrolled | [#132](https://github.com/AzureLocal/azurelocal-ranger/issues/132) |
-| Resource Bridge and Arc VM inventory | Inventory Arc-provisioned VMs via Resource Bridge, classify VM provisioning model, and surface the Arc VM billing model distinct from bare-metal cluster billing | [#133](https://github.com/AzureLocal/azurelocal-ranger/issues/133) |
-| VM IP addresses via Arc agent network profile | Collect guest VM IPs from the Arc agent network profile as a fallback when WinRM to the guest is unavailable | [#134](https://github.com/AzureLocal/azurelocal-ranger/issues/134) |
-| Arc VM Logical Networks | Collect ARM-managed logical network resources (subnet, VLAN ID, DNS, VM switch association) used by Arc VM provisioning | [#135](https://github.com/AzureLocal/azurelocal-ranger/issues/135) |
-| Arc VM Storage Paths | Collect ARM-managed storage container/path resources used by Arc VM provisioning, distinct from S2D pools and CSVs | [#136](https://github.com/AzureLocal/azurelocal-ranger/issues/136) |
-| Gallery and Marketplace Image inventory | Collect custom gallery images and marketplace gallery images downloaded to the cluster for Arc VM provisioning | [#137](https://github.com/AzureLocal/azurelocal-ranger/issues/137) |
-| Arc Gateway inventory | Collect Arc Gateway configuration and connectivity status for clusters using Arc Gateway as outbound proxy | [#138](https://github.com/AzureLocal/azurelocal-ranger/issues/138) |
-| Idle and underutilized VM detection | Surface VMs with low CPU/memory utilization and surface rightsizing recommendations in the cost section | [#125](https://github.com/AzureLocal/azurelocal-ranger/issues/125) |
-| Storage efficiency analysis | Deduplication ratios, thin-provisioning coverage gaps, and storage waste identification across volumes and pools | [#126](https://github.com/AzureLocal/azurelocal-ranger/issues/126) |
-| SQL Server and Windows Server license inventory | Edition, core count, and AHB cross-reference per VM for license compliance reporting | [#127](https://github.com/AzureLocal/azurelocal-ranger/issues/127) |
-| Cluster capacity headroom analysis | Compute, memory, and storage utilization percentages with configurable warning thresholds and trend-based runway | [#128](https://github.com/AzureLocal/azurelocal-ranger/issues/128) |
-| Multi-cluster inventory rollup | Discover multiple Azure Local clusters in one run and produce per-cluster packages plus an estate summary report | [#129](https://github.com/AzureLocal/azurelocal-ranger/issues/129) |
-| CMDB and ITSM structured export | `Export-AzureLocalRangerCmdb` producing ServiceNow, CSV, and JSON CI records from the audit manifest | [#130](https://github.com/AzureLocal/azurelocal-ranger/issues/130) |
+| Direct switch interrogation (#27) | SSH/RESTCONF/NETCONF collection from Dell OS10, Arista EOS, Cisco Nexus, and other ToR switches | [#27](https://github.com/AzureLocal/azurelocal-ranger/issues/27) |
+| Direct firewall interrogation (#28) | Collect firewall policy from Palo Alto, FortiGate, Cisco ASA, pfSense, and other appliances | [#28](https://github.com/AzureLocal/azurelocal-ranger/issues/28) |
+| Non-Dell OEM hardware support (#29) | Hardware inventory collectors for HPE iLO, Lenovo XClarity, and DataON via Redfish | [#29](https://github.com/AzureLocal/azurelocal-ranger/issues/29) |
+| Multi-rack Azure Local discovery (#31) | Rack topology, SAN storage, compute rack correlation, northbound connectivity for rack-scale deployments | [#31](https://github.com/AzureLocal/azurelocal-ranger/issues/31) |
+| Manual import workflows (#32) | Accept externally gathered data for environments where automated collection is not authorized | [#32](https://github.com/AzureLocal/azurelocal-ranger/issues/32) |
+
+### Azure Integration & Arc VM
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Resource Bridge and Arc VM inventory (#133) | Inventory Arc-provisioned VMs via Resource Bridge; surface the Arc VM billing model distinct from bare-metal cluster billing | [#133](https://github.com/AzureLocal/azurelocal-ranger/issues/133) |
+| Arc VM Logical Networks (#135) | Inventory ARM-managed virtual networks (subnet, VLAN ID, DNS, VM switch association) used by Arc VM provisioning | [#135](https://github.com/AzureLocal/azurelocal-ranger/issues/135) |
+| Arc VM Storage Paths (#136) | Inventory ARM-managed storage containers for Arc-provisioned VM disks, distinct from S2D pools and CSVs | [#136](https://github.com/AzureLocal/azurelocal-ranger/issues/136) |
+| Gallery and Marketplace Image inventory (#137) | Collect custom gallery images and marketplace gallery images downloaded to the cluster for Arc VM provisioning | [#137](https://github.com/AzureLocal/azurelocal-ranger/issues/137) |
+| Arc Gateway inventory (#138) | Collect Arc Gateway configuration and connectivity status for clusters using Arc Gateway as outbound proxy | [#138](https://github.com/AzureLocal/azurelocal-ranger/issues/138) |
+
+### Workload & Cost Analysis
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Idle and underutilized VM detection (#125) | Surface VMs with low CPU/memory utilization and rightsizing recommendations | [#125](https://github.com/AzureLocal/azurelocal-ranger/issues/125) |
+| Storage efficiency analysis (#126) | Deduplication ratios, thin-provisioning coverage gaps, and storage waste identification across volumes and pools | [#126](https://github.com/AzureLocal/azurelocal-ranger/issues/126) |
+| SQL Server and Windows Server license inventory (#127) | Edition, core count, and AHB cross-reference per VM for license compliance reporting | [#127](https://github.com/AzureLocal/azurelocal-ranger/issues/127) |
+| Cluster capacity headroom analysis (#128) | Compute, memory, and storage utilization percentages with configurable warning thresholds and trend-based runway | [#128](https://github.com/AzureLocal/azurelocal-ranger/issues/128) |
+| Cost analysis and Azure Hybrid Benefit tracking (#101) | Surface cost posture, AHB coverage gaps, and optimization opportunities per workload | [#101](https://github.com/AzureLocal/azurelocal-ranger/issues/101) |
+
+### Multi-Cluster & Output Formats
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Multi-cluster inventory rollup (#129) | Discover multiple Azure Local clusters in one run; produce per-cluster packages plus an estate summary report | [#129](https://github.com/AzureLocal/azurelocal-ranger/issues/129) |
+| PowerPoint presentation output (#80) | Executive environment overview deck generated from the audit manifest | [#80](https://github.com/AzureLocal/azurelocal-ranger/issues/80) |
+
+## v3.0.0 — Enterprise & OEM Integration
+
+Enterprise integrations beyond core platform coverage: structured data exports and downstream system connectivity.
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| CMDB and ITSM structured export (#130) | `Export-AzureLocalRangerCmdb` producing ServiceNow, CSV, and JSON CI records from the audit manifest | [#130](https://github.com/AzureLocal/azurelocal-ranger/issues/130) |
+
+## Unscheduled Backlog
+
+Open features without a milestone assignment. All are implementation targets — no item is permanently deferred.
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Azure-hosted automation worker (#25) | Run Ranger from an Azure Automation account or hosted runner without a local PowerShell session | [#25](https://github.com/AzureLocal/azurelocal-ranger/issues/25) |
+| Windows PowerShell 5.1 compatibility (#33) | Assess and implement compatibility without distorting the PowerShell 7 architecture | [#33](https://github.com/AzureLocal/azurelocal-ranger/issues/33) |
+| Baseline comparison and drift detection (#123) | Compare a new discovery run against a previous manifest; surface added, removed, and changed findings | [#123](https://github.com/AzureLocal/azurelocal-ranger/issues/123) |
+| Scheduled and automated recurring discovery (#124) | Task Scheduler XML template, GitHub Actions sample, and unattended invocation mode for recurring runs | [#124](https://github.com/AzureLocal/azurelocal-ranger/issues/124) |
+| Incremental document update mode (#131) | Design a supported update mode so teams can refresh an existing as-built package rather than regenerating from scratch | [#131](https://github.com/AzureLocal/azurelocal-ranger/issues/131) |
+| ESU eligibility and enrollment detection (#132) | Flag VMs running WS2012/2016/2019 on Azure Local that qualify for free Arc Extended Security Updates but are not yet enrolled | [#132](https://github.com/AzureLocal/azurelocal-ranger/issues/132) |
 
 ## Long-term Vision
 
