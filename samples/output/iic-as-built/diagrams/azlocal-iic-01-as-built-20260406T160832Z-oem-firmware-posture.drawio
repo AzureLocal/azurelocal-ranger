@@ -1,0 +1,25 @@
+<mxfile host="app.diagrams.net" modified="04/06/2026 12:08:32" agent="AzureLocalRanger" version="1.4.2">
+  <diagram name="OEM Hardware and Firmware Posture">
+    <mxGraphModel dx="1330" dy="844" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+<mxCell id="1" parent="0" />
+<mxCell id="container-platform" value="Platform" style="swimlane;startSize=24;fillColor=#f0f9ff;strokeColor=#bae6fd;fontStyle=1;fontSize=11;rounded=1;" vertex="1" parent="1"><mxGeometry x="32" y="-30" width="240" height="110" as="geometry" /></mxCell>
+<mxCell id="container-hardware" value="Hardware" style="swimlane;startSize=24;fillColor=#f0fdf4;strokeColor=#bbf7d0;fontStyle=1;fontSize=11;rounded=1;" vertex="1" parent="1"><mxGeometry x="1992" y="-30" width="240" height="110" as="geometry" /></mxCell>
+<mxCell id="cluster" value="azlocal-iic-01&amp;#xa;hyperconverged" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontStyle=1;" vertex="1" parent="container-platform"><mxGeometry x="8" y="104" width="224" height="62" as="geometry" /></mxCell>
+<mxCell id="hw-azl-iic-n01" value="azl-iic-n01&amp;#xa;bios 2.10.0.0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#15803d;" vertex="1" parent="container-hardware"><mxGeometry x="8" y="104" width="224" height="62" as="geometry" /></mxCell>
+<mxCell id="hw-azl-iic-n02" value="azl-iic-n02&amp;#xa;bios 2.10.0.0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#15803d;" vertex="1" parent="container-hardware"><mxGeometry x="8" y="194" width="224" height="62" as="geometry" /></mxCell>
+<mxCell id="hw-azl-iic-n03" value="azl-iic-n03&amp;#xa;bios 2.10.0.0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#15803d;" vertex="1" parent="container-hardware"><mxGeometry x="8" y="284" width="224" height="62" as="geometry" /></mxCell>
+<mxCell id="oem-azl-iic-n01" value="azl-iic-n01" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0f2fe;strokeColor=#0369a1;" vertex="1" parent="container-hardware"><mxGeometry x="8" y="374" width="224" height="62" as="geometry" /></mxCell>
+<mxCell id="oem-azl-iic-n02" value="azl-iic-n02" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0f2fe;strokeColor=#0369a1;" vertex="1" parent="container-hardware"><mxGeometry x="8" y="464" width="224" height="62" as="geometry" /></mxCell>
+<mxCell id="oem-azl-iic-n03" value="azl-iic-n03" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0f2fe;strokeColor=#0369a1;" vertex="1" parent="container-hardware"><mxGeometry x="8" y="554" width="224" height="62" as="geometry" /></mxCell>
+<mxCell id="edge-1" value="hardware" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=block;endFill=1;strokeColor=#94a3b8;" edge="1" parent="1" source="cluster" target="hw-azl-iic-n01"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="edge-2" value="hardware" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=block;endFill=1;strokeColor=#94a3b8;" edge="1" parent="1" source="cluster" target="hw-azl-iic-n02"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="edge-3" value="hardware" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=block;endFill=1;strokeColor=#94a3b8;" edge="1" parent="1" source="cluster" target="hw-azl-iic-n03"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="edge-4" value="firmware posture" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=block;endFill=1;strokeColor=#94a3b8;" edge="1" parent="1" source="oem-azl-iic-n01" target="hw-azl-iic-n01"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="edge-5" value="firmware posture" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=block;endFill=1;strokeColor=#94a3b8;" edge="1" parent="1" source="oem-azl-iic-n02" target="hw-azl-iic-n02"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="edge-6" value="firmware posture" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=block;endFill=1;strokeColor=#94a3b8;" edge="1" parent="1" source="oem-azl-iic-n03" target="hw-azl-iic-n03"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,12 @@
+<mxfile host="app.diagrams.net" modified="04/06/2026 12:08:32" agent="AzureLocalRanger" version="1.4.2">
+  <diagram name="Connectivity, Firewall, and Dependency Map">
+    <mxGraphModel dx="1330" dy="844" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+<mxCell id="1" parent="0" />
+<mxCell id="container-platform" value="Platform" style="swimlane;startSize=24;fillColor=#f0f9ff;strokeColor=#bae6fd;fontStyle=1;fontSize=11;rounded=1;" vertex="1" parent="1"><mxGeometry x="32" y="-30" width="240" height="110" as="geometry" /></mxCell>
+<mxCell id="cluster" value="azlocal-iic-01&amp;#xa;hyperconverged" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontStyle=1;" vertex="1" parent="container-platform"><mxGeometry x="8" y="104" width="224" height="62" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

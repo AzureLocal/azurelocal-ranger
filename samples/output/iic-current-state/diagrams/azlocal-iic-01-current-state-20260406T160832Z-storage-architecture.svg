@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2080" height="1172" viewBox="0 0 2080 1172">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#94a3b8" />
+    </marker>
+  </defs>
+  <rect width="2080" height="1172" fill="#f8fafc" />
+  <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
+  <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Storage Architecture</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.4.2</text>
+  <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
+<text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
+<rect x='272' y='-10' width='240' height='86' rx='12' fill='#f1f5f9' stroke='#cbd5e1' stroke-dasharray='4 2' />
+<text x='280' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Storage</text>
+  <path d='M 244 109 C 262 109 262 109 280 109' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 262 109 262 195 280 195' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 262 109 262 281 280 281' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 262 109 262 367 280 367' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 262 109 262 453 280 453' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 262 109 262 539 280 539' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 262 109 262 625 280 625' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 262 109 262 711 280 711' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 262 109 262 797 280 797' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 262 109 262 883 280 883' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 262 109 262 969 280 969' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 262 109 262 1055 280 1055' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+  <rect x='20' y='80' width='224' height='58' rx='10' fill='#dbeafe' stroke='#2563eb' stroke-width='2' />
+<rect x='280' y='80' width='224' height='58' rx='10' fill='#e2e8f0' stroke='#475569' stroke-width='1.5' />
+<rect x='280' y='166' width='224' height='58' rx='10' fill='#f1f5f9' stroke='#64748b' stroke-width='1.5' />
+<rect x='280' y='252' width='224' height='58' rx='10' fill='#f1f5f9' stroke='#64748b' stroke-width='1.5' />
+<rect x='280' y='338' width='224' height='58' rx='10' fill='#f1f5f9' stroke='#64748b' stroke-width='1.5' />
+<rect x='280' y='424' width='224' height='58' rx='10' fill='#f1f5f9' stroke='#64748b' stroke-width='1.5' />
+<rect x='280' y='510' width='224' height='58' rx='10' fill='#f1f5f9' stroke='#64748b' stroke-width='1.5' />
+<rect x='280' y='596' width='224' height='58' rx='10' fill='#f1f5f9' stroke='#64748b' stroke-width='1.5' />
+<rect x='280' y='682' width='224' height='58' rx='10' fill='#f1f5f9' stroke='#64748b' stroke-width='1.5' />
+<rect x='280' y='768' width='224' height='58' rx='10' fill='#f1f5f9' stroke='#64748b' stroke-width='1.5' />
+<rect x='280' y='854' width='224' height='58' rx='10' fill='#f1f5f9' stroke='#64748b' stroke-width='1.5' />
+<rect x='280' y='940' width='224' height='58' rx='10' fill='#f1f5f9' stroke='#64748b' stroke-width='1.5' />
+<rect x='280' y='1026' width='224' height='58' rx='10' fill='#f1f5f9' stroke='#64748b' stroke-width='1.5' />
+  <text x='30' y='104' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">azlocal-iic-01</text>
+<text x='30' y='122' font-family="Segoe UI, Arial" font-size="11" fill="#475569">hyperconverged</text>
+<text x='290' y='104' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">S2D on azlocal-iic-01</text>
+<text x='290' y='122' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Healthy | 43068.23 GiB</text>
+<text x='290' y='190' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">Cluster Virtual Disk (csv-iic-azlocal-01-vmstore-01)</text>
+<text x='290' y='208' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Online</text>
+<text x='290' y='276' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">Cluster Virtual Disk (csv-iic-azlocal-01-vmstore-02)</text>
+<text x='290' y='294' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Online</text>
+<text x='290' y='362' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">Cluster Virtual Disk (csv-iic-azlocal-01-vmstore-03)</text>
+<text x='290' y='380' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Online</text>
+<text x='290' y='448' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">PhysicalDisk 001</text>
+<text x='290' y='466' font-family="Segoe UI, Arial" font-size="11" fill="#475569">NVMe | Healthy</text>
+<text x='290' y='534' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">PhysicalDisk 002</text>
+<text x='290' y='552' font-family="Segoe UI, Arial" font-size="11" fill="#475569">NVMe | Healthy</text>
+<text x='290' y='620' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">PhysicalDisk 003</text>
+<text x='290' y='638' font-family="Segoe UI, Arial" font-size="11" fill="#475569">NVMe | Healthy</text>
+<text x='290' y='706' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">PhysicalDisk 004</text>
+<text x='290' y='724' font-family="Segoe UI, Arial" font-size="11" fill="#475569">NVMe | Healthy</text>
+<text x='290' y='792' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">PhysicalDisk 005</text>
+<text x='290' y='810' font-family="Segoe UI, Arial" font-size="11" fill="#475569">NVMe | Healthy</text>
+<text x='290' y='878' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">PhysicalDisk 006</text>
+<text x='290' y='896' font-family="Segoe UI, Arial" font-size="11" fill="#475569">NVMe | Healthy</text>
+<text x='290' y='964' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">PhysicalDisk 007</text>
+<text x='290' y='982' font-family="Segoe UI, Arial" font-size="11" fill="#475569">NVMe | Healthy</text>
+<text x='290' y='1050' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">PhysicalDisk 008</text>
+<text x='290' y='1068' font-family="Segoe UI, Arial" font-size="11" fill="#475569">NVMe | Healthy</text>
+<text x='262' y='104' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">Healthy</text>
+<text x='262' y='147' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">Online</text>
+<text x='262' y='190' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">Online</text>
+<text x='262' y='233' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">Online</text>
+<text x='262' y='276' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">physical disk</text>
+<text x='262' y='319' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">physical disk</text>
+<text x='262' y='362' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">physical disk</text>
+<text x='262' y='405' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">physical disk</text>
+<text x='262' y='448' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">physical disk</text>
+<text x='262' y='491' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">physical disk</text>
+<text x='262' y='534' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">physical disk</text>
+<text x='262' y='577' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">physical disk</text>
+</svg>

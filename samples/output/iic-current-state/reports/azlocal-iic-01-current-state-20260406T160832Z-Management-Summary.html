@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Management Summary</title>
+  <style>
+        :root { color-scheme: light; }
+        body { font-family: Segoe UI, Arial, sans-serif; margin: 0; color: #16202a; background: linear-gradient(180deg, #f8fbff 0%, #eef6fb 100%); }
+        .shell { max-width: 1280px; margin: 0 auto; padding: 2rem; }
+        header { border-bottom: 2px solid #0e7490; margin-bottom: 1.5rem; padding-bottom: 1rem; }
+    h1, h2, h3 { color: #0f172a; }
+    .meta { color: #475569; }
+        .hero { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; align-items: start; }
+        .panel { background: rgba(255,255,255,0.92); border: 1px solid #dbe7ef; border-radius: 16px; padding: 1rem 1.25rem; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06); }
+        .toc ul, .recommendations ul { margin: 0.5rem 0 0 1rem; }
+        .collector-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin: 1rem 0 1.5rem; }
+        .collector-card { border-radius: 14px; padding: 0.85rem 1rem; background: #ffffff; border: 1px solid #d7e3ed; }
+        .collector-card.status-success { border-color: #86efac; }
+        .collector-card.status-partial { border-color: #fbbf24; }
+        .collector-card.status-failed { border-color: #fca5a5; }
+        .collector-card.status-skipped { border-color: #cbd5e1; }
+    .finding { border-left: 4px solid #94a3b8; padding: 0.75rem 1rem; margin: 1rem 0; background: #f8fafc; }
+    .finding-critical { border-left-color: #b91c1c; }
+    .finding-warning { border-left-color: #d97706; }
+    .finding-good { border-left-color: #15803d; }
+    .finding-informational { border-left-color: #2563eb; }
+        section { margin: 1rem 0; background: rgba(255,255,255,0.92); border: 1px solid #dbe7ef; border-radius: 16px; padding: 1rem 1.25rem; }
+        @media (max-width: 900px) { .hero { grid-template-columns: 1fr; } }
+        /* Stats banner (traffic lights + capacity bars) */
+        .stats-banner { display: flex; gap: 2rem; flex-wrap: wrap; background: rgba(255,255,255,0.95); border: 1px solid #dbe7ef; border-radius: 16px; padding: 1rem 1.5rem; margin-bottom: 1rem; align-items: flex-start; }
+        .stats-lights { display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center; }
+        .tl-item { display: flex; align-items: center; gap: 6px; font-size: 0.92em; font-weight: 500; white-space: nowrap; }
+        .stats-bars { display: flex; flex-direction: column; gap: 0.4rem; }
+        .cap-item { display: flex; align-items: center; gap: 8px; font-size: 0.88em; }
+        .cap-label { min-width: 160px; color: #475569; }
+        /* Data tables (#168) */
+        .table-wrapper { overflow-x: auto; margin: 0.75rem 0; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.875em; }
+        .data-table caption { text-align: left; font-size: 0.85em; color: #64748b; padding-bottom: 0.4rem; }
+        .data-table thead th { background: #1e3a5f; color: #ffffff; padding: 0.45rem 0.75rem; text-align: left; font-weight: 600; white-space: nowrap; }
+        .data-table tbody td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+        .data-table tbody tr:nth-child(even) { background: #f8fafc; }
+        .data-table tbody tr:hover { background: #eff6ff; }
+        .kv-table { border-collapse: collapse; font-size: 0.9em; width: 100%; max-width: 640px; }
+        .kv-table th { color: #475569; font-weight: 600; padding: 0.3rem 1.5rem 0.3rem 0; width: 220px; vertical-align: top; text-align: left; }
+        .kv-table td { padding: 0.3rem 0; color: #0f172a; }
+        .sign-off-note { color: #64748b; font-size: 0.9em; margin-bottom: 1rem; }
+        .sign-off-table td { min-width: 130px; height: 44px; }
+        .data-unavailable { color: #94a3b8; font-style: italic; padding: 0.4rem 0; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+    <div class="shell">
+        <header>
+            <h1>Management Summary</h1>
+            <p class="meta">Cluster: azlocal-iic-01</p>
+            <p class="meta">Mode: current-state | Ranger Version: 1.4.2 | Generated: 04/06/2026 12:08:32</p>
+        </header>
+        <section class="stats-banner">
+  <div class="stats-lights"><div class='tl-item'><svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' style='display:inline-block;vertical-align:middle'><circle cx='10' cy='10' r='9' fill='#22c55e'/></svg> <span class='tl-label'>Overall Health</span></div><div class='tl-item'><svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' style='display:inline-block;vertical-align:middle'><circle cx='10' cy='10' r='9' fill='#22c55e'/></svg> <span class='tl-label'>Azure Integration</span></div><div class='tl-item'><svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' style='display:inline-block;vertical-align:middle'><circle cx='10' cy='10' r='9' fill='#94a3b8'/></svg> <span class='tl-label'>Security Posture</span></div><div class='tl-item'><svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' style='display:inline-block;vertical-align:middle'><circle cx='10' cy='10' r='9' fill='#22c55e'/></svg> <span class='tl-label'>Monitoring Coverage</span></div></div>
+  <div class="stats-bars"><div class='cap-item'><span class='cap-label'>Storage used:</span> <svg xmlns='http://www.w3.org/2000/svg' width='160' height='12' style='vertical-align:middle;margin-right:6px'><rect width='160' height='12' rx='2' fill='#e2e8f0'/><rect width='0' height='12' rx='2' fill='#3b82f6'/></svg>0%</div><div class='cap-item'><span class='cap-label'>Storage reserve:</span> <svg xmlns='http://www.w3.org/2000/svg' width='160' height='12' style='vertical-align:middle;margin-right:6px'><rect width='160' height='12' rx='2' fill='#e2e8f0'/><rect width='0' height='12' rx='2' fill='#3b82f6'/></svg>0%</div><div class='cap-item'><span class='cap-label'>Safe allocatable:</span> <svg xmlns='http://www.w3.org/2000/svg' width='160' height='12' style='vertical-align:middle;margin-right:6px'><rect width='160' height='12' rx='2' fill='#e2e8f0'/><rect width='0' height='12' rx='2' fill='#3b82f6'/></svg>0%</div><div class='cap-item'><span class='cap-label'>Monitoring coverage:</span> <svg xmlns='http://www.w3.org/2000/svg' width='160' height='12' style='vertical-align:middle;margin-right:6px'><rect width='160' height='12' rx='2' fill='#e2e8f0'/><rect width='160' height='12' rx='2' fill='#ef4444'/></svg>100%</div><div class='cap-item'><span class='cap-label'>Backup coverage:</span> <svg xmlns='http://www.w3.org/2000/svg' width='160' height='12' style='vertical-align:middle;margin-right:6px'><rect width='160' height='12' rx='2' fill='#e2e8f0'/><rect width='32' height='12' rx='2' fill='#3b82f6'/></svg>20%</div></div>
+</section>
+        <div class="hero">
+            <section class="panel toc">
+                <h2>Table of Contents</h2>
+                <ul>
+                    <li>Run Summary</li>
+<li>Readiness Snapshot</li>
+<li>Health Status</li>
+<li>Environment Overview</li>
+<li>Topology and Operating Model</li>
+<li>Domain Coverage</li>
+<li>Node Inventory</li>
+<li>Collector Status</li>
+<li>Operational Risk Summary</li>
+<li>Workload Summary</li>
+<li>Capacity Summary</li>
+<li>Priority Recommendations</li>
+<li>VM Inventory</li>
+<li>VM Density Metrics</li>
+<li>Storage Pool Capacity</li>
+<li>ESU Enrollment</li>
+<li>Coverage Assessment</li>
+<li>Security Posture Summary</li>
+<li>Management Tool Coverage</li>
+<li>WAF Assessment — Scorecard</li>
+<li>WAF Assessment — Azure Advisor Recommendations</li>
+                </ul>
+            </section>
+            <section class="panel recommendations">
+                <h2>Priority Recommendations</h2>
+                <ul>
+                    <li><strong>[WARNING]</strong> One or more node certificates expire within 90 days<br />Review certificate ownership and renew expiring node certificates before handoff.</li>
+<li><strong>[WARNING]</strong> iDRAC firmware below recommended baseline on all nodes<br />Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window.</li>
+<li><strong>[INFORMATIONAL]</strong> Azure Policy assignments discovered at resource group scope<br />Verify policy scope extends to arc resource group and monitor for compliance drift.</li>
+<li><strong>[INFORMATIONAL]</strong> Cluster event history includes a transient network quorum warning<br />Review switch port configuration to confirm management NICs are on dedicated VLANs and bonded correctly.</li>
+                </ul>
+            </section>
+        </div>
+        <section>
+            <h2>Collector Overview</h2>
+            <div class="collector-grid">
+                <article class="collector-card status-success">
+  <h3>hardware</h3>
+  <p><strong>Status:</strong> success</p>
+  <p><strong>Targets:</strong> </p>
+</article>
+<article class="collector-card status-success">
+  <h3>management-performance</h3>
+  <p><strong>Status:</strong> success</p>
+  <p><strong>Targets:</strong> </p>
+</article>
+<article class="collector-card status-success">
+  <h3>monitoring-observability</h3>
+  <p><strong>Status:</strong> success</p>
+  <p><strong>Targets:</strong> </p>
+</article>
+<article class="collector-card status-success">
+  <h3>storage-networking</h3>
+  <p><strong>Status:</strong> success</p>
+  <p><strong>Targets:</strong> </p>
+</article>
+<article class="collector-card status-success">
+  <h3>topology-cluster</h3>
+  <p><strong>Status:</strong> success</p>
+  <p><strong>Targets:</strong> </p>
+</article>
+<article class="collector-card status-success">
+  <h3>waf-assessment</h3>
+  <p><strong>Status:</strong> success</p>
+  <p><strong>Targets:</strong> </p>
+</article>
+<article class="collector-card status-success">
+  <h3>workload-identity-azure</h3>
+  <p><strong>Status:</strong> success</p>
+  <p><strong>Targets:</strong> </p>
+</article>
+            </div>
+        </section>
+        <section>
+  <h2>Run Summary</h2>
+  <ul><li>Mode: current-state</li>
+<li>Generated: 04/06/2026 12:08:32</li>
+<li>Cluster: azlocal-iic-01</li>
+<li>Nodes: 3</li>
+<li>Collectors: 7/7 successful</li>
+<li>Artifacts currently recorded: 0</li></ul>
+</section>
+<section>
+  <h2>Readiness Snapshot</h2>
+  <ul><li>Schema validation: passed</li>
+<li>Critical findings: 0</li>
+<li>Warning findings: 2</li>
+<li>Informational findings: 2</li>
+<li>Successful collectors: 7 of 7</li>
+<li>Partial or failed collectors: 0</li></ul>
+</section>
+<section>
+  <h2>Health Status</h2>
+  <ul><li>Overall health: GREEN ( critical,  warning findings)</li>
+<li>Azure integration: GREEN (10 Azure resources discovered)</li>
+<li>Security posture: GRAY (Secured-Core enabled on  node(s))</li>
+<li>Monitoring coverage: GREEN (100% of nodes have Azure Monitor Agent)</li></ul>
+</section>
+<section>
+  <h2>Environment Overview</h2>
+  <ul><li>VMs discovered: 5</li>
+<li>Azure resources discovered: 10</li>
+<li>Connected Azure auth method: service-principal</li>
+<li>Monitoring resources: 5</li>
+<li>Management services running: 4</li></ul>
+</section>
+<section>
+  <h2>Topology and Operating Model</h2>
+  <ul><li>Deployment type: hyperconverged</li>
+<li>Identity mode: ad</li>
+<li>Connectivity mode: connected</li>
+<li>Storage architecture: storage-spaces-direct</li>
+<li>Network architecture: switched</li>
+<li>Variant markers: connected</li></ul>
+</section>
+<section>
+  <h2>Domain Coverage</h2>
+  <ul><li>Cluster nodes: 3</li>
+<li>Cluster roles: 5</li>
+<li>Storage pools: 1</li>
+<li>Physical disks: 24</li>
+<li>Network adapters: 12</li>
+<li>VMs discovered: 5</li>
+<li>Azure resources: 10</li>
+<li>Alerting resources: 2</li>
+<li>Management services: 4</li></ul>
+</section>
+<section>
+  <h2>Node Inventory</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Model</th><th>State</th><th>OS</th><th>OS Build</th><th>CPU Sockets</th><th>RAM (GiB)</th></tr></thead><tbody><tr><td>azl-iic-n01</td></tr>
+<tr><td>PowerEdge R760</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>512</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>PowerEdge R760</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>512</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>PowerEdge R760</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>512</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>Collector Status</h2>
+  <ul><li>hardware: success ()</li>
+<li>management-performance: success ()</li>
+<li>monitoring-observability: success ()</li>
+<li>storage-networking: success ()</li>
+<li>topology-cluster: success ()</li>
+<li>waf-assessment: success ()</li>
+<li>workload-identity-azure: success ()</li></ul>
+</section>
+<section>
+  <h2>Operational Risk Summary</h2>
+  <ul><li>Nodes not healthy: 0</li>
+<li>Unhealthy disks: 0</li>
+<li>High CPU nodes: 0</li>
+<li>Certificates expiring within 90 days: 1</li>
+<li>Azure Policy assignments: 2</li>
+<li>Schema warnings: 0</li>
+<li>Azure Advisor recommendations:  total, 3 high-impact</li></ul>
+</section>
+<section>
+  <h2>Workload Summary</h2>
+  <ul><li>Total VMs: 5</li>
+<li>Total nodes: 3</li>
+<li>AKS clusters: 1</li>
+<li>Arc-connected machines: 1</li>
+<li>Update compliance: No update resources tracked</li>
+<li>Licensing: Not collected</li>
+<li>VMs using Arc IP fallback: Not collected</li></ul>
+</section>
+<section>
+  <h2>Capacity Summary</h2>
+  <ul><li>Storage total raw: 0 TiB</li>
+<li>Storage total usable: 0 TiB</li>
+<li>Storage used by workloads: 0 TiB (0% of usable)</li>
+<li>Storage reserve target: 0 TiB (0% of usable)</li>
+<li>Storage free usable: 0 TiB</li>
+<li>Projected safe allocatable: 0 TiB</li>
+<li>Thin provisioning ratio: Not computed</li>
+<li>vCPU:pCPU overcommit ratio: Not computed</li>
+<li>Memory overcommit ratio: Not computed</li>
+<li>Average VMs per node: N/A</li></ul>
+</section>
+<section>
+  <h2>Priority Recommendations</h2>
+  <ul><li>[WARNING] One or more node certificates expire within 90 days: Review certificate ownership and renew expiring node certificates before handoff.</li>
+<li>[WARNING] iDRAC firmware below recommended baseline on all nodes: Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window.</li>
+<li>[INFORMATIONAL] Azure Policy assignments discovered at resource group scope: Verify policy scope extends to arc resource group and monitor for compliance drift.</li>
+<li>[INFORMATIONAL] Cluster event history includes a transient network quorum warning: Review switch port configuration to confirm management NICs are on dedicated VLANs and bonded correctly.</li></ul>
+</section>
+<section>
+  <h2>VM Inventory</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Name</th><th>State</th><th>vCPU</th><th>RAM (GiB)</th><th>Host Node</th><th>Generation</th></tr></thead><tbody><tr><td>avd-iic-sh01</td></tr>
+<tr><td>Running</td></tr>
+<tr><td>8</td></tr>
+<tr><td>16</td></tr>
+<tr><td>azl-iic-n01</td></tr>
+<tr><td>2</td></tr>
+<tr><td>avd-iic-sh02</td></tr>
+<tr><td>Running</td></tr>
+<tr><td>8</td></tr>
+<tr><td>16</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>2</td></tr>
+<tr><td>avd-iic-sh03</td></tr>
+<tr><td>Running</td></tr>
+<tr><td>8</td></tr>
+<tr><td>16</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>2</td></tr>
+<tr><td>arc-iic-vm01</td></tr>
+<tr><td>Running</td></tr>
+<tr><td>4</td></tr>
+<tr><td>8</td></tr>
+<tr><td>azl-iic-n01</td></tr>
+<tr><td>2</td></tr>
+<tr><td>arc-iic-vm02</td></tr>
+<tr><td>Running</td></tr>
+<tr><td>4</td></tr>
+<tr><td>8</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>2</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>VM Density Metrics</h2>
+  <ul><li>VMs per node (average): N/A</li>
+<li>Highest-density node: N/A</li>
+<li>vCPU:pCPU overcommit ratio: Not computed</li>
+<li>Memory overcommit ratio: Not computed</li>
+<li>Arc-connected VMs: </li>
+<li>VMs using Arc IP fallback: </li>
+<li>Avg CPU utilization (all nodes): 38.3%</li>
+<li>Avg available memory (all nodes): 176 GiB</li></ul>
+</section>
+<section>
+  <h2>Storage Pool Capacity</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Pool</th><th>Raw (GiB)</th><th>Usable (GiB)</th><th>Used (GiB)</th><th>Reserve (GiB)</th><th>Safe Alloc (GiB)</th><th>Posture</th></tr></thead><tbody><tr><td>—</td></tr>
+<tr><td>0</td></tr>
+<tr><td>0</td></tr>
+<tr><td>0</td></tr>
+<tr><td>0</td></tr>
+<tr><td>0</td></tr>
+<tr><td>—</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>ESU Enrollment</h2>
+  <ul><li>Eligible Arc-connected VMs: </li>
+<li>Enrolled in ESU: </li>
+<li>Not enrolled in ESU: </li>
+<li>Ineligible: </li>
+<li></li></ul>
+</section>
+<section>
+  <h2>Coverage Assessment</h2>
+  <ul><li>Monitoring coverage (AMA): 100% (3 of 3 nodes have Azure Monitor Agent)</li>
+<li>Backup coverage estimate: 20% (based on backup items vs VM count)</li>
+<li>Defender for Cloud: Not confirmed or not collected</li>
+<li>WDAC policy: Not collected</li>
+<li>BitLocker status: Not collected</li>
+<li>Certificates expiring in &lt;90 days: 1</li></ul>
+</section>
+<section>
+  <h2>Security Posture Summary</h2>
+  <ul><li>Secured-Core enabled nodes:  of 3</li>
+<li>Syslog forwarding nodes: </li>
+<li>RBAC assignments at resource group: 1</li>
+<li>Policy assignments tracked: 2</li>
+<li>Policy exemptions: </li>
+<li>Active Directory site: Not collected</li></ul>
+</section>
+<section>
+  <h2>Management Tool Coverage</h2>
+  <ul><li>WAC installed nodes:  of 3</li>
+<li>SCVMM agent nodes: </li>
+<li>SCOM agent nodes: </li>
+<li>Running management services: 4</li>
+<li>Third-party agent types:  (0)</li></ul>
+</section>
+<section>
+  <h2>WAF Assessment — Scorecard</h2>
+  <div class='table-wrapper'><table class='data-table'><caption>Overall WAF score: 43% (10 of 23 rules passing). Evaluated from saved manifest — no re-collection required.</caption><thead><tr><th>Pillar</th><th>Score</th><th>Status</th><th>Rules Passing</th><th>Top Finding</th></tr></thead><tbody><tr><td>Reliability</td></tr>
+<tr><td>67%</td></tr>
+<tr><td>Needs Attention</td></tr>
+<tr><td>4 / 6</td></tr>
+<tr><td>Cluster quorum is configured</td></tr>
+<tr><td>Security</td></tr>
+<tr><td>17%</td></tr>
+<tr><td>At Risk</td></tr>
+<tr><td>1 / 6</td></tr>
+<tr><td>Secured-Core is enabled on cluster nodes</td></tr>
+<tr><td>Cost Optimization</td></tr>
+<tr><td>50%</td></tr>
+<tr><td>Needs Attention</td></tr>
+<tr><td>1 / 2</td></tr>
+<tr><td>ESU-eligible VMs are enrolled in Extended Security Updates</td></tr>
+<tr><td>Operational Excellence</td></tr>
+<tr><td>33%</td></tr>
+<tr><td>At Risk</td></tr>
+<tr><td>2 / 6</td></tr>
+<tr><td>Azure Monitor alert rules are defined</td></tr>
+<tr><td>Performance Efficiency</td></tr>
+<tr><td>67%</td></tr>
+<tr><td>Needs Attention</td></tr>
+<tr><td>2 / 3</td></tr>
+<tr><td>Storage utilization is within safe limits</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>WAF Assessment — Azure Advisor Recommendations</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Pillar</th><th>Impact</th><th>Finding</th><th>Recommendation</th></tr></thead><tbody><tr><td>—</td></tr>
+<tr><td>High</td></tr>
+<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>High</td></tr>
+<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>High</td></tr>
+<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>Medium</td></tr>
+<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>Medium</td></tr>
+<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>Medium</td></tr>
+<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>Medium</td></tr>
+<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>Medium</td></tr>
+<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
+<tr><td>—</td></tr></tbody></table></div>
+</section>
+        <section>
+            <h2>Findings</h2>
+            <article class="finding finding-warning">
+  <h3>[WARNING] One or more node certificates expire within 90 days</h3>
+  <p>Identity posture data indicates certificate on azl-iic-n01 expires within 90 days.</p>
+  <p><strong>Current state:</strong> 1 certificate expiring within 90 days</p>
+  <p><strong>Recommendation:</strong> Review certificate ownership and renew expiring node certificates before handoff.</p>
+</article>
+<article class="finding finding-warning">
+  <h3>[WARNING] iDRAC firmware below recommended baseline on all nodes</h3>
+  <p>OEM integration data shows iDRAC firmware at 7.10.30.00. The recommended baseline is 7.20 or later.</p>
+  <p><strong>Current state:</strong> iDRAC firmware 7.10.30.00</p>
+  <p><strong>Recommendation:</strong> Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window.</p>
+</article>
+<article class="finding finding-informational">
+  <h3>[INFORMATIONAL] Azure Policy assignments discovered at resource group scope</h3>
+  <p>2 policy assignments are enforcing tagging and security control auditing.</p>
+  <p><strong>Current state:</strong> 2 policy assignments active</p>
+  <p><strong>Recommendation:</strong> Verify policy scope extends to arc resource group and monitor for compliance drift.</p>
+</article>
+<article class="finding finding-informational">
+  <h3>[INFORMATIONAL] Cluster event history includes a transient network quorum warning</h3>
+  <p>A Management network quorum warning event was recorded on 2026-04-06. Cluster recovered automatically.</p>
+  <p><strong>Current state:</strong> single event logged; cluster healthy</p>
+  <p><strong>Recommendation:</strong> Review switch port configuration to confirm management NICs are on dedicated VLANs and bonded correctly.</p>
+</article>
+        </section>
+    </div>
+</body>
+</html>

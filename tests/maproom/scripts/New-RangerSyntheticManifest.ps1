@@ -11,17 +11,34 @@
     All company data follows the mandatory IIC canonical standard defined in:
     https://azurelocal.github.io/standards/examples
 
+.PARAMETER Mode
+    Output mode. 'as-built' (default) or 'current-state'. Controls which fixture file is written
+    and whether Document Control / Sign-Off / Installation Register sections are included.
+
 .EXAMPLE
     .\tests\maproom\scripts\New-RangerSyntheticManifest.ps1
 
+.EXAMPLE
+    .\tests\maproom\scripts\New-RangerSyntheticManifest.ps1 -Mode current-state
+
 .NOTES
-    Output: tests/maproom/Fixtures/synthetic-manifest.json
-    Schema: 1.1.0-draft / mode: as-built
+    Output: tests/maproom/Fixtures/synthetic-manifest.json (as-built)
+            tests/maproom/Fixtures/synthetic-manifest-current-state.json (current-state)
+    Schema: 1.1.0-draft
 #>
 [CmdletBinding()]
 param(
-    [string]$OutputPath = (Join-Path $PSScriptRoot '..\Fixtures\synthetic-manifest.json')
+    [ValidateSet('as-built', 'current-state')]
+    [string]$Mode = 'as-built',
+
+    [string]$OutputPath = $null   # derived from Mode when not specified
 )
+
+# Derive output path from mode if caller did not specify
+if (-not $OutputPath) {
+    $fixtureSuffix = if ($Mode -eq 'current-state') { 'synthetic-manifest-current-state.json' } else { 'synthetic-manifest.json' }
+    $OutputPath = Join-Path $PSScriptRoot "..\Fixtures\$fixtureSuffix"
+}
 
 Set-StrictMode -Version Latest
 
@@ -102,17 +119,18 @@ $runEnd            = '2026-04-06T12:08:32Z'
 # BUILD: run block
 # =============================================================================
 $run = [ordered]@{
-    toolVersion       = '0.2.0'
+    toolVersion       = '1.4.2'
     schemaVersion     = '1.1.0-draft'
     startTimeUtc      = $runStart
     endTimeUtc        = $runEnd
-    mode              = 'as-built'
+    mode              = $Mode
     runner            = 'RANGER-SYNTH'
     includeDomains    = @()
     excludeDomains    = @()
     selectedCollectors = @(
         'topology-cluster', 'hardware', 'storage-networking',
-        'workload-identity-azure', 'monitoring-observability', 'management-performance'
+        'workload-identity-azure', 'monitoring-observability', 'management-performance',
+        'waf-assessment'
     )
     schemaValidation  = [ordered]@{
         isValid  = $true
@@ -150,12 +168,13 @@ $topology = [ordered]@{
 # BUILD: collectors block
 # =============================================================================
 $collectors = [ordered]@{
-    'topology-cluster'       = [ordered]@{ status = 'success' }
-    'hardware'               = [ordered]@{ status = 'success' }
-    'storage-networking'     = [ordered]@{ status = 'success' }
+    'topology-cluster'        = [ordered]@{ status = 'success' }
+    'hardware'                = [ordered]@{ status = 'success' }
+    'storage-networking'      = [ordered]@{ status = 'success' }
     'workload-identity-azure' = [ordered]@{ status = 'success' }
     'monitoring-observability' = [ordered]@{ status = 'success' }
-    'management-performance' = [ordered]@{ status = 'success' }
+    'management-performance'  = [ordered]@{ status = 'success' }
+    'waf-assessment'          = [ordered]@{ status = 'success' }
 }
 
 # =============================================================================
@@ -913,6 +932,38 @@ $oemIntegration = [ordered]@{
 }
 
 # =============================================================================
+# BUILD: domains.wafAssessment (Azure Advisor data + 23-rule engine results)
+# Scores are computed at render time by Invoke-RangerWafRuleEvaluation.
+# The collector stores advisor recommendation counts per pillar.
+# =============================================================================
+$wafAssessment = [ordered]@{
+    advisorRecommendations = @(
+        [ordered]@{ category = 'HighAvailability'; impact = 'High';   shortDescription = [ordered]@{ problem = 'Enable zone-redundancy for Arc machines' } }
+        [ordered]@{ category = 'HighAvailability'; impact = 'Medium'; shortDescription = [ordered]@{ problem = 'Configure cluster-aware updating schedule' } }
+        [ordered]@{ category = 'Security';         impact = 'High';   shortDescription = [ordered]@{ problem = 'Enable Microsoft Defender for Cloud on Arc machines' } }
+        [ordered]@{ category = 'Security';         impact = 'Medium'; shortDescription = [ordered]@{ problem = 'Apply missing guest configuration baselines' } }
+        [ordered]@{ category = 'Cost';             impact = 'Medium'; shortDescription = [ordered]@{ problem = 'Right-size underutilized virtual machines' } }
+        [ordered]@{ category = 'OperationalExcellence'; impact = 'High';   shortDescription = [ordered]@{ problem = 'Onboard to Azure Update Manager' } }
+        [ordered]@{ category = 'OperationalExcellence'; impact = 'Medium'; shortDescription = [ordered]@{ problem = 'Configure diagnostic settings for cluster resource' } }
+        [ordered]@{ category = 'Performance';      impact = 'Medium'; shortDescription = [ordered]@{ problem = 'Review storage QoS policy assignments' } }
+    )
+    byPillar = [ordered]@{
+        Reliability            = [ordered]@{ count = 2; highImpactCount = 1 }
+        Security               = [ordered]@{ count = 2; highImpactCount = 1 }
+        CostOptimization       = [ordered]@{ count = 1; highImpactCount = 0 }
+        OperationalExcellence  = [ordered]@{ count = 2; highImpactCount = 1 }
+        PerformanceEfficiency  = [ordered]@{ count = 1; highImpactCount = 0 }
+    }
+    summary = [ordered]@{
+        totalRecommendations  = 8
+        highImpactCount       = 3
+        mediumImpactCount     = 5
+        lowImpactCount        = 0
+        pillarCount           = 5
+    }
+}
+
+# =============================================================================
 # BUILD: findings (2 warnings + 2 informationals)
 # =============================================================================
 $findings = @(
@@ -998,6 +1049,7 @@ $manifest = [ordered]@{
         managementTools  = $managementTools
         performance      = $performance
         oemIntegration   = $oemIntegration
+        wafAssessment    = $wafAssessment
     }
     relationships = @($relationships)
     findings      = @($findings)
@@ -1019,5 +1071,6 @@ Write-Host "[OK] Synthetic IIC manifest written to: $OutputPath" -ForegroundColo
 Write-Host "     Nodes:    $($iic.NodeNames -join ', ')" -ForegroundColor Cyan
 Write-Host "     Cluster:  $($iic.ClusterName)" -ForegroundColor Cyan
 Write-Host "     Domain:   $($iic.Domain)" -ForegroundColor Cyan
-Write-Host "     Mode:     as-built" -ForegroundColor Cyan
+Write-Host "     Mode:     $Mode" -ForegroundColor Cyan
 Write-Host "     Findings: $(@($findings | Where-Object { $_.severity -eq 'warning' }).Count) warnings, $(@($findings | Where-Object { $_.severity -eq 'informational' }).Count) informationals" -ForegroundColor Cyan
+Write-Host "     WAF:      $($wafAssessment.summary.totalRecommendations) Advisor recommendations, $($wafAssessment.summary.highImpactCount) high impact" -ForegroundColor Cyan

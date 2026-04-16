@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2080" height="900" viewBox="0 0 2080 900">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#94a3b8" />
+    </marker>
+  </defs>
+  <rect width="2080" height="900" fill="#f8fafc" />
+  <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
+  <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Monitoring and Health Heatmap</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.4.2</text>
+  <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
+<text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
+<rect x='1312' y='-10' width='240' height='86' rx='12' fill='#f5f3ff' stroke='#ddd6fe' stroke-dasharray='4 2' />
+<text x='1320' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Management</text>
+  <path d='M 244 109 C 782 109 782 109 1320 109' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 782 109 782 195 1320 195' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 782 109 782 281 1320 281' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+  <rect x='20' y='80' width='224' height='58' rx='10' fill='#dbeafe' stroke='#2563eb' stroke-width='2' />
+<rect x='1320' y='80' width='224' height='58' rx='10' fill='#fed7aa' stroke='#64748b' stroke-width='1.5' />
+<rect x='1320' y='166' width='224' height='58' rx='10' fill='#dcfce7' stroke='#64748b' stroke-width='1.5' />
+<rect x='1320' y='252' width='224' height='58' rx='10' fill='#dcfce7' stroke='#64748b' stroke-width='1.5' />
+  <text x='30' y='104' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">azlocal-iic-01</text>
+<text x='30' y='122' font-family="Segoe UI, Arial" font-size="11" fill="#475569">hyperconverged</text>
+<text x='1330' y='104' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">azl-iic-n01</text>
+<text x='1330' y='122' font-family="Segoe UI, Arial" font-size="11" fill="#475569">findings 2</text>
+<text x='1330' y='190' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">azl-iic-n02</text>
+<text x='1330' y='208' font-family="Segoe UI, Arial" font-size="11" fill="#475569">findings 1</text>
+<text x='1330' y='276' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">azl-iic-n03</text>
+<text x='1330' y='294' font-family="Segoe UI, Arial" font-size="11" fill="#475569">findings 1</text>
+<text x='782' y='104' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">health</text>
+<text x='782' y='147' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">health</text>
+<text x='782' y='190' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">health</text>
+</svg>

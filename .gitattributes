@@ -1,0 +1,4 @@
+# Binary output samples — mark as binary so git doesn't attempt line-ending conversion
+samples/output/**/*.pdf   binary
+samples/output/**/*.xlsx  binary
+samples/output/**/*.png   binary

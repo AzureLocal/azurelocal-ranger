@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2080" height="900" viewBox="0 0 2080 900">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#94a3b8" />
+    </marker>
+  </defs>
+  <rect width="2080" height="900" fill="#f8fafc" />
+  <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
+  <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">VM Placement Map</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.4.2</text>
+  <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
+<text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
+<rect x='792' y='-10' width='240' height='86' rx='12' fill='#fefce8' stroke='#fef08a' stroke-dasharray='4 2' />
+<text x='800' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Workload</text>
+  
+  <rect x='20' y='80' width='224' height='58' rx='10' fill='#dbeafe' stroke='#2563eb' stroke-width='2' />
+<rect x='800' y='80' width='224' height='58' rx='10' fill='#fef3c7' stroke='#d97706' stroke-width='1.5' />
+<rect x='800' y='166' width='224' height='58' rx='10' fill='#fef3c7' stroke='#d97706' stroke-width='1.5' />
+<rect x='800' y='252' width='224' height='58' rx='10' fill='#fef3c7' stroke='#d97706' stroke-width='1.5' />
+<rect x='800' y='338' width='224' height='58' rx='10' fill='#fef3c7' stroke='#d97706' stroke-width='1.5' />
+<rect x='800' y='424' width='224' height='58' rx='10' fill='#fef3c7' stroke='#d97706' stroke-width='1.5' />
+  <text x='30' y='104' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">azlocal-iic-01</text>
+<text x='30' y='122' font-family="Segoe UI, Arial" font-size="11" fill="#475569">hyperconverged</text>
+<text x='810' y='104' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">avd-iic-sh01</text>
+<text x='810' y='122' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Running | 16384 MB</text>
+<text x='810' y='190' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">avd-iic-sh02</text>
+<text x='810' y='208' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Running | 16384 MB</text>
+<text x='810' y='276' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">avd-iic-sh03</text>
+<text x='810' y='294' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Running | 16384 MB</text>
+<text x='810' y='362' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">arc-iic-vm01</text>
+<text x='810' y='380' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Running | 8192 MB</text>
+<text x='810' y='448' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">arc-iic-vm02</text>
+<text x='810' y='466' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Running | 8192 MB</text>
+</svg>

@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2080" height="1344" viewBox="0 0 2080 1344">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#94a3b8" />
+    </marker>
+  </defs>
+  <rect width="2080" height="1344" fill="#f8fafc" />
+  <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
+  <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Logical Network Topology</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.4.2</text>
+  <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
+<text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
+<rect x='532' y='-10' width='240' height='86' rx='12' fill='#fffbeb' stroke='#fde68a' stroke-dasharray='4 2' />
+<text x='540' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Network</text>
+  <path d='M 244 109 C 392 109 392 109 540 109' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 392 109 392 195 540 195' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 392 109 392 281 540 281' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 392 109 392 367 540 367' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 392 109 392 1141 540 1141' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 392 109 392 1227 540 1227' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 392 109 392 969 540 969' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 392 109 392 1055 540 1055' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 392 109 392 1141 540 1141' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 392 109 392 1227 540 1227' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 392 109 392 969 540 969' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 392 109 392 1055 540 1055' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 392 109 392 1141 540 1141' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+<path d='M 244 109 C 392 109 392 1227 540 1227' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
+  <rect x='20' y='80' width='224' height='58' rx='10' fill='#dbeafe' stroke='#2563eb' stroke-width='2' />
+<rect x='540' y='80' width='224' height='58' rx='10' fill='#fde68a' stroke='#ca8a04' stroke-width='1.5' />
+<rect x='540' y='166' width='224' height='58' rx='10' fill='#fde68a' stroke='#ca8a04' stroke-width='1.5' />
+<rect x='540' y='252' width='224' height='58' rx='10' fill='#fde68a' stroke='#ca8a04' stroke-width='1.5' />
+<rect x='540' y='338' width='224' height='58' rx='10' fill='#fde68a' stroke='#ca8a04' stroke-width='1.5' />
+<rect x='540' y='1112' width='224' height='58' rx='10' fill='#fefce8' stroke='#64748b' stroke-width='1.5' />
+<rect x='540' y='1198' width='224' height='58' rx='10' fill='#fefce8' stroke='#64748b' stroke-width='1.5' />
+<rect x='540' y='940' width='224' height='58' rx='10' fill='#fefce8' stroke='#64748b' stroke-width='1.5' />
+<rect x='540' y='1026' width='224' height='58' rx='10' fill='#fefce8' stroke='#64748b' stroke-width='1.5' />
+<rect x='540' y='1112' width='224' height='58' rx='10' fill='#fefce8' stroke='#64748b' stroke-width='1.5' />
+<rect x='540' y='1198' width='224' height='58' rx='10' fill='#fefce8' stroke='#64748b' stroke-width='1.5' />
+<rect x='540' y='940' width='224' height='58' rx='10' fill='#fefce8' stroke='#64748b' stroke-width='1.5' />
+<rect x='540' y='1026' width='224' height='58' rx='10' fill='#fefce8' stroke='#64748b' stroke-width='1.5' />
+<rect x='540' y='1112' width='224' height='58' rx='10' fill='#fefce8' stroke='#64748b' stroke-width='1.5' />
+<rect x='540' y='1198' width='224' height='58' rx='10' fill='#fefce8' stroke='#64748b' stroke-width='1.5' />
+  <text x='30' y='104' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">azlocal-iic-01</text>
+<text x='30' y='122' font-family="Segoe UI, Arial" font-size="11" fill="#475569">hyperconverged</text>
+<text x='550' y='104' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">Management</text>
+<text x='550' y='122' font-family="Segoe UI, Arial" font-size="11" fill="#475569">role 1</text>
+<text x='550' y='190' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">Storage-1</text>
+<text x='550' y='208' font-family="Segoe UI, Arial" font-size="11" fill="#475569">role 2</text>
+<text x='550' y='276' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">Storage-2</text>
+<text x='550' y='294' font-family="Segoe UI, Arial" font-size="11" fill="#475569">role 2</text>
+<text x='550' y='362' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">Workload</text>
+<text x='550' y='380' font-family="Segoe UI, Arial" font-size="11" fill="#475569">role 3</text>
+<text x='550' y='1136' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">NIC1</text>
+<text x='550' y='1154' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Up | </text>
+<text x='550' y='1222' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">NIC2</text>
+<text x='550' y='1240' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Up | </text>
+<text x='550' y='964' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">NIC3</text>
+<text x='550' y='982' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Up | </text>
+<text x='550' y='1050' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">NIC4</text>
+<text x='550' y='1068' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Up | </text>
+<text x='550' y='1136' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">NIC1</text>
+<text x='550' y='1154' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Up | </text>
+<text x='550' y='1222' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">NIC2</text>
+<text x='550' y='1240' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Up | </text>
+<text x='550' y='964' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">NIC3</text>
+<text x='550' y='982' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Up | </text>
+<text x='550' y='1050' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">NIC4</text>
+<text x='550' y='1068' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Up | </text>
+<text x='550' y='1136' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">NIC1</text>
+<text x='550' y='1154' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Up | </text>
+<text x='550' y='1222' font-family="Segoe UI, Arial" font-size="13" font-weight="600" fill="#0f172a">NIC2</text>
+<text x='550' y='1240' font-family="Segoe UI, Arial" font-size="11" fill="#475569">Up | </text>
+<text x='392' y='104' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">1</text>
+<text x='392' y='147' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">2</text>
+<text x='392' y='190' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">2</text>
+<text x='392' y='233' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">3</text>
+<text x='392' y='620' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">adapter</text>
+<text x='392' y='663' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">adapter</text>
+<text x='392' y='534' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">adapter</text>
+<text x='392' y='577' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">adapter</text>
+<text x='392' y='620' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">adapter</text>
+<text x='392' y='663' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">adapter</text>
+<text x='392' y='534' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">adapter</text>
+<text x='392' y='577' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">adapter</text>
+<text x='392' y='620' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">adapter</text>
+<text x='392' y='663' font-family="Segoe UI, Arial" font-size="10" fill="#64748b" text-anchor="middle">adapter</text>
+</svg>

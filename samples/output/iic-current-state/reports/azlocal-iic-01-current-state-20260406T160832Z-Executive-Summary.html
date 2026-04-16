@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Executive Summary</title>
+  <style>
+        :root { color-scheme: light; }
+        body { font-family: Segoe UI, Arial, sans-serif; margin: 0; color: #16202a; background: linear-gradient(180deg, #f8fbff 0%, #eef6fb 100%); }
+        .shell { max-width: 1280px; margin: 0 auto; padding: 2rem; }
+        header { border-bottom: 2px solid #0e7490; margin-bottom: 1.5rem; padding-bottom: 1rem; }
+    h1, h2, h3 { color: #0f172a; }
+    .meta { color: #475569; }
+        .hero { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; align-items: start; }
+        .panel { background: rgba(255,255,255,0.92); border: 1px solid #dbe7ef; border-radius: 16px; padding: 1rem 1.25rem; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06); }
+        .toc ul, .recommendations ul { margin: 0.5rem 0 0 1rem; }
+        .collector-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin: 1rem 0 1.5rem; }
+        .collector-card { border-radius: 14px; padding: 0.85rem 1rem; background: #ffffff; border: 1px solid #d7e3ed; }
+        .collector-card.status-success { border-color: #86efac; }
+        .collector-card.status-partial { border-color: #fbbf24; }
+        .collector-card.status-failed { border-color: #fca5a5; }
+        .collector-card.status-skipped { border-color: #cbd5e1; }
+    .finding { border-left: 4px solid #94a3b8; padding: 0.75rem 1rem; margin: 1rem 0; background: #f8fafc; }
+    .finding-critical { border-left-color: #b91c1c; }
+    .finding-warning { border-left-color: #d97706; }
+    .finding-good { border-left-color: #15803d; }
+    .finding-informational { border-left-color: #2563eb; }
+        section { margin: 1rem 0; background: rgba(255,255,255,0.92); border: 1px solid #dbe7ef; border-radius: 16px; padding: 1rem 1.25rem; }
+        @media (max-width: 900px) { .hero { grid-template-columns: 1fr; } }
+        /* Stats banner (traffic lights + capacity bars) */
+        .stats-banner { display: flex; gap: 2rem; flex-wrap: wrap; background: rgba(255,255,255,0.95); border: 1px solid #dbe7ef; border-radius: 16px; padding: 1rem 1.5rem; margin-bottom: 1rem; align-items: flex-start; }
+        .stats-lights { display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center; }
+        .tl-item { display: flex; align-items: center; gap: 6px; font-size: 0.92em; font-weight: 500; white-space: nowrap; }
+        .stats-bars { display: flex; flex-direction: column; gap: 0.4rem; }
+        .cap-item { display: flex; align-items: center; gap: 8px; font-size: 0.88em; }
+        .cap-label { min-width: 160px; color: #475569; }
+        /* Data tables (#168) */
+        .table-wrapper { overflow-x: auto; margin: 0.75rem 0; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.875em; }
+        .data-table caption { text-align: left; font-size: 0.85em; color: #64748b; padding-bottom: 0.4rem; }
+        .data-table thead th { background: #1e3a5f; color: #ffffff; padding: 0.45rem 0.75rem; text-align: left; font-weight: 600; white-space: nowrap; }
+        .data-table tbody td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+        .data-table tbody tr:nth-child(even) { background: #f8fafc; }
+        .data-table tbody tr:hover { background: #eff6ff; }
+        .kv-table { border-collapse: collapse; font-size: 0.9em; width: 100%; max-width: 640px; }
+        .kv-table th { color: #475569; font-weight: 600; padding: 0.3rem 1.5rem 0.3rem 0; width: 220px; vertical-align: top; text-align: left; }
+        .kv-table td { padding: 0.3rem 0; color: #0f172a; }
+        .sign-off-note { color: #64748b; font-size: 0.9em; margin-bottom: 1rem; }
+        .sign-off-table td { min-width: 130px; height: 44px; }
+        .data-unavailable { color: #94a3b8; font-style: italic; padding: 0.4rem 0; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+    <div class="shell">
+        <header>
+            <h1>Executive Summary</h1>
+            <p class="meta">Cluster: azlocal-iic-01</p>
+            <p class="meta">Mode: current-state | Ranger Version: 1.4.2 | Generated: 04/06/2026 12:08:32</p>
+        </header>
+        <section class="stats-banner">
+  <div class="stats-lights"><div class='tl-item'><svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' style='display:inline-block;vertical-align:middle'><circle cx='10' cy='10' r='9' fill='#22c55e'/></svg> <span class='tl-label'>Overall Health</span></div><div class='tl-item'><svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' style='display:inline-block;vertical-align:middle'><circle cx='10' cy='10' r='9' fill='#22c55e'/></svg> <span class='tl-label'>Azure Integration</span></div><div class='tl-item'><svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' style='display:inline-block;vertical-align:middle'><circle cx='10' cy='10' r='9' fill='#94a3b8'/></svg> <span class='tl-label'>Security Posture</span></div><div class='tl-item'><svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' style='display:inline-block;vertical-align:middle'><circle cx='10' cy='10' r='9' fill='#22c55e'/></svg> <span class='tl-label'>Monitoring Coverage</span></div></div>
+  <div class="stats-bars"><div class='cap-item'><span class='cap-label'>Storage used:</span> <svg xmlns='http://www.w3.org/2000/svg' width='160' height='12' style='vertical-align:middle;margin-right:6px'><rect width='160' height='12' rx='2' fill='#e2e8f0'/><rect width='0' height='12' rx='2' fill='#3b82f6'/></svg>0%</div><div class='cap-item'><span class='cap-label'>Storage reserve:</span> <svg xmlns='http://www.w3.org/2000/svg' width='160' height='12' style='vertical-align:middle;margin-right:6px'><rect width='160' height='12' rx='2' fill='#e2e8f0'/><rect width='0' height='12' rx='2' fill='#3b82f6'/></svg>0%</div><div class='cap-item'><span class='cap-label'>Safe allocatable:</span> <svg xmlns='http://www.w3.org/2000/svg' width='160' height='12' style='vertical-align:middle;margin-right:6px'><rect width='160' height='12' rx='2' fill='#e2e8f0'/><rect width='0' height='12' rx='2' fill='#3b82f6'/></svg>0%</div><div class='cap-item'><span class='cap-label'>Monitoring coverage:</span> <svg xmlns='http://www.w3.org/2000/svg' width='160' height='12' style='vertical-align:middle;margin-right:6px'><rect width='160' height='12' rx='2' fill='#e2e8f0'/><rect width='160' height='12' rx='2' fill='#ef4444'/></svg>100%</div><div class='cap-item'><span class='cap-label'>Backup coverage:</span> <svg xmlns='http://www.w3.org/2000/svg' width='160' height='12' style='vertical-align:middle;margin-right:6px'><rect width='160' height='12' rx='2' fill='#e2e8f0'/><rect width='32' height='12' rx='2' fill='#3b82f6'/></svg>20%</div></div>
+</section>
+        <div class="hero">
+            <section class="panel toc">
+                <h2>Table of Contents</h2>
+                <ul>
+                    <li>Run Summary</li>
+<li>Readiness Snapshot</li>
+<li>Health Status</li>
+<li>Environment Overview</li>
+<li>Topology and Operating Model</li>
+<li>Domain Coverage</li>
+<li>Operational Risk Summary</li>
+<li>Workload Summary</li>
+<li>Capacity Summary</li>
+                </ul>
+            </section>
+            <section class="panel recommendations">
+                <h2>Priority Recommendations</h2>
+                <ul>
+                    <li><strong>[WARNING]</strong> One or more node certificates expire within 90 days<br />Review certificate ownership and renew expiring node certificates before handoff.</li>
+<li><strong>[WARNING]</strong> iDRAC firmware below recommended baseline on all nodes<br />Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window.</li>
+                </ul>
+            </section>
+        </div>
+        <section>
+            <h2>Collector Overview</h2>
+            <div class="collector-grid">
+                <article class="collector-card status-success">
+  <h3>hardware</h3>
+  <p><strong>Status:</strong> success</p>
+  <p><strong>Targets:</strong> </p>
+</article>
+<article class="collector-card status-success">
+  <h3>management-performance</h3>
+  <p><strong>Status:</strong> success</p>
+  <p><strong>Targets:</strong> </p>
+</article>
+<article class="collector-card status-success">
+  <h3>monitoring-observability</h3>
+  <p><strong>Status:</strong> success</p>
+  <p><strong>Targets:</strong> </p>
+</article>
+<article class="collector-card status-success">
+  <h3>storage-networking</h3>
+  <p><strong>Status:</strong> success</p>
+  <p><strong>Targets:</strong> </p>
+</article>
+<article class="collector-card status-success">
+  <h3>topology-cluster</h3>
+  <p><strong>Status:</strong> success</p>
+  <p><strong>Targets:</strong> </p>
+</article>
+<article class="collector-card status-success">
+  <h3>waf-assessment</h3>
+  <p><strong>Status:</strong> success</p>
+  <p><strong>Targets:</strong> </p>
+</article>
+<article class="collector-card status-success">
+  <h3>workload-identity-azure</h3>
+  <p><strong>Status:</strong> success</p>
+  <p><strong>Targets:</strong> </p>
+</article>
+            </div>
+        </section>
+        <section>
+  <h2>Run Summary</h2>
+  <ul><li>Mode: current-state</li>
+<li>Generated: 04/06/2026 12:08:32</li>
+<li>Cluster: azlocal-iic-01</li>
+<li>Nodes: 3</li>
+<li>Collectors: 7/7 successful</li>
+<li>Artifacts currently recorded: 0</li></ul>
+</section>
+<section>
+  <h2>Readiness Snapshot</h2>
+  <ul><li>Schema validation: passed</li>
+<li>Critical findings: 0</li>
+<li>Warning findings: 2</li>
+<li>Informational findings: 2</li>
+<li>Successful collectors: 7 of 7</li>
+<li>Partial or failed collectors: 0</li></ul>
+</section>
+<section>
+  <h2>Health Status</h2>
+  <ul><li>Overall health: GREEN ( critical,  warning findings)</li>
+<li>Azure integration: GREEN (10 Azure resources discovered)</li>
+<li>Security posture: GRAY (Secured-Core enabled on  node(s))</li>
+<li>Monitoring coverage: GREEN (100% of nodes have Azure Monitor Agent)</li></ul>
+</section>
+<section>
+  <h2>Environment Overview</h2>
+  <ul><li>VMs discovered: 5</li>
+<li>Azure resources discovered: 10</li>
+<li>Connected Azure auth method: service-principal</li>
+<li>Monitoring resources: 5</li>
+<li>Management services running: 4</li></ul>
+</section>
+<section>
+  <h2>Topology and Operating Model</h2>
+  <ul><li>Deployment type: hyperconverged</li>
+<li>Identity mode: ad</li>
+<li>Connectivity mode: connected</li>
+<li>Storage architecture: storage-spaces-direct</li>
+<li>Network architecture: switched</li>
+<li>Variant markers: connected</li></ul>
+</section>
+<section>
+  <h2>Domain Coverage</h2>
+  <ul><li>Cluster nodes: 3</li>
+<li>Cluster roles: 5</li>
+<li>Storage pools: 1</li>
+<li>Physical disks: 24</li>
+<li>Network adapters: 12</li>
+<li>VMs discovered: 5</li>
+<li>Azure resources: 10</li>
+<li>Alerting resources: 2</li>
+<li>Management services: 4</li></ul>
+</section>
+<section>
+  <h2>Operational Risk Summary</h2>
+  <ul><li>Nodes not healthy: 0</li>
+<li>Unhealthy disks: 0</li>
+<li>High CPU nodes: 0</li>
+<li>Certificates expiring within 90 days: 1</li>
+<li>Azure Policy assignments: 2</li>
+<li>Schema warnings: 0</li>
+<li>Azure Advisor recommendations:  total, 3 high-impact</li></ul>
+</section>
+<section>
+  <h2>Workload Summary</h2>
+  <ul><li>Total VMs: 5</li>
+<li>Total nodes: 3</li>
+<li>AKS clusters: 1</li>
+<li>Arc-connected machines: 1</li>
+<li>Update compliance: No update resources tracked</li>
+<li>Licensing: Not collected</li>
+<li>VMs using Arc IP fallback: Not collected</li></ul>
+</section>
+<section>
+  <h2>Capacity Summary</h2>
+  <ul><li>Storage total raw: 0 TiB</li>
+<li>Storage total usable: 0 TiB</li>
+<li>Storage used by workloads: 0 TiB (0% of usable)</li>
+<li>Storage reserve target: 0 TiB (0% of usable)</li>
+<li>Storage free usable: 0 TiB</li>
+<li>Projected safe allocatable: 0 TiB</li>
+<li>Thin provisioning ratio: Not computed</li>
+<li>vCPU:pCPU overcommit ratio: Not computed</li>
+<li>Memory overcommit ratio: Not computed</li>
+<li>Average VMs per node: N/A</li></ul>
+</section>
+        <section>
+            <h2>Findings</h2>
+            <article class="finding finding-warning">
+  <h3>[WARNING] One or more node certificates expire within 90 days</h3>
+  <p>Identity posture data indicates certificate on azl-iic-n01 expires within 90 days.</p>
+  <p><strong>Current state:</strong> 1 certificate expiring within 90 days</p>
+  <p><strong>Recommendation:</strong> Review certificate ownership and renew expiring node certificates before handoff.</p>
+</article>
+<article class="finding finding-warning">
+  <h3>[WARNING] iDRAC firmware below recommended baseline on all nodes</h3>
+  <p>OEM integration data shows iDRAC firmware at 7.10.30.00. The recommended baseline is 7.20 or later.</p>
+  <p><strong>Current state:</strong> iDRAC firmware 7.10.30.00</p>
+  <p><strong>Recommendation:</strong> Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window.</p>
+</article>
+        </section>
+    </div>
+</body>
+</html>
