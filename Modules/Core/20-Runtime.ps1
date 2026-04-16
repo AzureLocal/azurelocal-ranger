@@ -611,7 +611,8 @@ function Invoke-RangerDiscoveryRuntime {
             }
             if (-not $connectivityMatrix.bmc.reachable -and @($connectivityMatrix.bmc.endpoints).Count -gt 0) {
                 if (Get-Command -Name 'New-RangerConnectivityFinding' -ErrorAction SilentlyContinue) {
-                    $manifest.findings += @(New-RangerConnectivityFinding -Surface 'bmc' -Detail ($connectivityMatrix.bmc.endpoints | ForEach-Object { "$($_.host): unreachable" }) -join '; ')
+                    $bmcDetail = ($connectivityMatrix.bmc.endpoints | ForEach-Object { "$($_.host): unreachable" }) -join '; '
+                    $manifest.findings += @(New-RangerConnectivityFinding -Surface 'bmc' -Detail $bmcDetail)
                 }
             }
         }

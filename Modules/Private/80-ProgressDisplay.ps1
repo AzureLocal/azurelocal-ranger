@@ -126,7 +126,7 @@ function Update-RangerProgressCollectorStart {
             if ($row) { $row.Status = 'running' }
             $pct = [int](($Context.Completed / $Context.Total) * 100)
             Write-SpectreHost "[grey]Collecting:[/] [cyan]$CollectorId[/]…" -NoNewline
-            _ = $pct   # suppress unused variable warning
+            $null = $pct
         }
         catch { }
         return

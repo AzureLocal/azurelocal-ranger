@@ -20,11 +20,13 @@ function Test-RangerAzureConnectivity {
         [int]$TimeoutSeconds = 10
     )
 
+    $azureEndpoint = 'management.azure.com'
+
     if (-not (Test-RangerCommandAvailable -Name 'Test-NetConnection')) {
         # On platforms without Test-NetConnection fall back to a TCP socket attempt
         try {
             $tcp = New-Object System.Net.Sockets.TcpClient
-            $async = $tcp.BeginConnect('management.azure.com', 443, $null, $null)
+            $async = $tcp.BeginConnect($azureEndpoint, 443, $null, $null)
             $wait = $async.AsyncWaitHandle.WaitOne([System.TimeSpan]::FromSeconds($TimeoutSeconds))
             if ($wait) {
                 $tcp.EndConnect($async)
@@ -40,7 +42,7 @@ function Test-RangerAzureConnectivity {
     }
 
     try {
-        $result = Test-NetConnection -ComputerName 'management.azure.com' -Port 443 `
+        $result = Test-NetConnection -ComputerName $azureEndpoint -Port 443 `
             -InformationLevel Quiet -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
         return [bool]$result
     }
@@ -178,12 +180,12 @@ function Get-RangerConnectivityMatrix {
     $bmcReachable = $false
     $bmcEndpointResults = New-Object System.Collections.ArrayList
     foreach ($ep in @($Config.targets.bmc.endpoints)) {
-        $host = if ($ep -is [System.Collections.IDictionary]) { [string]$ep['host'] } else { [string]$ep }
-        if ([string]::IsNullOrWhiteSpace($host)) { continue }
+        $bmcHost = if ($ep -is [System.Collections.IDictionary]) { [string]$ep['host'] } else { [string]$ep }
+        if ([string]::IsNullOrWhiteSpace($bmcHost)) { continue }
         $probe = $false
         if (Test-RangerCommandAvailable -Name 'Test-NetConnection') {
             try {
-                $probe = [bool](Test-NetConnection -ComputerName $host -Port 443 `
+                $probe = [bool](Test-NetConnection -ComputerName $bmcHost -Port 443 `
                     -InformationLevel Quiet -WarningAction SilentlyContinue -ErrorAction SilentlyContinue)
             }
             catch { $probe = $false }
@@ -191,14 +193,14 @@ function Get-RangerConnectivityMatrix {
         else {
             try {
                 $tcp = New-Object System.Net.Sockets.TcpClient
-                $async = $tcp.BeginConnect($host, 443, $null, $null)
+                $async = $tcp.BeginConnect($bmcHost, 443, $null, $null)
                 $wait = $async.AsyncWaitHandle.WaitOne([System.TimeSpan]::FromSeconds($TimeoutSeconds))
                 if ($wait) { $tcp.EndConnect($async); $probe = $true }
                 $tcp.Close()
             }
             catch { $probe = $false }
         }
-        [void]$bmcEndpointResults.Add([ordered]@{ host = $host; reachable = $probe })
+        [void]$bmcEndpointResults.Add([ordered]@{ host = $bmcHost; reachable = $probe })
         if ($probe) { $bmcReachable = $true }
     }
 
