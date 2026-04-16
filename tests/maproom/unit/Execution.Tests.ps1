@@ -60,9 +60,11 @@ Describe 'Test-RangerWinRmTarget — cache de-duplication' {
     It 'calls Test-WSMan only once per host regardless of how many times it is invoked (#158)' {
         InModuleScope AzureLocalRanger {
             $script:RangerWinRmProbeCache = @{}
-            Mock Test-NetConnection { [pscustomobject]@{ TcpTestSucceeded = $true } }
+            # Test-NetConnection is Windows-only — return $false so TCP probe is skipped on Linux CI.
+            # Test-WSMan is cross-platform in pwsh — return $true so WSMan probe still runs.
+            Mock Test-RangerCommandAvailable { $false } -ParameterFilter { $Name -eq 'Test-NetConnection' }
+            Mock Test-RangerCommandAvailable { $true  } -ParameterFilter { $Name -eq 'Test-WSMan' }
             Mock Test-WSMan { [pscustomobject]@{ wsmid = 'ok' } }
-            Mock Test-RangerCommandAvailable { $true }
 
             Test-RangerWinRmTarget -ComputerName 'node01'
             Test-RangerWinRmTarget -ComputerName 'node01'
@@ -75,9 +77,11 @@ Describe 'Test-RangerWinRmTarget — cache de-duplication' {
     It 'uses Authentication None — not Negotiate (#158)' {
         InModuleScope AzureLocalRanger {
             $script:RangerWinRmProbeCache = @{}
-            Mock Test-NetConnection { [pscustomobject]@{ TcpTestSucceeded = $true } }
+            # Test-NetConnection is Windows-only — return $false so TCP probe is skipped on Linux CI.
+            # Test-WSMan is cross-platform in pwsh — return $true so WSMan probe still runs.
+            Mock Test-RangerCommandAvailable { $false } -ParameterFilter { $Name -eq 'Test-NetConnection' }
+            Mock Test-RangerCommandAvailable { $true  } -ParameterFilter { $Name -eq 'Test-WSMan' }
             Mock Test-WSMan { [pscustomobject]@{ wsmid = 'ok' } }
-            Mock Test-RangerCommandAvailable { $true }
 
             Test-RangerWinRmTarget -ComputerName 'node02'
 
