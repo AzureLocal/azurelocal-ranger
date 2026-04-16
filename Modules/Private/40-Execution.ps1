@@ -8,7 +8,12 @@ function Invoke-RangerRetry {
         [string]$Label = 'operation',
         [string]$Target,
         [string[]]$RetryOnExceptionType = @(),
-        [switch]$Exponential
+        [switch]$Exponential,
+
+        # Issue #172: optional scriptblock called with $_ to decide whether to retry.
+        # Return $true to retry, $false to rethrow immediately without waiting.
+        # Takes precedence over RetryOnExceptionType when provided.
+        [scriptblock]$ShouldRetry
     )
 
     $attempt = 0
@@ -19,8 +24,16 @@ function Invoke-RangerRetry {
         catch {
             $attempt++
             $exceptionType = if ($_.Exception) { $_.Exception.GetType().FullName } else { 'UnknownException' }
-            $shouldRetry = $RetryOnExceptionType.Count -eq 0 -or $exceptionType -in $RetryOnExceptionType
-            if (-not $shouldRetry -or $attempt -gt $RetryCount) {
+
+            $shouldRetryThis = if ($ShouldRetry) {
+                try { [bool](& $ShouldRetry $_) } catch { $true }
+            } elseif ($RetryOnExceptionType.Count -gt 0) {
+                $exceptionType -in $RetryOnExceptionType
+            } else {
+                $true
+            }
+
+            if (-not $shouldRetryThis -or $attempt -gt $RetryCount) {
                 throw
             }
 
@@ -660,7 +673,16 @@ function Invoke-RangerRedfishRequest {
     # Issue #162: pass -Label and -Target so retry detail entries in audit-manifest.json
     # carry a meaningful label ('Invoke-RangerRedfishRequest') and the actual URI instead of
     # the generic 'operation' label and an empty target string.
-    Invoke-RangerRetry -RetryCount 1 -Label 'Invoke-RangerRedfishRequest' -Target $Uri -ScriptBlock {
+    # Issue #172: 4xx responses are permanent — skip retry immediately so we don't waste
+    # ~45 seconds per node retrying endpoints that simply do not exist on this iDRAC version.
+    Invoke-RangerRetry -RetryCount 1 -Label 'Invoke-RangerRedfishRequest' -Target $Uri -ShouldRetry {
+        param($err)
+        if ($err.Exception -is [Microsoft.PowerShell.Commands.HttpResponseException]) {
+            $code = [int]$err.Exception.Response.StatusCode
+            return $code -lt 400 -or $code -ge 500
+        }
+        return $true
+    } -ScriptBlock {
         Invoke-RestMethod -Uri $Uri -Method $Method -Credential $Credential -SkipCertificateCheck -ContentType 'application/json' -ErrorAction Stop
     }
 }

@@ -27,6 +27,9 @@ function Invoke-RangerHardwareCollector {
     $relationships = New-Object System.Collections.ArrayList
     $findings = New-Object System.Collections.ArrayList
     $rawEvidence = New-Object System.Collections.ArrayList
+    # Issue #173: track Redfish endpoints that returned errors so the collector
+    # can report 'partial' rather than 'success' when data was unavailable.
+    $redfishEndpointErrors = New-Object System.Collections.ArrayList
 
     $usableEndpoints = @(
         foreach ($endpoint in @($Config.targets.bmc.endpoints)) {
@@ -221,7 +224,9 @@ function Invoke-RangerHardwareCollector {
                         Invoke-RangerRedfishRequest -Uri "https://$bmcHost/redfish/v1/Systems/System.Embedded.1/PCIeDevices" -Credential $CredentialMap.bmc -ErrorAction SilentlyContinue
                     }
                     catch {
-                        if ($_.Exception.Message -match '404') {
+                        if ($_.Exception.Message -match '404' -or ($_.Exception -is [Microsoft.PowerShell.Commands.HttpResponseException] -and [int]$_.Exception.Response.StatusCode -eq 404)) {
+                            # Issue #173: record the missing endpoint so the collector reports partial
+                            [void]$redfishEndpointErrors.Add([ordered]@{ host = $bmcHost; endpoint = 'PCIeDevices'; statusCode = 404; message = $_.Exception.Message })
                             $null
                         }
                         else {
@@ -544,6 +549,19 @@ function Invoke-RangerHardwareCollector {
     $nodesWithExpiringBmcCert = @($nodesArray | Where-Object { $null -ne $_.bmcCert.daysUntilExpiry -and $_.bmcCert.daysUntilExpiry -lt 90 })
     if ($nodesWithExpiringBmcCert.Count -gt 0) {
         [void]$findings.Add((New-RangerFinding -Severity warning -Title 'BMC SSL certificate expiring within 90 days on one or more nodes' -Description 'The iDRAC certificate inventory found certificates approaching expiry.' -AffectedComponents (@($nodesWithExpiringBmcCert | ForEach-Object { $_.node })) -CurrentState "$($nodesWithExpiringBmcCert.Count) nodes with expiring BMC cert" -Recommendation 'Renew the iDRAC HTTPS certificate before it expires to prevent management plane disruption.'))
+    }
+
+    # Issue #173: surface Redfish endpoint errors as a finding so the collector
+    # correctly reports 'partial' and the operator knows which data is missing.
+    if ($redfishEndpointErrors.Count -gt 0) {
+        $affectedHosts = @($redfishEndpointErrors | ForEach-Object { $_.host } | Select-Object -Unique)
+        $endpointList  = ($redfishEndpointErrors | ForEach-Object { "$($_.host)/$($_.endpoint) (HTTP $($_.statusCode))" }) -join '; '
+        [void]$findings.Add((New-RangerFinding -Severity warning `
+            -Title 'One or more Redfish endpoints returned errors — hardware data incomplete' `
+            -Description "The following Redfish endpoints returned error responses and their data is absent from this run: $endpointList" `
+            -AffectedComponents $affectedHosts `
+            -CurrentState 'hardware collector partial' `
+            -Recommendation 'Verify iDRAC firmware version supports the requested endpoint. PCIeDevices requires iDRAC 9 firmware 4.x or later.'))
     }
 
     return @{

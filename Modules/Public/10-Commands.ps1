@@ -426,16 +426,62 @@ function Test-AzureLocalRangerPrerequisites {
     }
 
     $checks = @(
-        [ordered]@{ Name = 'PowerShell 7+'; Passed = $PSVersionTable.PSVersion.Major -ge 7; Detail = $PSVersionTable.PSVersion.ToString() },
-        [ordered]@{ Name = 'WinRM cmdlets'; Passed = (Test-RangerCommandAvailable -Name 'Invoke-Command'); Detail = 'Invoke-Command' },
-        [ordered]@{ Name = 'Cluster WinRM connectivity'; Passed = $clusterConnectivityPassed; Detail = $clusterConnectivityDetail },
-        [ordered]@{ Name = 'RSAT AD'; Passed = (Test-RangerCommandAvailable -Name 'Get-ADUser'); Detail = 'Get-ADUser (required for identity domain collection)' },
-        [ordered]@{ Name = 'Cluster cmdlets'; Passed = (Test-RangerCommandAvailable -Name 'Get-Cluster'); Detail = 'Get-Cluster (optional on the runner, required on cluster nodes)' },
-        [ordered]@{ Name = 'Hyper-V cmdlets'; Passed = (Test-RangerCommandAvailable -Name 'Get-VM'); Detail = 'Get-VM (optional on the runner, required on cluster nodes)' },
-        [ordered]@{ Name = 'Az modules'; Passed = (Test-RangerCommandAvailable -Name 'Get-AzContext'); Detail = 'Get-AzContext' },
-        [ordered]@{ Name = 'Azure CLI'; Passed = (Test-RangerCommandAvailable -Name 'az'); Detail = 'az (optional fallback)' },
-        [ordered]@{ Name = 'Pester'; Passed = (Test-RangerCommandAvailable -Name 'Invoke-Pester'); Detail = 'Invoke-Pester' }
+        [ordered]@{ Name = 'PowerShell 7+';            Passed = $PSVersionTable.PSVersion.Major -ge 7;               Optional = $false; Detail = $PSVersionTable.PSVersion.ToString() },
+        [ordered]@{ Name = 'WinRM cmdlets';            Passed = (Test-RangerCommandAvailable -Name 'Invoke-Command'); Optional = $false; Detail = 'Invoke-Command' },
+        [ordered]@{ Name = 'Cluster WinRM connectivity'; Passed = $clusterConnectivityPassed;                        Optional = $false; Detail = $clusterConnectivityDetail },
+        [ordered]@{ Name = 'RSAT AD';                  Passed = (Test-RangerCommandAvailable -Name 'Get-ADUser');    Optional = $false; Detail = 'Get-ADUser (required for identity domain collection)' },
+        [ordered]@{ Name = 'Cluster cmdlets';          Passed = (Test-RangerCommandAvailable -Name 'Get-Cluster');   Optional = $true;  Detail = 'Get-Cluster (optional on runner, required on cluster nodes)' },
+        [ordered]@{ Name = 'Hyper-V cmdlets';          Passed = (Test-RangerCommandAvailable -Name 'Get-VM');        Optional = $true;  Detail = 'Get-VM (optional on runner, required on cluster nodes)' },
+        [ordered]@{ Name = 'Az modules';               Passed = (Test-RangerCommandAvailable -Name 'Get-AzContext'); Optional = $false; Detail = 'Get-AzContext' },
+        [ordered]@{ Name = 'Azure CLI';                Passed = (Test-RangerCommandAvailable -Name 'az');            Optional = $true;  Detail = 'az (optional fallback for Azure auth)' },
+        [ordered]@{ Name = 'Az.ConnectedMachine';      Passed = [bool](Get-Module -ListAvailable -Name 'Az.ConnectedMachine' -ErrorAction SilentlyContinue); Optional = $true; Detail = 'Optional — required for Arc Run Command transport (behavior.transport: arc/auto)' },
+        [ordered]@{ Name = 'PwshSpectreConsole';       Passed = [bool](Get-Module -ListAvailable -Name 'PwshSpectreConsole' -ErrorAction SilentlyContinue);  Optional = $true; Detail = 'Optional — required for Spectre TUI progress display; falls back to Write-Progress when absent' },
+        [ordered]@{ Name = 'Pester';                   Passed = (Test-RangerCommandAvailable -Name 'Invoke-Pester'); Optional = $true;  Detail = 'Invoke-Pester (required for contributor testing only)' }
     )
+
+    # Issue #169: write a human-readable summary to the host before returning the
+    # structured result. Programmatic callers can still capture the return value.
+    $passCount    = @($checks | Where-Object { $_.Passed }).Count
+    $failRequired = @($checks | Where-Object { -not $_.Passed -and -not $_.Optional })
+    $warnOptional = @($checks | Where-Object { -not $_.Passed -and $_.Optional })
+
+    Write-Host ''
+    Write-Host 'AzureLocalRanger — Prerequisite Check' -ForegroundColor Cyan
+    Write-Host ('─' * 60) -ForegroundColor DarkGray
+    foreach ($check in $checks) {
+        $label  = $check.Name.PadRight(28)
+        $detail = $check.Detail
+        if ($check.Passed) {
+            Write-Host "  $label " -NoNewline
+            Write-Host 'Pass' -ForegroundColor Green -NoNewline
+            Write-Host "  $detail" -ForegroundColor DarkGray
+        } elseif ($check.Optional) {
+            Write-Host "  $label " -NoNewline
+            Write-Host 'Warn' -ForegroundColor Yellow -NoNewline
+            Write-Host "  $detail" -ForegroundColor DarkGray
+        } else {
+            Write-Host "  $label " -NoNewline
+            Write-Host 'FAIL' -ForegroundColor Red -NoNewline
+            Write-Host "  $detail"
+        }
+    }
+    Write-Host ('─' * 60) -ForegroundColor DarkGray
+
+    if ($failRequired.Count -eq 0) {
+        Write-Host "  Overall  " -NoNewline
+        Write-Host 'PASS' -ForegroundColor Green -NoNewline
+        Write-Host "  ($passCount/$($checks.Count) checks passed, $($warnOptional.Count) optional warning(s))"
+    } else {
+        Write-Host "  Overall  " -NoNewline
+        Write-Host 'FAIL' -ForegroundColor Red -NoNewline
+        Write-Host "  ($($failRequired.Count) required check(s) failed)"
+    }
+
+    if ($selectedCollectors.Count -gt 0) {
+        Write-Host ''
+        Write-Host "  Selected collectors: $(($selectedCollectors | ForEach-Object { $_.Id }) -join ', ')" -ForegroundColor DarkGray
+    }
+    Write-Host ''
 
     [ordered]@{
         Validation         = $validation

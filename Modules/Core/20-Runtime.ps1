@@ -617,10 +617,16 @@ function Invoke-RangerDiscoveryRuntime {
             }
         }
 
-        # Issue #76: initialise Spectre.Console progress display — degrades gracefully when
-        # PwshSpectreConsole is absent, in CI, or in Unattended / non-interactive mode.
+        # Issue #76 / #170: initialise Spectre.Console progress display — degrades gracefully
+        # when PwshSpectreConsole is absent, in CI, or in Unattended / non-interactive mode.
+        # Default to $true when the config key is absent so operators get progress display
+        # without needing to add showProgress: true to every config file.
         $progressCtx = $null
-        $showProgress = [bool]$config.output.showProgress
+        $showProgress = if ($config.output -is [System.Collections.IDictionary] -and $config.output.Contains('showProgress')) {
+            [bool]$config.output['showProgress']
+        } else {
+            $true
+        }
         if ($showProgress -and -not $Unattended -and (Get-Command -Name 'New-RangerProgressContext' -ErrorAction SilentlyContinue)) {
             $progressCtx = New-RangerProgressContext -Collectors $selectedCollectors
         }
