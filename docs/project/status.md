@@ -1,11 +1,12 @@
 # Project Status
 
-## Current Release Track — v1.1.1
+## Current Release Track — v1.1.2
 
-AzureLocalRanger v1.1.1 is the current shipped patch release. It carries the post-ship fix for the documented no-config prerequisite path while preserving the completed v1.1.0 milestone baseline.
+AzureLocalRanger v1.1.2 is the current shipped patch release. It fixes 6 runtime regressions from v1.1.0/v1.1.1, adds 20 Pester unit tests covering all regression bugs, and closes the Trailhead field validation gate on the live tplabs cluster.
 
 ```powershell
-Import-Module .\AzureLocalRanger.psd1 -Force
+Install-Module AzureLocalRanger -Force
+Import-Module AzureLocalRanger
 ```
 
 | Area | State |
@@ -19,11 +20,11 @@ Import-Module .\AzureLocalRanger.psd1 -Force
 | Hyper-V collectors | ✅ Complete |
 | GPO collectors | ✅ Complete |
 | Manifest assembly | ✅ Complete |
-| Pester test suite | ✅ 31 focused milestone-close tests passing |
-| Field validation (TRAILHEAD) | ✅ v1.1.0 gate closed on live tplabs validation |
+| Pester test suite | ✅ 20 regression unit tests + 42 total tests passing |
+| Field validation (TRAILHEAD) | ✅ v1.1.2 gate closed — all 6 collectors succeeded, zero auth retries |
 | Report output (HTML/Markdown/JSON/DOCX/XLSX/PDF) | ✅ Complete |
 | Diagram output (SVG/draw.io) | ✅ Complete |
-| PSGallery release | ✅ `1.1.1` current on PSGallery |
+| PSGallery release | ✅ `1.1.2` current on PSGallery |
 | Arc-first node inventory | ✅ Complete |
 | Domain auto-detection | ✅ Complete |
 | Parameter-first input model | ✅ Complete |

@@ -8,9 +8,24 @@ Ranger supports two outcomes through one discovery engine:
 - **Current-state** — recurring operational snapshot of a live Azure Local deployment
 - **As-built** — formal documentation package for customer or operational handoff
 
-## Current Release — v1.1.1
+## Current Release — v1.1.2
 
-Released April 2026. Post-release sprint complete with live milestone validation closed, followed by a patch release for the no-config prerequisite-check fix.
+Released April 2026. Patch release fixing 6 runtime regressions introduced in v1.1.0/v1.1.1, plus 20 new Pester unit tests and live Trailhead field validation on the tplabs cluster.
+
+| Area | What shipped |
+| --- | --- |
+| Schema contract | Inline hashtable replaces file-path lookup — PSGallery installs no longer throw `FileNotFoundException` |
+| Tool version accuracy | `toolVersion` in every manifest now reflects the installed module version dynamically |
+| Redfish retry metadata | BMC retry log entries carry label and target URI for actionable troubleshooting |
+| Debug output isolation | `DebugPreference` no longer set to `Continue` — eliminates MSAL/Az SDK debug flood at debug log level |
+| Null message filtering | Null entries stripped from collector message arrays before manifest and report assembly |
+| Credential ordering | Domain credential probed before cluster credential — eliminates redundant WinRM auth retries |
+| Unit test coverage | 20 Pester tests in `tests/maproom/unit/Execution.Tests.ps1` covering all 9 regression bugs (#157–#165) |
+| Field validation | Trailhead OPORD-1.1.2 closed on live tplabs (4-node Dell AX-760): all 6 collectors succeeded, zero auth retries, schema valid |
+
+## Previous Release — v1.1.1
+
+Released April 2026. Post-release patch for the no-config prerequisite-check regression.
 
 | Area | What shipped |
 | --- | --- |

@@ -51,6 +51,25 @@
                 'Az.Resources'
             )
             ReleaseNotes = @'
+## v1.1.2 — Regression Patch
+
+### Fixed
+- Schema contract (`Get-RangerManifestSchemaContract`) rewritten as inline hashtable — eliminates
+  FileNotFoundException for PSGallery installs where repo-management/ is not present (#160).
+- `toolVersion` in manifests now reflects the installed module version dynamically via
+  `Get-RangerToolVersion` — no longer hardcoded to '1.1.0' (#161).
+- `Invoke-RangerRedfishRequest` now passes `-Label` and `-Target` to `Invoke-RangerRetry` so
+  BMC/Redfish retry log entries carry actionable label and URI (#162).
+- `$DebugPreference` no longer set to `'Continue'` at debug log level — eliminates thousands of
+  MSAL and Az SDK internal debug lines flooding output (#163).
+- Null entries filtered from collector message arrays before manifest and report assembly (#164).
+- Domain credential probed before cluster credential in `Get-RangerRemoteCredentialCandidates` —
+  eliminates redundant WinRM auth retries on domain-joined clusters (#165).
+
+### Added
+- 20 Pester unit tests in `tests/maproom/unit/Execution.Tests.ps1` covering all 9 regression
+  bugs (#157–#165). Trailhead field validation closed on live tplabs cluster.
+
 ## v1.0.0 — PSGallery Launch
 
 ### New Features

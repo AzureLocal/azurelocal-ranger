@@ -8,6 +8,21 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [1.1.2] — 2026-04-15
+
+### Fixed
+
+- **Issue #160** — `Get-RangerManifestSchemaContract` rewritten to return an inline hashtable instead of reading a file path. Eliminates `FileNotFoundException` for PSGallery installs where `repo-management/` is not present.
+- **Issue #161** — `Get-RangerToolVersion` helper added to `Modules/Core/10-Manifest.ps1`. `New-RangerManifest` now reads `toolVersion` dynamically from the loaded module version instead of the previously hardcoded `'1.1.0'` default parameter value.
+- **Issue #162** — `Invoke-RangerRedfishRequest` now passes `-Label 'Invoke-RangerRedfishRequest' -Target $Uri` to `Invoke-RangerRetry`. Retry log entries for BMC/Redfish calls now carry actionable label and target URI instead of empty strings.
+- **Issue #163** — `$DebugPreference = 'Continue'` removed from the `debug` log-level branch of `Initialize-RangerRuntime`. `$DebugPreference` is unconditionally set to `'SilentlyContinue'`, preventing thousands of MSAL and Az SDK internal debug lines from flooding output.
+- **Issue #164** — Null entries filtered from the collector messages array via `Where-Object { $null -ne $_ }` in `Invoke-RangerCollector`. Prevents `null` entries from propagating into manifest `messages` arrays and HTML/Markdown report output.
+- **Issue #165** — `Get-RangerRemoteCredentialCandidates` now appends domain credential before cluster credential. Domain admin has WinRM PSRemoting rights by default; the LCM cluster account typically does not, so domain-first ordering eliminates redundant auth retries.
+
+### Added
+
+- **Issues #166 and #167** — 20 Pester unit tests added at `tests/maproom/unit/Execution.Tests.ps1` covering all 9 v1.1.2 regression bugs (#157–#165). Trailhead field validation run against live tplabs cluster (4-node Dell AX-760, Raleigh NC) confirmed all 6 collectors succeeded with zero auth retries, schema valid, `toolVersion=1.1.2`.
+
 ## [1.1.1] — 2026-04-16
 
 ### Fixed
