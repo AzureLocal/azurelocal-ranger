@@ -57,14 +57,13 @@ Describe 'Get-RangerWinRmProbeCacheKey — host-only key' {
 
 Describe 'Test-RangerWinRmTarget — cache de-duplication' {
 
-    It 'calls Test-WSMan only once per host regardless of how many times it is invoked (#158)' {
+    It 'calls Test-WSMan only once per host regardless of how many times it is invoked (#158)' -Skip:($IsLinux -or $IsMacOS) {
+        # Test-NetConnection and Test-WSMan are Windows-only WinRM cmdlets; skip on Linux/macOS CI.
         InModuleScope AzureLocalRanger {
             $script:RangerWinRmProbeCache = @{}
-            # Test-NetConnection is Windows-only — return $false so TCP probe is skipped on Linux CI.
-            # Test-WSMan is cross-platform in pwsh — return $true so WSMan probe still runs.
-            Mock Test-RangerCommandAvailable { $false } -ParameterFilter { $Name -eq 'Test-NetConnection' }
-            Mock Test-RangerCommandAvailable { $true  } -ParameterFilter { $Name -eq 'Test-WSMan' }
+            Mock Test-NetConnection { [pscustomobject]@{ TcpTestSucceeded = $true } }
             Mock Test-WSMan { [pscustomobject]@{ wsmid = 'ok' } }
+            Mock Test-RangerCommandAvailable { $true }
 
             Test-RangerWinRmTarget -ComputerName 'node01'
             Test-RangerWinRmTarget -ComputerName 'node01'
@@ -74,14 +73,13 @@ Describe 'Test-RangerWinRmTarget — cache de-duplication' {
         }
     }
 
-    It 'uses Authentication None — not Negotiate (#158)' {
+    It 'uses Authentication None — not Negotiate (#158)' -Skip:($IsLinux -or $IsMacOS) {
+        # Test-NetConnection and Test-WSMan are Windows-only WinRM cmdlets; skip on Linux/macOS CI.
         InModuleScope AzureLocalRanger {
             $script:RangerWinRmProbeCache = @{}
-            # Test-NetConnection is Windows-only — return $false so TCP probe is skipped on Linux CI.
-            # Test-WSMan is cross-platform in pwsh — return $true so WSMan probe still runs.
-            Mock Test-RangerCommandAvailable { $false } -ParameterFilter { $Name -eq 'Test-NetConnection' }
-            Mock Test-RangerCommandAvailable { $true  } -ParameterFilter { $Name -eq 'Test-WSMan' }
+            Mock Test-NetConnection { [pscustomobject]@{ TcpTestSucceeded = $true } }
             Mock Test-WSMan { [pscustomobject]@{ wsmid = 'ok' } }
+            Mock Test-RangerCommandAvailable { $true }
 
             Test-RangerWinRmTarget -ComputerName 'node02'
 
