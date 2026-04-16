@@ -70,7 +70,7 @@ Each GitHub milestone maps to one planned release. An issue assigned to a milest
 | --- | --- | --- |
 | v1.1.0 — Post-Release Sprint | `1.1.0` | Closed: auth hardening, BMC fallback, and milestone-close live validation |
 | v1.2.0 — UX & Transport | `1.2.0` | Closed: Arc Run Command transport, disconnected discovery, Spectre TUI, interactive wizard |
-| [v1.5.0 — Report Quality](https://github.com/AzureLocal/azurelocal-ranger/milestone/8) | `1.5.0` | HTML report rebuild, diagram engine quality, PDF output |
+| [v1.4.0 — Report Quality](https://github.com/AzureLocal/azurelocal-ranger/milestone/8) | `1.4.0` | HTML report rebuild, diagram engine quality, PDF output |
 | [v2.0.0 — Extended Platform Coverage](https://github.com/AzureLocal/azurelocal-ranger/milestone/4) | `2.0.0` | Switches, firewalls, OEM hardware, multi-rack, cost analysis, PowerPoint |
 
 ### When to Create a New Milestone
