@@ -193,7 +193,10 @@ function Resolve-RangerClusterArcResource {
         return $fullResource
     }
     catch {
-        Write-RangerLog -Level debug -Message "Resolve-RangerClusterArcResource: Arc query failed — $($_.Exception.Message)"
+        # v1.6.0 (#206): classify and record the skip so partial runs surface it.
+        $cls = Get-RangerArmErrorCategory -ErrorRecord $_
+        Add-RangerSkippedResource -Scope 'subscription' -Target $subscriptionId -Category $cls.Category -Reason "Arc cluster query: $($cls.Detail)"
+        Write-RangerLog -Level warn -Message "Resolve-RangerClusterArcResource: Arc query skipped ($($cls.Category)) — $($cls.Detail)"
         return $null
     }
 }

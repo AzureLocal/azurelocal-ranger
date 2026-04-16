@@ -1,3 +1,81 @@
+function Reset-RangerSkippedResources {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#206): initialise / clear the skipped-resources tracker.
+    #>
+    $script:RangerSkippedResources = [System.Collections.Generic.List[object]]::new()
+}
+
+function Add-RangerSkippedResource {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#206): record a skipped subscription / resource group / resource.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string]$Scope,
+        [Parameter(Mandatory = $true)][string]$Target,
+        [Parameter(Mandatory = $true)][string]$Category,
+        [string]$Reason
+    )
+
+    if (-not $script:RangerSkippedResources) { Reset-RangerSkippedResources }
+    [void]$script:RangerSkippedResources.Add([pscustomobject]@{
+        scope     = $Scope
+        target    = $Target
+        category  = $Category
+        reason    = $Reason
+        timestamp = (Get-Date).ToUniversalTime().ToString('o')
+    })
+}
+
+function Get-RangerSkippedResources {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#206): return and clear the skipped-resources tracker.
+    #>
+    if (-not $script:RangerSkippedResources) { return @() }
+    $snapshot = @($script:RangerSkippedResources)
+    $script:RangerSkippedResources = [System.Collections.Generic.List[object]]::new()
+    return $snapshot
+}
+
+function Get-RangerArmErrorCategory {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#206): classify an ARM / Az exception into a stable category
+        so callers can decide between skip / retry / abort.
+    .OUTPUTS
+        Hashtable with:
+            Category   : 'Authorization' | 'NetworkUnreachable' | 'NotFound' | 'Throttled' | 'Other'
+            Action     : 'Skip' | 'Retry' | 'Warn'
+            Detail     : short human-friendly description
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        $ErrorRecord
+    )
+
+    $message = ''
+    try {
+        if ($ErrorRecord.Exception) { $message = [string]$ErrorRecord.Exception.Message }
+        if (-not $message -and $ErrorRecord.ErrorDetails) { $message = [string]$ErrorRecord.ErrorDetails.Message }
+    } catch { }
+
+    if ($message -match '(?i)AuthorizationFailed|403|does not have authorization') {
+        return @{ Category = 'Authorization'; Action = 'Skip'; Detail = 'Caller is not authorised on the target.' }
+    }
+    if ($message -match '(?i)getaddrinfo failed|no such host|name or service not known|could not be resolved|No connection could be made|NetworkIssue|A connection attempt failed') {
+        return @{ Category = 'NetworkUnreachable'; Action = 'Skip'; Detail = 'ARM endpoint unreachable from this host.' }
+    }
+    if ($message -match '(?i)ResourceGroupNotFound|ResourceNotFound|SubscriptionNotFound|NotFound|404') {
+        return @{ Category = 'NotFound'; Action = 'Skip'; Detail = 'Target resource / resource group / subscription not found.' }
+    }
+    if ($message -match '(?i)TooManyRequests|throttled|429|SubscriptionRequestsThrottled') {
+        return @{ Category = 'Throttled'; Action = 'Retry'; Detail = 'ARM throttling — retry with backoff.' }
+    }
+    return @{ Category = 'Other'; Action = 'Warn'; Detail = $message }
+}
+
 function Invoke-RangerPermissionAudit {
     <#
     .SYNOPSIS

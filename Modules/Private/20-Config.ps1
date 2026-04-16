@@ -78,6 +78,12 @@ function Get-RangerDefaultConfig {
             # Issue #26: 'auto' tries WinRM first, falls back to Arc Run Command when WinRM
             # is blocked; 'winrm' forces WinRM only; 'arc' forces Arc Run Command only.
             transport                      = 'auto'
+            # v1.6.0 (#212): when true the pre-run permission audit is skipped.
+            skipPreCheck                   = $false
+            # v1.6.0 (#206): when true, any skipped subscription / resource
+            # raises an error at end-of-run. When false (default), discovery
+            # skips on auth/network errors and continues with partial data.
+            failOnPartialDiscovery         = $false
         }
     }
 }

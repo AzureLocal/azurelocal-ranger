@@ -473,6 +473,9 @@ function Invoke-RangerDiscoveryRuntime {
         throw ($validation.Errors -join [Environment]::NewLine)
     }
 
+    # v1.6.0 (#206): initialise the skipped-resources tracker for this run.
+    Reset-RangerSkippedResources
+
     # v1.6.0 (#212): pre-run permission audit. Runs by default; skip when
     # behavior.skipPreCheck is true (set by -SkipPreCheck parameter or config)
     # or when the selected collectors are operating in fixture mode (no live
@@ -696,6 +699,19 @@ function Invoke-RangerDiscoveryRuntime {
         }
 
         $manifest.run.retryDetails = @($script:RangerRetryDetails)
+
+        # v1.6.0 (#206): surface skipped subscriptions / resources in the manifest.
+        $skipped = @(Get-RangerSkippedResources)
+        $manifest.run.skippedResources = $skipped
+        if ($skipped.Count -gt 0) {
+            $summary = @($skipped | Group-Object -Property category | ForEach-Object { "{0}: {1}" -f $_.Name, $_.Count }) -join ', '
+            $manifest.findings += @(
+                New-RangerFinding -Severity warning -Title 'Partial discovery — some Azure resources were skipped' -Description 'One or more ARM queries failed and were skipped so the run could continue.' -CurrentState "Skipped $($skipped.Count) ($summary)" -Recommendation 'Review manifest.run.skippedResources for per-item reasons and verify RBAC / network reachability.'
+            )
+            if ([bool]$config.behavior.failOnPartialDiscovery) {
+                throw "behavior.failOnPartialDiscovery=true — aborting because $($skipped.Count) resource(s) were skipped during collection ($summary)."
+            }
+        }
 
         $manifestValidation = Test-RangerManifestSchema -Manifest $manifest -SelectedCollectors $selectedCollectors
         $manifest.run.schemaValidation = [ordered]@{

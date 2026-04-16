@@ -33,6 +33,79 @@ function Resolve-RangerManifestPath {
     return $current
 }
 
+function Invoke-RangerWafCalculation {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#214): compute a named aggregate metric from the manifest.
+    .DESCRIPTION
+        Supports aggregates: min, max, avg, sum, count, pct (percentage of
+        truthy values). `source` is a manifestPath that resolves to an array
+        (or array-like); `field` is the property to aggregate per element.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Manifest,
+
+        [Parameter(Mandatory = $true)]
+        $Definition
+    )
+
+    $source = $Definition.source
+    $field  = $Definition.field
+    $agg    = [string]($Definition.aggregate)
+
+    if ([string]::IsNullOrWhiteSpace($source) -or [string]::IsNullOrWhiteSpace($agg)) {
+        return $null
+    }
+
+    $raw = Resolve-RangerManifestPath -Manifest $Manifest -Path $source
+    $collection = @($raw | Where-Object { $_ -ne $null })
+    if ($collection.Count -eq 0) { return $null }
+
+    # When field is specified, project each element; otherwise treat the item itself as the value.
+    $values = if ([string]::IsNullOrWhiteSpace($field)) {
+        $collection
+    } else {
+        @($collection | ForEach-Object {
+            if ($_ -is [System.Collections.IDictionary]) { $_[$field] }
+            elseif ($_.PSObject -and $_.PSObject.Properties[$field]) { $_.$field }
+            else { $null }
+        })
+    }
+
+    switch ($agg) {
+        'min' {
+            $numeric = @($values | Where-Object { $_ -ne $null } | ForEach-Object { $_ -as [double] } | Where-Object { $null -ne $_ })
+            if ($numeric.Count -eq 0) { return $null }
+            return [double]($numeric | Measure-Object -Minimum).Minimum
+        }
+        'max' {
+            $numeric = @($values | Where-Object { $_ -ne $null } | ForEach-Object { $_ -as [double] } | Where-Object { $null -ne $_ })
+            if ($numeric.Count -eq 0) { return $null }
+            return [double]($numeric | Measure-Object -Maximum).Maximum
+        }
+        'avg' {
+            $numeric = @($values | Where-Object { $_ -ne $null } | ForEach-Object { $_ -as [double] } | Where-Object { $null -ne $_ })
+            if ($numeric.Count -eq 0) { return $null }
+            return [double]($numeric | Measure-Object -Average).Average
+        }
+        'sum' {
+            $numeric = @($values | Where-Object { $_ -ne $null } | ForEach-Object { $_ -as [double] } | Where-Object { $null -ne $_ })
+            if ($numeric.Count -eq 0) { return 0 }
+            return [double]($numeric | Measure-Object -Sum).Sum
+        }
+        'count' {
+            return [int]$collection.Count
+        }
+        'pct' {
+            if ($collection.Count -eq 0) { return 0 }
+            $truthy = @($values | Where-Object { $_ -eq $true -or $_ -eq 1 -or ($_ -is [string] -and $_ -in @('true','True','yes','ok','healthy')) }).Count
+            return [math]::Round(($truthy / $collection.Count) * 100, 1)
+        }
+        default { return $null }
+    }
+}
+
 function Invoke-RangerWafRuleEvaluation {
     <#
     .SYNOPSIS
@@ -72,9 +145,81 @@ function Invoke-RangerWafRuleEvaluation {
         }
     }
 
+    # v1.6.0 (#214): pre-compute named calculations once so rules can reference
+    # aggregate metrics (min/avg/max/sum/pct) by name.
+    $calculations = @{}
+    if ($rulesData.calculations) {
+        foreach ($calcName in @($rulesData.calculations.PSObject.Properties.Name)) {
+            $def = $rulesData.calculations.$calcName
+            try {
+                $calculations[$calcName] = Invoke-RangerWafCalculation -Manifest $Manifest -Definition $def
+            } catch {
+                Write-Warning "WAF calculation '$calcName' failed: $($_.Exception.Message)"
+                $calculations[$calcName] = $null
+            }
+        }
+    }
+
     $ruleResults = New-Object System.Collections.ArrayList
 
     foreach ($rule in $rulesData.rules) {
+        # v1.6.0 (#214): graduated threshold scoring path — rule has a named
+        # `calculation` reference and a `thresholds` array (descending min).
+        if ($rule.calculation -and $rule.thresholds) {
+            $value = $calculations[[string]$rule.calculation]
+            $maxPts = if ($null -ne $rule.maxPoints) { [int]$rule.maxPoints } elseif ($null -ne $rule.points) { [int]$rule.points } else { 1 }
+
+            if ($null -eq $value) {
+                Write-Warning "WAF rule '$($rule.id)' references undefined or null calculation '$($rule.calculation)' — skipping."
+                [void]$ruleResults.Add([ordered]@{
+                    id             = $rule.id
+                    pillar         = $rule.pillar
+                    title          = $rule.title
+                    description    = $rule.description
+                    severity       = $rule.severity
+                    recommendation = $rule.recommendation
+                    calculation    = [string]$rule.calculation
+                    resolvedValue  = $null
+                    awardedPoints  = 0
+                    maxPoints      = $maxPts
+                    pass           = $false
+                    band           = 'skipped'
+                    message        = "Calculation '$($rule.calculation)' not available."
+                })
+                continue
+            }
+
+            # Sort thresholds descending by `min`, take first matching band.
+            $numeric  = [double]($value -as [double])
+            $ordered  = @($rule.thresholds | Sort-Object { [double]$_.min } -Descending)
+            $band     = $ordered | Where-Object { $numeric -ge [double]$_.min } | Select-Object -First 1
+            if (-not $band) { $band = $ordered | Select-Object -Last 1 }
+            $awarded  = if ($band) { [int]$band.points } else { 0 }
+            $label    = if ($band -and $band.label) { [string]$band.label } else { 'Unknown' }
+            $pass     = $awarded -ge $maxPts
+            $msgKey   = if ($pass) { 'passMessage' } elseif ($awarded -gt 0) { 'warningMessage' } else { 'failMessage' }
+            $template = [string]$rule.$msgKey
+            $formatted = if ($numeric -eq [math]::Floor($numeric)) { [string][int]$numeric } else { '{0:N1}' -f $numeric }
+            $message  = if ($template) { $template -replace '\{value\}', $formatted } else { "$label ($formatted)" }
+
+            [void]$ruleResults.Add([ordered]@{
+                id             = $rule.id
+                pillar         = $rule.pillar
+                title          = $rule.title
+                description    = $rule.description
+                severity       = $rule.severity
+                recommendation = $rule.recommendation
+                calculation    = [string]$rule.calculation
+                resolvedValue  = $numeric
+                awardedPoints  = $awarded
+                maxPoints      = $maxPts
+                pass           = $pass
+                band           = $label
+                message        = $message
+            })
+            continue
+        }
+
         $rawValue = Resolve-RangerManifestPath -Manifest $Manifest -Path $rule.manifestPath
         $pass     = switch ($rule.check) {
             'equals'           {
@@ -108,6 +253,10 @@ function Invoke-RangerWafRuleEvaluation {
             default            { $false }
         }
 
+        # Existing pass/fail rules award full points on pass, 0 on fail (#214).
+        $maxPts  = if ($null -ne $rule.maxPoints) { [int]$rule.maxPoints } elseif ($null -ne $rule.points) { [int]$rule.points } else { 1 }
+        $awarded = if ($pass) { $maxPts } else { 0 }
+
         [void]$ruleResults.Add([ordered]@{
             id             = $rule.id
             pillar         = $rule.pillar
@@ -117,18 +266,23 @@ function Invoke-RangerWafRuleEvaluation {
             recommendation = $rule.recommendation
             manifestPath   = $rule.manifestPath
             resolvedValue  = $rawValue
+            awardedPoints  = $awarded
+            maxPoints      = $maxPts
             pass           = $pass
         })
     }
 
-    # Aggregate per-pillar scores
+    # v1.6.0 (#214): aggregate per-pillar scores using awardedPoints / maxPoints
+    # so graduated-threshold rules contribute fractional credit.
     $pillarOrder  = @('Reliability', 'Security', 'Cost Optimization', 'Operational Excellence', 'Performance Efficiency')
     $pillarScores = New-Object System.Collections.ArrayList
     foreach ($pillar in $pillarOrder) {
         $pillarRules = @($ruleResults | Where-Object { $_.pillar -eq $pillar })
         $total       = $pillarRules.Count
         $passing     = @($pillarRules | Where-Object { $_.pass -eq $true }).Count
-        $score       = if ($total -gt 0) { [int][math]::Round($passing / $total * 100) } else { 0 }
+        $awarded     = [double](($pillarRules | Measure-Object -Property awardedPoints -Sum).Sum)
+        $maxPts      = [double](($pillarRules | Measure-Object -Property maxPoints     -Sum).Sum)
+        $score       = if ($maxPts -gt 0) { [int][math]::Round($awarded / $maxPts * 100) } else { 0 }
         $status      = switch ($score) {
             { $_ -ge 90 } { 'Excellent' }
             { $_ -ge 75 } { 'Good' }
@@ -150,9 +304,11 @@ function Invoke-RangerWafRuleEvaluation {
         })
     }
 
-    $allRules  = @($ruleResults)
-    $allPass   = @($allRules | Where-Object { $_.pass -eq $true }).Count
-    $overall   = if ($allRules.Count -gt 0) { [int][math]::Round($allPass / $allRules.Count * 100) } else { 0 }
+    $allRules     = @($ruleResults)
+    $allPass      = @($allRules | Where-Object { $_.pass -eq $true }).Count
+    $totalAwarded = [double](($allRules | Measure-Object -Property awardedPoints -Sum).Sum)
+    $totalMax     = [double](($allRules | Measure-Object -Property maxPoints     -Sum).Sum)
+    $overall      = if ($totalMax -gt 0) { [int][math]::Round($totalAwarded / $totalMax * 100) } else { 0 }
 
     return [ordered]@{
         pillarScores    = @($pillarScores)
