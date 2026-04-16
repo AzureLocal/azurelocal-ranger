@@ -63,7 +63,7 @@ Feature releases (minor version bumps) require documentation updates before merg
 | `CHANGELOG.md` | Every release — handled by release-please |
 | `README.md` | Version line, new top-level commands, install instructions |
 
-The [PR template](../../.github/PULL_REQUEST_TEMPLATE.md) includes a documentation checklist. All applicable items must be checked before a feature PR is merged.
+The PR template (`.github/PULL_REQUEST_TEMPLATE.md` in the repository root) includes a documentation checklist. All applicable items must be checked before a feature PR is merged.
 
 ## Backlog Hygiene
 
