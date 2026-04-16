@@ -81,6 +81,37 @@ function Invoke-AzureLocalRanger {
         Requires the PwshSpectreConsole module. Automatically suppressed in CI and
         Unattended mode. Overrides config output.showProgress.
 
+    .PARAMETER OutputMode
+        Report mode: current-state or as-built. Overrides config output.mode.
+
+    .PARAMETER OutputFormats
+        Comma-separated or array of formats to render: html, markdown, docx, xlsx, pdf, svg, drawio.
+        Overrides config output.formats.
+
+    .PARAMETER Transport
+        WinRM transport mode: auto, winrm, or arc. Overrides config behavior.transport.
+        auto tries WinRM first and falls back to Arc Run Command when nodes are unreachable.
+
+    .PARAMETER DegradationMode
+        How to handle collectors whose transport is unavailable: graceful or strict.
+        graceful skips with status skipped; strict fails the run. Overrides config behavior.degradationMode.
+
+    .PARAMETER RetryCount
+        Number of WinRM retry attempts per operation. Overrides config behavior.retryCount.
+
+    .PARAMETER TimeoutSeconds
+        WinRM operation timeout in seconds. Overrides config behavior.timeoutSeconds.
+
+    .PARAMETER AzureMethod
+        Azure authentication method: existing-context, managed-identity, device-code, service-principal,
+        or azure-cli. Overrides config credentials.azure.method.
+
+    .PARAMETER ClusterName
+        Display name for the cluster used in reports. Overrides config environment.clusterName.
+
+    .PARAMETER ResourceGroupLocation
+        Azure region for the resource group. Overrides config targets.azure.location when needed.
+
     .OUTPUTS
         System.Collections.Hashtable — the completed run manifest. Also writes report files
         to the output directory.
@@ -135,7 +166,28 @@ function Invoke-AzureLocalRanger {
         [string]$ResourceGroup,
 
         # Issue #76: show live progress bars during collector execution
-        [switch]$ShowProgress
+        [switch]$ShowProgress,
+
+        # Issue #171: full config key coverage as runtime parameters
+        [ValidateSet('current-state', 'as-built')]
+        [string]$OutputMode,
+
+        [string[]]$OutputFormats,
+
+        [ValidateSet('auto', 'winrm', 'arc')]
+        [string]$Transport,
+
+        [ValidateSet('graceful', 'strict')]
+        [string]$DegradationMode,
+
+        [int]$RetryCount,
+
+        [int]$TimeoutSeconds,
+
+        [ValidateSet('existing-context', 'managed-identity', 'device-code', 'service-principal', 'azure-cli')]
+        [string]$AzureMethod,
+
+        [string]$ClusterName
     )
 
     $credentialOverrides = @{
@@ -145,13 +197,21 @@ function Invoke-AzureLocalRanger {
     }
 
     $structuralOverrides = @{}
-    if ($PSBoundParameters.ContainsKey('ClusterFqdn'))     { $structuralOverrides['ClusterFqdn']     = $ClusterFqdn }
-    if ($PSBoundParameters.ContainsKey('ClusterNodes'))    { $structuralOverrides['ClusterNodes']    = $ClusterNodes }
-    if ($PSBoundParameters.ContainsKey('EnvironmentName')) { $structuralOverrides['EnvironmentName'] = $EnvironmentName }
-    if ($PSBoundParameters.ContainsKey('SubscriptionId'))  { $structuralOverrides['SubscriptionId']  = $SubscriptionId }
-    if ($PSBoundParameters.ContainsKey('TenantId'))        { $structuralOverrides['TenantId']        = $TenantId }
-    if ($PSBoundParameters.ContainsKey('ResourceGroup'))   { $structuralOverrides['ResourceGroup']   = $ResourceGroup }
-    if ($PSBoundParameters.ContainsKey('ShowProgress'))    { $structuralOverrides['ShowProgress']    = [bool]$ShowProgress }
+    if ($PSBoundParameters.ContainsKey('ClusterFqdn'))       { $structuralOverrides['ClusterFqdn']       = $ClusterFqdn }
+    if ($PSBoundParameters.ContainsKey('ClusterNodes'))      { $structuralOverrides['ClusterNodes']      = $ClusterNodes }
+    if ($PSBoundParameters.ContainsKey('EnvironmentName'))   { $structuralOverrides['EnvironmentName']   = $EnvironmentName }
+    if ($PSBoundParameters.ContainsKey('ClusterName'))       { $structuralOverrides['ClusterName']       = $ClusterName }
+    if ($PSBoundParameters.ContainsKey('SubscriptionId'))    { $structuralOverrides['SubscriptionId']    = $SubscriptionId }
+    if ($PSBoundParameters.ContainsKey('TenantId'))          { $structuralOverrides['TenantId']          = $TenantId }
+    if ($PSBoundParameters.ContainsKey('ResourceGroup'))     { $structuralOverrides['ResourceGroup']     = $ResourceGroup }
+    if ($PSBoundParameters.ContainsKey('ShowProgress'))      { $structuralOverrides['ShowProgress']      = [bool]$ShowProgress }
+    if ($PSBoundParameters.ContainsKey('OutputMode'))        { $structuralOverrides['OutputMode']        = $OutputMode }
+    if ($PSBoundParameters.ContainsKey('OutputFormats'))     { $structuralOverrides['OutputFormats']     = $OutputFormats }
+    if ($PSBoundParameters.ContainsKey('Transport'))         { $structuralOverrides['Transport']         = $Transport }
+    if ($PSBoundParameters.ContainsKey('DegradationMode'))   { $structuralOverrides['DegradationMode']   = $DegradationMode }
+    if ($PSBoundParameters.ContainsKey('RetryCount'))        { $structuralOverrides['RetryCount']        = $RetryCount }
+    if ($PSBoundParameters.ContainsKey('TimeoutSeconds'))    { $structuralOverrides['TimeoutSeconds']    = $TimeoutSeconds }
+    if ($PSBoundParameters.ContainsKey('AzureMethod'))       { $structuralOverrides['AzureMethod']       = $AzureMethod }
 
     Invoke-RangerDiscoveryRuntime -ConfigPath $ConfigPath -ConfigObject $ConfigObject -OutputPath $OutputPath -CredentialOverrides $credentialOverrides -IncludeDomains $IncludeDomain -ExcludeDomains $ExcludeDomain -NoRender:$NoRender -StructuralOverrides $structuralOverrides -AllowInteractiveInput:(-not $Unattended) -Unattended:$Unattended -BaselineManifestPath $BaselineManifestPath
 }

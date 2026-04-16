@@ -31,6 +31,40 @@ At the current maturity stage, documentation changes should generally land befor
 - the change depends on a new manifest or orchestration assumption
 - the change introduces a new Azure Local operating-mode assumption
 
+## Release Documentation Rule
+
+Feature releases (minor version bumps) require documentation updates before merge if any operator-visible behavior changes. Bug-only releases (patch bumps) may skip documentation if no operator-visible behavior changed.
+
+**Documentation is required when a change:**
+
+- Adds, removes, or renames a public command or parameter
+- Adds or removes a configuration key
+- Changes the default behavior of any flag or setting
+- Introduces a new prerequisite or dependency
+- Changes the manifest schema or adds new fields
+- Introduces a new deployment variant or transport mechanism
+- Adds a new output type or changes the format of an existing one
+
+**Pages to update and when:**
+
+| Page | Update when |
+| --- | --- |
+| `operator/quickstart.md` | New command, new required parameter, changed default run flow |
+| `prerequisites.md` | New dependency, new platform or version requirement |
+| `operator/prerequisites.md` | Same as above (installation section) |
+| `operator/authentication.md` | New auth mechanism, new RBAC requirement |
+| `operator/configuration.md` | Any new or removed config key |
+| `operator/command-reference.md` | Any public command or parameter change |
+| `operator/troubleshooting.md` | New known failure mode or error message |
+| `architecture/system-overview.md` | New transport, new entry point, protocol model change |
+| `architecture/how-ranger-works.md` | Runtime flow change, new pre-run step |
+| `architecture/audit-manifest.md` | Manifest schema change, new block or field |
+| `architecture/configuration-model.md` | Any config key added, removed, or changed |
+| `CHANGELOG.md` | Every release — handled by release-please |
+| `README.md` | Version line, new top-level commands, install instructions |
+
+The [PR template](../../.github/PULL_REQUEST_TEMPLATE.md) includes a documentation checklist. All applicable items must be checked before a feature PR is merged.
+
 ## Backlog Hygiene
 
 If a requirement is explicitly out of v1, it should stay visible as a roadmap item and preferably as its own issue.

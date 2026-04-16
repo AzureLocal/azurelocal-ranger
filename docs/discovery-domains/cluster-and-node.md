@@ -22,7 +22,7 @@ The cluster-and-node domain should document:
 The v1 collector writes to these named sections of the `clusterNode` manifest domain:
 
 | Sub-domain | Content |
-|---|---|
+| --- | --- |
 | `cluster` | Cluster identity, FQDN, domain posture, domain functional level, and operating system |
 | `nodes` | Node inventory — name, state, uptime, OS version, role posture, and site membership |
 | `quorum` | Quorum configuration, witness type, and witness path or resource |
@@ -59,7 +59,7 @@ This domain is the control point for:
 ## Connectivity and Credentials
 
 | Requirement | Purpose |
-|---|---|
+| --- | --- |
 | WinRM / PowerShell remoting to cluster nodes | Primary collection path |
 | Cluster credential | Required for cluster and node collection |
 | Azure credential | Optional when cluster registration state or Azure-side platform context is included |
@@ -91,6 +91,58 @@ Ranger should distinguish the cluster’s local control-plane posture from a nor
 ### Multi-Rack Preview
 
 Ranger should note that the environment is not a standard hyperconverged deployment and should preserve preview-specific topology markers separately.
+
+## Example Manifest Data
+
+A successful collect produces entries like this in `manifest.collectors`:
+
+```json
+{
+  "id": "clusterNode",
+  "status": "success",
+  "domains": {
+    "clusterNode": {
+      "cluster": {
+        "name": "tplabs-clus01",
+        "fqdn": "tplabs-clus01.contoso.com",
+        "domain": "contoso.com",
+        "osVersion": "10.0.26200",
+        "registrationState": "Registered"
+      },
+      "nodes": [
+        { "name": "tplabs-01-n01", "state": "Up", "uptimeDays": 14, "osVersion": "10.0.26200" },
+        { "name": "tplabs-01-n02", "state": "Up", "uptimeDays": 14, "osVersion": "10.0.26200" }
+      ],
+      "quorum": { "type": "NodeAndFileShareMajority", "witnessPath": "\\\\dc01\\quorum" },
+      "healthSummary": { "nodesUp": 4, "nodesDown": 0, "overallState": "Normal" }
+    }
+  }
+}
+```
+
+## Common Findings
+
+| Finding | Severity | What it means |
+| --- | --- | --- |
+| Node unreachable over WinRM | Warning | A configured node did not respond during collection; data for that node is absent |
+| Cluster not Arc-registered | Info | Azure-side Arc cluster resource is missing; Azure integration collectors will be limited |
+| Nodes on different OS versions | Warning | Mixed OS versions detected; may indicate a stalled update cycle |
+| CAU not configured | Info | Cluster-Aware Updating is absent; patching may be manual |
+| Quorum witness unreachable | Warning | File share or cloud witness could not be validated |
+
+## Partial Status
+
+`status: partial` on the cluster-and-node collector means one or more sub-collectors failed while others succeeded. Common causes:
+
+- One or more nodes unreachable (node sub-collector returns partial data; cluster-level facts still collected)
+- CAU or update posture query times out (main cluster and node inventory still complete)
+- Arc registration context unavailable (cluster facts collected; Azure-side Arc context absent)
+
+In all partial cases, the data that was collected is valid and can be used. Check `manifest.collectors[*].messages` for the specific sub-section that failed.
+
+## Domain Dependencies
+
+The cluster-and-node domain is a prerequisite for almost everything else. Collectors for storage, networking, VMs, and identity all depend on a valid node list from this domain. If it fails entirely, expect cascading `failed` or `partial` status on downstream collectors.
 
 ## Evidence Boundaries
 

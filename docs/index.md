@@ -29,27 +29,29 @@ If you are new to Ranger, the cleanest path through the docs is:
 
 ## Current Project Phase
 
-AzureLocalRanger is at **v1.2.0**. This release delivers the UX & Transport milestone: Arc Run Command transport, disconnected/semi-connected discovery, Spectre.Console TUI progress display, and the interactive configuration wizard (`Invoke-RangerWizard`).
+AzureLocalRanger is at **v1.2.1**. Install from PSGallery:
 
 ```powershell
-Import-Module .\AzureLocalRanger.psd1 -Force
-Invoke-AzureLocalRanger -ConfigPath .\ranger.yml
+Install-Module AzureLocalRanger -Scope CurrentUser -Force
+Import-Module AzureLocalRanger
+Invoke-RangerWizard
 ```
-
-See the [Prerequisites](prerequisites.md), [Quickstart](operator/quickstart.md), and [Command Reference](operator/command-reference.md) pages for installation and first-run instructions.
 
 ## Where To Start
 
+!!! tip "New here?"
+    Start with the [First Run](operator/first-run.md) guide — it takes you from install to finished output in six steps with no decisions to make.
+
 | Audience | Start Here |
-|----------|------------|
+| --- | --- |
+| **New operators** | [First Run](operator/first-run.md) |
+| **Returning operators** | [Command Reference](operator/command-reference.md) — common scenarios |
+| **Configuring a new environment** | [Wizard Guide](operator/wizard-guide.md) |
+| **Reading your results** | [Understanding Output](operator/understanding-output.md) |
+| **Config file questions** | [Configuration Reference](operator/configuration-reference.md) |
 | Everyone | [What Ranger Is](what-ranger-is.md) |
-| Everyone | [Ranger vs Scout](ranger-vs-scout.md) |
 | Everyone | [Scope Boundary](scope-boundary.md) |
-| Everyone | [Deployment Variants](deployment-variants.md) |
 | Architects and operators | [Architecture Overview](architecture/system-overview.md) |
 | Architects and operators | [Discovery Domain Pages](discovery-domains/cluster-and-node.md) |
 | Project and repo readers | [Roadmap](project/roadmap.md) |
-| Project and repo readers | [Documentation Roadmap](project/documentation-roadmap.md) |
-| Project and repo readers | [Repository Structure](project/repository-structure.md) |
 | Contributors | [Getting Started](contributor/getting-started.md) |
-| Contributors | [Contributing](contributor/contributing.md) |

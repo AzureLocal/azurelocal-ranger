@@ -1,8 +1,8 @@
 # Project Status
 
-## Current Release Track — v1.2.0
+## Current Release Track — v1.2.1
 
-AzureLocalRanger v1.2.0 is the current release — the v1.2.0 UX & Transport milestone. It delivers Arc Run Command transport, disconnected/semi-connected discovery, Spectre.Console TUI progress display, and the interactive configuration wizard.
+AzureLocalRanger v1.2.1 is the current release — a patch on the v1.2.0 UX & Transport milestone. It delivers all v1.2.0 features plus fixes for Redfish 404 retry behaviour, hardware collector partial status, ShowProgress default-on, and prerequisite output formatting.
 
 ```powershell
 Install-Module AzureLocalRanger -Force
@@ -24,11 +24,11 @@ Import-Module AzureLocalRanger
 | Disconnected discovery | ✅ Complete — pre-run connectivity matrix, graceful skip, posture classification |
 | Spectre TUI progress | ✅ Complete — PwshSpectreConsole live bars, Write-Progress fallback, CI-safe |
 | Interactive wizard | ✅ Complete — Invoke-RangerWizard guided config + run |
-| Pester test suite | ✅ 20 regression unit tests + 42 total tests passing |
+| Pester test suite | ✅ 74 tests passing |
 | Field validation (TRAILHEAD) | ✅ v1.1.2 gate closed — all 6 collectors succeeded, zero auth retries |
 | Report output (HTML/Markdown/JSON/DOCX/XLSX/PDF) | ✅ Complete |
 | Diagram output (SVG/draw.io) | ✅ Complete |
-| PSGallery release | ✅ `1.2.0` current on PSGallery |
+| PSGallery release | ✅ `1.2.1` current on PSGallery |
 | Arc-first node inventory | ✅ Complete |
 | Domain auto-detection | ✅ Complete |
 | Parameter-first input model | ✅ Complete |

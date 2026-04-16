@@ -8,7 +8,18 @@ Ranger supports two outcomes through one discovery engine:
 - **Current-state** — recurring operational snapshot of a live Azure Local deployment
 - **As-built** — formal documentation package for customer or operational handoff
 
-## Current Release — v1.2.0
+## Current Release — v1.2.1
+
+Released April 2026. Patch release fixing four regressions in the v1.2.0 UX & Transport milestone.
+
+| Area | What shipped |
+| --- | --- |
+| Redfish 404 retry (#172) | 4xx responses from Redfish endpoints no longer trigger retries; `Invoke-RangerRetry` extended with `-ShouldRetry` scriptblock |
+| Hardware partial status (#173) | Hardware collector status is `partial` rather than `success` when any Redfish endpoint returns a 404; warning finding added |
+| ShowProgress default-on (#170) | Progress display enabled by default without any config key or `-ShowProgress` switch; opt out with `output.showProgress: false` |
+| Prerequisite output (#169) | `Test-AzureLocalRangerPrerequisites` renders a colour-coded table (Pass/Warn/FAIL) for interactive use; optional checks for `Az.ConnectedMachine` and `PwshSpectreConsole` added |
+
+## Previous Release — v1.2.0
 
 Released April 2026. UX & Transport milestone delivering Arc Run Command transport, disconnected discovery, Spectre.Console TUI progress, and interactive configuration wizard.
 
@@ -54,16 +65,13 @@ Released April 2026. Post-release patch for the no-config prerequisite-check reg
 | Public documentation | Product, architecture, operator, discovery domain, output, and contributor docs under `docs/` |
 | Patch hardening | `Test-AzureLocalRangerPrerequisites` no longer throws when run without a config object or path |
 
-## Next Release — v1.2.0
+## Next Release — v1.3.0
 
-Focus: UX and alternate transport improvements after the v1.1.0 milestone closeout.
+Focus: Full config-parameter coverage — every configuration key exposed as a direct command parameter so operators can drive runs without a YAML file.
 
-| Item | Detail | Status |
+| Item | Detail | Issue |
 | --- | --- | --- |
-| Interactive configuration wizard | Guided terminal wizard with parameter passthrough for headless and assisted runs ([#75](https://github.com/AzureLocal/azurelocal-ranger/issues/75)) | 🔵 Planned |
-| Terminal TUI scan progress | Rich live progress display for collection and findings ([#76](https://github.com/AzureLocal/azurelocal-ranger/issues/76)) | 🔵 Planned |
-| Arc Run Command transport | Alternate collection path when WinRM is blocked ([#26](https://github.com/AzureLocal/azurelocal-ranger/issues/26)) | 🔵 Planned |
-| Disconnected / semi-connected discovery | Graceful degradation and disconnected-mode coverage ([#30](https://github.com/AzureLocal/azurelocal-ranger/issues/30)) | 🔵 Planned |
+| Full config parameter coverage | All `behavior.*`, `output.*`, `scope.*`, and `azure.*` config keys available as direct parameters on `Invoke-AzureLocalRanger` | [#171](https://github.com/AzureLocal/azurelocal-ranger/issues/171) |
 
 ## Backlog
 
@@ -71,18 +79,13 @@ Open features tracked as GitHub issues. All are implementation targets — no it
 
 | Item | Detail | Issue |
 | --- | --- | --- |
-| Arc Run Command transport | Use Azure Arc Run Command as an alternate collection channel for environments where WinRM is blocked | [#26](https://github.com/AzureLocal/azurelocal-ranger/issues/26) |
 | Direct switch interrogation | SSH/RESTCONF/NETCONF collection from Dell OS10, Arista EOS, Cisco Nexus, and other ToR switches | [#27](https://github.com/AzureLocal/azurelocal-ranger/issues/27) |
 | Direct firewall interrogation | Collect firewall policy directly from Palo Alto, FortiGate, Cisco ASA, pfSense, and other appliances | [#28](https://github.com/AzureLocal/azurelocal-ranger/issues/28) |
 | Non-Dell OEM hardware support | Hardware inventory collectors for HPE iLO, Lenovo XClarity, and DataON via Redfish | [#29](https://github.com/AzureLocal/azurelocal-ranger/issues/29) |
-| Disconnected / semi-connected discovery | Graceful degradation and enriched collection for environments with limited or no Azure connectivity | [#30](https://github.com/AzureLocal/azurelocal-ranger/issues/30) |
 | Multi-rack Azure Local discovery | Rack topology, SAN storage, compute rack correlation, northbound connectivity for rack-scale deployments | [#31](https://github.com/AzureLocal/azurelocal-ranger/issues/31) |
 | Azure-hosted automation worker | Run Ranger from an Azure Automation account or hosted runner without a local PowerShell session | [#25](https://github.com/AzureLocal/azurelocal-ranger/issues/25) |
 | Manual import workflows | Accept externally gathered data for environments where automated collection is not authorized | [#32](https://github.com/AzureLocal/azurelocal-ranger/issues/32) |
 | Windows PowerShell 5.1 compatibility | Assess and implement compatibility without distorting the PowerShell 7 architecture | [#33](https://github.com/AzureLocal/azurelocal-ranger/issues/33) |
-| Interactive configuration wizard | Guided terminal wizard (`Invoke-RangerWizard`) with domain selection, presets, and full parameter passthrough for headless use | [#75](https://github.com/AzureLocal/azurelocal-ranger/issues/75) |
-| Terminal TUI scan progress | Rich live progress display while collection runs — per-collector bars, spinner, real-time findings count, ANSI fallback for CI | [#76](https://github.com/AzureLocal/azurelocal-ranger/issues/76) |
-| Terminal TUI library survey | Evaluate Spectre.Console, Terminal.Gui/ConsoleGuiTools, Sharprompt, and alternatives before committing to #76 | [#77](https://github.com/AzureLocal/azurelocal-ranger/issues/77) |
 | Baseline comparison and drift detection | Compare a new discovery run against a previous manifest; surface added, removed, and changed findings | [#123](https://github.com/AzureLocal/azurelocal-ranger/issues/123) |
 | Scheduled and automated recurring discovery | Task Scheduler XML template, GitHub Actions sample, and unattended invocation mode for recurring runs | [#124](https://github.com/AzureLocal/azurelocal-ranger/issues/124) |
 | Incremental document update mode (research) | Design a supported update mode so teams can refresh an existing as-built or current-state package rather than generating net-new documents on every run | [#131](https://github.com/AzureLocal/azurelocal-ranger/issues/131) |

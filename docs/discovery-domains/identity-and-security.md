@@ -21,7 +21,7 @@ The identity-and-security domain should document:
 The v1 collector writes to these named sections of the `identitySecurity` manifest domain:
 
 | Sub-domain | Content |
-|---|---|
+| --- | --- |
 | `activeDirectory` | Domain name, forest, domain-functional level, OU placement, CNO/VCO context, and AD health signals |
 | `certificates` | Certificate inventory, expiry posture, TLS bindings, and secret-backup dependency signals |
 | `keyVault` | Key Vault name, secret-backup extension state, required role assignments, and managed identity binding for local-identity deployments |
@@ -48,7 +48,7 @@ Security and trust posture are part of both operational understanding and handof
 ## Connectivity and Credentials
 
 | Requirement | Purpose |
-|---|---|
+| --- | --- |
 | WinRM / PowerShell remoting | Host security, certificate, and local-policy discovery |
 | Cluster credential | Required for host-side collection |
 | Domain credential | Required when AD-specific discovery is in scope |
@@ -83,6 +83,62 @@ Ranger should distinguish Azure public-cloud RBAC and policy from local disconne
 ### Multi-Rack Preview
 
 Security posture still matters, but the environment may rely more heavily on preview-specific Azure-managed infrastructure layers that should be documented clearly.
+
+## Example Manifest Data
+
+A successful collect produces entries like this:
+
+```json
+{
+  "id": "identitySecurity",
+  "status": "success",
+  "domains": {
+    "identitySecurity": {
+      "activeDirectory": {
+        "domain": "contoso.com",
+        "domainFunctionalLevel": "Windows2016Domain",
+        "ouPath": "OU=AzureLocal,DC=contoso,DC=com"
+      },
+      "bitLocker": {
+        "volumes": [
+          { "node": "tplabs-01-n01", "driveLetter": "C:", "encryptionMethod": "XtsAes256",
+            "protectionStatus": "On", "keyBackedToAD": true }
+        ]
+      },
+      "defender": {
+        "nodes": [
+          { "host": "tplabs-01-n01", "amRunning": true, "rtpEnabled": true,
+            "signatureAge": 0, "exclusionCount": 4 }
+        ]
+      }
+    }
+  }
+}
+```
+
+## Common Findings
+
+| Finding | Severity | What it means |
+| --- | --- | --- |
+| BitLocker not enabled on one or more nodes | Warning | Host volume is unencrypted; relevant for security posture and compliance |
+| BitLocker recovery key not backed up to AD | Warning | Recovery key may be lost if the node fails before a manual backup |
+| Defender real-time protection disabled | Warning | Host is not actively protected; investigate before documenting as intentional |
+| Defender signatures out of date | Warning | AV signatures are stale; update path may be blocked or delayed |
+| Certificate expiring within 30 days | Warning | One or more certificates are near expiry; plan renewal to avoid service disruption |
+
+## Partial Status
+
+`status: partial` on the identity-security collector means:
+
+- AD queries failed (domain unreachable or permissions missing) while host security facts (BitLocker, Defender) succeeded
+- Azure RBAC or policy queries failed while local identity data succeeded
+- Key Vault extension checks failed in a local-identity deployment
+
+Local security posture (BitLocker, Defender, WDAC) is collected independently of AD queries. AD absence does not prevent host security data from being collected.
+
+## Domain Dependencies
+
+No hard dependency on other collectors. Azure RBAC and policy sections benefit from the azure-integration domain context but collect independently.
 
 ## Evidence Boundaries
 

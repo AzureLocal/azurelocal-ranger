@@ -19,7 +19,7 @@ The storage domain should document:
 The v1 collector writes to these named sections of the `storage` manifest domain:
 
 | Sub-domain | Content |
-|---|---|
+| --- | --- |
 | `pools` | Storage pool inventory — health, operational status, size, and allocation |
 | `physicalDisks` | Physical disk inventory — media type, serial number, health, and usage classification |
 | `virtualDisks` | Virtual disk inventory — resiliency setting, health, size, and pool footprint |
@@ -45,7 +45,7 @@ Storage is one of the most important parts of an Azure Local as-built package be
 ## Connectivity and Credentials
 
 | Requirement | Purpose |
-|---|---|
+| --- | --- |
 | WinRM / PowerShell remoting | Primary storage discovery path |
 | Cluster credential | Required |
 
@@ -74,6 +74,59 @@ Disconnected control-plane mode does not remove the need for local storage disco
 ### Multi-Rack Preview
 
 Multi-rack preview is not the same as standard S2D hyperconverged storage. Ranger should preserve SAN-backed or shared-storage characteristics separately rather than forcing them into an S2D-only interpretation.
+
+## Example Manifest Data
+
+A successful collect produces entries like this:
+
+```json
+{
+  "id": "storageNetworking",
+  "status": "success",
+  "domains": {
+    "storage": {
+      "pools": [
+        { "name": "S2D on tplabs-clus01", "health": "Healthy", "operationalStatus": "OK",
+          "size": 43980465111040, "allocated": 21474836480 }
+      ],
+      "physicalDisks": [
+        { "friendlyName": "SAMSUNG MZWLL1T6HEHP", "mediaType": "SSD", "health": "Healthy",
+          "usage": "CacheOrJournal", "serialNumber": "S3EVNX0K123456" }
+      ],
+      "volumes": [
+        { "path": "\\\\?\\Volume{abc123}", "label": "ClusterPerformanceHistory",
+          "health": "Healthy", "sizeGB": 10, "fileSystem": "ReFS" }
+      ],
+      "summary": { "poolCount": 1, "physicalDiskCount": 16, "volumeCount": 6,
+                   "totalCapacityTB": 43.98, "ssdCount": 16, "hddCount": 0 }
+    }
+  }
+}
+```
+
+## Common Findings
+
+| Finding | Severity | What it means |
+| --- | --- | --- |
+| Physical disk in unhealthy state | Error | One or more drives are degraded or failed; resiliency may be reduced |
+| Storage pool has active repair job | Warning | Data rebuild in progress; performance may be degraded and cluster is temporarily less resilient |
+| Volume health not Healthy | Warning | A volume is degraded or has faults; investigate before running workloads |
+| No CSVs detected | Info | Cluster Shared Volumes absent; expected in non-S2D or minimal configurations |
+| Storage QoS not configured | Info | No QoS policies defined; workload IOPS are uncapped |
+
+## Partial Status
+
+`status: partial` on the storage collector means some sub-collectors failed. Common causes:
+
+- QoS or Storage Replica query fails while pool, disk, and volume data succeeds — the inventory data is still valid
+- One node is unreachable so per-node disk views are incomplete but the overall pool picture is accurate
+- CSV state query times out — volumes and pool data still collected
+
+Check `manifest.collectors[*].messages` to see exactly which sub-section returned incomplete data.
+
+## Domain Dependencies
+
+Depends on the cluster-and-node domain for a resolved node list. If cluster-and-node is `failed`, storage collection attempts may fail or return incomplete results.
 
 ## Evidence Boundaries
 

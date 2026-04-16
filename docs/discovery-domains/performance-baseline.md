@@ -19,7 +19,7 @@ The performance-baseline domain should document:
 The v1 collector writes to these named sections of the `performance` manifest domain:
 
 | Sub-domain | Content |
-|---|---|
+| --- | --- |
 | `nodes` | Per-node CPU utilization, memory pressure, and uptime snapshot |
 | `compute` | Cluster-wide vCPU and memory allocation vs. capacity with overcommit indicators |
 | `storage` | Storage IOPS, throughput, latency, and cache hit-ratio baselines |
@@ -44,7 +44,7 @@ Ranger should not stop at static inventory. A short-horizon operational baseline
 ## Connectivity and Credentials
 
 | Requirement | Purpose |
-|---|---|
+| --- | --- |
 | WinRM / PowerShell remoting | Host-side performance and event data |
 | Cluster credential | Required |
 | Optional Azure credential | Useful for Azure Monitor, metrics, alerts, and HCI Insights correlation |
@@ -68,6 +68,58 @@ Monitoring paths differ because local control-plane observability matters more t
 ### Multi-Rack Preview
 
 Performance interpretation may need to respect managed networking and SAN-backed storage rather than assuming standard hyperconverged behaviors.
+
+## Example Manifest Data
+
+A successful collect produces entries like this:
+
+```json
+{
+  "id": "managementPerformance",
+  "status": "success",
+  "domains": {
+    "performance": {
+      "nodes": [
+        { "host": "tplabs-01-n01", "cpuUsagePercent": 12.4, "memoryUsedGB": 148,
+          "memoryTotalGB": 256, "uptimeDays": 14 },
+        { "host": "tplabs-01-n02", "cpuUsagePercent": 8.1, "memoryUsedGB": 132,
+          "memoryTotalGB": 256, "uptimeDays": 14 }
+      ],
+      "storage": {
+        "iopsRead": 4821, "iopsWrite": 2310,
+        "latencyReadMs": 0.4, "latencyWriteMs": 0.6,
+        "cacheHitRatePercent": 94.2
+      },
+      "outliers": [],
+      "summary": { "highCpuNodeCount": 0, "highMemoryNodeCount": 0, "activeAlertCount": 0 }
+    }
+  }
+}
+```
+
+## Common Findings
+
+| Finding | Severity | What it means |
+| --- | --- | --- |
+| Node CPU utilization above 80% | Warning | Host is under significant compute load at time of collection; investigate workload distribution |
+| Node memory utilization above 90% | Warning | Memory pressure detected; workload consolidation may be needed |
+| Storage latency above threshold | Warning | Read or write latency is elevated; investigate cache hit rate and disk health |
+| Storage cache hit rate below 80% | Warning | Cache is not effective; working set may exceed cache capacity |
+| Active Health Service alerts | Warning | Cluster has open health faults; investigate before treating run data as a clean baseline |
+
+## Partial Status
+
+`status: partial` on the performance collector means:
+
+- Per-node CPU/memory snapshots succeeded on some nodes but not others
+- Azure Monitor overlay (HCI Insights, DCR state) failed while local performance counters succeeded — local baseline is still valid
+- Event-log aggregation timed out while compute and storage metrics succeeded
+
+Local performance snapshots are collected independently of Azure Monitor. Azure Monitor absence does not invalidate the on-premises performance baseline.
+
+## Domain Dependencies
+
+Depends on the cluster-and-node domain for a node list. Azure Monitor overlay sections also depend on valid `targets.azure` configuration and an active Azure credential.
 
 ## Evidence Boundaries
 

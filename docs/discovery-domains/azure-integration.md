@@ -20,7 +20,7 @@ The Azure-integration domain should document:
 The v1 collector writes to these named sections of the `azureIntegration` manifest domain:
 
 | Sub-domain | Content |
-|---|---|
+| --- | --- |
 | `arcCluster` | Arc registration ID, subscription, resource group, region, connected agent version, and cluster identity |
 | `resourceBridge` | Arc Resource Bridge deployment state, appliance VM identity, and custom location binding |
 | `customLocations` | Custom location name, namespace, and supported resource types |
@@ -48,7 +48,7 @@ Azure Local creates and depends on Azure-side resources. Those resources are par
 ## Connectivity and Credentials
 
 | Requirement | Purpose |
-|---|---|
+| --- | --- |
 | Azure credential | Required for Azure-side discovery |
 | Optional cluster credential | Useful when Azure-side findings need to be correlated to cluster state |
 
@@ -75,6 +75,62 @@ The Azure-integration model changes substantially. Ranger should document the lo
 ### Multi-Rack Preview
 
 Current Microsoft documentation describes preview-specific Azure-managed networking and platform layers for multi-rack. Ranger should preserve those as a variant-specific Azure-integration posture.
+
+## Example Manifest Data
+
+A successful collect produces entries like this:
+
+```json
+{
+  "id": "azureIntegration",
+  "status": "success",
+  "domains": {
+    "azureIntegration": {
+      "arcCluster": {
+        "resourceId": "/subscriptions/00000000.../resourceGroups/rg-azlocal-prod-01/providers/Microsoft.AzureStackHCI/clusters/tplabs-clus01",
+        "region": "eastus",
+        "connectedAgentVersion": "1.38.0",
+        "registrationState": "Registered"
+      },
+      "extensions": [
+        { "name": "AzureMonitorWindowsAgent", "version": "1.22.0",
+          "provisioningState": "Succeeded", "autoUpgrade": true },
+        { "name": "MicrosoftDefenderAtCloudServer", "version": "1.0.0",
+          "provisioningState": "Succeeded" }
+      ],
+      "monitoring": {
+        "amaDeployed": true,
+        "logAnalyticsWorkspaceId": "/subscriptions/.../workspaces/law-tplabs"
+      },
+      "updateManager": { "policyAssigned": true, "complianceState": "Compliant" }
+    }
+  }
+}
+```
+
+## Common Findings
+
+| Finding | Severity | What it means |
+| --- | --- | --- |
+| Arc cluster not registered | Error | Cluster has no Azure Arc registration; all Azure-side management and monitoring is unavailable |
+| Arc extension in failed state | Warning | One or more extensions failed to install or update; Azure features may be degraded |
+| Azure Monitor agent not deployed | Warning | No AMA on cluster nodes; Azure Monitor, HCI Insights, and Defender for Cloud signals are absent |
+| No Azure Policy assigned | Info | No policy governance on this cluster; compliance posture is undocumented from Azure perspective |
+| Arc Resource Bridge not deployed | Info | Arc VMs and Arc Data Services are not available on this cluster |
+
+## Partial Status
+
+`status: partial` on the azure-integration collector means:
+
+- Some Azure sub-collectors failed (e.g., ASR query throws) while core Arc and extension data succeeded
+- Azure credential was available but lacked permissions to one specific resource type (e.g., Backup vault)
+- Resource Bridge or custom location queries returned no data because those features aren't deployed
+
+The Arc cluster registration, extension, and monitoring sections are the most critical. Backup, ASR, and policy sections failing partially is usually expected in environments that don't use all Azure services.
+
+## Domain Dependencies
+
+Requires an active Azure credential and valid `targets.azure` configuration. No dependency on WinRM — collects entirely from Azure APIs. Some sections correlate with data from the cluster-and-node domain (node list for Arc machine matching).
 
 ## Evidence Boundaries
 

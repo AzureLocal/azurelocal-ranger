@@ -20,7 +20,7 @@ The networking domain should document:
 The v1 collector writes to these named sections of the `networking` manifest domain:
 
 | Sub-domain | Content |
-|---|---|
+| --- | --- |
 | `nodes` | Per-node networking raw snapshot, indexed by host name |
 | `clusterNetworks` | Cluster network objects, roles, and address ranges |
 | `adapters` | Physical and virtual network adapters across all nodes |
@@ -54,7 +54,7 @@ Inherited Azure Local environments are frequently hard to understand because the
 ## Connectivity and Credentials
 
 | Requirement | Purpose |
-|---|---|
+| --- | --- |
 | WinRM / PowerShell remoting | Primary host-network and SDN discovery path |
 | Cluster credential | Required |
 | Optional switch or firewall targets and credentials | Future direct device interrogation |
@@ -90,6 +90,56 @@ Azure public-cloud reachability assumptions change significantly. Ranger should 
 ### Multi-Rack Preview
 
 Current Microsoft documentation describes managed networking through Azure APIs and ARM for multi-rack preview. Ranger should reflect that as a different networking posture from customer-managed hyperconverged networking.
+
+## Example Manifest Data
+
+A successful collect produces entries like this:
+
+```json
+{
+  "id": "storageNetworking",
+  "status": "success",
+  "domains": {
+    "networking": {
+      "vSwitches": [
+        { "name": "ConvergedSwitch", "switchType": "External", "teamingMode": "SwitchIndependent",
+          "loadBalancingAlgorithm": "HyperVPort", "teamMembers": ["NIC1","NIC2"] }
+      ],
+      "intents": [
+        { "name": "Compute_Management_Storage", "trafficType": ["Compute","Management","Storage"],
+          "adapter": ["NIC1","NIC2"] }
+      ],
+      "clusterNetworks": [
+        { "name": "Cluster Network 1", "role": "ClusterAndClient", "addressFamily": "IPv4",
+          "address": "192.168.211.0", "prefixLength": 24 }
+      ],
+      "summary": { "nodeCount": 4, "vSwitchCount": 1, "intentCount": 1, "dnsServerCount": 2 }
+    }
+  }
+}
+```
+
+## Common Findings
+
+| Finding | Severity | What it means |
+| --- | --- | --- |
+| RDMA not enabled on storage adapters | Warning | Storage traffic is running over TCP rather than RDMA; latency and throughput may be suboptimal |
+| Network ATC intent not configured | Info | Networking is manually configured rather than intent-driven; drift risk is higher |
+| Asymmetric adapter count across nodes | Warning | Nodes have different numbers of physical adapters; check for missing or failed hardware |
+| Windows Firewall disabled on any profile | Warning | Host firewall is off; expected in some environments but worth documenting |
+| Proxy configured on nodes | Info | Outbound traffic routes through a proxy; verify Azure endpoints are reachable |
+
+## Partial Status
+
+`status: partial` on the networking collector typically means:
+
+- One or more nodes were unreachable so their per-node network snapshot is missing; cluster network and vSwitch data still collected
+- SDN discovery failed while host-side networking data succeeded — SDN sub-section is absent but all other networking facts are valid
+- Switch or firewall config import failed when `networkDeviceConfigs` hints were provided
+
+## Domain Dependencies
+
+Depends on the cluster-and-node domain for a resolved node list. Independent of the storage sub-collector — storage and networking share a collector but each sub-domain can succeed or fail independently.
 
 ## Evidence Boundaries
 

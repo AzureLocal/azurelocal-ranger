@@ -108,12 +108,16 @@ nav:
     - Reports: outputs/reports.md
     - As-Built Package: outputs/as-built-package.md
   - Operator Guide:
+    - First Run: operator/first-run.md
     - Quickstart: operator/quickstart.md
     - Prerequisites: prerequisites.md
     - Installation and First Run: operator/prerequisites.md
+    - Wizard Guide: operator/wizard-guide.md
     - Authentication: operator/authentication.md
     - Configuration: operator/configuration.md
+    - Configuration Reference: operator/configuration-reference.md
     - Command Reference: operator/command-reference.md
+    - Understanding Output: operator/understanding-output.md
     - Troubleshooting: operator/troubleshooting.md
   - Project:
     - Status: project/status.md

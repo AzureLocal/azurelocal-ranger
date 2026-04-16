@@ -16,7 +16,7 @@ The OEM-integration domain should document:
 The v1 collector writes to these named sections of the `oemIntegration` manifest domain:
 
 | Sub-domain | Content |
-|---|---|
+| --- | --- |
 | `endpoints` | OEM management endpoint inventory — BMC addresses, node associations, and reachability |
 | `managementPosture` | OEM platform-management tool detection — Dell OpenManage, Lenovo XClarity, HPE tooling, or absence of OEM management |
 
@@ -36,7 +36,7 @@ OEM tooling often holds the most actionable hardware lifecycle and support signa
 ## Connectivity and Credentials
 
 | Requirement | Purpose |
-|---|---|
+| --- | --- |
 | Redfish or BMC reachability | Common source for OEM posture |
 | BMC credential | Usually required |
 | Optional host credential | Useful when OEM agents or integrations are visible from the OS |
@@ -48,6 +48,53 @@ This domain is optional by default. It should run when OEM endpoints or OEM tool
 ## Variant Behavior
 
 Variant changes here are usually secondary to hardware and networking changes, but Ranger should still document when a variant changes what OEM surfaces are expected or relevant.
+
+## Example Manifest Data
+
+A successful collect produces entries like this:
+
+```json
+{
+  "id": "oemIntegration",
+  "status": "success",
+  "domains": {
+    "oemIntegration": {
+      "endpoints": [
+        { "host": "idrac-node-01.contoso.com", "reachable": true, "vendor": "Dell" },
+        { "host": "idrac-node-02.contoso.com", "reachable": true, "vendor": "Dell" }
+      ],
+      "managementPosture": {
+        "vendor": "Dell",
+        "toolingDetected": "OpenManage Enterprise",
+        "openManageVersion": "3.10.0",
+        "lifecycleControllerVersion": "6.10.30.20"
+      }
+    }
+  }
+}
+```
+
+## Common Findings
+
+| Finding | Severity | What it means |
+| --- | --- | --- |
+| BMC endpoint unreachable | Warning | One or more iDRAC/BMC endpoints did not respond; hardware and OEM data is incomplete for those nodes |
+| OpenManage Enterprise not detected | Info | Dell OEM management layer is absent or not discoverable; lifecycle and firmware catalog data unavailable |
+| Lifecycle Controller version below minimum | Warning | LC firmware may be missing features required by current iDRAC or operating-system management paths |
+| No OEM management tooling detected | Info | Environment has no detected OEM management platform; all hardware lifecycle is managed directly via BMC/Redfish |
+
+## Partial Status
+
+`status: partial` on the OEM-integration collector means:
+
+- Some BMC endpoints were reachable while others were not; reachable nodes have full OEM data, unreachable nodes show as skipped
+- OEM management tool detection succeeded but license or version detail queries failed
+
+This domain is optional by default. If no BMC targets are configured, it reports `skipped`, not `partial` or `failed`.
+
+## Domain Dependencies
+
+Independent of WinRM-based collectors. Requires BMC endpoints in `targets.bmc` and a valid `credentials.bmc` to produce meaningful data. Benefits from the hardware domain for firmware corroboration but runs independently.
 
 ## Evidence Boundaries
 

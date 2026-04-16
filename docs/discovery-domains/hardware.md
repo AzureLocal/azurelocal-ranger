@@ -21,7 +21,7 @@ The hardware domain should document:
 The v1 collector writes to these named sections of the `hardware` manifest domain:
 
 | Sub-domain | Content |
-|---|---|
+| --- | --- |
 | `nodes` | Per-node hardware inventory — manufacturer, model, serial number, service tag, BIOS, firmware, BMC version, processors, memory, NIC, and disk controller |
 | `firmware` | Concatenated firmware posture across nodes — BIOS, BMC, NIC, and disk controller versions |
 | `security` | Hardware-layer security posture — Secure Boot state, TPM version, UEFI mode, and virtualization extensions |
@@ -49,7 +49,7 @@ Hardware facts affect:
 ## Connectivity and Credentials
 
 | Requirement | Purpose |
-|---|---|
+| --- | --- |
 | HTTPS to BMC or iDRAC endpoints | Primary hardware-discovery path |
 | Redfish credential | Required for Dell-first v1 discovery |
 | Optional cluster credential | Useful for limited host-side corroboration when BMC access is absent |
@@ -77,6 +77,61 @@ Disconnected operation changes the control plane, not the BMC protocol. Hardware
 ### Multi-Rack Preview
 
 Multi-rack preview changes the physical topology and storage assumptions. Hardware inventory remains important, but some platform architecture interpretation moves into the variant and networking domains.
+
+## Example Manifest Data
+
+A successful collect produces entries like this:
+
+```json
+{
+  "id": "hardware",
+  "status": "success",
+  "domains": {
+    "hardware": {
+      "nodes": [
+        {
+          "host": "tplabs-01-n01",
+          "manufacturer": "Dell Inc.",
+          "model": "PowerEdge AX-760",
+          "serialNumber": "ABC1234",
+          "serviceTag": "ABC1234",
+          "biosVersion": "1.5.4",
+          "bmcVersion": "6.10.30.20",
+          "processors": [{ "model": "Intel Xeon Gold 6338", "cores": 32, "count": 2 }],
+          "memoryGB": 256,
+          "secureBoot": true,
+          "tpmVersion": "2.0"
+        }
+      ],
+      "summary": { "nodeCount": 4, "manufacturer": "Dell Inc.", "model": "PowerEdge AX-760" }
+    }
+  }
+}
+```
+
+## Common Findings
+
+| Finding | Severity | What it means |
+| --- | --- | --- |
+| One or more Redfish endpoints returned 404 | Warning | Redfish endpoint not supported by this firmware version; hardware data is incomplete for affected nodes |
+| BMC firmware below recommended version | Warning | iDRAC firmware may be missing features or have known issues; consider updating |
+| Secure Boot disabled | Warning | Host is not in a secured-core posture; relevant for compliance and security documentation |
+| TPM not present or version 1.2 | Warning | TPM 2.0 required for BitLocker and some Azure Arc features |
+| Mixed hardware models in cluster | Info | Nodes are not uniform; note for capacity planning and supportability |
+
+## Partial Status
+
+`status: partial` means Redfish data was returned for some nodes but not all, or some Redfish endpoints returned errors (typically 404):
+
+- BMC unreachable for one node — that node's hardware data is absent; others are complete
+- Specific Redfish endpoint (e.g., `PCIeDevices`) returned 404 — host-level inventory is complete but that sub-section is missing
+- WinRM fallback succeeded for basic hardware facts but Redfish-only data (BMC firmware, DIMM detail) is absent
+
+A warning finding is added to the manifest when Redfish endpoints return errors. Check `manifest.collectors[*].messages` for the specific endpoint and HTTP status code.
+
+## Domain Dependencies
+
+Independent of other collectors — hardware discovery runs against BMC endpoints directly. Does benefit from having the node list resolved by the cluster-and-node domain for host-to-BMC correlation.
 
 ## Evidence Boundaries
 

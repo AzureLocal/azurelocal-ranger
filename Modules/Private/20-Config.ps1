@@ -531,10 +531,49 @@ function Set-RangerStructuralOverrides {
         $Config.targets.azure.resourceGroup = $StructuralOverrides['ResourceGroup']
     }
 
+    if ($StructuralOverrides.ContainsKey('ClusterName') -and -not [string]::IsNullOrWhiteSpace($StructuralOverrides['ClusterName'])) {
+        $Config.environment.clusterName = $StructuralOverrides['ClusterName']
+    }
+
     # Issue #76: -ShowProgress switch override
     if ($StructuralOverrides.ContainsKey('ShowProgress')) {
-        if (-not $Config.output) { $Config.output = [ordered]@{} }
+        if (-not ($Config.output -is [System.Collections.IDictionary])) { $Config.output = [ordered]@{} }
         $Config.output.showProgress = [bool]$StructuralOverrides['ShowProgress']
+    }
+
+    # Issue #171: output section overrides
+    if ($StructuralOverrides.ContainsKey('OutputMode') -and -not [string]::IsNullOrWhiteSpace($StructuralOverrides['OutputMode'])) {
+        if (-not ($Config.output -is [System.Collections.IDictionary])) { $Config.output = [ordered]@{} }
+        $Config.output.mode = $StructuralOverrides['OutputMode']
+    }
+    if ($StructuralOverrides.ContainsKey('OutputFormats') -and @($StructuralOverrides['OutputFormats']).Count -gt 0) {
+        if (-not ($Config.output -is [System.Collections.IDictionary])) { $Config.output = [ordered]@{} }
+        $Config.output.formats = @($StructuralOverrides['OutputFormats'])
+    }
+
+    # Issue #171: behavior section overrides
+    if ($StructuralOverrides.ContainsKey('Transport') -and -not [string]::IsNullOrWhiteSpace($StructuralOverrides['Transport'])) {
+        if (-not ($Config.behavior -is [System.Collections.IDictionary])) { $Config.behavior = [ordered]@{} }
+        $Config.behavior.transport = $StructuralOverrides['Transport']
+    }
+    if ($StructuralOverrides.ContainsKey('DegradationMode') -and -not [string]::IsNullOrWhiteSpace($StructuralOverrides['DegradationMode'])) {
+        if (-not ($Config.behavior -is [System.Collections.IDictionary])) { $Config.behavior = [ordered]@{} }
+        $Config.behavior.degradationMode = $StructuralOverrides['DegradationMode']
+    }
+    if ($StructuralOverrides.ContainsKey('RetryCount') -and $StructuralOverrides['RetryCount'] -gt 0) {
+        if (-not ($Config.behavior -is [System.Collections.IDictionary])) { $Config.behavior = [ordered]@{} }
+        $Config.behavior.retryCount = [int]$StructuralOverrides['RetryCount']
+    }
+    if ($StructuralOverrides.ContainsKey('TimeoutSeconds') -and $StructuralOverrides['TimeoutSeconds'] -gt 0) {
+        if (-not ($Config.behavior -is [System.Collections.IDictionary])) { $Config.behavior = [ordered]@{} }
+        $Config.behavior.timeoutSeconds = [int]$StructuralOverrides['TimeoutSeconds']
+    }
+
+    # Issue #171: Azure credential method override
+    if ($StructuralOverrides.ContainsKey('AzureMethod') -and -not [string]::IsNullOrWhiteSpace($StructuralOverrides['AzureMethod'])) {
+        if (-not ($Config.credentials -is [System.Collections.IDictionary])) { $Config.credentials = [ordered]@{} }
+        if (-not ($Config.credentials.azure -is [System.Collections.IDictionary])) { $Config.credentials.azure = [ordered]@{} }
+        $Config.credentials.azure.method = $StructuralOverrides['AzureMethod']
     }
 
     return $Config
