@@ -2,6 +2,13 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
+## v1.4.0 Highlights
+
+- **HTML report rebuild** — type-aware section rendering (table, kv-grid, sign-off) across all tiers; Node, VM, Storage Pool, Physical Disk, Network Adapter, Event Log, and Security Audit inventory tables
+- **Diagram engine quality** — SVG and draw.io XML rebuilt with group containers, color-coded node fills, cubic bezier edges, and swim-lane containers; near-empty diagrams skip gracefully
+- **PDF cover page** — title, cluster, mode, version, date, and confidentiality notice prepended to all PDF reports
+- **WAF Assessment integration** — `Invoke-RangerWafRuleEvaluation` evaluates 23 manifest-path rules from `config/waf-rules.json`; WAF Scorecard and Findings tables added to management and technical report tiers
+
 ## v1.3.0 Highlights
 
 - **Full config parameter coverage** — every config key is now a runtime parameter on `Invoke-AzureLocalRanger`; no config file needed for any run

@@ -8,6 +8,133 @@ Ranger supports two outcomes through one discovery engine:
 - **Current-state** — recurring operational snapshot of a live Azure Local deployment
 - **As-built** — formal documentation package for customer or operational handoff
 
+## Next Release — v1.5.0 — Document Quality
+
+Stabilisation milestone. Fixes broken report output, crashes, and incorrect defaults in the current product before any new capability is added.
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| HTML reports — quality overhaul (#192) | Fix misaligned tables, embed diagrams correctly, and raise overall visual quality to handoff standard | [#192](https://github.com/AzureLocal/azurelocal-ranger/issues/192) |
+| as-built report redesign (#193) | Redesign as-built report structure to reflect a real as-built document — current structure does not match the format | [#193](https://github.com/AzureLocal/azurelocal-ranger/issues/193) |
+| as-built vs current-state differentiation (#194) | Make the two output modes visually distinct — today they are effectively identical | [#194](https://github.com/AzureLocal/azurelocal-ranger/issues/194) |
+| Wizard format list bug (#195) | Fix wizard default format list — `json` is invalid and `docx`/`xlsx`/`pdf` are missing | [#195](https://github.com/AzureLocal/azurelocal-ranger/issues/195) |
+| Key Vault DNS crash (#198) | Replace hard crash on Key Vault DNS failure with a graceful fallback and actionable error | [#198](https://github.com/AzureLocal/azurelocal-ranger/issues/198) |
+
+## v1.6.0 — Platform Intelligence
+
+Auth, connectivity, discovery, and output format uplift. Establishes the engine foundations that all subsequent collector and WAF work depends on.
+
+### Auth & Connectivity
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Multi-method Azure auth chain (#200) | SPN cert, SPN secret, Managed Identity, Device Code, and existing context — automatic fallback chain | [#200](https://github.com/AzureLocal/azurelocal-ranger/issues/200) |
+| Save-AzContext for background runspaces (#201) | Propagate Azure context into background collection runspaces so Azure collectors work in parallel | [#201](https://github.com/AzureLocal/azurelocal-ranger/issues/201) |
+| Pre-run RBAC and resource provider audit (#202) | `Test-RangerPermissions` surfaces missing roles and unregistered providers before collection starts | [#202](https://github.com/AzureLocal/azurelocal-ranger/issues/202) |
+| WinRM TrustedHosts + DNS fallback chain (#203) | Resolve node addresses via FQDN, IP, and DNS fallback before failing — removes most pre-Arc connectivity errors | [#203](https://github.com/AzureLocal/azurelocal-ranger/issues/203) |
+| Node and VM cross-resource-group fallback (#204) | Find nodes and VMs whose ARM resources are in a different resource group from the cluster | [#204](https://github.com/AzureLocal/azurelocal-ranger/issues/204) |
+| Azure Resource Graph single-query discovery (#205) | Replace per-type `Get-AzResource` loops with a single Resource Graph query — faster and more reliable at scale | [#205](https://github.com/AzureLocal/azurelocal-ranger/issues/205) |
+| Graceful degradation on partial Azure permissions (#206) | Per-subscription try/catch/continue — partial permissions produce partial results, not a crash | [#206](https://github.com/AzureLocal/azurelocal-ranger/issues/206) |
+
+### Discovery
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Auto-discover resource group (#196) | Derive resource group from subscription + cluster name — removes required prompt when Azure credentials are present | [#196](https://github.com/AzureLocal/azurelocal-ranger/issues/196) |
+| Auto-discover cluster FQDN from Arc (#197) | Derive cluster FQDN from Arc machine resources — removes required prompt when Azure credentials are present | [#197](https://github.com/AzureLocal/azurelocal-ranger/issues/197) |
+
+### Output Formats
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| PDF output (#207) | Headless Edge/Chrome `--print-to-pdf` — zero library dependency, no Office required | [#207](https://github.com/AzureLocal/azurelocal-ranger/issues/207) |
+| Word (DOCX) output (#208) | OOXML ZIP construction — no Office, no COM dependency | [#208](https://github.com/AzureLocal/azurelocal-ranger/issues/208) |
+| XLSX output (#209) | ImportExcel module — no COM, no Office, multi-tab workbook per report tier | [#209](https://github.com/AzureLocal/azurelocal-ranger/issues/209) |
+| Power BI CSV export (#210) | Star-schema CSV + manifest for direct Power BI import | [#210](https://github.com/AzureLocal/azurelocal-ranger/issues/210) |
+
+### Engine
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| `-Wizard` as inline parameter (#211) | Move wizard into `Invoke-AzureLocalRanger -Wizard` — eliminates the separate `Invoke-RangerWizard` entry point | [#211](https://github.com/AzureLocal/azurelocal-ranger/issues/211) |
+| `-SkipPreCheck` flag (#212) | Permission audit runs by default; opt out with `-SkipPreCheck` | [#212](https://github.com/AzureLocal/azurelocal-ranger/issues/212) |
+| File-based progress IPC (#213) | Write per-collector progress to temp files so background runspaces can report status to the foreground session | [#213](https://github.com/AzureLocal/azurelocal-ranger/issues/213) |
+| Graduated threshold WAF scoring (#214) | Weight 1–3 per check with named calculation references in `waf-rules.json` | [#214](https://github.com/AzureLocal/azurelocal-ranger/issues/214) |
+
+## v2.0.0 — Extended Collectors & WAF Intelligence
+
+Second wave of ARM collectors covering the full Arc VM infrastructure surface, weighted WAF scoring, AHB cost analysis, and operational robustness patterns.
+
+### Arc VM Infrastructure
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Logical networks and subnet detail (#216) | Collect `Microsoft.AzureStackHCI/logicalNetworks` — subnets, VLANs, IP pools, DHCP, VM switch association | [#216](https://github.com/AzureLocal/azurelocal-ranger/issues/216) |
+| Storage paths collector (#217) | Collect `Microsoft.AzureStackHCI/storageContainers` with CSV cross-reference and orphaned container detection | [#217](https://github.com/AzureLocal/azurelocal-ranger/issues/217) |
+| Arc Resource Bridge and Arc VM collector (#219) | Collect `Microsoft.ResourceConnector/appliances` and `virtualMachineInstances`; classify VMs as native Hyper-V vs Arc-provisioned | [#219](https://github.com/AzureLocal/azurelocal-ranger/issues/219) |
+| Custom locations collector (#218) | Collect `Microsoft.ExtendedLocation/customLocations` associated with Arc infrastructure | [#218](https://github.com/AzureLocal/azurelocal-ranger/issues/218) |
+| Marketplace and custom image collector (#221) | Collect `marketplaceGalleryImages` and `galleryImages` with storagePathId cross-reference | [#221](https://github.com/AzureLocal/azurelocal-ranger/issues/221) |
+| Arc Gateway collector (#220) | Collect `Microsoft.HybridCompute/gateways` with per-node routing detection and mixed-routing findings | [#220](https://github.com/AzureLocal/azurelocal-ranger/issues/220) |
+| Arc machine extension collection (#215) | Inventory installed Arc extensions per node — version, status, and configuration | [#215](https://github.com/AzureLocal/azurelocal-ranger/issues/215) |
+
+### WAF & Cost
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Weighted WAF scoring (#225) | Weight 1–3 per check; warnings count as 0.5× weight — replaces flat pass/fail scoring | [#225](https://github.com/AzureLocal/azurelocal-ranger/issues/225) |
+| WAF config download and hot-swap (#226) | Download and upload `waf-rules.json` via CLI without re-running collection | [#226](https://github.com/AzureLocal/azurelocal-ranger/issues/226) |
+| AHB and cost analysis (#222) | Cluster-level AHB detection, per-core cost calculation, KPI cards, WAF Cost Optimization check, savings banner | [#222](https://github.com/AzureLocal/azurelocal-ranger/issues/222) |
+
+### Report & Output
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| JSON evidence export (#229) | Raw collected data export — no scoring or assessment metadata, for downstream tooling | [#229](https://github.com/AzureLocal/azurelocal-ranger/issues/229) |
+| Portrait/landscape switching and cell coloring in PDF (#227) | Conditional page orientation and colour-coded cells in PDF output | [#227](https://github.com/AzureLocal/azurelocal-ranger/issues/227) |
+| Pricing footer with dated reference (#228) | Pricing footnote with dated URL reference in PDF and HTML reports | [#228](https://github.com/AzureLocal/azurelocal-ranger/issues/228) |
+| Agent version grouping and software version report (#224) | Group nodes by Arc agent version; surface version skew as a finding | [#224](https://github.com/AzureLocal/azurelocal-ranger/issues/224) |
+| VM distribution balance analysis (#223) | Detect VM distribution imbalance across cluster nodes | [#223](https://github.com/AzureLocal/azurelocal-ranger/issues/223) |
+
+### Robustness
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Module auto-install and auto-update on startup (#231) | Validate, install, and update required modules at startup with `-SkipModuleUpdate` opt-out | [#231](https://github.com/AzureLocal/azurelocal-ranger/issues/231) |
+| Concurrent collection guard and empty-data safeguard (#230) | Prevent overlapping collection runs; handle empty collector results without report failures | [#230](https://github.com/AzureLocal/azurelocal-ranger/issues/230) |
+
+## v2.5.0 — Extended Platform Coverage
+
+Extended hardware and protocol coverage, deep workload analysis, and long-horizon output formats.
+
+### Workload & Cost Analysis
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Idle and underutilized VM detection (#125) | Surface VMs with low CPU/memory utilization and rightsizing recommendations | [#125](https://github.com/AzureLocal/azurelocal-ranger/issues/125) |
+| Storage efficiency analysis (#126) | Deduplication ratios, thin-provisioning coverage gaps, and storage waste identification across volumes and pools | [#126](https://github.com/AzureLocal/azurelocal-ranger/issues/126) |
+| SQL Server and Windows Server license inventory (#127) | Edition, core count, and AHB cross-reference per VM for license compliance reporting | [#127](https://github.com/AzureLocal/azurelocal-ranger/issues/127) |
+| Cluster capacity headroom analysis (#128) | Compute, memory, and storage utilization percentages with configurable warning thresholds and trend-based runway | [#128](https://github.com/AzureLocal/azurelocal-ranger/issues/128) |
+
+### Multi-Cluster & Output Formats
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Multi-cluster inventory rollup (#129) | Discover multiple Azure Local clusters in one run; produce per-cluster packages plus an estate summary report | [#129](https://github.com/AzureLocal/azurelocal-ranger/issues/129) |
+| PowerPoint presentation output (#80) | Executive environment overview deck generated from the audit manifest | [#80](https://github.com/AzureLocal/azurelocal-ranger/issues/80) |
+| Manual import workflows (#32) | Accept externally gathered data for environments where automated collection is not authorized | [#32](https://github.com/AzureLocal/azurelocal-ranger/issues/32) |
+
+## v3.0.0 — Enterprise & OEM Integration
+
+Enterprise integrations, specialized hardware protocols, and advanced topology coverage beyond single-cluster HCI deployments.
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Direct switch interrogation (#27) | SSH/RESTCONF/NETCONF collection from Dell OS10, Arista EOS, Cisco Nexus, and other ToR switches | [#27](https://github.com/AzureLocal/azurelocal-ranger/issues/27) |
+| Direct firewall interrogation (#28) | Collect firewall policy from Palo Alto, FortiGate, Cisco ASA, pfSense, and other appliances | [#28](https://github.com/AzureLocal/azurelocal-ranger/issues/28) |
+| Non-Dell OEM hardware support (#29) | Hardware inventory collectors for HPE iLO, Lenovo XClarity, and DataON via Redfish | [#29](https://github.com/AzureLocal/azurelocal-ranger/issues/29) |
+| Multi-rack Azure Local discovery (#31) | Rack topology, SAN storage, compute rack correlation, northbound connectivity for rack-scale deployments | [#31](https://github.com/AzureLocal/azurelocal-ranger/issues/31) |
+| CMDB and ITSM structured export (#130) | `Export-AzureLocalRangerCmdb` producing ServiceNow, CSV, and JSON CI records from the audit manifest | [#130](https://github.com/AzureLocal/azurelocal-ranger/issues/130) |
+
 ## Current Release — v1.4.0
 
 Released April 2026. Report Quality milestone delivering handoff-quality HTML reports, improved diagram engine, PDF cover pages, and WAF Assessment integration with an external rule engine.
@@ -89,55 +216,6 @@ Released April 2026. Post-release patch for the no-config prerequisite-check reg
 | Simulation framework | Full output pipeline validated without live connections via `New-RangerSyntheticManifest.ps1` and committed fixture |
 | Public documentation | Product, architecture, operator, discovery domain, output, and contributor docs under `docs/` |
 | Patch hardening | `Test-AzureLocalRangerPrerequisites` no longer throws when run without a config object or path |
-
-## v2.0.0 — Extended Platform Coverage
-
-Extended hardware and protocol coverage, deep Azure integration surfaces, workload analysis, and long-horizon output formats.
-
-### Hardware & Protocol Collectors
-
-| Item | Detail | Issue |
-| --- | --- | --- |
-| Direct switch interrogation (#27) | SSH/RESTCONF/NETCONF collection from Dell OS10, Arista EOS, Cisco Nexus, and other ToR switches | [#27](https://github.com/AzureLocal/azurelocal-ranger/issues/27) |
-| Direct firewall interrogation (#28) | Collect firewall policy from Palo Alto, FortiGate, Cisco ASA, pfSense, and other appliances | [#28](https://github.com/AzureLocal/azurelocal-ranger/issues/28) |
-| Non-Dell OEM hardware support (#29) | Hardware inventory collectors for HPE iLO, Lenovo XClarity, and DataON via Redfish | [#29](https://github.com/AzureLocal/azurelocal-ranger/issues/29) |
-| Multi-rack Azure Local discovery (#31) | Rack topology, SAN storage, compute rack correlation, northbound connectivity for rack-scale deployments | [#31](https://github.com/AzureLocal/azurelocal-ranger/issues/31) |
-| Manual import workflows (#32) | Accept externally gathered data for environments where automated collection is not authorized | [#32](https://github.com/AzureLocal/azurelocal-ranger/issues/32) |
-
-### Azure Integration & Arc VM
-
-| Item | Detail | Issue |
-| --- | --- | --- |
-| Resource Bridge and Arc VM inventory (#133) | Inventory Arc-provisioned VMs via Resource Bridge; surface the Arc VM billing model distinct from bare-metal cluster billing | [#133](https://github.com/AzureLocal/azurelocal-ranger/issues/133) |
-| Arc VM Logical Networks (#135) | Inventory ARM-managed virtual networks (subnet, VLAN ID, DNS, VM switch association) used by Arc VM provisioning | [#135](https://github.com/AzureLocal/azurelocal-ranger/issues/135) |
-| Arc VM Storage Paths (#136) | Inventory ARM-managed storage containers for Arc-provisioned VM disks, distinct from S2D pools and CSVs | [#136](https://github.com/AzureLocal/azurelocal-ranger/issues/136) |
-| Gallery and Marketplace Image inventory (#137) | Collect custom gallery images and marketplace gallery images downloaded to the cluster for Arc VM provisioning | [#137](https://github.com/AzureLocal/azurelocal-ranger/issues/137) |
-| Arc Gateway inventory (#138) | Collect Arc Gateway configuration and connectivity status for clusters using Arc Gateway as outbound proxy | [#138](https://github.com/AzureLocal/azurelocal-ranger/issues/138) |
-
-### Workload & Cost Analysis
-
-| Item | Detail | Issue |
-| --- | --- | --- |
-| Idle and underutilized VM detection (#125) | Surface VMs with low CPU/memory utilization and rightsizing recommendations | [#125](https://github.com/AzureLocal/azurelocal-ranger/issues/125) |
-| Storage efficiency analysis (#126) | Deduplication ratios, thin-provisioning coverage gaps, and storage waste identification across volumes and pools | [#126](https://github.com/AzureLocal/azurelocal-ranger/issues/126) |
-| SQL Server and Windows Server license inventory (#127) | Edition, core count, and AHB cross-reference per VM for license compliance reporting | [#127](https://github.com/AzureLocal/azurelocal-ranger/issues/127) |
-| Cluster capacity headroom analysis (#128) | Compute, memory, and storage utilization percentages with configurable warning thresholds and trend-based runway | [#128](https://github.com/AzureLocal/azurelocal-ranger/issues/128) |
-| Cost analysis and Azure Hybrid Benefit tracking (#101) | Surface cost posture, AHB coverage gaps, and optimization opportunities per workload | [#101](https://github.com/AzureLocal/azurelocal-ranger/issues/101) |
-
-### Multi-Cluster & Output Formats
-
-| Item | Detail | Issue |
-| --- | --- | --- |
-| Multi-cluster inventory rollup (#129) | Discover multiple Azure Local clusters in one run; produce per-cluster packages plus an estate summary report | [#129](https://github.com/AzureLocal/azurelocal-ranger/issues/129) |
-| PowerPoint presentation output (#80) | Executive environment overview deck generated from the audit manifest | [#80](https://github.com/AzureLocal/azurelocal-ranger/issues/80) |
-
-## v3.0.0 — Enterprise & OEM Integration
-
-Enterprise integrations beyond core platform coverage: structured data exports and downstream system connectivity.
-
-| Item | Detail | Issue |
-| --- | --- | --- |
-| CMDB and ITSM structured export (#130) | `Export-AzureLocalRangerCmdb` producing ServiceNow, CSV, and JSON CI records from the audit manifest | [#130](https://github.com/AzureLocal/azurelocal-ranger/issues/130) |
 
 ## Unscheduled Backlog
 
