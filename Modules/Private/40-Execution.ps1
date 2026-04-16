@@ -35,13 +35,14 @@ function Invoke-RangerRetry {
 function Get-RangerWinRmProbeCacheKey {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$ComputerName,
-
-        [PSCredential]$Credential
+        [string]$ComputerName
     )
 
-    $userName = if ($Credential -and $Credential.UserName) { [string]$Credential.UserName } else { '<default>' }
-    return '{0}|{1}' -f $ComputerName.Trim().ToLowerInvariant(), $userName.Trim().ToLowerInvariant()
+    # Issue #158: cache key is target-only — Test-WSMan probes connectivity (port + WinRM service
+    # reachability), not credential authorization. Keying on credential caused one probe per
+    # candidate, redundant re-probes, and misleading "preflight succeeded" log lines immediately
+    # before "Access is denied" errors.
+    return $ComputerName.Trim().ToLowerInvariant()
 }
 
 function Test-RangerWinRmTarget {
@@ -56,7 +57,7 @@ function Test-RangerWinRmTarget {
         $script:RangerWinRmProbeCache = @{}
     }
 
-    $cacheKey = Get-RangerWinRmProbeCacheKey -ComputerName $ComputerName -Credential $Credential
+    $cacheKey = Get-RangerWinRmProbeCacheKey -ComputerName $ComputerName
     if ($script:RangerWinRmProbeCache.ContainsKey($cacheKey)) {
         return $script:RangerWinRmProbeCache[$cacheKey]
     }
@@ -85,14 +86,13 @@ function Test-RangerWinRmTarget {
         }
 
         if (Test-RangerCommandAvailable -Name 'Test-WSMan') {
+            # Issue #158: do not pass credential to Test-WSMan — this is a connectivity probe
+            # (can we reach the WinRM service?), not an authorization probe. Passing a credential
+            # caused Test-WSMan to succeed with bad credentials and emit misleading log output.
             $wsmanParams = @{
                 ComputerName   = $ComputerName
-                Authentication = 'Negotiate'
+                Authentication = 'None'
                 ErrorAction    = 'Stop'
-            }
-
-            if ($Credential) {
-                $wsmanParams.Credential = $Credential
             }
 
             if ($probe.useSsl) {
@@ -264,7 +264,9 @@ function Resolve-RangerRemoteExecutionCredential {
 
         foreach ($target in $targets) {
             try {
-                $authorization = Test-RangerRemoteAuthorization -ComputerName $target -Credential $candidate.Credential -RetryCount $RetryCount -TimeoutSeconds $TimeoutSeconds
+                # Issue #157: use RetryCount 0 for authorization probes — "Access is denied" is not
+                # transient and must not be retried; the actual collection run uses $RetryCount.
+                $authorization = Test-RangerRemoteAuthorization -ComputerName $target -Credential $candidate.Credential -RetryCount 0 -TimeoutSeconds $TimeoutSeconds
                 [void]$authorizationResults.Add($authorization)
             }
             catch {
@@ -374,7 +376,15 @@ function Invoke-RangerRemoteCommand {
             $rangerLogPath = $script:RangerLogPath
             $rangerCurrentLogLevel = if ($script:RangerLogLevel) { [string]$script:RangerLogLevel } else { 'info' }
             $rangerShouldLogWarn = $rangerCurrentLogLevel -in @('debug', 'info', 'warn')
-            $rangerRemoteResult = Invoke-Command @invokeParams -WarningAction SilentlyContinue -WarningVariable +rangerRemoteWarnings -ErrorAction Stop
+            # Issue #159: catch at the innermost frame so the exception is re-thrown once rather
+            # than propagating through Invoke-RangerRetry → Invoke-RangerRemoteCommand →
+            # Test-RangerRemoteAuthorization, each recording a duplicate TerminatingError line in
+            # the PowerShell transcript.
+            try {
+                $rangerRemoteResult = Invoke-Command @invokeParams -WarningAction SilentlyContinue -WarningVariable +rangerRemoteWarnings -ErrorAction Stop
+            } catch {
+                throw
+            }
             foreach ($w in @($rangerRemoteWarnings)) {
                 $warningMessage = if ($w -is [System.Management.Automation.WarningRecord]) { [string]$w.Message } else { [string]$w }
                 if ($rangerShouldLogWarn -and -not [string]::IsNullOrWhiteSpace($warningMessage) -and $rangerLogPath) {
