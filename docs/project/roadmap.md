@@ -79,6 +79,17 @@ Released April 2026. Post-release patch for the no-config prerequisite-check reg
 | Public documentation | Product, architecture, operator, discovery domain, output, and contributor docs under `docs/` |
 | Patch hardening | `Test-AzureLocalRangerPrerequisites` no longer throws when run without a config object or path |
 
+## Next Release — v1.4.0
+
+Focus: Report Quality — handoff-quality HTML reports, improved diagram engine, and PDF output for all report formats.
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| HTML report rebuild (#168) | Rebuild the HTML report renderer and diagram engine to produce handoff-quality as-built documentation suitable for customer delivery | [#168](https://github.com/AzureLocal/azurelocal-ranger/issues/168) |
+| Diagram engine quality (#140) | Improve the generated draw.io diagram engine so Ranger packages produce polished, handoff-quality outputs | [#140](https://github.com/AzureLocal/azurelocal-ranger/issues/140) |
+| PDF output (#96) | PDF rendering for all report formats | [#96](https://github.com/AzureLocal/azurelocal-ranger/issues/96) |
+| WAF Assessment integration (#94) | Integrate Azure Well-Architected Framework assessment data into Ranger reports | [#94](https://github.com/AzureLocal/azurelocal-ranger/issues/94) |
+
 ## Backlog
 
 Open features tracked as GitHub issues. All are implementation targets — no item in this list is permanently deferred or off the table.
