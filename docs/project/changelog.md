@@ -2,6 +2,23 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
+## v1.3.0 Highlights
+
+- **Full config parameter coverage** — every config key is now a runtime parameter on `Invoke-AzureLocalRanger`; no config file needed for any run
+- **First Run guide** — linear six-step beginner guide from install to output with no decisions
+- **Wizard guide** — complete `Invoke-RangerWizard` walkthrough with example inputs and generated YAML
+- **Configuration reference** — full table of every config key with type, default, and Key Vault syntax
+- **Understanding output** — directory tree, role-based reading path, collector status interpretation
+- **Command reference scenarios** — nine copy-paste examples covering every common use case
+- **Discovery domain enhancements** — all 10 domain pages now include example manifest data, common findings, and partial status guidance
+
+## v1.2.1 Highlights
+
+- **Redfish 404 retry** — 4xx responses no longer trigger retries; `Invoke-RangerRetry` extended with `-ShouldRetry` scriptblock
+- **Hardware partial status** — collector reports `partial` instead of `success` when Redfish endpoints return 404; warning finding added
+- **ShowProgress default-on** — progress display enabled without any config key or switch; opt out with `output.showProgress: false`
+- **Prerequisite output** — `Test-AzureLocalRangerPrerequisites` renders a colour-coded Pass/Warn/FAIL table; optional checks for `Az.ConnectedMachine` and `PwshSpectreConsole` added
+
 ## v1.2.0 Highlights
 
 - **Arc Run Command transport** — WinRM workloads fall back to `Invoke-AzConnectedMachineRunCommand` when nodes are unreachable; `behavior.transport: auto/winrm/arc` controls the strategy

@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '1.2.1'
+    ModuleVersion     = '1.3.0'
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
@@ -53,6 +53,25 @@
                 'Az.ConnectedMachine'
             )
             ReleaseNotes = @'
+## v1.3.0 — Operator Experience
+
+### Added
+- **Full config parameter coverage (#171)** — every `behavior.*`, `output.*`, and `credentials.azure.*` config key
+  is now directly passable as a runtime parameter on `Invoke-AzureLocalRanger`: `-OutputMode`, `-OutputFormats`,
+  `-Transport`, `-DegradationMode`, `-RetryCount`, `-TimeoutSeconds`, `-AzureMethod`, `-ClusterName`.
+  Parameters take precedence over config file values via `Set-RangerStructuralOverrides`.
+- **First Run guide (#174)** — new `operator/first-run.md`: six-step linear guide from install to output, no choices.
+- **Wizard guide (#175)** — new `operator/wizard-guide.md`: full `Invoke-RangerWizard` walkthrough with example
+  inputs, generated YAML, and common mistakes.
+- **Configuration reference (#177)** — new `operator/configuration-reference.md`: every config key with type,
+  required/optional, default value, and Key Vault reference syntax.
+- **Understanding output guide (#178)** — new `operator/understanding-output.md`: output directory tree,
+  role-based reading path, collector status interpretation, drift report usage.
+- **Command reference scenarios (#176)** — nine copy-paste scenario examples added to `operator/command-reference.md`
+  plus parameter precedence documentation.
+- **Discovery domain enhancements (#179)** — all 10 discovery domain pages now include example manifest JSON,
+  common findings table, partial status explanation, and domain dependencies.
+
 ## v1.2.0 — UX & Transport
 
 ### Added
