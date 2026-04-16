@@ -336,4 +336,27 @@ behavior:
             Assert-MockCalled Invoke-RangerRemoteCommand -Times 1 -Exactly
         } -Parameters @{ TestConfig = $config; TestCredential = $credential }
     }
+
+    It 'interactive prompt check returns false inside Pester' {
+        # Regression test for the Invoke-RangerWizard interactive gate.
+        # Test-RangerInteractivePromptAvailable must return false while Pester is running
+        # so the wizard does not attempt interactive prompts during automated test runs.
+        InModuleScope AzureLocalRanger {
+            $result = Test-RangerInteractivePromptAvailable
+            $result | Should -BeFalse
+        }
+    }
+
+    It 'interactive prompt check returns false when PesterPreference is set' {
+        InModuleScope AzureLocalRanger {
+            $Global:PesterPreference = [PesterConfiguration]::Default
+            try {
+                $result = Test-RangerInteractivePromptAvailable
+                $result | Should -BeFalse
+            }
+            finally {
+                Remove-Variable -Name PesterPreference -Scope Global -ErrorAction SilentlyContinue
+            }
+        }
+    }
 }

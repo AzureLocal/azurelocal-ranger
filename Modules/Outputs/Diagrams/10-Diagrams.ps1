@@ -34,9 +34,14 @@ function Invoke-RangerDiagramGeneration {
         [void]$artifacts.Add((New-RangerArtifactRecord -Type 'diagram-drawio' -RelativePath ([System.IO.Path]::GetRelativePath($PackageRoot, $drawIoPath)) -Status generated -Audience ($definition.Audience -join ',')))
 
         if ('svg' -in $Formats) {
-            $svgPath = Join-Path -Path $diagramsRoot -ChildPath ($baseName + '.svg')
-            (ConvertTo-RangerSvgDiagram -Manifest $Manifest -Definition $definition -Model $model) | Set-Content -Path $svgPath -Encoding UTF8
-            [void]$artifacts.Add((New-RangerArtifactRecord -Type 'diagram-svg' -RelativePath ([System.IO.Path]::GetRelativePath($PackageRoot, $svgPath)) -Status generated -Audience ($definition.Audience -join ',')))
+            $svgContent = ConvertTo-RangerSvgDiagram -Manifest $Manifest -Definition $definition -Model $model
+            if ($null -ne $svgContent) {
+                $svgPath = Join-Path -Path $diagramsRoot -ChildPath ($baseName + '.svg')
+                $svgContent | Set-Content -Path $svgPath -Encoding UTF8
+                [void]$artifacts.Add((New-RangerArtifactRecord -Type 'diagram-svg' -RelativePath ([System.IO.Path]::GetRelativePath($PackageRoot, $svgPath)) -Status generated -Audience ($definition.Audience -join ',')))
+            } else {
+                [void]$artifacts.Add((New-RangerArtifactRecord -Type 'diagram-svg' -RelativePath (Join-Path 'diagrams' ($baseName + '.svg')) -Status skipped -Audience ($definition.Audience -join ',') -Reason 'Insufficient data to produce a useful diagram.'))
+            }
         }
     }
 
@@ -215,9 +220,9 @@ function Get-RangerDiagramModel {
                 [void]$nodes.Add([ordered]@{ id = $proxyId; label = $proxy.node; kind = 'connectivity'; detail = $proxy.value; group = 'network' })
                 [void]$edges.Add([ordered]@{ source = 'cluster'; target = $proxyId; label = 'proxy path' })
             }
-            foreach ($profile in @($Manifest.domains.networking.firewall | Select-Object -First 10)) {
-                $profileId = 'fw-' + (Get-RangerSafeName -Value $profile.node)
-                [void]$nodes.Add([ordered]@{ id = $profileId; label = $profile.node; kind = 'firewall'; detail = ('profiles {0}' -f @($profile.profiles).Count); group = 'network' })
+            foreach ($fwProfile in @($Manifest.domains.networking.firewall | Select-Object -First 10)) {
+                $profileId = 'fw-' + (Get-RangerSafeName -Value $fwProfile.node)
+                [void]$nodes.Add([ordered]@{ id = $profileId; label = $fwProfile.node; kind = 'firewall'; detail = ('profiles {0}' -f @($fwProfile.profiles).Count); group = 'network' })
                 [void]$edges.Add([ordered]@{ source = $profileId; target = 'cluster'; label = 'host firewall' })
             }
         }
@@ -317,51 +322,90 @@ function ConvertTo-RangerDrawIoXml {
         [System.Collections.IDictionary]$Model
     )
 
-    $cells = New-Object System.Collections.Generic.List[string]
+    $cells    = New-Object System.Collections.Generic.List[string]
     $cells.Add('<mxCell id="0" />')
     $cells.Add('<mxCell id="1" parent="0" />')
 
+    # Group layout with labelled swim-lane containers (#140)
     $groupColumns = [ordered]@{ platform = 40; storage = 320; network = 600; workload = 880; azure = 1160; management = 1440; identity = 1720; hardware = 2000 }
+    $groupTitles  = @{ platform = 'Platform'; storage = 'Storage'; network = 'Network'; workload = 'Workload'; azure = 'Azure'; management = 'Management'; identity = 'Identity'; hardware = 'Hardware' }
+    $groupFills   = @{ platform = '#f0f9ff'; storage = '#f1f5f9'; network = '#fffbeb'; workload = '#fefce8'; azure = '#ecfeff'; management = '#f5f3ff'; identity = '#fff1f2'; hardware = '#f0fdf4' }
+    $groupStrokes = @{ platform = '#bae6fd'; storage = '#cbd5e1'; network = '#fde68a'; workload = '#fef08a'; azure = '#a5f3fc'; management = '#ddd6fe'; identity = '#fecdd3'; hardware = '#bbf7d0' }
     $groupOffsets = @{}
+    $nodePositions = @{}
+    $containerIds  = @{}
+    $containerIndex = 100
+
+    # First pass: assign positions
     foreach ($node in @($Model.nodes)) {
-        $labelText = if ($node.detail) { '{0}&#xa;{1}' -f $node.label, $node.detail } else { [string]$node.label }
-        $label = [System.Security.SecurityElement]::Escape($labelText)
-        $style = switch ($node.kind) {
-            'cluster' { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;' }
-            'node' { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;' }
-            'azure' { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#cffafe;strokeColor=#0f766e;' }
-            'storage' { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#e2e8f0;strokeColor=#475569;' }
-            'network' { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#fde68a;strokeColor=#ca8a04;' }
-            'vm' { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;' }
-            'management' { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#ede9fe;strokeColor=#7c3aed;' }
-            'identity' { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#dc2626;' }
-            default { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#64748b;' }
-        }
-
-        $group = if ($node.group) { [string]$node.group } else { 'platform' }
-        if (-not $groupColumns.Contains($group)) {
-            $group = 'platform'
-        }
-        if (-not $groupOffsets.ContainsKey($group)) {
-            $groupOffsets[$group] = 40
-        }
-        $x = $groupColumns[$group]
-        $y = $groupOffsets[$group]
-
-        $cells.Add(('<mxCell id="{0}" value="{1}" style="{2}" vertex="1" parent="1"><mxGeometry x="{3}" y="{4}" width="180" height="60" as="geometry" /></mxCell>' -f $node.id, $label, $style, $x, $y))
-        $groupOffsets[$group] = $y + 90
+        if ([string]::IsNullOrWhiteSpace($node.id)) { continue }
+        $grp = if ($node.group -and $groupColumns.Contains([string]$node.group)) { [string]$node.group } else { 'platform' }
+        if (-not $groupOffsets.ContainsKey($grp)) { $groupOffsets[$grp] = 50 }
+        $nodePositions[$node.id] = [ordered]@{ x = $groupColumns[$grp]; y = $groupOffsets[$grp]; group = $grp }
+        $groupOffsets[$grp] += 90
     }
 
+    # Emit group container cells
+    foreach ($grp in $groupColumns.Keys) {
+        $grpNodes = @($nodePositions.Values | Where-Object { $_.group -eq $grp })
+        if ($grpNodes.Count -eq 0) { continue }
+        $minY  = ($grpNodes | Measure-Object -Property y -Minimum).Minimum - 30
+        $maxY  = ($grpNodes | Measure-Object -Property y -Maximum).Maximum + 80
+        $cid   = "container-$grp"
+        $containerIds[$grp] = $cid
+        $containerIndex++
+        $fill   = if ($groupFills.ContainsKey($grp))   { $groupFills[$grp] }   else { '#f8fafc' }
+        $stroke = if ($groupStrokes.ContainsKey($grp)) { $groupStrokes[$grp] } else { '#e2e8f0' }
+        $title  = if ($groupTitles.ContainsKey($grp))  { $groupTitles[$grp] }  else { $grp }
+        $cells.Add(('<mxCell id="{0}" value="{1}" style="swimlane;startSize=24;fillColor={2};strokeColor={3};fontStyle=1;fontSize=11;rounded=1;" vertex="1" parent="1"><mxGeometry x="{4}" y="{5}" width="240" height="{6}" as="geometry" /></mxCell>' -f $cid, [System.Security.SecurityElement]::Escape($title), $fill, $stroke, ($groupColumns[$grp] - 8), $minY, ($maxY - $minY)))
+    }
+
+    # Emit node cells (parented to their container)
+    foreach ($node in @($Model.nodes)) {
+        if ([string]::IsNullOrWhiteSpace($node.id) -or -not $nodePositions.ContainsKey($node.id)) { continue }
+        $pos   = $nodePositions[$node.id]
+        $grp   = $pos.group
+        $relX  = 8
+        $relY  = $pos.y - (($nodePositions.Values | Where-Object { $_.group -eq $grp } | Measure-Object -Property y -Minimum).Minimum - 30) + 24
+
+        $labelText = if ($node.detail) { '{0}&#xa;{1}' -f $node.label, $node.detail } else { [string]$node.label }
+        $lbl   = [System.Security.SecurityElement]::Escape($labelText)
+        $style = switch ($node.kind) {
+            'cluster'    { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontStyle=1;' }
+            'node'       { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;' }
+            'azure'      { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#cffafe;strokeColor=#0f766e;' }
+            'storage'    { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#e2e8f0;strokeColor=#475569;' }
+            'volume'     { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f5f9;strokeColor=#64748b;' }
+            'disk'       { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f5f9;strokeColor=#94a3b8;' }
+            'network'    { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#fde68a;strokeColor=#ca8a04;' }
+            'adapter'    { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#fefce8;strokeColor=#a16207;' }
+            'vm'         { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;' }
+            'workload'   { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#fefce8;strokeColor=#ca8a04;' }
+            'management' { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#ede9fe;strokeColor=#7c3aed;' }
+            'identity'   { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#dc2626;' }
+            'policy'     { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#db2777;' }
+            'bmc'        { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#e0f2fe;strokeColor=#0369a1;' }
+            'hardware'   { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#15803d;' }
+            'monitor'    { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfdf5;strokeColor=#059669;' }
+            'heat'       { if ($node.severity -eq 'warning') { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#fed7aa;strokeColor=#c2410c;' } else { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;' } }
+            default      { 'rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#64748b;' }
+        }
+        $parentId = if ($containerIds.ContainsKey($grp)) { $containerIds[$grp] } else { '1' }
+        $cells.Add(('<mxCell id="{0}" value="{1}" style="{2}" vertex="1" parent="{3}"><mxGeometry x="{4}" y="{5}" width="224" height="62" as="geometry" /></mxCell>' -f $node.id, $lbl, $style, $parentId, $relX, $relY))
+    }
+
+    # Emit edges (always parented to root)
     $edgeIndex = 0
     foreach ($edge in @($Model.edges)) {
         $edgeIndex++
-        $cells.Add(('<mxCell id="edge-{0}" value="{1}" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="{2}" target="{3}"><mxGeometry relative="1" as="geometry" /></mxCell>' -f $edgeIndex, [System.Security.SecurityElement]::Escape([string]$edge.label), $edge.source, $edge.target))
+        $edgeLbl = [System.Security.SecurityElement]::Escape([string]$edge.label)
+        $cells.Add(('<mxCell id="edge-{0}" value="{1}" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=block;endFill=1;strokeColor=#94a3b8;" edge="1" parent="1" source="{2}" target="{3}"><mxGeometry relative="1" as="geometry" /></mxCell>' -f $edgeIndex, $edgeLbl, $edge.source, $edge.target))
     }
 
     @"
 <mxfile host="app.diagrams.net" modified="$($Manifest.run.endTimeUtc)" agent="AzureLocalRanger" version="$($Manifest.run.toolVersion)">
   <diagram name="$([System.Security.SecurityElement]::Escape($Definition.Title))">
-    <mxGraphModel dx="1330" dy="844" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+    <mxGraphModel dx="1330" dy="844" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1100" math="0" shadow="0">
       <root>
         $($cells -join [Environment]::NewLine)
       </root>
@@ -383,72 +427,143 @@ function ConvertTo-RangerSvgDiagram {
         [System.Collections.IDictionary]$Model
     )
 
-    $boxes = New-Object System.Collections.Generic.List[string]
-    $lines = New-Object System.Collections.Generic.List[string]
-    $labels = New-Object System.Collections.Generic.List[string]
+    # Skip near-empty diagrams — fewer than 2 non-root nodes produces no useful output (#140)
+    $nonRootNodes = @($Model.nodes | Where-Object { $_.id -ne 'cluster' })
+    if ($nonRootNodes.Count -lt 1) {
+        return $null
+    }
+
+    $boxes      = New-Object System.Collections.Generic.List[string]
+    $connLines  = New-Object System.Collections.Generic.List[string]
+    $labels     = New-Object System.Collections.Generic.List[string]
+    $containers = New-Object System.Collections.Generic.List[string]
+
+    # Group layout: each group gets a labelled container background (#140)
     $groupColumns = [ordered]@{ platform = 20; storage = 280; network = 540; workload = 800; azure = 1060; management = 1320; identity = 1580; hardware = 1840 }
+    $groupLabels  = @{ platform = 'Platform'; storage = 'Storage'; network = 'Network'; workload = 'Workload'; azure = 'Azure'; management = 'Management'; identity = 'Identity'; hardware = 'Hardware' }
+    $groupColors  = @{ platform = '#f0f9ff'; storage = '#f1f5f9'; network = '#fffbeb'; workload = '#fefce8'; azure = '#ecfeff'; management = '#f5f3ff'; identity = '#fff1f2'; hardware = '#f8fafc' }
+    $groupBorder  = @{ platform = '#bae6fd'; storage = '#cbd5e1'; network = '#fde68a'; workload = '#fef08a'; azure = '#a5f3fc'; management = '#ddd6fe'; identity = '#fecdd3'; hardware = '#e2e8f0' }
     $groupOffsets = @{}
-    $positions = @{}
+    $positions    = @{}
+
+    # First pass: assign positions
     foreach ($node in @($Model.nodes)) {
         if ([string]::IsNullOrWhiteSpace($node.id)) { continue }
-        $group = if ($node.group) { [string]$node.group } else { 'platform' }
-        if (-not $groupColumns.Contains($group)) {
-            $group = 'platform'
-        }
-        if (-not $groupOffsets.ContainsKey($group)) {
-            $groupOffsets[$group] = 70
-        }
-        $x = $groupColumns[$group]
-        $y = $groupOffsets[$group]
-        $positions[$node.id] = [ordered]@{ x = $x; y = $y }
-        $fill = switch ($node.kind) {
-            'cluster' { '#dbeafe' }
-            'node' { '#dcfce7' }
-            'azure' { '#cffafe' }
-            'vm' { '#fef3c7' }
-            'storage' { '#e2e8f0' }
-            'network' { '#fde68a' }
-            'management' { '#ede9fe' }
-            'identity' { '#fee2e2' }
-            'heat' { if ($node.severity -eq 'warning') { '#fed7aa' } else { '#dcfce7' } }
-            default { '#f8fafc' }
-        }
-
-        $boxes.Add(('<rect x="{0}" y="{1}" width="220" height="56" rx="10" fill="{2}" stroke="#334155" />' -f $x, $y, $fill))
-        $labels.Add(('<text x="{0}" y="{1}" font-family="Segoe UI, Arial" font-size="14" fill="#0f172a">{2}</text>' -f ($x + 12), ($y + 25), [System.Security.SecurityElement]::Escape([string]$node.label)))
-        if ($node.detail) {
-            $labels.Add(('<text x="{0}" y="{1}" font-family="Segoe UI, Arial" font-size="11" fill="#475569">{2}</text>' -f ($x + 12), ($y + 42), [System.Security.SecurityElement]::Escape([string]$node.detail)))
-        }
-
-        $groupOffsets[$group] = $y + 86
+        $grp = if ($node.group -and $groupColumns.Contains([string]$node.group)) { [string]$node.group } else { 'platform' }
+        if (-not $groupOffsets.ContainsKey($grp)) { $groupOffsets[$grp] = 80 }
+        $positions[$node.id] = [ordered]@{ x = $groupColumns[$grp]; y = $groupOffsets[$grp]; group = $grp }
+        $groupOffsets[$grp] += 86
     }
 
+    # Draw group containers (sized to fit their contents)
+    foreach ($grp in $groupColumns.Keys) {
+        $grpNodes = @($positions.Values | Where-Object { $_.group -eq $grp })
+        if ($grpNodes.Count -eq 0) { continue }
+        $minY = ($grpNodes | Measure-Object -Property y -Minimum).Minimum - 10
+        $maxY = ($grpNodes | Measure-Object -Property y -Maximum).Maximum + 76
+        $cx = $groupColumns[$grp] - 8
+        $cy = $minY
+        $cw = 240
+        $ch = $maxY - $minY
+        $fill   = if ($groupColors.ContainsKey($grp)) { $groupColors[$grp] } else { '#f8fafc' }
+        $stroke = if ($groupBorder.ContainsKey($grp)) { $groupBorder[$grp] } else { '#e2e8f0' }
+        $glabel = if ($groupLabels.ContainsKey($grp)) { $groupLabels[$grp] } else { $grp }
+        $containers.Add(("<rect x='$cx' y='$cy' width='$cw' height='$ch' rx='12' fill='$fill' stroke='$stroke' stroke-dasharray='4 2' />"))
+        $containers.Add(("<text x='$($cx + 8)' y='$($cy + 16)' font-family=""Segoe UI, Arial"" font-size=""11"" font-weight=""600"" fill=""#64748b"">$([System.Security.SecurityElement]::Escape($glabel))</text>"))
+    }
+
+    # Draw nodes
+    foreach ($node in @($Model.nodes)) {
+        if ([string]::IsNullOrWhiteSpace($node.id) -or -not $positions.ContainsKey($node.id)) { continue }
+        $pos  = $positions[$node.id]
+        $x    = $pos.x
+        $y    = $pos.y
+        $fill = switch ($node.kind) {
+            'cluster'     { '#dbeafe' }
+            'node'        { '#dcfce7' }
+            'azure'       { '#cffafe' }
+            'vm'          { '#fef3c7' }
+            'storage'     { '#e2e8f0' }
+            'volume'      { '#f1f5f9' }
+            'disk'        { '#f1f5f9' }
+            'network'     { '#fde68a' }
+            'adapter'     { '#fefce8' }
+            'management'  { '#ede9fe' }
+            'identity'    { '#fee2e2' }
+            'policy'      { '#fce7f3' }
+            'bmc'         { '#e0f2fe' }
+            'hardware'    { '#f0fdf4' }
+            'heat'        { if ($node.severity -eq 'warning') { '#fed7aa' } else { '#dcfce7' } }
+            'monitor'     { '#ecfdf5' }
+            'workload'    { '#fefce8' }
+            'service'     { '#cffafe' }
+            default       { '#f8fafc' }
+        }
+        $stroke = switch ($node.kind) {
+            'cluster'  { '#2563eb' }
+            'node'     { '#16a34a' }
+            'azure'    { '#0f766e' }
+            'storage'  { '#475569' }
+            'network'  { '#ca8a04' }
+            'vm'       { '#d97706' }
+            'identity' { '#dc2626' }
+            'bmc'      { '#0369a1' }
+            'hardware' { '#15803d' }
+            default    { '#64748b' }
+        }
+        $strokeW = if ($node.kind -eq 'cluster') { '2' } else { '1.5' }
+        $boxes.Add(("<rect x='$x' y='$y' width='224' height='58' rx='10' fill='$fill' stroke='$stroke' stroke-width='$strokeW' />"))
+        $labels.Add(("<text x='$($x + 10)' y='$($y + 24)' font-family=""Segoe UI, Arial"" font-size=""13"" font-weight=""600"" fill=""#0f172a"">$([System.Security.SecurityElement]::Escape([string]$node.label))</text>"))
+        if ($node.detail) {
+            $detailText = [string]$node.detail
+            if ($detailText.Length -gt 34) { $detailText = $detailText.Substring(0, 31) + '…' }
+            $labels.Add(("<text x='$($x + 10)' y='$($y + 42)' font-family=""Segoe UI, Arial"" font-size=""11"" fill=""#475569"">$([System.Security.SecurityElement]::Escape($detailText))</text>"))
+        }
+    }
+
+    # Draw edges
     foreach ($edge in @($Model.edges)) {
         if ([string]::IsNullOrWhiteSpace($edge.source) -or [string]::IsNullOrWhiteSpace($edge.target)) { continue }
-        if (-not $positions.Contains($edge.source) -or -not $positions.Contains($edge.target)) {
-            continue
+        if (-not $positions.ContainsKey($edge.source) -or -not $positions.ContainsKey($edge.target)) { continue }
+        $src = $positions[$edge.source]
+        $tgt = $positions[$edge.target]
+        $x1  = $src.x + 224
+        $y1  = $src.y + 29
+        $x2  = $tgt.x
+        $y2  = $tgt.y + 29
+        # Use a mid-point curve for cleaner routing
+        $mx  = [math]::Round(($x1 + $x2) / 2, 0)
+        $connLines.Add(("<path d='M $x1 $y1 C $mx $y1 $mx $y2 $x2 $y2' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />"))
+        if ($edge.label) {
+            $edgeLabelX = [math]::Round(($x1 + $x2) / 2, 0)
+            $edgeLabelY = [math]::Round(($y1 + $y2) / 2 - 5, 0)
+            $labels.Add(("<text x='$edgeLabelX' y='$edgeLabelY' font-family=""Segoe UI, Arial"" font-size=""10"" fill=""#64748b"" text-anchor=""middle"">$([System.Security.SecurityElement]::Escape([string]$edge.label))</text>"))
         }
-
-        $source = $positions[$edge.source]
-        $target = $positions[$edge.target]
-        $x1 = $source.x + 220
-        $y1 = $source.y + 28
-        $x2 = $target.x
-        $y2 = $target.y + 28
-        $lines.Add(('<line x1="{0}" y1="{1}" x2="{2}" y2="{3}" stroke="#64748b" stroke-width="2" />' -f $x1, $y1, $x2, $y2))
-                if ($edge.label) {
-                        $labels.Add(('<text x="{0}" y="{1}" font-family="Segoe UI, Arial" font-size="10" fill="#334155">{2}</text>' -f ([math]::Round((($x1 + $x2) / 2), 0)), ([math]::Round((($y1 + $y2) / 2) - 4, 0)), [System.Security.SecurityElement]::Escape([string]$edge.label)))
-                }
     }
 
+    # Calculate canvas height dynamically
+    $maxY = 900
+    if ($groupOffsets.Count -gt 0) {
+        $maxGroupY = ($groupOffsets.Values | Measure-Object -Maximum).Maximum
+        $maxY = [math]::Max(900, $maxGroupY + 60)
+    }
+    $canvasW = 2080
+
     @"
-<svg xmlns="http://www.w3.org/2000/svg" width="2200" height="900" viewBox="0 0 2200 900">
-    <rect width="2200" height="900" fill="#ffffff" />
-  <text x="20" y="36" font-family="Segoe UI, Arial" font-size="24" fill="#0f172a">$([System.Security.SecurityElement]::Escape($Definition.Title))</text>
-  <text x="20" y="56" font-family="Segoe UI, Arial" font-size="12" fill="#475569">$([System.Security.SecurityElement]::Escape($Manifest.target.environmentLabel)) | Generated $([System.Security.SecurityElement]::Escape($Manifest.run.endTimeUtc)) | Ranger $([System.Security.SecurityElement]::Escape($Manifest.run.toolVersion))</text>
-  $($lines -join [Environment]::NewLine)
+<svg xmlns="http://www.w3.org/2000/svg" width="$canvasW" height="$maxY" viewBox="0 0 $canvasW $maxY">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#94a3b8" />
+    </marker>
+  </defs>
+  <rect width="$canvasW" height="$maxY" fill="#f8fafc" />
+  <rect x="0" y="0" width="$canvasW" height="62" fill="#1e3a5f" />
+  <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">$([System.Security.SecurityElement]::Escape($Definition.Title))</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">$([System.Security.SecurityElement]::Escape($Manifest.target.environmentLabel)) | $([System.Security.SecurityElement]::Escape($Manifest.run.endTimeUtc)) | Ranger $([System.Security.SecurityElement]::Escape($Manifest.run.toolVersion))</text>
+  $($containers -join [Environment]::NewLine)
+  $($connLines -join [Environment]::NewLine)
   $($boxes -join [Environment]::NewLine)
-    $($labels -join [Environment]::NewLine)
+  $($labels -join [Environment]::NewLine)
 </svg>
 "@
 }

@@ -588,12 +588,12 @@ function Test-RangerInteractivePromptAvailable {
         return $false
     }
 
-    try {
-        return [Environment]::UserInteractive -and -not [Console]::IsInputRedirected
-    }
-    catch {
-        return [Environment]::UserInteractive
-    }
+    # [Console]::IsInputRedirected returns true in VS Code terminal, Windows Terminal, and
+    # similar hosts even when a real user is present. Read-Host works correctly in all of
+    # these environments, so UserInteractive alone is the correct gate. IsInputRedirected
+    # is only meaningful for detecting non-interactive CI/service invocations, which
+    # [Environment]::UserInteractive already covers.
+    return [Environment]::UserInteractive
 }
 
 function Test-RangerPlaceholderValue {

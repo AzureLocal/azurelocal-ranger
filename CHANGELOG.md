@@ -8,6 +8,31 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-04-16
+
+### Added
+
+- **Issue #168** — HTML report rebuild. `ConvertTo-RangerHtmlReport` now renders type-aware section content: `type='table'` sections use styled `<table>` elements, `type='kv'` uses a two-column key-value grid, `type='sign-off'` renders a formal handoff table with Implementation Engineer / Technical Reviewer / Customer Representative rows. New section data shapes added for Node Inventory, VM Inventory, Storage Pool Capacity, Physical Disk Inventory, Network Adapter Inventory, Event Log Summary, and Security Audit. `ConvertTo-RangerMarkdownReport` updated with equivalent type-aware rendering for table, kv, and sign-off sections.
+- **Issue #140** — Diagram engine quality. `ConvertTo-RangerSvgDiagram` rebuilt with two-pass layout: first pass assigns positions, second renders group containers (color-coded background rects with labels) then nodes and cubic bezier edges. `ConvertTo-RangerDrawIoXml` rebuilt with swim-lane group containers, per-kind node styles (volume, disk, adapter, workload, policy, bmc, hardware, monitor, heat), and orthogonal edge style. Near-empty diagrams (< 1 non-root node) return `$null` and record a skipped artifact instead of writing an unusable file.
+- **Issue #96** — PDF output. `Write-RangerPdfReport` now prepends a cover page with title, cluster name, mode, version, generated date, and confidentiality notice. `Get-RangerReportPlainTextLines` renders type-aware plain text for PDF: pipe-delimited tables, aligned key: value pairs, and sign-off placeholders.
+- **Issue #94** — WAF Assessment integration. New optional collector `Invoke-RangerWafAssessmentCollector` queries Azure Advisor recommendations and maps them to WAF pillars (Reliability, Security, Cost Optimization, Operational Excellence, Performance Efficiency). New rule engine (`Invoke-RangerWafRuleEvaluation`) evaluates 23 manifest-path rules from `config/waf-rules.json` — rules do not require re-collection and can be re-evaluated from any saved manifest. WAF Scorecard table (management + technical tiers) and WAF Findings detail table (technical tier) added to report payload. New `wafAssessment` manifest domain and fixture file.
+
+### Fixed
+
+- **Invoke-RangerWizard interactive gate** — `Test-RangerInteractivePromptAvailable` previously checked `[Console]::IsInputRedirected`, which returns `true` in VS Code terminal, Windows Terminal, and similar hosts even when a real user is present. The check now uses only `[Environment]::UserInteractive`, which correctly distinguishes interactive users from CI runners, service accounts, and scheduled tasks. Two unit tests added to `Config.Tests.ps1` to prevent regression.
+
+## [1.3.0] — 2026-04-16
+
+### Added
+
+- **Issue #171** — Full config parameter coverage. Every `behavior.*`, `output.*`, and `credentials.azure.*` config key is now a direct runtime parameter on `Invoke-AzureLocalRanger`; parameters take precedence over config file values via `Set-RangerStructuralOverrides`.
+- **Issue #174** — First Run guide (`docs/operator/first-run.md`): six-step linear guide from install to output with no decisions.
+- **Issue #175** — Wizard guide (`docs/operator/wizard-guide.md`): full `Invoke-RangerWizard` walkthrough with example inputs and generated YAML.
+- **Issue #176** — Command reference scenarios: nine copy-paste examples and parameter precedence documentation added to `docs/operator/command-reference.md`.
+- **Issue #177** — Configuration reference (`docs/operator/configuration-reference.md`): every config key with type, default, required/optional, and Key Vault syntax.
+- **Issue #178** — Understanding output guide (`docs/operator/understanding-output.md`): output directory tree, role-based reading path, collector status interpretation.
+- **Issue #179** — Discovery domain enhancements: all 10 domain pages now include example manifest data, common findings, partial status guidance, and domain dependencies.
+
 ## [1.2.0] — 2026-04-16
 
 ### Added

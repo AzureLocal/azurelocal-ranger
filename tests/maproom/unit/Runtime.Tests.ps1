@@ -23,6 +23,7 @@ Describe 'Azure Local Ranger runtime' {
             'workload-identity-azure' = (Join-Path $fixtureRoot 'workload-identity-azure.json')
             'monitoring-observability' = (Join-Path $fixtureRoot 'monitoring-observability.json')
             'management-performance' = (Join-Path $fixtureRoot 'management-performance.json')
+            'waf-assessment' = (Join-Path $fixtureRoot 'waf-assessment.json')
         }
 
         $result = Invoke-AzureLocalRanger -ConfigObject $config -OutputPath (Join-Path $TestDrive 'output') -NoRender
@@ -30,7 +31,7 @@ Describe 'Azure Local Ranger runtime' {
         Test-Path -Path (Join-Path $result.PackageRoot 'package-index.json') | Should -BeTrue
 
         $manifest = Get-Content -Path $result.ManifestPath -Raw | ConvertFrom-Json -Depth 100
-        @($manifest.collectors.PSObject.Properties).Count | Should -Be 6
+        @($manifest.collectors.PSObject.Properties).Count | Should -Be 7
         $manifest.domains.clusterNode.nodes.Count | Should -Be 2
         $manifest.domains.virtualMachines.inventory.Count | Should -Be 1
         $manifest.domains.monitoring.ama.Count | Should -Be 1
@@ -209,6 +210,7 @@ Describe 'Azure Local Ranger runtime' {
             'workload-identity-azure' = (Join-Path $fixtureRoot 'workload-identity-azure.json')
             'monitoring-observability' = (Join-Path $fixtureRoot 'monitoring-observability.json')
             'management-performance' = (Join-Path $fixtureRoot 'management-performance.json')
+            'waf-assessment' = (Join-Path $fixtureRoot 'waf-assessment.json')
         }
 
         $result = Invoke-AzureLocalRanger -ConfigObject $config -OutputPath (Join-Path $TestDrive 'schema-output') -NoRender
@@ -239,6 +241,7 @@ Describe 'Azure Local Ranger runtime' {
             'workload-identity-azure' = (Join-Path $fixtureRoot 'workload-identity-azure.json')
             'monitoring-observability' = (Join-Path $fixtureRoot 'monitoring-observability.json')
             'management-performance' = (Join-Path $fixtureRoot 'management-performance-degraded.json')
+            'waf-assessment' = (Join-Path $fixtureRoot 'waf-assessment.json')
         }
 
         $result = Invoke-AzureLocalRanger -ConfigObject $config -OutputPath (Join-Path $TestDrive 'degraded-output') -NoRender
@@ -266,6 +269,7 @@ Describe 'Azure Local Ranger runtime' {
             'workload-identity-azure' = (Join-Path $fixtureRoot 'workload-identity-azure.json')
             'monitoring-observability' = (Join-Path $fixtureRoot 'monitoring-observability.json')
             'management-performance' = (Join-Path $fixtureRoot 'management-performance.json')
+            'waf-assessment' = (Join-Path $fixtureRoot 'waf-assessment.json')
         }
 
         InModuleScope AzureLocalRanger {
@@ -304,6 +308,7 @@ Describe 'Azure Local Ranger runtime' {
             'workload-identity-azure' = (Join-Path $fixtureRoot 'workload-identity-azure.json')
             'monitoring-observability' = (Join-Path $fixtureRoot 'monitoring-observability.json')
             'management-performance' = (Join-Path $fixtureRoot 'management-performance.json')
+            'waf-assessment' = (Join-Path $fixtureRoot 'waf-assessment.json')
         }
 
         $baselineResult = Invoke-AzureLocalRanger -ConfigObject $baselineConfig -OutputPath (Join-Path $TestDrive 'baseline-output') -NoRender
@@ -326,6 +331,7 @@ Describe 'Azure Local Ranger runtime' {
             'workload-identity-azure' = (Join-Path $fixtureRoot 'workload-identity-azure.json')
             'monitoring-observability' = (Join-Path $fixtureRoot 'monitoring-observability.json')
             'management-performance' = (Join-Path $fixtureRoot 'management-performance.json')
+            'waf-assessment' = (Join-Path $fixtureRoot 'waf-assessment.json')
         }
 
         $driftResult = Invoke-AzureLocalRanger -ConfigObject $driftConfig -OutputPath (Join-Path $TestDrive 'drift-output') -BaselineManifestPath $baselineResult.ManifestPath

@@ -1,0 +1,56 @@
+{
+  "Status": "success",
+  "Domains": {
+    "wafAssessment": {
+      "advisorRecommendations": [
+        {
+          "id": "advisor-rec-001",
+          "category": "HighAvailability",
+          "wafPillar": "Reliability",
+          "impact": "High",
+          "impactedField": "microsoft.azurestackhci/clusters",
+          "impactedValue": "azlocal-iic-01",
+          "shortDescription": "Enable fault domains for Azure Local cluster",
+          "remediation": "Configure fault domains to distribute workloads across physical failure boundaries.",
+          "score": 75.0,
+          "lastUpdated": "2026-04-01T00:00:00Z",
+          "resourceId": "/subscriptions/33333333-3333-3333-3333-333333333333/resourceGroups/rg-iic-compute-01/providers/Microsoft.AzureStackHCI/clusters/azlocal-iic-01"
+        }
+      ],
+      "byPillar": [
+        { "pillar": "Reliability", "count": 1, "highImpactCount": 1, "recommendations": [] },
+        { "pillar": "Security", "count": 0, "highImpactCount": 0, "recommendations": [] },
+        { "pillar": "Cost Optimization", "count": 0, "highImpactCount": 0, "recommendations": [] },
+        { "pillar": "Operational Excellence", "count": 0, "highImpactCount": 0, "recommendations": [] },
+        { "pillar": "Performance Efficiency", "count": 0, "highImpactCount": 0, "recommendations": [] }
+      ],
+      "summary": {
+        "totalAdvisorRecommendations": 1,
+        "highImpactCount": 1,
+        "mediumImpactCount": 0,
+        "lowImpactCount": 0,
+        "pillarBreakdown": [
+          { "pillar": "Reliability", "count": 1 },
+          { "pillar": "Security", "count": 0 },
+          { "pillar": "Cost Optimization", "count": 0 },
+          { "pillar": "Operational Excellence", "count": 0 },
+          { "pillar": "Performance Efficiency", "count": 0 }
+        ]
+      }
+    }
+  },
+  "Findings": [
+    {
+      "severity": "warning",
+      "title": "Azure Advisor has 1 high-impact recommendation(s) for this environment",
+      "description": "Azure Advisor returned 1 High-impact recommendation(s). Review the WAF Assessment section of the report for details.",
+      "currentState": "1 high-impact Advisor recommendations",
+      "recommendation": "Review each high-impact recommendation in the Azure portal Advisor blade and create work items to address before handoff.",
+      "affectedComponents": []
+    }
+  ],
+  "Relationships": [],
+  "RawEvidence": {
+    "advisorRecommendations": []
+  }
+}

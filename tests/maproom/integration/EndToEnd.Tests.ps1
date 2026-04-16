@@ -24,6 +24,7 @@ Describe 'Azure Local Ranger end-to-end fixture package' {
             'workload-identity-azure' = (Join-Path $fixtureRoot 'workload-identity-azure.json')
             'monitoring-observability' = (Join-Path $fixtureRoot 'monitoring-observability.json')
             'management-performance' = (Join-Path $fixtureRoot 'management-performance.json')
+            'waf-assessment' = (Join-Path $fixtureRoot 'waf-assessment.json')
         }
 
         $result = Invoke-AzureLocalRanger -ConfigObject $config -OutputPath (Join-Path $TestDrive 'packages')

@@ -58,6 +58,15 @@ function Get-RangerCollectorDefinitions {
             RequiredTargets   = @('cluster')
             RequiredCredential = 'cluster'
         }
+        'waf-assessment' = [pscustomobject][ordered]@{
+            Id                 = 'waf-assessment'
+            FunctionName       = 'Invoke-RangerWafAssessmentCollector'
+            Class              = 'optional'
+            Covers             = @('waf-assessment')
+            DomainPayloads     = @('wafAssessment')
+            RequiredTargets    = @('azure')
+            RequiredCredential = 'azure'
+        }
     }
 }
 
@@ -81,6 +90,8 @@ function Get-RangerDomainAliases {
         'observability'        = 'observability'
         'management-tools'     = 'management-tools'
         'performance'          = 'performance'
+        'waf'                  = 'waf-assessment'
+        'waf-assessment'       = 'waf-assessment'
     }
 }
 
@@ -196,6 +207,17 @@ function Get-RangerReservedDomainPayloads {
         oemIntegration = [ordered]@{
             endpoints         = @()
             managementPosture = @()
+        }
+        wafAssessment = [ordered]@{
+            advisorRecommendations = @()
+            byPillar               = @()
+            summary                = [ordered]@{
+                totalAdvisorRecommendations = 0
+                highImpactCount             = 0
+                mediumImpactCount           = 0
+                lowImpactCount              = 0
+                pillarBreakdown             = @()
+            }
         }
     }
 }

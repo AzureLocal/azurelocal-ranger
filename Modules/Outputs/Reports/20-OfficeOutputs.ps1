@@ -129,8 +129,34 @@ function Get-RangerReportPlainTextLines {
     foreach ($section in @($Report.Sections)) {
         $lines.Add($section.heading)
         $lines.Add(('-' * [math]::Max(6, $section.heading.Length)))
-        foreach ($entry in @($section.body)) {
-            $lines.Add("- $entry")
+        switch ($section.type) {
+            'table' {
+                # Render headers
+                if ($section.headers) {
+                    $lines.Add(($section.headers -join '  |  '))
+                    $lines.Add(('-' * 80))
+                }
+                foreach ($row in @($section.rows)) {
+                    $lines.Add(($row -join '  |  '))
+                }
+            }
+            'kv' {
+                foreach ($pair in @($section.rows)) {
+                    $lines.Add(('{0,-28} {1}' -f ($pair[0] + ':'), $pair[1]))
+                }
+            }
+            'sign-off' {
+                $lines.Add('Role                         Name             Date         Signature')
+                $lines.Add(('-' * 80))
+                $lines.Add('Implementation Engineer      _______________  ___________  _______________')
+                $lines.Add('Technical Reviewer           _______________  ___________  _______________')
+                $lines.Add('Customer Representative      _______________  ___________  _______________')
+            }
+            default {
+                foreach ($entry in @($section.body)) {
+                    $lines.Add("- $entry")
+                }
+            }
         }
         $lines.Add('')
     }
@@ -391,7 +417,30 @@ function Write-RangerPdfReport {
         [string]$Path
     )
 
-    $allLines = @(Get-RangerReportPlainTextLines -Report $Report -WrapWidth 92)
+    # Cover page lines (#96)
+    $coverLines = @(
+        '',
+        '',
+        '',
+        '  Azure Local Ranger',
+        ('  ' + ('=' * 60)),
+        '',
+        "  $($Report.Title)",
+        '',
+        "  Cluster:          $($Report.ClusterName)",
+        "  Mode:             $($Report.Mode)",
+        "  Ranger Version:   $($Report.Version)",
+        "  Generated:        $($Report.GeneratedAt)",
+        '',
+        ('  ' + ('=' * 60)),
+        '',
+        '  CONFIDENTIAL — INTERNAL USE ONLY',
+        '',
+        '  This document was generated automatically by Azure Local Ranger.',
+        '  Review all findings and recommendations before use as a formal record.'
+    )
+
+    $allLines = @($coverLines) + @('') + @(Get-RangerReportPlainTextLines -Report $Report -WrapWidth 92)
     $linesPerPage = 50
     $pageSets = New-Object System.Collections.Generic.List[object]
     for ($index = 0; $index -lt $allLines.Count; $index += $linesPerPage) {

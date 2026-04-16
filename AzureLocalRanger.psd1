@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '1.3.0'
+    ModuleVersion     = '1.4.0'
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
@@ -53,6 +53,26 @@
                 'Az.ConnectedMachine'
             )
             ReleaseNotes = @'
+## v1.4.0 — Report Quality
+
+### Added
+- **HTML report rebuild (#168)** — Type-aware section rendering: table, kv-grid, and sign-off
+  section types. Node Inventory, VM Inventory, Storage Pool Capacity, Physical Disk Inventory,
+  Network Adapter Inventory, Event Log Summary, and Security Audit tables. Markdown report
+  updated with equivalent type-aware rendering including pipe-delimited tables and sign-off
+  placeholder rows.
+- **Diagram engine quality (#140)** — SVG diagrams rebuilt with group containers, color-coded
+  per-node-kind fills, cubic bezier edges with arrowheads, and dark header bar. draw.io XML
+  rebuilt with swim-lane group containers and per-kind node styles. Near-empty diagrams skip
+  gracefully and record a skipped artifact.
+- **PDF output (#96)** — Cover page prepended to all PDF reports with title, cluster name,
+  mode, version, generated date, and confidentiality notice. Plain-text PDF renderer updated
+  with type-aware section output.
+- **WAF Assessment integration (#94)** — New optional collector queries Azure Advisor
+  recommendations and maps to WAF pillars. Rule engine evaluates 23 manifest-path rules from
+  config/waf-rules.json without re-collection. WAF Scorecard and Findings tables added to
+  management and technical report tiers. New wafAssessment manifest domain.
+
 ## v1.3.0 — Operator Experience
 
 ### Added

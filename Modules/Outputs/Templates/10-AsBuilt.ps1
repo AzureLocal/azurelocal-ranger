@@ -21,14 +21,15 @@ function New-RangerAsBuiltDocumentControlSection {
 
     [ordered]@{
         heading = 'Document Control'
-        body    = @(
-            "Environment: $($summary.ClusterName)",
-            "Package ID: $packageId",
-            "Report tier: $Tier",
-            "Tool version: $($Manifest.run.toolVersion)",
-            "Discovery run completed: $($Manifest.run.endTimeUtc)",
-            "Schema version: $($Manifest.run.schemaVersion)",
-            "Document status: FINAL — AS-BUILT HANDOFF"
+        type    = 'kv'
+        rows    = @(
+            @('Environment',              $summary.ClusterName),
+            @('Package ID',               $packageId),
+            @('Report Tier',              $Tier),
+            @('Tool Version',             $Manifest.run.toolVersion),
+            @('Discovery Run Completed',  $Manifest.run.endTimeUtc),
+            @('Schema Version',           $Manifest.run.schemaVersion),
+            @('Document Status',          'FINAL — AS-BUILT HANDOFF')
         )
     }
 }
@@ -50,7 +51,6 @@ function New-RangerAsBuiltInstallationRegisterSection {
     $summary = Get-RangerManifestSummary -Manifest $Manifest
     $clusterNode = $Manifest.domains.clusterNode
     $storage     = $Manifest.domains.storage
-    $networking  = $Manifest.domains.networking
     $azureInt    = $Manifest.domains.azureIntegration
 
     $nodeList = @($clusterNode.nodes | ForEach-Object {
@@ -90,16 +90,6 @@ function New-RangerAsBuiltSignOffSection {
     #>
     [ordered]@{
         heading = 'Sign-Off'
-        body    = @(
-            'This as-built package was generated from the Ranger discovery run on the date shown in the Document Control section. Review the findings before accepting the package as the formal handoff record.',
-            '',
-            'Handoff sign-off table (complete before submission):',
-            '',
-            '| Role | Name | Date | Signature |',
-            '|---|---|---|---|',
-            '| Implementation Engineer | | | |',
-            '| Technical Reviewer | | | |',
-            '| Customer Representative | | | |'
-        )
+        type    = 'sign-off'
     }
 }

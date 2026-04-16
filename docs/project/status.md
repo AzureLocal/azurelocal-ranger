@@ -1,8 +1,8 @@
 # Project Status
 
-## Current Release Track — v1.3.0
+## Current Release Track — v1.4.0
 
-AzureLocalRanger v1.3.0 is the current release — the Operator Experience milestone. It delivers full config parameter coverage on `Invoke-AzureLocalRanger`, five new operator guide pages, enhanced discovery domain docs, and all v1.2.x fixes.
+AzureLocalRanger v1.4.0 is the current release — the Report Quality milestone. It delivers handoff-quality HTML reports with type-aware table rendering, improved SVG and draw.io diagram output, PDF cover pages, and WAF Assessment integration with an external rule engine.
 
 ```powershell
 Install-Module AzureLocalRanger -Force
@@ -26,11 +26,15 @@ Import-Module AzureLocalRanger
 | Interactive wizard | ✅ Complete — Invoke-RangerWizard guided config + run |
 | Full config parameter coverage | ✅ Complete — every config key is a runtime parameter on Invoke-AzureLocalRanger |
 | Operator guide docs | ✅ Complete — First Run, Wizard Guide, Configuration Reference, Understanding Output |
+| HTML report rebuild | ✅ Complete — type-aware table/kv/sign-off rendering, inventory tables (#168) |
+| Diagram engine quality | ✅ Complete — group containers, per-kind styles, SVG + draw.io (#140) |
+| PDF output | ✅ Complete — cover page, type-aware plain-text sections (#96) |
+| WAF Assessment integration | ✅ Complete — Azure Advisor + manifest rule engine, 23 built-in rules (#94) |
 | Pester test suite | ✅ 74 tests passing |
 | Field validation (TRAILHEAD) | ✅ v1.1.2 gate closed — all 6 collectors succeeded, zero auth retries |
 | Report output (HTML/Markdown/JSON/DOCX/XLSX/PDF) | ✅ Complete |
 | Diagram output (SVG/draw.io) | ✅ Complete |
-| PSGallery release | ✅ `1.3.0` current on PSGallery |
+| PSGallery release | ✅ `1.4.0` current on PSGallery |
 | Arc-first node inventory | ✅ Complete |
 | Domain auto-detection | ✅ Complete |
 | Parameter-first input model | ✅ Complete |

@@ -1,0 +1,299 @@
+function Resolve-RangerManifestPath {
+    <#
+    .SYNOPSIS
+        Resolves a dot-notation path against the audit manifest hashtable.
+    .DESCRIPTION
+        Walks the manifest using dot-separated path segments and returns the value
+        at that location. Returns $null if any segment is missing or the path is invalid.
+        Supports IDictionary (hashtable / ordered hashtable) and PSObject properties.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Manifest,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    $segments = $Path -split '\.'
+    $current  = $Manifest
+    foreach ($seg in $segments) {
+        if ($null -eq $current) { return $null }
+        if ($current -is [System.Collections.IDictionary]) {
+            if (-not $current.Contains($seg)) { return $null }
+            $current = $current[$seg]
+        } elseif ($null -ne $current.PSObject) {
+            $prop = $current.PSObject.Properties[$seg]
+            if ($null -eq $prop) { return $null }
+            $current = $prop.Value
+        } else {
+            return $null
+        }
+    }
+    return $current
+}
+
+function Invoke-RangerWafRuleEvaluation {
+    <#
+    .SYNOPSIS
+        Evaluates WAF rules from waf-rules.json against the audit manifest.
+    .DESCRIPTION
+        Loads the rule definitions from config/waf-rules.json in the module root,
+        evaluates each rule against the current manifest, and returns a structured
+        result object per pillar suitable for the WAF Scorecard report section.
+
+        Rules do not require re-collection - this function can be called against any
+        saved manifest by regenerating reports with Export-AzureLocalRangerReport.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Manifest
+    )
+
+    # Locate waf-rules.json relative to the installed module
+    $moduleBase  = (Get-Module AzureLocalRanger -ErrorAction SilentlyContinue).ModuleBase
+    $rulesPath   = if ($moduleBase) { Join-Path $moduleBase 'config/waf-rules.json' } else { $null }
+    $rulesData   = $null
+
+    if ($rulesPath -and (Test-Path -Path $rulesPath -PathType Leaf)) {
+        try {
+            $rulesData = Get-Content -Path $rulesPath -Raw | ConvertFrom-Json
+        } catch {
+            Write-Warning "WAF rule evaluation: failed to load waf-rules.json - $($_.Exception.Message)"
+        }
+    }
+
+    if ($null -eq $rulesData -or @($rulesData.rules).Count -eq 0) {
+        return [ordered]@{
+            pillarScores   = @()
+            ruleResults    = @()
+            advisorFindings = @()
+            summary        = [ordered]@{ totalRules = 0; passingRules = 0; overallScore = 0; status = 'no-rules' }
+        }
+    }
+
+    $ruleResults = New-Object System.Collections.ArrayList
+
+    foreach ($rule in $rulesData.rules) {
+        $rawValue = Resolve-RangerManifestPath -Manifest $Manifest -Path $rule.manifestPath
+        $pass     = switch ($rule.check) {
+            'equals'           {
+                $null -ne $rawValue -and [string]$rawValue -eq [string]$rule.expected
+            }
+            'notEquals'        {
+                [string]$rawValue -ne [string]$rule.expected
+            }
+            'greaterThan'      {
+                $null -ne $rawValue -and $rawValue -isnot [array] -and
+                    [double]($rawValue -as [double]) -gt [double]$rule.threshold
+            }
+            'lessThan'         {
+                $null -ne $rawValue -and $rawValue -isnot [array] -and
+                    [double]($rawValue -as [double]) -lt [double]$rule.threshold
+            }
+            'greaterThanOrEqual' {
+                $null -ne $rawValue -and [double]($rawValue -as [double]) -ge [double]$rule.threshold
+            }
+            'lessThanOrEqual'  {
+                $null -ne $rawValue -and [double]($rawValue -as [double]) -le [double]$rule.threshold
+            }
+            'notNull'          {
+                $null -ne $rawValue -and [string]$rawValue -ne '' -and
+                    [string]$rawValue -ne '(not recorded)' -and [string]$rawValue -ne 'null'
+            }
+            'boolTrue'         { $rawValue -eq $true }
+            'boolFalse'        { $rawValue -eq $false }
+            'countGreaterThan' { @($rawValue).Count -gt [int]$rule.threshold }
+            'countEquals'      { @($rawValue).Count -eq [int]$rule.expected }
+            default            { $false }
+        }
+
+        [void]$ruleResults.Add([ordered]@{
+            id             = $rule.id
+            pillar         = $rule.pillar
+            title          = $rule.title
+            description    = $rule.description
+            severity       = $rule.severity
+            recommendation = $rule.recommendation
+            manifestPath   = $rule.manifestPath
+            resolvedValue  = $rawValue
+            pass           = $pass
+        })
+    }
+
+    # Aggregate per-pillar scores
+    $pillarOrder  = @('Reliability', 'Security', 'Cost Optimization', 'Operational Excellence', 'Performance Efficiency')
+    $pillarScores = New-Object System.Collections.ArrayList
+    foreach ($pillar in $pillarOrder) {
+        $pillarRules = @($ruleResults | Where-Object { $_.pillar -eq $pillar })
+        $total       = $pillarRules.Count
+        $passing     = @($pillarRules | Where-Object { $_.pass -eq $true }).Count
+        $score       = if ($total -gt 0) { [int][math]::Round($passing / $total * 100) } else { 0 }
+        $status      = switch ($score) {
+            { $_ -ge 90 } { 'Excellent' }
+            { $_ -ge 75 } { 'Good' }
+            { $_ -ge 50 } { 'Needs Attention' }
+            default        { 'At Risk' }
+        }
+        $topFinding = @($pillarRules | Where-Object { $_.pass -eq $false } | Sort-Object {
+            switch ($_.severity) { 'critical' { 0 } 'warning' { 1 } default { 2 } }
+        } | Select-Object -First 1)
+
+        [void]$pillarScores.Add([ordered]@{
+            pillar       = $pillar
+            total        = $total
+            passing      = $passing
+            score        = $score
+            status       = $status
+            topFinding   = if ($topFinding.Count -gt 0) { $topFinding[0].title } else { '-' }
+            topSeverity  = if ($topFinding.Count -gt 0) { $topFinding[0].severity } else { '-' }
+        })
+    }
+
+    $allRules  = @($ruleResults)
+    $allPass   = @($allRules | Where-Object { $_.pass -eq $true }).Count
+    $overall   = if ($allRules.Count -gt 0) { [int][math]::Round($allPass / $allRules.Count * 100) } else { 0 }
+
+    return [ordered]@{
+        pillarScores    = @($pillarScores)
+        ruleResults     = @($ruleResults)
+        summary         = [ordered]@{
+            totalRules    = $allRules.Count
+            passingRules  = $allPass
+            failingRules  = $allRules.Count - $allPass
+            overallScore  = $overall
+            status        = switch ($overall) {
+                { $_ -ge 90 } { 'Excellent' }
+                { $_ -ge 75 } { 'Good' }
+                { $_ -ge 50 } { 'Needs Attention' }
+                default        { 'At Risk' }
+            }
+        }
+    }
+}
+
+function Invoke-RangerWafAssessmentCollector {
+    <#
+    .SYNOPSIS
+        Queries Azure Advisor for WAF-relevant recommendations for the Azure Local cluster.
+    .DESCRIPTION
+        Calls Get-AzAdvisorRecommendation for the configured subscription, filters results
+        to the resource group and HCI resource types, and maps Advisor categories to WAF
+        pillars. The returned wafAssessment domain is stored in the manifest and used by
+        Invoke-RangerWafRuleEvaluation at report-generation time.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Config,
+
+        [Parameter(Mandatory = $true)]
+        $CredentialMap,
+
+        [Parameter(Mandatory = $true)]
+        [object]$Definition,
+
+        [Parameter(Mandatory = $true)]
+        [string]$PackageRoot
+    )
+
+    $fixture = Get-RangerCollectorFixtureData -Config $Config -CollectorId $Definition.Id
+    if ($fixture) {
+        return ConvertTo-RangerHashtable -InputObject $fixture
+    }
+
+    # Advisor category -> WAF pillar mapping
+    $categoryMap = @{
+        HighAvailability       = 'Reliability'
+        Security               = 'Security'
+        Cost                   = 'Cost Optimization'
+        OperationalExcellence  = 'Operational Excellence'
+        Performance            = 'Performance Efficiency'
+    }
+
+    $advisorRecommendations = @(
+        Invoke-RangerSafeAction -Label 'Azure Advisor recommendations' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+                param($SubscriptionId, $ResourceGroup)
+                if (-not (Get-Command -Name Get-AzAdvisorRecommendation -ErrorAction SilentlyContinue)) { return @() }
+                if ([string]::IsNullOrWhiteSpace($SubscriptionId)) { return @() }
+
+                $allRecs = @(Get-AzAdvisorRecommendation -ErrorAction SilentlyContinue)
+                $hciTypes = @('microsoft.azurestackhci/clusters', 'microsoft.hybridcompute/machines', 'microsoft.azurestackhci')
+
+                # Filter to the configured resource group and HCI-relevant resource types where possible
+                $filtered = @($allRecs | Where-Object {
+                    $r = $_
+                    $inRg    = [string]::IsNullOrWhiteSpace($ResourceGroup) -or ($r.ImpactedField -match $ResourceGroup -or $r.ResourceId -match $ResourceGroup)
+                    $isHci   = $hciTypes | ForEach-Object { $r.ImpactedField -match $_ -or $r.ImpactedValue -match $_ } | Where-Object { $_ }
+                    $inRg -or $isHci.Count -gt 0
+                })
+
+                # If nothing matched the filter, return the broader subscription results
+                if ($filtered.Count -eq 0) { $filtered = @($allRecs | Select-Object -First 50) }
+
+                @($filtered | ForEach-Object {
+                    $r       = $_
+                    $cat     = [string]$r.Category
+                    [ordered]@{
+                        id              = $r.Name
+                        category        = $cat
+                        wafPillar       = if ($cat -and $categoryMap.ContainsKey($cat)) { $categoryMap[$cat] } else { 'Operational Excellence' }
+                        impact          = [string]$r.Impact
+                        impactedField   = $r.ImpactedField
+                        impactedValue   = $r.ImpactedValue
+                        shortDescription = [string]$r.ShortDescription.Problem
+                        remediation     = [string]$r.ShortDescription.Solution
+                        score           = if ($null -ne $r.Score) { [double]$r.Score } else { 0 }
+                        lastUpdated     = [string]$r.LastUpdated
+                        resourceId      = $r.ResourceId
+                    }
+                })
+            }
+        }
+    )
+
+    # Group Advisor recommendations by WAF pillar
+    $byPillar = New-Object System.Collections.ArrayList
+    foreach ($pillar in @('Reliability', 'Security', 'Cost Optimization', 'Operational Excellence', 'Performance Efficiency')) {
+        $pillarRecs = @($advisorRecommendations | Where-Object { $_.wafPillar -eq $pillar })
+        [void]$byPillar.Add([ordered]@{
+            pillar = $pillar
+            count  = $pillarRecs.Count
+            highImpactCount = @($pillarRecs | Where-Object { $_.impact -match 'High' }).Count
+            recommendations = @($pillarRecs)
+        })
+    }
+
+    $findings = New-Object System.Collections.ArrayList
+
+    if ($advisorRecommendations.Count -eq 0) {
+        [void]$findings.Add((New-RangerFinding -Severity informational -Title 'No Azure Advisor recommendations retrieved' -Description 'The WAF assessment collector could not retrieve Azure Advisor recommendations. This may be because the Az.Advisor module is not installed, no subscription context was provided, or no recommendations are currently active.' -CurrentState 'advisor data not collected' -Recommendation 'Install the Az.Advisor module and ensure a valid subscriptionId is configured to enable Advisor-based WAF recommendations.'))
+    }
+
+    $highImpactCount = @($advisorRecommendations | Where-Object { $_.impact -match 'High' }).Count
+    if ($highImpactCount -gt 0) {
+        [void]$findings.Add((New-RangerFinding -Severity warning -Title "Azure Advisor has $highImpactCount high-impact recommendation(s) for this environment" -Description "Azure Advisor returned $highImpactCount High-impact recommendation(s). Review the WAF Assessment section of the report for details." -CurrentState "$highImpactCount high-impact Advisor recommendations" -Recommendation 'Review each high-impact recommendation in the Azure portal Advisor blade and create work items to address before handoff.'))
+    }
+
+    return @{
+        Status   = 'success'
+        Domains  = @{
+            wafAssessment = [ordered]@{
+                advisorRecommendations = ConvertTo-RangerHashtable -InputObject $advisorRecommendations
+                byPillar               = ConvertTo-RangerHashtable -InputObject $byPillar
+                summary                = [ordered]@{
+                    totalAdvisorRecommendations = $advisorRecommendations.Count
+                    highImpactCount             = $highImpactCount
+                    mediumImpactCount           = @($advisorRecommendations | Where-Object { $_.impact -match 'Medium' }).Count
+                    lowImpactCount              = @($advisorRecommendations | Where-Object { $_.impact -match 'Low' }).Count
+                    pillarBreakdown             = @($byPillar | ForEach-Object { [ordered]@{ pillar = $_.pillar; count = $_.count } })
+                }
+            }
+        }
+        Findings      = @($findings)
+        Relationships = @()
+        RawEvidence   = [ordered]@{
+            advisorRecommendations = ConvertTo-RangerHashtable -InputObject $advisorRecommendations
+        }
+    }
+}

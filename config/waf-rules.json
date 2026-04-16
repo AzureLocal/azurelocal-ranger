@@ -1,0 +1,253 @@
+{
+  "version": "1.0.0",
+  "description": "Azure Well-Architected Framework rules evaluated against the Ranger audit manifest. Rules do not require re-collection — they evaluate from a saved manifest. Add or edit rules here without modifying module code.",
+  "pillars": ["Reliability", "Security", "Cost Optimization", "Operational Excellence", "Performance Efficiency"],
+  "rules": [
+    {
+      "id": "REL-001",
+      "pillar": "Reliability",
+      "title": "Cluster nodes are healthy",
+      "description": "One or more cluster nodes are in an unhealthy state, which may impact workload availability and resiliency.",
+      "manifestPath": "domains.clusterNode.healthSummary.unhealthy",
+      "check": "equals",
+      "expected": 0,
+      "severity": "warning",
+      "recommendation": "Investigate unhealthy cluster nodes via Get-ClusterNode and resolve faults before declaring the environment production-ready."
+    },
+    {
+      "id": "REL-002",
+      "pillar": "Reliability",
+      "title": "No unhealthy storage disks",
+      "description": "Unhealthy physical disks reduce storage resiliency and increase the risk of data loss under a second failure.",
+      "manifestPath": "domains.storage.summary.unhealthyDisks",
+      "check": "equals",
+      "expected": 0,
+      "severity": "warning",
+      "recommendation": "Review disk health via Get-PhysicalDisk. Replace failed or warning-state disks and verify storage pool repair completes before handoff."
+    },
+    {
+      "id": "REL-003",
+      "pillar": "Reliability",
+      "title": "Fault domains are configured",
+      "description": "Fault domain configuration ensures workload placement accounts for physical failure boundaries. An empty fault domain set means workloads may not be distributed across failure boundaries.",
+      "manifestPath": "domains.clusterNode.faultDomains",
+      "check": "countGreaterThan",
+      "threshold": 0,
+      "severity": "informational",
+      "recommendation": "Configure fault domains using New-ClusterFaultDomain to ensure VMs are distributed across physical racks or chassis."
+    },
+    {
+      "id": "REL-004",
+      "pillar": "Reliability",
+      "title": "Cluster quorum is configured",
+      "description": "Without a recognised quorum configuration, the cluster may not survive a node failure.",
+      "manifestPath": "domains.clusterNode.quorum.type",
+      "check": "notNull",
+      "severity": "warning",
+      "recommendation": "Verify cluster quorum configuration via Get-ClusterQuorum. A witness (cloud or disk) is strongly recommended for even-node clusters."
+    },
+    {
+      "id": "REL-005",
+      "pillar": "Reliability",
+      "title": "No unhealthy storage pools",
+      "description": "A degraded storage pool reduces redundancy and may cause data loss if additional disks fail.",
+      "manifestPath": "domains.storage.summary.unhealthyPools",
+      "check": "equals",
+      "expected": 0,
+      "severity": "warning",
+      "recommendation": "Review pool health via Get-StoragePool. Trigger repair jobs and monitor until pools return to Healthy state."
+    },
+    {
+      "id": "REL-006",
+      "pillar": "Reliability",
+      "title": "Backup items are tracked for workloads",
+      "description": "No backup items were discovered in the scoped resource group. Workloads without backup coverage are at risk of data loss in a disaster scenario.",
+      "manifestPath": "domains.azureIntegration.backup",
+      "check": "countGreaterThan",
+      "threshold": 0,
+      "severity": "warning",
+      "recommendation": "Configure Azure Backup for VMs via Azure Site Recovery or Azure Backup vaults, then confirm items appear in the resource group."
+    },
+    {
+      "id": "SEC-001",
+      "pillar": "Security",
+      "title": "Secured-Core is enabled on cluster nodes",
+      "description": "Secured-Core provides hardware-anchored security capabilities including DRTM, HVCI, and Credential Guard. Nodes without Secured-Core enabled have a reduced security baseline.",
+      "manifestPath": "domains.identitySecurity.summary.securedCoreNodes",
+      "check": "greaterThan",
+      "threshold": 0,
+      "severity": "warning",
+      "recommendation": "Enable Secured-Core on all cluster nodes via the Azure Local portal or PowerShell. Verify UEFI Secure Boot and TPM 2.0 are active on each node."
+    },
+    {
+      "id": "SEC-002",
+      "pillar": "Security",
+      "title": "BitLocker encryption is enabled",
+      "description": "BitLocker at-rest encryption was not confirmed on cluster volumes. Data at rest may be accessible if storage media is removed.",
+      "manifestPath": "domains.identitySecurity.security.bitlockerEnabled",
+      "check": "boolTrue",
+      "severity": "warning",
+      "recommendation": "Enable BitLocker on Cluster Shared Volumes using Enable-AzureStackHCIBitLocker or via the Azure Local portal."
+    },
+    {
+      "id": "SEC-003",
+      "pillar": "Security",
+      "title": "WDAC application control policy is present",
+      "description": "Windows Defender Application Control (WDAC) was not detected on cluster nodes. Without WDAC, unauthorised code may run on cluster hosts.",
+      "manifestPath": "domains.identitySecurity.security.wdacPolicy",
+      "check": "notNull",
+      "severity": "informational",
+      "recommendation": "Deploy a WDAC policy via the Azure Local portal (Security > Application control). Use Microsoft's recommended block list as a baseline."
+    },
+    {
+      "id": "SEC-004",
+      "pillar": "Security",
+      "title": "No certificates expiring within 90 days",
+      "description": "One or more tracked certificates are within 90 days of expiry. Expired certificates can cause service outages and break Arc connectivity.",
+      "manifestPath": "domains.identitySecurity.summary.certificateExpiringWithin90Days",
+      "check": "equals",
+      "expected": 0,
+      "severity": "warning",
+      "recommendation": "Review certificates approaching expiry using the identitySecurity manifest domain. Renew or rotate certificates before expiry to prevent service disruption."
+    },
+    {
+      "id": "SEC-005",
+      "pillar": "Security",
+      "title": "Defender for Cloud is enabled",
+      "description": "Microsoft Defender for Cloud was not confirmed active for this environment. Defender for Cloud provides threat detection, security posture management, and vulnerability assessment.",
+      "manifestPath": "domains.identitySecurity.defenderForCloud.enabled",
+      "check": "boolTrue",
+      "severity": "warning",
+      "recommendation": "Enable Microsoft Defender for Cloud via the Azure portal for the subscription hosting the Azure Local cluster resources."
+    },
+    {
+      "id": "SEC-006",
+      "pillar": "Security",
+      "title": "Azure Policy assignments are present",
+      "description": "No Azure Policy assignments were found in the scoped resource group. Policy assignments enforce guardrails and compliance requirements across Azure Local resources.",
+      "manifestPath": "domains.azureIntegration.policySummary.assignmentCount",
+      "check": "greaterThan",
+      "threshold": 0,
+      "severity": "informational",
+      "recommendation": "Assign appropriate Azure Policy initiatives (e.g. Azure Security Benchmark, CIS Azure Local) to the subscription or resource group."
+    },
+    {
+      "id": "COST-001",
+      "pillar": "Cost Optimization",
+      "title": "ESU-eligible VMs are enrolled in Extended Security Updates",
+      "description": "One or more VMs running end-of-support Windows Server versions are eligible for free Extended Security Updates via Arc but are not yet enrolled. This represents an unleveraged benefit that reduces compliance risk at no cost.",
+      "manifestPath": "domains.azureIntegration.costAnalysis.summary.notEnrolledVmCount",
+      "check": "equals",
+      "expected": 0,
+      "severity": "informational",
+      "recommendation": "Enroll eligible Arc-connected VMs in Extended Security Updates via the Azure portal (Arc > Extended Security Updates). No licensing cost applies for Arc-enrolled VMs on Azure Local."
+    },
+    {
+      "id": "COST-002",
+      "pillar": "Cost Optimization",
+      "title": "Azure subscription context is configured",
+      "description": "No Azure subscription was associated with this discovery run. Without subscription context, cost posture, policy coverage, and Azure-billed services cannot be assessed.",
+      "manifestPath": "domains.azureIntegration.context.subscriptionId",
+      "check": "notNull",
+      "severity": "informational",
+      "recommendation": "Ensure the Ranger config includes a valid subscriptionId and resourceGroup matching the Azure Local registration to enable full cost and policy assessment."
+    },
+    {
+      "id": "OE-001",
+      "pillar": "Operational Excellence",
+      "title": "Data Collection Rules are configured for monitoring",
+      "description": "No Data Collection Rules (DCRs) were found in the scoped resource group. DCRs are required to route Azure Monitor telemetry from cluster nodes and Arc machines to a Log Analytics workspace.",
+      "manifestPath": "domains.monitoring.summary.dcrCount",
+      "check": "greaterThan",
+      "threshold": 0,
+      "severity": "warning",
+      "recommendation": "Create Data Collection Rules in the Azure portal targeting the cluster's Arc-connected machines. Associate rules with the Log Analytics workspace used for HCI Insights."
+    },
+    {
+      "id": "OE-002",
+      "pillar": "Operational Excellence",
+      "title": "Azure Monitor alert rules are defined",
+      "description": "No Azure Monitor alert rules were found in the scoped resource group. Without alert rules, operational incidents may go undetected until reported by users.",
+      "manifestPath": "domains.monitoring.summary.alertRuleDetailCount",
+      "check": "greaterThan",
+      "threshold": 0,
+      "severity": "warning",
+      "recommendation": "Define metric and log-based alert rules for key Azure Local health signals: cluster health faults, storage capacity threshold, node CPU and memory pressure."
+    },
+    {
+      "id": "OE-003",
+      "pillar": "Operational Excellence",
+      "title": "Update maintenance configurations are defined",
+      "description": "No Azure Update Manager maintenance configurations were found. Without scheduled maintenance windows, update compliance cannot be enforced and emergency patching may be the only path.",
+      "manifestPath": "domains.monitoring.summary.maintenanceConfigCount",
+      "check": "greaterThan",
+      "threshold": 0,
+      "severity": "informational",
+      "recommendation": "Create maintenance configurations in Azure Update Manager to schedule regular update windows for the cluster nodes."
+    },
+    {
+      "id": "OE-004",
+      "pillar": "Operational Excellence",
+      "title": "Azure Monitor Agent is deployed on cluster nodes",
+      "description": "No cluster nodes were found with Azure Monitor Agent installed. AMA is required for HCI Insights, DCR-based telemetry, and health monitoring from the Azure portal.",
+      "manifestPath": "domains.monitoring.summary.nodesWithAmaAgent",
+      "check": "greaterThan",
+      "threshold": 0,
+      "severity": "warning",
+      "recommendation": "Deploy Azure Monitor Agent to all cluster nodes via the Azure Local portal (Monitoring > Insights) or via Arc extension management."
+    },
+    {
+      "id": "OE-005",
+      "pillar": "Operational Excellence",
+      "title": "HCI Insights is enabled in Log Analytics",
+      "description": "HCI Insights was not detected in any associated Log Analytics workspace. HCI Insights provides the primary monitoring dashboard for Azure Local environments in the Azure portal.",
+      "manifestPath": "domains.monitoring.hciInsights.enabled",
+      "check": "boolTrue",
+      "severity": "informational",
+      "recommendation": "Enable HCI Insights from the Azure Local cluster resource in the Azure portal under Monitoring > Insights."
+    },
+    {
+      "id": "OE-006",
+      "pillar": "Operational Excellence",
+      "title": "Manifest schema validation passed",
+      "description": "The collection manifest failed schema validation. This may indicate incomplete collection or a version mismatch between the collector and schema contract.",
+      "manifestPath": "run.schemaValidation.isValid",
+      "check": "boolTrue",
+      "severity": "warning",
+      "recommendation": "Review manifest schema validation warnings in run.schemaValidation. Re-run collection if the issue persists or file a bug at github.com/AzureLocal/azurelocal-ranger/issues."
+    },
+    {
+      "id": "PERF-001",
+      "pillar": "Performance Efficiency",
+      "title": "No cluster nodes are at high CPU utilization",
+      "description": "One or more cluster nodes are running at sustained high CPU utilization. This may indicate workload density is too high or that the cluster is approaching compute capacity limits.",
+      "manifestPath": "domains.performance.summary.highCpuNodes",
+      "check": "equals",
+      "expected": 0,
+      "severity": "warning",
+      "recommendation": "Review per-node CPU utilization in the performance domain. Consider migrating high-density VMs or adding nodes to increase headroom."
+    },
+    {
+      "id": "PERF-002",
+      "pillar": "Performance Efficiency",
+      "title": "Storage utilization is within safe limits",
+      "description": "Total storage utilization exceeds 80% of usable capacity. Operating above 80% increases rebuild time after disk failure and may trigger performance throttling.",
+      "manifestPath": "domains.storage.summary.utilizationPercent",
+      "check": "lessThan",
+      "threshold": 80,
+      "severity": "warning",
+      "recommendation": "Review the Storage Pool Capacity section of this report. Decommission unused VMs or volumes, or expand storage capacity to restore headroom."
+    },
+    {
+      "id": "PERF-003",
+      "pillar": "Performance Efficiency",
+      "title": "Management services are running on cluster nodes",
+      "description": "No running management services were detected on cluster nodes. Management service availability is required for Azure Local health monitoring, WAC connectivity, and Arc agent operation.",
+      "manifestPath": "domains.managementTools.summary.runningServices",
+      "check": "greaterThan",
+      "threshold": 0,
+      "severity": "informational",
+      "recommendation": "Verify that required management services (Health Service, MDAG, Arc agent) are running on all cluster nodes."
+    }
+  ]
+}

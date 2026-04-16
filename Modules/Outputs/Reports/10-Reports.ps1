@@ -213,7 +213,8 @@ function New-RangerReportPayload {
         "High CPU nodes: $($Manifest.domains.performance.summary.highCpuNodes)",
         "Certificates expiring within 90 days: $($Manifest.domains.identitySecurity.summary.certificateExpiringWithin90Days)",
         "Azure Policy assignments: $($Manifest.domains.azureIntegration.policySummary.assignmentCount)",
-        "Schema warnings: $(@($Manifest.run.schemaValidation.warnings).Count)"
+        "Schema warnings: $(@($Manifest.run.schemaValidation.warnings).Count)",
+        "Azure Advisor recommendations: $($Manifest.domains.wafAssessment.summary.totalAdvisorRecommendations) total, $($Manifest.domains.wafAssessment.summary.highImpactCount) high-impact"
     )
 
     $sections = New-Object System.Collections.ArrayList
@@ -273,6 +274,29 @@ function New-RangerReportPayload {
         heading = 'Domain Coverage'
         body    = $domainCoverageBody
     })
+
+    # Node inventory table — management + technical (#168)
+    if ($Tier -ne 'executive') {
+        $nodeRows = @(
+            @($Manifest.domains.clusterNode.nodes) | ForEach-Object {
+                $n = $_
+                $name    = if ($n.name)  { $n.name  } elseif ($n.NodeName) { $n.NodeName } else { '—' }
+                $state   = if ($n.state) { $n.state } elseif ($n.NodeState) { $n.NodeState } else { '—' }
+                $model   = if ($n.model) { $n.model } else { '—' }
+                $os      = if ($n.operatingSystem) { $n.operatingSystem } elseif ($n.os) { $n.os } else { '—' }
+                $build   = if ($n.osBuildNumber) { $n.osBuildNumber } else { '—' }
+                $cpus    = if ($null -ne $n.processorCount) { [string]$n.processorCount } elseif ($null -ne $n.cpuSocketCount) { [string]$n.cpuSocketCount } else { '—' }
+                $ramGiB  = if ($null -ne $n.memoryGiB)  { [string][math]::Round([double]$n.memoryGiB, 0) } elseif ($null -ne $n.totalMemoryGiB) { [string][math]::Round([double]$n.totalMemoryGiB, 0) } else { '—' }
+                @($name, $model, $state, $os, $build, $cpus, $ramGiB)
+            }
+        )
+        [void]$sections.Add([ordered]@{
+            heading = 'Node Inventory'
+            type    = 'table'
+            headers = @('Node', 'Model', 'State', 'OS', 'OS Build', 'CPU Sockets', 'RAM (GiB)')
+            rows    = $nodeRows
+        })
+    }
 
     if ($Tier -ne 'executive') {
         [void]$sections.Add([ordered]@{
@@ -339,7 +363,29 @@ function New-RangerReportPayload {
             )
         })
 
-        # Issue #73: VM Density Metrics (management + technical)
+        # VM inventory table — management + technical (#168)
+        $vmInventory = @($Manifest.domains.virtualMachines.inventory)
+        if ($vmInventory.Count -gt 0) {
+            $vmLimit = if ($Tier -eq 'technical') { 100 } else { 30 }
+            $vmRows = @($vmInventory | Select-Object -First $vmLimit | ForEach-Object {
+                $v = $_
+                $vcpu   = if ($null -ne $v.processorCount) { [string]$v.processorCount } elseif ($null -ne $v.vCPU) { [string]$v.vCPU } else { '—' }
+                $ramGiB = if ($null -ne $v.memoryAssignedMb) { [string][math]::Round([double]$v.memoryAssignedMb / 1024, 1) } else { '—' }
+                $hostNode = if ($v.hostNode) { [string]$v.hostNode } else { '—' }
+                $gen    = if ($v.generation) { [string]$v.generation } else { '—' }
+                @([string]($v.name ?? '—'), [string]($v.state ?? '—'), $vcpu, $ramGiB, $hostNode, $gen)
+            })
+            $vmCaption = if ($vmInventory.Count -gt $vmLimit) { "Showing first $vmLimit of $($vmInventory.Count) VMs. Full inventory in audit-manifest.json." } else { $null }
+            [void]$sections.Add([ordered]@{
+                heading = 'VM Inventory'
+                type    = 'table'
+                headers = @('Name', 'State', 'vCPU', 'RAM (GiB)', 'Host Node', 'Generation')
+                rows    = $vmRows
+                caption = $vmCaption
+            })
+        }
+
+        # VM Density Metrics (management + technical)
         [void]$sections.Add([ordered]@{
             heading = 'VM Density Metrics'
             body    = @(
@@ -356,17 +402,23 @@ function New-RangerReportPayload {
 
         $poolAnalysis = @($Manifest.domains.storage.poolAnalysis)
         if ($poolAnalysis.Count -gt 0) {
-            [void]$sections.Add([ordered]@{
-                heading = 'Storage Capacity Analysis'
-                body    = @(
-                    "Pool posture counts: $((@($Manifest.domains.storage.summary.poolPostureCounts | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', '))",
-                    "Recommended reserve total: $([math]::Round($summary.StorageReserveTargetGiB, 0)) GiB",
-                    "Free usable total: $([math]::Round($summary.StorageFreeUsableGiB, 0)) GiB",
-                    "Projected safe allocatable total: $([math]::Round($summary.StorageSafeAllocatableGiB, 0)) GiB",
-                    @($poolAnalysis | ForEach-Object {
-                        "- $($_.friendlyName): raw=$([math]::Round([double]$_.rawCapacityGiB, 0)) GiB, usable=$([math]::Round([double]$_.usableCapacityGiB, 0)) GiB, used=$([math]::Round([double]$_.usedUsableCapacityGiB, 0)) GiB, reserve=$([math]::Round([double]$_.recommendedReserveGiB, 0)) GiB, safe allocatable=$([math]::Round([double]$_.projectedSafeAllocatableCapacityGiB, 0)) GiB, posture=$($_.posture)"
-                    })
+            $poolRows = @($poolAnalysis | ForEach-Object {
+                $p = $_
+                @(
+                    [string]($p.friendlyName ?? '—'),
+                    [string][math]::Round([double]($p.rawCapacityGiB ?? 0), 0),
+                    [string][math]::Round([double]($p.usableCapacityGiB ?? 0), 0),
+                    [string][math]::Round([double]($p.usedUsableCapacityGiB ?? 0), 0),
+                    [string][math]::Round([double]($p.recommendedReserveGiB ?? 0), 0),
+                    [string][math]::Round([double]($p.projectedSafeAllocatableCapacityGiB ?? 0), 0),
+                    [string]($p.posture ?? '—')
                 )
+            })
+            [void]$sections.Add([ordered]@{
+                heading = 'Storage Pool Capacity'
+                type    = 'table'
+                headers = @('Pool', 'Raw (GiB)', 'Usable (GiB)', 'Used (GiB)', 'Reserve (GiB)', 'Safe Alloc (GiB)', 'Posture')
+                rows    = $poolRows
             })
         }
 
@@ -431,6 +483,71 @@ function New-RangerReportPayload {
         })
     }
 
+    # WAF Assessment scorecard — management + technical (#94)
+    if ($Tier -ne 'executive') {
+        $wafEval = Invoke-RangerWafRuleEvaluation -Manifest $Manifest
+        $wafPillarRows = @($wafEval.pillarScores | ForEach-Object {
+            @(
+                [string]$_.pillar,
+                "$($_.score)%",
+                [string]$_.status,
+                "$($_.passing) / $($_.total)",
+                [string]$_.topFinding
+            )
+        })
+        if ($wafPillarRows.Count -gt 0) {
+            [void]$sections.Add([ordered]@{
+                heading = 'WAF Assessment — Scorecard'
+                type    = 'table'
+                headers = @('Pillar', 'Score', 'Status', 'Rules Passing', 'Top Finding')
+                rows    = $wafPillarRows
+                caption = "Overall WAF score: $($wafEval.summary.overallScore)% ($($wafEval.summary.passingRules) of $($wafEval.summary.totalRules) rules passing). Evaluated from saved manifest — no re-collection required."
+            })
+        }
+
+        # WAF failing rules detail — technical only
+        if ($Tier -eq 'technical') {
+            $wafFailingRows = @($wafEval.ruleResults | Where-Object { $_.pass -eq $false } | Sort-Object { $_.pillar }, { switch ($_.severity) { 'warning' { 0 } 'informational' { 1 } default { 2 } } } | ForEach-Object {
+                @(
+                    [string]$_.id,
+                    [string]$_.pillar,
+                    [string]$_.severity,
+                    [string]$_.title,
+                    [string]$_.recommendation
+                )
+            })
+            if ($wafFailingRows.Count -gt 0) {
+                [void]$sections.Add([ordered]@{
+                    heading = 'WAF Assessment — Findings'
+                    type    = 'table'
+                    headers = @('Rule', 'Pillar', 'Severity', 'Finding', 'Recommendation')
+                    rows    = $wafFailingRows
+                })
+            }
+        }
+
+        # WAF Advisor findings (if any were collected)
+        $advisorRecs = @($Manifest.domains.wafAssessment.advisorRecommendations | Where-Object { $_ -ne $null })
+        if ($advisorRecs.Count -gt 0) {
+            $advisorRows = @($advisorRecs | Sort-Object { switch ([string]$_.impact) { 'High' { 0 } 'Medium' { 1 } default { 2 } } } | Select-Object -First 20 | ForEach-Object {
+                $a = $_
+                @(
+                    [string]($a.wafPillar ?? '—'),
+                    [string]($a.impact ?? '—'),
+                    [string]($a.shortDescription ?? '—'),
+                    [string]($a.remediation ?? '—')
+                )
+            })
+            [void]$sections.Add([ordered]@{
+                heading = 'WAF Assessment — Azure Advisor Recommendations'
+                type    = 'table'
+                headers = @('Pillar', 'Impact', 'Finding', 'Recommendation')
+                rows    = $advisorRows
+                caption = if ($advisorRecs.Count -gt 20) { "Showing top 20 of $($advisorRecs.Count) Advisor recommendations. Full list in audit-manifest.json." } else { $null }
+            })
+        }
+    }
+
     if ($Tier -eq 'technical') {
         if ($Manifest.run.drift -and $Manifest.run.drift.status -ne 'not-requested') {
             $driftDomainCounts = @($Manifest.run.drift.summary.domainCounts)
@@ -458,78 +575,128 @@ function New-RangerReportPayload {
             )
         })
 
+        # Physical disk inventory table — technical only (#168)
+        $physicalDisks = @($Manifest.domains.storage.physicalDisks)
+        if ($physicalDisks.Count -gt 0) {
+            $diskRows = @($physicalDisks | Select-Object -First 200 | ForEach-Object {
+                $d = $_
+                $sizeGiB = if ($null -ne $d.size) { [string][math]::Round([double]$d.size / 1GB, 0) } elseif ($null -ne $d.sizeGiB) { [string][math]::Round([double]$d.sizeGiB, 0) } else { '—' }
+                @(
+                    [string]($d.node ?? $d.usageType ?? '—'),
+                    [string]($d.friendlyName ?? $d.model ?? '—'),
+                    [string]($d.mediaType ?? '—'),
+                    $sizeGiB,
+                    [string]($d.healthStatus ?? $d.operationalStatus ?? '—'),
+                    [string]($d.firmwareVersion ?? '—')
+                )
+            })
+            $diskCaption = if ($physicalDisks.Count -gt 200) { "Showing first 200 of $($physicalDisks.Count) disks." } else { $null }
+            [void]$sections.Add([ordered]@{
+                heading = 'Physical Disk Inventory'
+                type    = 'table'
+                headers = @('Node', 'Model', 'Media Type', 'Size (GiB)', 'Health', 'Firmware')
+                rows    = $diskRows
+                caption = $diskCaption
+            })
+        }
+
+        # Network adapter inventory table — technical only (#168)
+        $netAdapters = @($Manifest.domains.networking.adapters)
+        if ($netAdapters.Count -gt 0) {
+            $adapterRows = @($netAdapters | Select-Object -First 150 | ForEach-Object {
+                $a = $_
+                @(
+                    [string]($a.node ?? '—'),
+                    [string]($a.name ?? '—'),
+                    [string]($a.linkSpeed ?? $a.speed ?? '—'),
+                    [string]($a.status ?? $a.interfaceOperationalStatus ?? '—'),
+                    [string]($a.macAddress ?? '—'),
+                    [string]($a.driverProvider ?? '—')
+                )
+            })
+            [void]$sections.Add([ordered]@{
+                heading = 'Network Adapter Inventory'
+                type    = 'table'
+                headers = @('Node', 'Adapter', 'Link Speed', 'Status', 'MAC Address', 'Driver')
+                rows    = $adapterRows
+            })
+        }
+
+        # Domain summary (counts) — retained as bullets, replaces Technical Domain Deep Dive
         [void]$sections.Add([ordered]@{
-            heading = 'Technical Domain Deep Dive'
+            heading = 'Domain Summary'
             body    = @(
                 "Node manufacturers: $((@($Manifest.domains.clusterNode.nodeSummary.manufacturers | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', '))",
                 "Storage media types: $((@($Manifest.domains.storage.summary.diskMediaTypes | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', '))",
                 "Adapter states: $((@($Manifest.domains.networking.summary.adapterStates | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', '))",
                 "VM generations: $((@($Manifest.domains.virtualMachines.summary.byGeneration | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', '))",
                 "Azure resource types: $((@($Manifest.domains.azureIntegration.resourceSummary.byType | Select-Object -First 6 | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', '))",
-                "Monitoring summary: telemetry=$($Manifest.domains.monitoring.summary.telemetryCount), ama=$($Manifest.domains.monitoring.summary.amaCount), dcr=$($Manifest.domains.monitoring.summary.dcrCount)",
-                "Performance summary: avg CPU=$($Manifest.domains.performance.summary.averageCpuUtilizationPercent), avg available memory MB=$($Manifest.domains.performance.summary.averageAvailableMemoryMb)",
-                "ESU enrollment summary: eligible=$($Manifest.domains.azureIntegration.costAnalysis.summary.eligibleVmCount), enrolled=$($Manifest.domains.azureIntegration.costAnalysis.summary.enrolledVmCount), not enrolled=$($Manifest.domains.azureIntegration.costAnalysis.summary.notEnrolledVmCount)"
+                "Monitoring: telemetry=$($Manifest.domains.monitoring.summary.telemetryCount), AMA=$($Manifest.domains.monitoring.summary.amaCount), DCR=$($Manifest.domains.monitoring.summary.dcrCount)",
+                "Performance: avg CPU=$($Manifest.domains.performance.summary.averageCpuUtilizationPercent)%, avg available memory=$([math]::Round([double]$Manifest.domains.performance.summary.averageAvailableMemoryMb / 1024, 1)) GiB",
+                "ESU: eligible=$($Manifest.domains.azureIntegration.costAnalysis.summary.eligibleVmCount), enrolled=$($Manifest.domains.azureIntegration.costAnalysis.summary.enrolledVmCount), not enrolled=$($Manifest.domains.azureIntegration.costAnalysis.summary.notEnrolledVmCount)"
             )
         })
 
-        # Issue #73: Storage Pool Math (Technical) — raw → usable capacity breakdown
-        $storageMathLines = @(
-            "Storage resiliency math (approximate — actual usable depends on pool resiliency settings):",
-            "  Total raw capacity: $([math]::Round($summary.StorageTotalRawGiB, 0)) GiB ($([math]::Round($summary.StorageTotalRawGiB / 1024, 2)) TiB)",
-            "  Total usable capacity (after resiliency): $([math]::Round($summary.StorageTotalUsableGiB, 0)) GiB ($([math]::Round($summary.StorageTotalUsableGiB / 1024, 2)) TiB)",
-            "  Overhead ratio: $(if ($summary.StorageTotalRawGiB -gt 0) { [math]::Round((1 - $summary.StorageTotalUsableGiB / $summary.StorageTotalRawGiB) * 100, 1) } else { 'N/A' })% consumed by resiliency",
-            "  Recommended reserve target: $([math]::Round($summary.StorageReserveTargetGiB, 0)) GiB",
-            "  Projected safe allocatable capacity: $([math]::Round($summary.StorageSafeAllocatableGiB, 0)) GiB"
-        )
-        foreach ($analysis in @($Manifest.domains.storage.poolAnalysis | Where-Object { $_ -ne $null })) {
-            $storageMathLines += "  Pool '$($analysis['friendlyName'])': raw=$([math]::Round([double]$analysis['rawCapacityGiB'], 0)) GiB, usable=$([math]::Round([double]$analysis['usableCapacityGiB'], 0)) GiB, reserve=$([math]::Round([double]$analysis['recommendedReserveGiB'], 0)) GiB, free usable=$([math]::Round([double]$analysis['freeUsableCapacityGiB'], 0)) GiB, safe allocatable=$([math]::Round([double]$analysis['projectedSafeAllocatableCapacityGiB'], 0)) GiB, posture=$($analysis['posture'])"
-            $storageMathLines += "    Disk count=$($analysis['diskCount']); media=$((@($analysis['diskCountByMediaType'] | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', ')); assumptions=$($analysis['assumptions'])"
-        }
+        # Storage resiliency summary — kept as bullets
         [void]$sections.Add([ordered]@{
-            heading = 'Storage Pool Math'
-            body    = $storageMathLines
+            heading = 'Storage Resiliency'
+            body    = @(
+                "Total raw: $([math]::Round($summary.StorageTotalRawGiB, 0)) GiB ($([math]::Round($summary.StorageTotalRawGiB / 1024, 2)) TiB)",
+                "Total usable (after resiliency): $([math]::Round($summary.StorageTotalUsableGiB, 0)) GiB ($([math]::Round($summary.StorageTotalUsableGiB / 1024, 2)) TiB)",
+                "Resiliency overhead: $(if ($summary.StorageTotalRawGiB -gt 0) { [math]::Round((1 - $summary.StorageTotalUsableGiB / $summary.StorageTotalRawGiB) * 100, 1) } else { 'N/A' })% of raw",
+                "Reserve target: $([math]::Round($summary.StorageReserveTargetGiB, 0)) GiB  |  Safe allocatable: $([math]::Round($summary.StorageSafeAllocatableGiB, 0)) GiB"
+            )
         })
 
-        # Issue #73: Event Log Analysis Summary (Technical)
-        $eventLogSummaryLines = @(
-            "Event logs analyzed per node across $(@($Manifest.domains.performance.eventLogAnalysis).Count) log sources:"
-        )
-        $topLogEntries = @($Manifest.domains.performance.eventLogAnalysis | Where-Object { $_ -ne $null -and $_['eventCount'] -gt 0 } | Sort-Object { [int]($_['eventCount'] ?? 0) } -Descending | Select-Object -First 10)
-        if ($topLogEntries.Count -gt 0) {
-            foreach ($entry in $topLogEntries) {
-                $eventLogSummaryLines += "  Node $($entry['node']): $($entry['logName']) — $($entry['eventCount']) events"
-                foreach ($topId in @($entry['topEventIds'] | Select-Object -First 2)) {
-                    $eventLogSummaryLines += "    EventId $($topId['eventId']) x$($topId['count']) [$($topId['level'])]: $($topId['sample'])"
-                }
-            }
+        # Event log summary table — replaces raw dump (#168)
+        $eventLogEntries = @($Manifest.domains.performance.eventLogAnalysis | Where-Object { $_ -ne $null -and $_['eventCount'] -gt 0 } | Sort-Object { [int]($_['eventCount'] ?? 0) } -Descending | Select-Object -First 20)
+        if ($eventLogEntries.Count -gt 0) {
+            $eventRows = @($eventLogEntries | ForEach-Object {
+                $e = $_
+                $topIds = (@($e['topEventIds'] | Select-Object -First 3 | ForEach-Object { "$($_.eventId)×$($_.count)" }) -join ', ')
+                @(
+                    [string]($e['node'] ?? '—'),
+                    [string]($e['logName'] ?? '—'),
+                    [string]($e['eventCount'] ?? '0'),
+                    [string]($topIds)
+                )
+            })
+            [void]$sections.Add([ordered]@{
+                heading = 'Event Log Summary'
+                type    = 'table'
+                headers = @('Node', 'Log Source', 'Event Count', 'Top Event IDs (×count)')
+                rows    = $eventRows
+            })
         } else {
-            $eventLogSummaryLines += "  No events recorded in this collection window."
+            [void]$sections.Add([ordered]@{
+                heading = 'Event Log Summary'
+                body    = @('No events recorded in this collection window.')
+            })
         }
-        [void]$sections.Add([ordered]@{
-            heading = 'Event Log Analysis'
-            body    = $eventLogSummaryLines
-        })
 
-        # Issue #73: Full security audit summary (Technical)
+        # Security audit — structured table sections (#168)
+        $certCount    = @($Manifest.domains.identitySecurity.posture.certificates).Count
+        $rbacCount    = @($Manifest.domains.identitySecurity.rbacAssignments).Count
+        $backupCount  = @($Manifest.domains.azureIntegration.backup.items).Count
+        $asrCount     = @($Manifest.domains.azureIntegration.asr.protectedItems).Count
         [void]$sections.Add([ordered]@{
             heading = 'Security Audit'
-            body    = @(
-                "--- Certificate Inventory ---",
-                "Total certificates tracked: $(@($Manifest.domains.identitySecurity.posture.certificates).Count)",
-                "Expiring within 90 days: $($Manifest.domains.identitySecurity.summary.certificateExpiringWithin90Days)",
-                "--- Policy and Compliance ---",
-                "Policy assignments: $($Manifest.domains.azureIntegration.policySummary.assignmentCount)",
-                "Policy exemptions: $($Manifest.domains.azureIntegration.policySummary.exemptionCount)",
-                "Policy non-compliant: $($Manifest.domains.azureIntegration.policySummary.nonCompliantCount)",
-                "--- Identity ---",
-                "AD objects: $(@($Manifest.domains.identitySecurity.activeDirectory.adObjects).Count) CNO(s) tracked",
-                "RBAC assignments at RG scope: $(@($Manifest.domains.identitySecurity.rbacAssignments).Count)",
-                "--- Workload Protection ---",
-                "Backup items tracked: $(@($Manifest.domains.azureIntegration.backup.items).Count)",
-                "ASR (disaster recovery) items: $(@($Manifest.domains.azureIntegration.asr.protectedItems).Count)",
-                "--- Endpoint Protection ---",
-                "Defender for Cloud enabled: $(if ($Manifest.domains.identitySecurity.defenderForCloud.enabled) { 'Yes' } else { 'Not confirmed' })",
-                "Secured-Core nodes: $($Manifest.domains.identitySecurity.summary.securedCoreNodes) of $($summary.NodeCount)"
+            type    = 'table'
+            headers = @('Area', 'Item', 'Value')
+            rows    = @(
+                @('Certificates',        'Total tracked',                       [string]$certCount),
+                @('Certificates',        'Expiring within 90 days',             [string]$Manifest.domains.identitySecurity.summary.certificateExpiringWithin90Days),
+                @('Policy',              'Assignments',                         [string]$Manifest.domains.azureIntegration.policySummary.assignmentCount),
+                @('Policy',              'Exemptions',                          [string]$Manifest.domains.azureIntegration.policySummary.exemptionCount),
+                @('Policy',              'Non-compliant',                       [string]$Manifest.domains.azureIntegration.policySummary.nonCompliantCount),
+                @('Identity',            'AD CNO objects tracked',              [string]@($Manifest.domains.identitySecurity.activeDirectory.adObjects).Count),
+                @('Identity',            'RBAC assignments at RG scope',        [string]$rbacCount),
+                @('Workload Protection', 'Backup items tracked',                [string]$backupCount),
+                @('Workload Protection', 'ASR protected items',                 [string]$asrCount),
+                @('Endpoint',            'Defender for Cloud enabled',          $(if ($Manifest.domains.identitySecurity.defenderForCloud.enabled) { 'Yes' } else { 'Not confirmed' })),
+                @('Endpoint',            'Secured-Core enabled nodes',          "$($Manifest.domains.identitySecurity.summary.securedCoreNodes) of $($summary.NodeCount)"),
+                @('Endpoint',            'WDAC policy',                         [string]($Manifest.domains.identitySecurity.security.wdacPolicy ?? 'Not collected')),
+                @('Endpoint',            'BitLocker',                           $(if ($Manifest.domains.identitySecurity.security.bitlockerEnabled -eq $true) { 'Enabled' } elseif ($Manifest.domains.identitySecurity.security.bitlockerEnabled -eq $false) { 'Disabled' } else { 'Not collected' }))
             )
         })
 
@@ -725,8 +892,37 @@ function ConvertTo-RangerMarkdownReport {
     foreach ($section in $Report.Sections) {
         $lines.Add("## $($section.heading)")
         $lines.Add('')
-        foreach ($entry in @($section.body)) {
-            $lines.Add("- $entry")
+        switch ($section.type) {
+            'table' {
+                if (@($section.rows).Count -gt 0) {
+                    $lines.Add(('| ' + ($section.headers -join ' | ') + ' |'))
+                    $lines.Add(('| ' + ($section.headers | ForEach-Object { '---' }) -join ' | ') + ' |')
+                    foreach ($row in @($section.rows)) {
+                        $cells = @($row) | ForEach-Object { [string]($_ -replace '\|', '&#124;') }
+                        $lines.Add('| ' + ($cells -join ' | ') + ' |')
+                    }
+                    if ($section.caption) { $lines.Add('') ; $lines.Add("_$($section.caption)_") }
+                } else {
+                    $lines.Add('_No data available._')
+                }
+            }
+            'kv' {
+                foreach ($pair in @($section.rows)) {
+                    $lines.Add("**$([string]$pair[0])**: $([string]$pair[1])")
+                }
+            }
+            'sign-off' {
+                $lines.Add('| Role | Name | Date | Signature |')
+                $lines.Add('| --- | --- | --- | --- |')
+                $lines.Add('| Implementation Engineer | | | |')
+                $lines.Add('| Technical Reviewer | | | |')
+                $lines.Add('| Customer Representative | | | |')
+            }
+            default {
+                foreach ($entry in @($section.body)) {
+                    $lines.Add("- $entry")
+                }
+            }
         }
         $lines.Add('')
     }
@@ -767,6 +963,53 @@ function ConvertTo-RangerMarkdownReport {
     }
 
     return ($lines -join [Environment]::NewLine)
+}
+
+# --- HTML component helpers (#168) ---
+
+function New-RangerHtmlTable {
+    [OutputType([string])]
+    param(
+        [string[]]$Headers,
+        [object[][]]$Rows,
+        [string]$Caption
+    )
+    if ($null -eq $Rows -or $Rows.Count -eq 0) {
+        return '<p class="data-unavailable">No data available.</p>'
+    }
+    $captionHtml = if ($Caption) { "<caption>$([System.Net.WebUtility]::HtmlEncode($Caption))</caption>" } else { '' }
+    $headerHtml  = ($Headers | ForEach-Object { "<th>$([System.Net.WebUtility]::HtmlEncode([string]$_))</th>" }) -join ''
+    $rowsHtml    = ($Rows | ForEach-Object {
+        $cells = ($_ | ForEach-Object { "<td>$([System.Net.WebUtility]::HtmlEncode([string]$_))</td>" }) -join ''
+        "<tr>$cells</tr>"
+    }) -join [Environment]::NewLine
+    "<div class='table-wrapper'><table class='data-table'>$captionHtml<thead><tr>$headerHtml</tr></thead><tbody>$rowsHtml</tbody></table></div>"
+}
+
+function New-RangerHtmlKeyValueGrid {
+    [OutputType([string])]
+    param([object[][]]$Pairs)
+    if ($null -eq $Pairs -or $Pairs.Count -eq 0) { return '' }
+    $rowsHtml = ($Pairs | ForEach-Object {
+        "<tr><th scope='row'>$([System.Net.WebUtility]::HtmlEncode([string]$_[0]))</th><td>$([System.Net.WebUtility]::HtmlEncode([string]$_[1]))</td></tr>"
+    }) -join [Environment]::NewLine
+    "<table class='kv-table'><tbody>$rowsHtml</tbody></table>"
+}
+
+function New-RangerHtmlSignOffTable {
+    [OutputType([string])]
+    param()
+    @"
+<p class="sign-off-note">This as-built package was generated from the Ranger discovery run on the date shown in the Document Control section. Review all findings before accepting this package as the formal handoff record.</p>
+<table class="data-table sign-off-table">
+  <thead><tr><th>Role</th><th>Name</th><th>Date</th><th>Signature</th></tr></thead>
+  <tbody>
+    <tr><td>Implementation Engineer</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+    <tr><td>Technical Reviewer</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+    <tr><td>Customer Representative</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+  </tbody>
+</table>
+"@
 }
 
 function ConvertTo-RangerHtmlReport {
@@ -818,18 +1061,29 @@ function ConvertTo-RangerHtmlReport {
 
     $sectionHtml = @(
         foreach ($section in $Report.Sections) {
-            $items = @(
-                foreach ($entry in @($section.body)) {
-                    '<li>{0}</li>' -f ([System.Net.WebUtility]::HtmlEncode([string]$entry))
+            $sectionBody = switch ($section.type) {
+                'table' {
+                    New-RangerHtmlTable -Headers $section.headers -Rows $section.rows -Caption $section.caption
                 }
-            ) -join [Environment]::NewLine
-
+                'kv' {
+                    New-RangerHtmlKeyValueGrid -Pairs $section.rows
+                }
+                'sign-off' {
+                    New-RangerHtmlSignOffTable
+                }
+                default {
+                    $items = @(
+                        foreach ($entry in @($section.body)) {
+                            '<li>{0}</li>' -f ([System.Net.WebUtility]::HtmlEncode([string]$entry))
+                        }
+                    ) -join [Environment]::NewLine
+                    "<ul>$items</ul>"
+                }
+            }
             @"
 <section>
   <h2>$([System.Net.WebUtility]::HtmlEncode($section.heading))</h2>
-  <ul>
-$items
-  </ul>
+  $sectionBody
 </section>
 "@
         }
@@ -895,13 +1149,27 @@ $items
     .finding-informational { border-left-color: #2563eb; }
         section { margin: 1rem 0; background: rgba(255,255,255,0.92); border: 1px solid #dbe7ef; border-radius: 16px; padding: 1rem 1.25rem; }
         @media (max-width: 900px) { .hero { grid-template-columns: 1fr; } }
-        /* Issue #73: Stats banner (traffic lights + capacity bars) */
+        /* Stats banner (traffic lights + capacity bars) */
         .stats-banner { display: flex; gap: 2rem; flex-wrap: wrap; background: rgba(255,255,255,0.95); border: 1px solid #dbe7ef; border-radius: 16px; padding: 1rem 1.5rem; margin-bottom: 1rem; align-items: flex-start; }
         .stats-lights { display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center; }
         .tl-item { display: flex; align-items: center; gap: 6px; font-size: 0.92em; font-weight: 500; white-space: nowrap; }
         .stats-bars { display: flex; flex-direction: column; gap: 0.4rem; }
         .cap-item { display: flex; align-items: center; gap: 8px; font-size: 0.88em; }
         .cap-label { min-width: 160px; color: #475569; }
+        /* Data tables (#168) */
+        .table-wrapper { overflow-x: auto; margin: 0.75rem 0; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.875em; }
+        .data-table caption { text-align: left; font-size: 0.85em; color: #64748b; padding-bottom: 0.4rem; }
+        .data-table thead th { background: #1e3a5f; color: #ffffff; padding: 0.45rem 0.75rem; text-align: left; font-weight: 600; white-space: nowrap; }
+        .data-table tbody td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+        .data-table tbody tr:nth-child(even) { background: #f8fafc; }
+        .data-table tbody tr:hover { background: #eff6ff; }
+        .kv-table { border-collapse: collapse; font-size: 0.9em; width: 100%; max-width: 640px; }
+        .kv-table th { color: #475569; font-weight: 600; padding: 0.3rem 1.5rem 0.3rem 0; width: 220px; vertical-align: top; text-align: left; }
+        .kv-table td { padding: 0.3rem 0; color: #0f172a; }
+        .sign-off-note { color: #64748b; font-size: 0.9em; margin-bottom: 1rem; }
+        .sign-off-table td { min-width: 130px; height: 44px; }
+        .data-unavailable { color: #94a3b8; font-style: italic; padding: 0.4rem 0; font-size: 0.9em; }
   </style>
 </head>
 <body>

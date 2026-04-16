@@ -8,18 +8,18 @@ Ranger supports two outcomes through one discovery engine:
 - **Current-state** — recurring operational snapshot of a live Azure Local deployment
 - **As-built** — formal documentation package for customer or operational handoff
 
-## Next Release — v1.4.0
+## Current Release — v1.4.0
 
-Focus: Report Quality — handoff-quality HTML reports, improved diagram engine, and PDF output for all report formats.
+Released April 2026. Report Quality milestone delivering handoff-quality HTML reports, improved diagram engine, PDF cover pages, and WAF Assessment integration with an external rule engine.
 
-| Item | Detail | Issue |
-| --- | --- | --- |
-| HTML report rebuild (#168) | Rebuild the HTML report renderer and diagram engine to produce handoff-quality as-built documentation suitable for customer delivery | [#168](https://github.com/AzureLocal/azurelocal-ranger/issues/168) |
-| Diagram engine quality (#140) | Improve the generated draw.io diagram engine so Ranger packages produce polished, handoff-quality outputs | [#140](https://github.com/AzureLocal/azurelocal-ranger/issues/140) |
-| PDF output (#96) | PDF rendering for all report formats | [#96](https://github.com/AzureLocal/azurelocal-ranger/issues/96) |
-| WAF Assessment integration (#94) | Integrate Azure Well-Architected Framework assessment data into Ranger reports | [#94](https://github.com/AzureLocal/azurelocal-ranger/issues/94) |
+| Area | What shipped |
+| --- | --- |
+| HTML report rebuild (#168) | Type-aware section rendering (table, kv-grid, sign-off) with Node, VM, Storage Pool, Physical Disk, Network Adapter, Event Log, and Security Audit inventory tables. Markdown report updated with pipe-delimited tables and sign-off placeholder rows. |
+| Diagram engine quality (#140) | SVG rebuilt with group containers, color-coded per-node-kind fills, cubic bezier edges, and dark header bar. draw.io XML rebuilt with swim-lane containers and per-kind node styles. Near-empty diagrams skip gracefully. |
+| PDF output (#96) | Cover page prepended to all PDF reports with title, cluster, mode, version, date, and confidentiality notice. Plain-text PDF renderer updated with type-aware section output. |
+| WAF Assessment integration (#94) | New optional collector queries Azure Advisor. Rule engine (`Invoke-RangerWafRuleEvaluation`) evaluates 23 manifest-path rules from `config/waf-rules.json` without re-collection. WAF Scorecard and Findings tables added to management and technical tiers. |
 
-## Current Release — v1.3.0
+## Previous Release — v1.3.0
 
 Released April 2026. Operator Experience milestone delivering full config parameter coverage and five new operator guide pages.
 

@@ -34,7 +34,7 @@ Describe 'Azure Local Ranger cached outputs' {
 
         $technicalMarkdownContent | Should -Match 'Table of Contents'
         $technicalMarkdownContent | Should -Match 'Priority Recommendations'
-        $technicalMarkdownContent | Should -Match 'Technical Domain Deep Dive'
+        $technicalMarkdownContent | Should -Match 'Domain Summary'
         $htmlReportContent | Should -Match 'Collector Overview'
         $htmlReportContent | Should -Match 'Priority Recommendations'
         $pdfHeader | Should -Match '%PDF-1.4'
