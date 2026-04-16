@@ -1,0 +1,82 @@
+# =============================================================================
+# AzureLocalRanger — TRAILHEAD Test Config
+# Mode     : current-state (live discovery)
+# Target   : tplabs-clus01 (4-node Dell AX-760, TierPoint Labs, Raleigh NC)
+# Used for : Operation TRAILHEAD v1.4.2 field validation — Scenarios A-G
+#
+# WARNING : Never store plaintext secrets here.
+#           All credentials use keyvault:// URI references.
+# =============================================================================
+
+environment:
+  name: tplabs
+
+targets:
+  cluster:
+    fqdn: tplabs-clus01.azrl.mgmt
+    nodes:
+      - tplabs-01-n01.azrl.mgmt
+      - tplabs-01-n02.azrl.mgmt
+      - tplabs-01-n03.azrl.mgmt
+      - tplabs-01-n04.azrl.mgmt
+
+  azure:
+    subscriptionId: 2caa0b8a-a1d6-4f0c-8c03-861787b8315c
+    resourceGroup: rg-c01-azl-eus-01
+    tenantId: a9b67171-3fbb-45bf-8394-eb56d02a86e4
+
+  bmc:
+    endpoints:
+      - host: 192.168.214.11
+        node: tplabs-01-n01
+      - host: 192.168.214.12
+        node: tplabs-01-n02
+      - host: 192.168.214.13
+        node: tplabs-01-n03
+      - host: 192.168.214.14
+        node: tplabs-01-n04
+
+credentials:
+  azure:
+    method: existing-context
+    useAzureCliFallback: true
+
+  cluster:
+    username: MGMT\svc.azl.local
+    passwordRef: keyvault://kv-tplabs-platform/domain-admin-password
+
+  bmc:
+    username: idrac_azl_admin
+    passwordRef: keyvault://kv-tplabs-platform/idrac-password
+
+domains:
+  include: []
+  exclude: []
+  hints:
+    fixtures: {}
+    networkDeviceConfigs: []
+
+output:
+  mode: current-state
+  formats:
+    - html
+    - markdown
+    - json
+    - xlsx
+    - pdf
+  rootPath: C:\AzureLocalRanger\trailhead
+  diagramFormat: svg
+  keepRawEvidence: true
+
+behavior:
+  transport: auto
+  degradationMode: graceful
+  promptForMissingCredentials: false
+  promptForMissingRequired: false
+  skipUnavailableOptionalDomains: true
+  failOnSchemaViolation: false
+  logLevel: info
+  retryCount: 2
+  timeoutSeconds: 60
+  continueToRendering: true
+  showProgress: true

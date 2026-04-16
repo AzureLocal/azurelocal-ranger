@@ -35,7 +35,7 @@
     Place this script in tests/trailhead/scripts/.
     See tests/trailhead/field-testing.md for the full testing methodology.
 #>
-[CmdletBinding(SupportsShouldProcess)]
+[CmdletBinding()]
 param(
     [Parameter(Mandatory)]
     [string]$Version,
@@ -188,7 +188,7 @@ Confirm every transport Ranger depends on is reachable and functional before run
 "@
     },
     @{
-        Title = "[TRAILHEAD P3] Individual collector live tests — all 6 collectors"
+        Title = "[TRAILHEAD P3] Individual collector live tests — all 7 collectors"
         Body  = @"
 ## Operation TRAILHEAD — Phase 3: Individual Collector Live Tests
 
@@ -223,7 +223,7 @@ Run each collector in **live mode** in isolation. Verify it returns the expected
 
 - [ ] P3.3.1 — Returns without terminating error
 - [ ] P3.3.2 — `storage` domain populated (pool, volumes, disks)
-- [ ] P3.3.3 — Volume count ≥ 1
+- [ ] P3.3.3 — Volume count >= 1
 - [ ] P3.3.4 — `networking` domain populated (vSwitch, adapters, intents)
 - [ ] P3.3.5 — Network intents match config
 - [ ] P3.3.6 — S2D HealthStatus captured
@@ -250,9 +250,19 @@ Run each collector in **live mode** in isolation. Verify it returns the expected
 - [ ] P3.6.3 — `performance` domain populated with CPU/memory/storage metrics
 - [ ] P3.6.4 — Metric timestamps present
 
+### waf-assessment collector (v1.4.0+)
+
+- [ ] P3.7.1 — Returns without terminating error
+- [ ] P3.7.2 — `wafAssessment` domain populated
+- [ ] P3.7.3 — Azure Advisor recommendations returned (count >= 0, no crash if 0)
+- [ ] P3.7.4 — `byPillar` array contains all 5 WAF pillars (Reliability, Security, Cost Optimization, Operational Excellence, Performance Efficiency)
+- [ ] P3.7.5 — `summary.overallScore` is a numeric value 0-100
+- [ ] P3.7.6 — `summary.status` is one of: Excellent / Good / Needs Attention / At Risk
+- [ ] P3.7.7 — WAF rule engine re-evaluation from saved manifest: `Invoke-RangerWafRuleEvaluation` returns pillarScores without re-collection
+
 ---
 
-**Pass gate:** All 6 collectors complete without terminating errors. Partial data is a warning, not a failure.
+**Pass gate:** All 7 collectors complete without terminating errors. Partial data is a warning, not a failure.
 "@
     },
     @{
@@ -309,12 +319,31 @@ Validate all output artifacts render correctly from the live-collected manifest.
 - [ ] P5.4 — ≥ 1 draw.io (.drawio) file generated
 - [ ] P5.5 — Traffic light SVGs render correctly in browser
 - [ ] P5.6 — Capacity bar SVGs present and show plausible values
-- [ ] P5.7 — As-built document control block present (env name, date, package ID)
-- [ ] P5.8 — Package README.md generated and references all artifacts
-- [ ] P5.9 — package-index.json valid JSON, file count matches actual
-- [ ] P5.10 — Findings from Phase 4 visible in technical HTML report
-- [ ] P5.11 — Topology diagram contains correct node count
-- [ ] P5.12 — Executive HTML report loads in browser without errors
+- [ ] P5.7 — Package README.md generated and references all artifacts
+- [ ] P5.8 — package-index.json valid JSON, file count matches actual
+- [ ] P5.9 — Findings from Phase 4 visible in technical HTML report
+- [ ] P5.10 — Topology diagram contains correct node count
+- [ ] P5.11 — Executive HTML report loads in browser without errors
+
+### as-built mode checks (run with `output.mode: as-built`)
+
+- [ ] P5.12 — Document Control block (kv-grid) present in as-built HTML report: environment name, generated date, package ID
+- [ ] P5.13 — Installation Register table (kv-grid) present in as-built management report
+- [ ] P5.14 — Sign-Off table present in as-built technical report with Implementation Engineer / Technical Reviewer / Customer Representative rows
+- [ ] P5.15 — current-state run has NO document control / sign-off sections
+
+### WAF report checks
+
+- [ ] P5.16 — WAF Assessment Scorecard table present in management-tier HTML report (Pillar / Score / Status / Rules Passing / Top Finding)
+- [ ] P5.17 — WAF Findings detail table present in technical-tier HTML report (failing rules only)
+- [ ] P5.18 — WAF section absent from executive-tier report
+- [ ] P5.19 — WAF Scorecard present in Markdown management report
+
+### PDF output checks
+
+- [ ] P5.20 — PDF cover page present: title, cluster name, mode, version, generated date, confidentiality notice
+- [ ] P5.21 — PDF renders table sections as pipe-delimited text (not raw JSON)
+- [ ] P5.22 — PDF renders sign-off section as placeholder rows in as-built mode
 
 ---
 
@@ -374,9 +403,26 @@ Run `Invoke-AzureLocalRanger` as a real user would across 7 distinct configurati
 - [ ] G.3 — Run does not crash or hang indefinitely
 - [ ] G.4 — Retry logic fires before marking node unreachable
 
+### Scenario H — Invoke-RangerWizard generates config and drives run (v1.2.0+ wizard)
+- [ ] H.1 — `Invoke-RangerWizard` launches without throwing in VS Code terminal and Windows Terminal
+- [ ] H.2 — Wizard completes the full question sequence (cluster, nodes, Azure IDs, credentials, output, scope)
+- [ ] H.3 — Generated YAML is valid and passes `Test-AzureLocalRangerPrerequisites`
+- [ ] H.4 — Run launched from wizard-generated config completes without terminating errors
+- [ ] H.5 — Wizard-saved config matches expected values from variables.yml (cluster FQDN, nodes, subscription)
+- [ ] H.6 — Wizard `--save` path is written and readable
+
+### Scenario I — current-state mode vs as-built mode output differentiation
+- [ ] I.1 — current-state run: no Document Control or Sign-Off sections in any report tier
+- [ ] I.2 — as-built run (same manifest): Document Control present in management report
+- [ ] I.3 — as-built run: Sign-Off table present in technical report
+- [ ] I.4 — as-built run: Installation Register present in management report
+- [ ] I.5 — Both runs produce structurally valid HTML (no unclosed tags)
+- [ ] I.6 — Both modes produce PDF with cover page
+- [ ] I.7 — Output directory names differ between runs (mode is reflected in package path or README)
+
 ---
 
-**Pass gate:** All 7 scenarios reach a recorded outcome.
+**Pass gate:** All 9 scenarios reach a recorded outcome.
 **Note:** Do not delete Scenario A output — used as baseline for Scenario E.
 "@
     },
@@ -411,10 +457,10 @@ Final phase. Confirm no regressions were introduced and sign off on the cycle.
 ### Sign-Off Checklist
 
 - [ ] All phases P0–P6 have a recorded outcome (pass / partial+issue / waived)
-- [ ] All bugs found during TRAILHEAD have issues filed and linked to this milestone
+- [ ] All bugs found during TRAILHEAD have issues filed and linked to the v$Version release milestone
 - [ ] CHANGELOG.md updated with v$Version field validation notes
-- [ ] Issue #34 (Validate Ranger against a real Azure Local environment) updated with TRAILHEAD summary
-- [ ] Milestone closed
+- [ ] TRAILHEAD gate issue closed
+- [ ] v$Version release milestone ready to close (all bugs resolved or deferred)
 
 ---
 
