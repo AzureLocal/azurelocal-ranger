@@ -29,7 +29,7 @@ If you are new to Ranger, the cleanest path through the docs is:
 
 ## Current Project Phase
 
-AzureLocalRanger is at **v1.4.0**. v1.5.0 (Document Quality) is in progress — see the [Roadmap](project/roadmap.md) for what is coming next. Install from PSGallery:
+AzureLocalRanger is at **v1.4.2**. Install from PSGallery:
 
 ```powershell
 Install-Module AzureLocalRanger -Scope CurrentUser -Force

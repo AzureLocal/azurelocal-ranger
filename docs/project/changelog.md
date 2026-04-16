@@ -2,6 +2,17 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
+## v1.4.2 Highlights
+
+- **TRAILHEAD test configs** — added `credentials.domain` section and `svg`/`drawio` output formats to tplabs config files so the field test cycle produces diagram output
+- **Field test cycle script** — removed `SupportsShouldProcess` from `New-RangerFieldTestCycle.ps1` to eliminate `-WhatIf` parameter conflict
+- **Docs deploy workflow** — removed `release: [published]` trigger; GitHub Pages environment protection only permits deployments from `main`
+- **Operation TRAILHEAD v1.4.2** — full 8-phase field validation against live tplabs-clus01 (4-node Dell AX-760) closed successfully; 76/76 Pester tests passing
+
+## v1.4.1 Highlights
+
+- **Wizard interactive gate (#180)** — `Test-RangerInteractivePromptAvailable` now gates on `[Environment]::UserInteractive` only; no longer falsely fails in VS Code terminal or Windows Terminal when a real user is present
+
 ## v1.4.0 Highlights
 
 - **HTML report rebuild** — type-aware section rendering (table, kv-grid, sign-off) across all tiers; Node, VM, Storage Pool, Physical Disk, Network Adapter, Event Log, and Security Audit inventory tables

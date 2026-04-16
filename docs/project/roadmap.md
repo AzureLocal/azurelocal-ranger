@@ -135,7 +135,26 @@ Enterprise integrations, specialized hardware protocols, and advanced topology c
 | Multi-rack Azure Local discovery (#31) | Rack topology, SAN storage, compute rack correlation, northbound connectivity for rack-scale deployments | [#31](https://github.com/AzureLocal/azurelocal-ranger/issues/31) |
 | CMDB and ITSM structured export (#130) | `Export-AzureLocalRangerCmdb` producing ServiceNow, CSV, and JSON CI records from the audit manifest | [#130](https://github.com/AzureLocal/azurelocal-ranger/issues/130) |
 
-## Current Release — v1.4.0
+## Current Release — v1.4.2
+
+Released April 2026. TRAILHEAD field validation patch — test config fixes for tplabs environment and docs deploy trigger correction.
+
+| Area | What shipped |
+| --- | --- |
+| TRAILHEAD test configs | Added `credentials.domain` section and `svg`/`drawio` output formats to `tplabs-current-state.yml` and `tplabs-as-built.yml` test configs |
+| Field test cycle script | Removed `SupportsShouldProcess` from `New-RangerFieldTestCycle.ps1` to eliminate `-WhatIf` parameter conflict |
+| Docs deploy workflow | Removed `release: [published]` trigger — GitHub Pages environment protection only allows deployments from `main` |
+| Operation TRAILHEAD v1.4.2 | Full 8-phase field validation against live tplabs-clus01 (4-node Dell AX-760). All 7 collectors succeeded; all output formats generated (HTML, Markdown, JSON, XLSX, PDF, 13×SVG, 13×draw.io). Pester 76/76 passing. |
+
+## Previous Release — v1.4.1
+
+Released April 2026. Wizard interactive-gate regression fix.
+
+| Area | What shipped |
+| --- | --- |
+| Wizard interactive gate (#180) | `Test-RangerInteractivePromptAvailable` now gates on `[Environment]::UserInteractive` only; no longer falsely fails in VS Code terminal or Windows Terminal when a real user is present |
+
+## Previous Release — v1.4.0
 
 Released April 2026. Report Quality milestone delivering handoff-quality HTML reports, improved diagram engine, PDF cover pages, and WAF Assessment integration with an external rule engine.
 
