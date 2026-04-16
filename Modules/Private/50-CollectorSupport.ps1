@@ -85,7 +85,24 @@ function Invoke-RangerClusterCommand {
     $retryCount = if ($Config.behavior -and $Config.behavior.retryCount -gt 0) { [int]$Config.behavior.retryCount } else { 1 }
     $timeoutSec  = if ($Config.behavior -and $Config.behavior.timeoutSeconds -gt 0) { [int]$Config.behavior.timeoutSeconds } else { 0 }
 
-    return Invoke-RangerRemoteCommand -ComputerName $targets -Credential $Credential -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList -RetryCount $retryCount -TimeoutSeconds $timeoutSec
+    # Issue #26: pass transport mode and Arc context from config so Invoke-RangerRemoteCommand
+    # can fall back to Arc Run Command when WinRM is unreachable.
+    $transportMode  = if ($Config.behavior -and $Config.behavior.transport) { [string]$Config.behavior.transport } else { 'auto' }
+    $arcRg          = [string]$Config.targets.azure.resourceGroup
+    $arcSubId       = [string]$Config.targets.azure.subscriptionId
+    $remoteParams   = @{
+        ComputerName      = $targets
+        Credential        = $Credential
+        ScriptBlock       = $ScriptBlock
+        ArgumentList      = $ArgumentList
+        RetryCount        = $retryCount
+        TimeoutSeconds    = $timeoutSec
+        TransportMode     = $transportMode
+        ArcResourceGroup  = $arcRg
+        ArcSubscriptionId = $arcSubId
+    }
+
+    return Invoke-RangerRemoteCommand @remoteParams
 }
 
 function Invoke-RangerSafeAction {

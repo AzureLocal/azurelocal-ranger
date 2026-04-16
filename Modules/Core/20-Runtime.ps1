@@ -10,7 +10,12 @@ function Invoke-RangerCollectorExecution {
         $CredentialMap,
 
         [Parameter(Mandatory = $true)]
-        [string]$PackageRoot
+        [string]$PackageRoot,
+
+        # Issue #30: connectivity matrix from Get-RangerConnectivityMatrix.
+        # When supplied, collectors whose transport surface is unreachable are skipped
+        # with status 'skipped' rather than being attempted and failing mid-run.
+        [System.Collections.IDictionary]$ConnectivityMatrix
     )
 
     $messages = New-Object System.Collections.Generic.List[string]
@@ -18,13 +23,40 @@ function Invoke-RangerCollectorExecution {
     $status = 'success'
     $functionName = $Definition.FunctionName
     $arguments = @{
-        Config       = $Config
+        Config        = $Config
         CredentialMap = $CredentialMap
-        Definition   = $Definition
-        PackageRoot  = $PackageRoot
+        Definition    = $Definition
+        PackageRoot   = $PackageRoot
     }
 
     try {
+        # Issue #30: skip collector gracefully when connectivity matrix says its
+        # required transport surface is not reachable from this runner.
+        if ($ConnectivityMatrix -and (Get-Command -Name 'Test-RangerCollectorConnectivitySatisfied' -ErrorAction SilentlyContinue)) {
+            $satisfied = Test-RangerCollectorConnectivitySatisfied -Definition $Definition -ConnectivityMatrix $ConnectivityMatrix
+            if (-not $satisfied) {
+                $skipSurface = $Definition.RequiredCredential
+                $skipMsg = "Collector '$($Definition.Id)' skipped — $skipSurface transport unreachable (connectivity posture: $($ConnectivityMatrix.posture))."
+                $messages.Add($skipMsg)
+                $end = (Get-Date).ToUniversalTime().ToString('o')
+                return @{
+                    CollectorId     = $Definition.Id
+                    Status          = 'skipped'
+                    StartTimeUtc    = $start
+                    EndTimeUtc      = $end
+                    TargetScope     = @($Definition.RequiredTargets)
+                    CredentialScope = $Definition.RequiredCredential
+                    Messages        = @($messages)
+                    Domains         = @{}
+                    Topology        = $null
+                    Relationships   = @()
+                    Findings        = @()
+                    Evidence        = @()
+                    RawEvidence     = $null
+                }
+            }
+        }
+
         if (-not (Get-Command -Name $functionName -ErrorAction SilentlyContinue)) {
             throw "Collector function '$functionName' is not available."
         }
@@ -543,11 +575,70 @@ function Invoke-RangerDiscoveryRuntime {
             }
         }
 
+        # Issue #30 — Build connectivity matrix after WinRM preflight so we know which
+        # transport surfaces are reachable before any collector attempts a connection.
+        # The matrix is stored in the manifest for observability and passed to each
+        # collector execution so unreachable transports produce 'skipped' not 'failed'.
+        $connectivityMatrix = $null
+        if (Get-Command -Name 'Get-RangerConnectivityMatrix' -ErrorAction SilentlyContinue) {
+            $ctxTimeout = if ($config.behavior -and $config.behavior.timeoutSeconds -gt 0) { [int]$config.behavior.timeoutSeconds } else { 10 }
+            Write-RangerLog -Level info -Message "Connectivity matrix probe starting (timeout: $ctxTimeout s)"
+            $connectivityMatrix = Get-RangerConnectivityMatrix -Config $config -TimeoutSeconds $ctxTimeout
+            $manifest.run.connectivity = [ordered]@{
+                posture      = $connectivityMatrix.posture
+                probeTimeUtc = $connectivityMatrix.probeTimeUtc
+                cluster      = $connectivityMatrix.cluster
+                azure        = $connectivityMatrix.azure
+                bmc          = $connectivityMatrix.bmc
+                arc          = $connectivityMatrix.arc
+            }
+            Write-RangerLog -Level info -Message "Connectivity posture: $($connectivityMatrix.posture) — cluster=$($connectivityMatrix.cluster.reachable), azure=$($connectivityMatrix.azure.reachable), bmc=$($connectivityMatrix.bmc.reachable)"
+
+            # Issue #26: probe Arc Run Command availability and update matrix.arc.available
+            # so downstream code (and the manifest) can reflect the actual transport posture.
+            if (Get-Command -Name 'Test-RangerArcTransportAvailable' -ErrorAction SilentlyContinue) {
+                $arcAvailable = Test-RangerArcTransportAvailable -Config $config
+                $connectivityMatrix.arc.available = $arcAvailable
+                $manifest.run.connectivity.arc = [ordered]@{ available = $arcAvailable }
+                Write-RangerLog -Level info -Message "Arc Run Command transport available: $arcAvailable"
+            }
+
+            # Surface a finding for any unreachable transport that has configured targets
+            if (-not $connectivityMatrix.azure.reachable -and $connectivityMatrix.azure.enabled) {
+                if (Get-Command -Name 'New-RangerConnectivityFinding' -ErrorAction SilentlyContinue) {
+                    $manifest.findings += @(New-RangerConnectivityFinding -Surface 'azure' -Detail 'management.azure.com:443 unreachable')
+                }
+            }
+            if (-not $connectivityMatrix.bmc.reachable -and @($connectivityMatrix.bmc.endpoints).Count -gt 0) {
+                if (Get-Command -Name 'New-RangerConnectivityFinding' -ErrorAction SilentlyContinue) {
+                    $manifest.findings += @(New-RangerConnectivityFinding -Surface 'bmc' -Detail ($connectivityMatrix.bmc.endpoints | ForEach-Object { "$($_.host): unreachable" }) -join '; ')
+                }
+            }
+        }
+
+        # Issue #76: initialise Spectre.Console progress display — degrades gracefully when
+        # PwshSpectreConsole is absent, in CI, or in Unattended / non-interactive mode.
+        $progressCtx = $null
+        $showProgress = [bool]$config.output.showProgress
+        if ($showProgress -and -not $Unattended -and (Get-Command -Name 'New-RangerProgressContext' -ErrorAction SilentlyContinue)) {
+            $progressCtx = New-RangerProgressContext -Collectors $selectedCollectors
+        }
+
         foreach ($collector in $selectedCollectors) {
             Write-RangerLog -Level info -Message "Collector '$($collector.Id)' starting"
-            $collectorResult = Invoke-RangerCollectorExecution -Definition $collector -Config $config -CredentialMap $credentialMap -PackageRoot $packageRoot
+            if ($progressCtx -and (Get-Command -Name 'Update-RangerProgressCollectorStart' -ErrorAction SilentlyContinue)) {
+                Update-RangerProgressCollectorStart -Context $progressCtx -CollectorId $collector.Id
+            }
+            $collectorResult = Invoke-RangerCollectorExecution -Definition $collector -Config $config -CredentialMap $credentialMap -PackageRoot $packageRoot -ConnectivityMatrix $connectivityMatrix
             Write-RangerLog -Level info -Message "Collector '$($collector.Id)' completed with status '$($collectorResult.Status)'"
+            if ($progressCtx -and (Get-Command -Name 'Update-RangerProgressCollectorDone' -ErrorAction SilentlyContinue)) {
+                Update-RangerProgressCollectorDone -Context $progressCtx -CollectorId $collector.Id -Status $collectorResult.Status
+            }
             Add-RangerCollectorToManifest -Manifest ([ref]$manifest) -CollectorResult $collectorResult -EvidenceRoot $evidenceRoot -KeepRawEvidence ([bool]$config.output.keepRawEvidence)
+        }
+
+        if ($progressCtx -and (Get-Command -Name 'Complete-RangerProgressDisplay' -ErrorAction SilentlyContinue)) {
+            Complete-RangerProgressDisplay -Context $progressCtx
         }
 
         $manifest.run.retryDetails = @($script:RangerRetryDetails)

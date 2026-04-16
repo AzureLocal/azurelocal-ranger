@@ -59,16 +59,25 @@ function Get-RangerDefaultConfig {
             rootPath        = 'C:\AzureLocalRanger'
             diagramFormat   = 'svg'
             keepRawEvidence = $true
+            # Issue #76: enable Spectre.Console live progress bars; suppressed automatically
+            # in CI and Unattended mode even when set to $true.
+            showProgress    = $true
         }
         behavior = [ordered]@{
-            promptForMissingCredentials   = $true
-            promptForMissingRequired      = $true
+            promptForMissingCredentials    = $true
+            promptForMissingRequired       = $true
             skipUnavailableOptionalDomains = $true
-            failOnSchemaViolation         = $true
-            logLevel                      = 'info'
-            retryCount                    = 2
-            timeoutSeconds                = 60
-            continueToRendering           = $true
+            failOnSchemaViolation          = $true
+            logLevel                       = 'info'
+            retryCount                     = 2
+            timeoutSeconds                 = 60
+            continueToRendering            = $true
+            # Issue #30: 'graceful' skips collectors whose transport is unreachable rather
+            # than failing; 'strict' fails the run if any core collector cannot reach its target.
+            degradationMode                = 'graceful'
+            # Issue #26: 'auto' tries WinRM first, falls back to Arc Run Command when WinRM
+            # is blocked; 'winrm' forces WinRM only; 'arc' forces Arc Run Command only.
+            transport                      = 'auto'
         }
     }
 }
@@ -520,6 +529,12 @@ function Set-RangerStructuralOverrides {
     }
     if ($StructuralOverrides.ContainsKey('ResourceGroup') -and -not [string]::IsNullOrWhiteSpace($StructuralOverrides['ResourceGroup'])) {
         $Config.targets.azure.resourceGroup = $StructuralOverrides['ResourceGroup']
+    }
+
+    # Issue #76: -ShowProgress switch override
+    if ($StructuralOverrides.ContainsKey('ShowProgress')) {
+        if (-not $Config.output) { $Config.output = [ordered]@{} }
+        $Config.output.showProgress = [bool]$StructuralOverrides['ShowProgress']
     }
 
     return $Config

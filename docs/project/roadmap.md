@@ -8,7 +8,18 @@ Ranger supports two outcomes through one discovery engine:
 - **Current-state** — recurring operational snapshot of a live Azure Local deployment
 - **As-built** — formal documentation package for customer or operational handoff
 
-## Current Release — v1.1.2
+## Current Release — v1.2.0
+
+Released April 2026. UX & Transport milestone delivering Arc Run Command transport, disconnected discovery, Spectre.Console TUI progress, and interactive configuration wizard.
+
+| Area | What shipped |
+| --- | --- |
+| Arc Run Command transport (#26) | WinRM workloads automatically fall back to Arc Run Command when ports 5985/5986 are blocked; `behavior.transport: auto/winrm/arc` config control |
+| Disconnected discovery (#30) | Pre-run connectivity matrix classifies posture (connected / semi-connected / disconnected); unreachable collectors skip gracefully; matrix stored in manifest |
+| Spectre TUI progress (#76) | Live per-collector progress bars via PwshSpectreConsole; falls back to Write-Progress; `-ShowProgress` parameter and `output.showProgress` config key |
+| Interactive wizard (#75) | `Invoke-RangerWizard` guided prompts for cluster/nodes/Azure/credentials/scope; saves YAML config or launches run immediately |
+
+## Previous Release — v1.1.2
 
 Released April 2026. Patch release fixing 6 runtime regressions introduced in v1.1.0/v1.1.1, plus 20 new Pester unit tests and live Trailhead field validation on the tplabs cluster.
 

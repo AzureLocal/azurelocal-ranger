@@ -327,8 +327,40 @@ function Invoke-RangerRemoteCommand {
         [PSCredential]$Credential,
         [object[]]$ArgumentList,
         [int]$RetryCount = 1,
-        [int]$TimeoutSeconds = 0
+        [int]$TimeoutSeconds = 0,
+
+        # Issue #26: transport selection — 'auto' tries WinRM, falls back to Arc on failure;
+        # 'winrm' forces WinRM only; 'arc' forces Arc only (skips WinRM entirely)
+        [ValidateSet('auto', 'winrm', 'arc')]
+        [string]$TransportMode = 'auto',
+
+        # Arc transport context — required when TransportMode is 'arc' or 'auto' fallback
+        [string]$ArcResourceGroup,
+        [string]$ArcSubscriptionId
     )
+
+    # ── Arc-only path ──────────────────────────────────────────────────────────
+    if ($TransportMode -eq 'arc') {
+        if ([string]::IsNullOrWhiteSpace($ArcResourceGroup) -or [string]::IsNullOrWhiteSpace($ArcSubscriptionId)) {
+            throw [System.InvalidOperationException]::new(
+                "TransportMode 'arc' requires ArcResourceGroup and ArcSubscriptionId parameters."
+            )
+        }
+        $arcResults = Invoke-RangerArcRunCommand -MachineName $ComputerName -ScriptBlock $ScriptBlock `
+            -ArgumentList $ArgumentList -ResourceGroupName $ArcResourceGroup `
+            -SubscriptionId $ArcSubscriptionId -TimeoutSeconds ($TimeoutSeconds -gt 0 ? $TimeoutSeconds : 120)
+        # Parse JSON output — Arc Run Command returns stdout as a string; collectors
+        # that produce structured output should write ConvertTo-Json at the end.
+        return @($arcResults | ForEach-Object {
+            if ($_.ExitCode -ne 0) {
+                Write-RangerLog -Level warn -Message "Arc Run Command returned non-zero exit on '$($_.MachineName)': $($_.Error)"
+            }
+            if ($_.Output) {
+                try { $_.Output | ConvertFrom-Json -Depth 100 }
+                catch { $_.Output }
+            }
+        })
+    }
 
     $targetStates = @($ComputerName | ForEach-Object {
         [ordered]@{
@@ -339,6 +371,25 @@ function Invoke-RangerRemoteCommand {
 
     $reachableStates = @($targetStates | Where-Object { $_.state.Reachable })
     if ($reachableStates.Count -eq 0) {
+        # Issue #26: when transport is 'auto' and Arc context is available, fall back to Arc
+        if ($TransportMode -eq 'auto' -and
+            -not [string]::IsNullOrWhiteSpace($ArcResourceGroup) -and
+            -not [string]::IsNullOrWhiteSpace($ArcSubscriptionId) -and
+            (Test-RangerCommandAvailable -Name 'Invoke-AzConnectedMachineRunCommand')) {
+            Write-RangerLog -Level info -Message "WinRM unreachable on all targets — falling back to Arc Run Command transport"
+            $arcResults = Invoke-RangerArcRunCommand -MachineName $ComputerName -ScriptBlock $ScriptBlock `
+                -ArgumentList $ArgumentList -ResourceGroupName $ArcResourceGroup `
+                -SubscriptionId $ArcSubscriptionId -TimeoutSeconds ($TimeoutSeconds -gt 0 ? $TimeoutSeconds : 120)
+            return @($arcResults | ForEach-Object {
+                if ($_.ExitCode -ne 0) {
+                    Write-RangerLog -Level warn -Message "Arc Run Command returned non-zero exit on '$($_.MachineName)': $($_.Error)"
+                }
+                if ($_.Output) {
+                    try { $_.Output | ConvertFrom-Json -Depth 100 }
+                    catch { $_.Output }
+                }
+            })
+        }
         $messages = @($targetStates | ForEach-Object { "$($_.computerName): $($_.state.Message)" })
         throw [System.InvalidOperationException]::new("No reachable WinRM targets available. $($messages -join ' ; ')")
     }
@@ -420,6 +471,179 @@ function Invoke-RangerRemoteCommand {
     )
 
     Invoke-RangerRetry -RetryCount $RetryCount -DelaySeconds 1 -Exponential -ScriptBlock $retryBlock -Label 'Invoke-RangerRemoteCommand' -Target ($ComputerName -join ',') -RetryOnExceptionType $transientExceptions
+}
+
+# Issue #26 — Arc Run Command transport
+# Executes a scriptblock on one or more Arc-registered machines using
+# Invoke-AzConnectedMachineRunCommand, which routes through the Azure control
+# plane rather than WinRM.  Used when cluster nodes are unreachable on
+# ports 5985/5986 but Arc connectivity is confirmed.
+#
+# Limitations:
+#   • Requires Az.ConnectedMachine module ≥ 1.0.0
+#   • Output is capped at ~32 KB per execution; collectors that return large
+#     datasets should stream via multiple calls or use chunked output
+#   • The scriptblock is serialised to a string and passed as -Script; closures
+#     and $using: variables are not supported — pass data via ArgumentList
+#   • Run Commands are asynchronous on the service side; this function polls
+#     until the job reaches a terminal state or TimeoutSeconds is exceeded
+
+function Invoke-RangerArcRunCommand {
+    <#
+    .SYNOPSIS
+        Executes a scriptblock on Arc-registered machines via Azure Run Command.
+    .OUTPUTS
+        Array of PSCustomObject with properties: MachineName, Output, ExitCode, Error
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$MachineName,
+
+        [Parameter(Mandatory = $true)]
+        [scriptblock]$ScriptBlock,
+
+        [object[]]$ArgumentList,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ResourceGroupName,
+
+        [Parameter(Mandatory = $true)]
+        [string]$SubscriptionId,
+
+        [string]$Location,
+
+        [int]$TimeoutSeconds = 120,
+        [int]$PollIntervalSeconds = 5
+    )
+
+    if (-not (Test-RangerCommandAvailable -Name 'Invoke-AzConnectedMachineRunCommand')) {
+        throw [System.InvalidOperationException]::new(
+            "Az.ConnectedMachine module is not available. Install it with: Install-Module Az.ConnectedMachine -Force"
+        )
+    }
+
+    $scriptText = $ScriptBlock.ToString()
+
+    # Inject ArgumentList values as variable assignments at the top of the script.
+    # Arc Run Command does not support -ArgumentList natively; we serialise each
+    # argument as JSON and assign it to $args[0], $args[1] … inside the script.
+    if ($ArgumentList -and $ArgumentList.Count -gt 0) {
+        $argAssignments = for ($i = 0; $i -lt $ArgumentList.Count; $i++) {
+            $serialised = $ArgumentList[$i] | ConvertTo-Json -Depth 10 -Compress
+            "`$args_$i = '$($serialised -replace "'", "''")' | ConvertFrom-Json"
+        }
+        $scriptText = ($argAssignments -join "`n") + "`n" + $scriptText
+    }
+
+    $results = New-Object System.Collections.Generic.List[object]
+
+    foreach ($machine in $MachineName) {
+        Write-RangerLog -Level debug -Message "Arc Run Command: submitting to machine '$machine' in RG '$ResourceGroupName'"
+
+        $runParams = @{
+            MachineName       = $machine
+            ResourceGroupName = $ResourceGroupName
+            SubscriptionId    = $SubscriptionId
+            RunCommandName    = "AzureLocalRanger-$(New-Guid)"
+            Script            = $scriptText
+            ErrorAction       = 'Stop'
+        }
+        if ($Location) { $runParams.Location = $Location }
+
+        try {
+            $job = Invoke-AzConnectedMachineRunCommand @runParams -AsJob
+            $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+            while ((Get-Date) -lt $deadline) {
+                $state = $job | Get-Job -ErrorAction SilentlyContinue
+                if (-not $state -or $state.State -in @('Completed', 'Failed', 'Stopped')) { break }
+                Start-Sleep -Seconds $PollIntervalSeconds
+            }
+
+            if ($job.State -eq 'Running') {
+                $job | Stop-Job -ErrorAction SilentlyContinue
+                $job | Remove-Job -Force -ErrorAction SilentlyContinue
+                [void]$results.Add([PSCustomObject]@{
+                    MachineName = $machine
+                    Output      = $null
+                    ExitCode    = -1
+                    Error       = "Arc Run Command timed out after $TimeoutSeconds seconds"
+                })
+                Write-RangerLog -Level warn -Message "Arc Run Command timed out for machine '$machine'"
+                continue
+            }
+
+            $jobResult = $job | Receive-Job -ErrorAction SilentlyContinue
+            $job | Remove-Job -Force -ErrorAction SilentlyContinue
+
+            $output = if ($jobResult -and $jobResult.Value) {
+                # InstanceViewOutput has a .Message property that contains stdout
+                @($jobResult.Value | ForEach-Object { $_.Message }) -join "`n"
+            } else {
+                $null
+            }
+
+            [void]$results.Add([PSCustomObject]@{
+                MachineName = $machine
+                Output      = $output
+                ExitCode    = 0
+                Error       = $null
+            })
+            Write-RangerLog -Level debug -Message "Arc Run Command succeeded for machine '$machine'"
+        }
+        catch {
+            [void]$results.Add([PSCustomObject]@{
+                MachineName = $machine
+                Output      = $null
+                ExitCode    = -1
+                Error       = $_.Exception.Message
+            })
+            Write-RangerLog -Level warn -Message "Arc Run Command failed for machine '$machine': $($_.Exception.Message)"
+        }
+    }
+
+    return $results.ToArray()
+}
+
+function Test-RangerArcTransportAvailable {
+    <#
+    .SYNOPSIS
+        Returns $true when the Arc Run Command transport can be used for the given config.
+    .DESCRIPTION
+        Checks:
+          1. Az.ConnectedMachine cmdlet is present
+          2. Az context is active
+          3. subscriptionId and resourceGroup are configured and non-placeholder
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Config
+    )
+
+    if (-not (Test-RangerCommandAvailable -Name 'Invoke-AzConnectedMachineRunCommand')) {
+        return $false
+    }
+
+    if (-not (Test-RangerCommandAvailable -Name 'Get-AzContext')) {
+        return $false
+    }
+
+    $ctx = Get-AzContext -ErrorAction SilentlyContinue
+    if (-not $ctx) {
+        return $false
+    }
+
+    $subId = [string]$Config.targets.azure.subscriptionId
+    $rg    = [string]$Config.targets.azure.resourceGroup
+    if ([string]::IsNullOrWhiteSpace($subId) -or [string]::IsNullOrWhiteSpace($rg)) {
+        return $false
+    }
+
+    if ((Test-RangerPlaceholderValue -Value $subId -FieldName 'targets.azure.subscriptionId') -or
+        (Test-RangerPlaceholderValue -Value $rg   -FieldName 'targets.azure.resourceGroup')) {
+        return $false
+    }
+
+    return $true
 }
 
 function Invoke-RangerRedfishRequest {

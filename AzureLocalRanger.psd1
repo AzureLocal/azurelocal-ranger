@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '1.1.2'
+    ModuleVersion     = '1.2.0'
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
@@ -12,7 +12,8 @@
         'Invoke-AzureLocalRanger',
         'New-AzureLocalRangerConfig',
         'Export-AzureLocalRangerReport',
-        'Test-AzureLocalRangerPrerequisites'
+        'Test-AzureLocalRangerPrerequisites',
+        'Invoke-RangerWizard'
     )
     CmdletsToExport   = @()
     VariablesToExport = @()
@@ -48,9 +49,30 @@
             HelpInfoUri  = 'https://azurelocal.cloud/azurelocal-ranger/'
             ExternalModuleDependencies = @(
                 'Az.Accounts',
-                'Az.Resources'
+                'Az.Resources',
+                'Az.ConnectedMachine'
             )
             ReleaseNotes = @'
+## v1.2.0 — UX & Transport
+
+### Added
+- **Arc Run Command transport (#26)** — `Invoke-AzureLocalRanger` now routes WinRM workloads
+  through Azure Arc Run Command (`Invoke-AzConnectedMachineRunCommand`) when cluster nodes
+  are unreachable on ports 5985/5986. Transport mode is controlled by `behavior.transport`
+  (auto / winrm / arc) and falls back gracefully when `Az.ConnectedMachine` is absent.
+- **Disconnected / semi-connected discovery (#30)** — A pre-run connectivity matrix probes
+  all transport surfaces (cluster WinRM, Azure management plane, BMC HTTPS) and classifies
+  the runner posture as `connected`, `semi-connected`, or `disconnected`. Collectors whose
+  transport is unreachable are skipped with `status: skipped` rather than failing mid-run.
+  The full matrix is stored in `manifest.run.connectivity` for observability.
+- **Spectre.Console TUI progress display (#76)** — A live per-collector progress display
+  using PwshSpectreConsole renders during collection when the module is installed and the
+  host is interactive. Falls back to `Write-Progress` automatically. Suppressed in CI and
+  Unattended mode. Enable with `-ShowProgress` or `output.showProgress: true` in config.
+- **Interactive configuration wizard (#75)** — `Invoke-RangerWizard` walks through a
+  prompted question sequence (cluster, nodes, Azure IDs, credentials, output, scope) and
+  offers to save the config as YAML, launch a run immediately, or both.
+
 ## v1.1.2 — Regression Patch
 
 ### Fixed

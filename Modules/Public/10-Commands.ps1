@@ -76,6 +76,11 @@ function Invoke-AzureLocalRanger {
         Azure resource group name that contains the Arc-enabled HCI cluster resource.
         Overrides config targets.azure.resourceGroup.
 
+    .PARAMETER ShowProgress
+        Display a live Spectre.Console progress bar during collector execution.
+        Requires the PwshSpectreConsole module. Automatically suppressed in CI and
+        Unattended mode. Overrides config output.showProgress.
+
     .OUTPUTS
         System.Collections.Hashtable — the completed run manifest. Also writes report files
         to the output directory.
@@ -127,7 +132,10 @@ function Invoke-AzureLocalRanger {
         [string]$EnvironmentName,
         [string]$SubscriptionId,
         [string]$TenantId,
-        [string]$ResourceGroup
+        [string]$ResourceGroup,
+
+        # Issue #76: show live progress bars during collector execution
+        [switch]$ShowProgress
     )
 
     $credentialOverrides = @{
@@ -143,6 +151,7 @@ function Invoke-AzureLocalRanger {
     if ($PSBoundParameters.ContainsKey('SubscriptionId'))  { $structuralOverrides['SubscriptionId']  = $SubscriptionId }
     if ($PSBoundParameters.ContainsKey('TenantId'))        { $structuralOverrides['TenantId']        = $TenantId }
     if ($PSBoundParameters.ContainsKey('ResourceGroup'))   { $structuralOverrides['ResourceGroup']   = $ResourceGroup }
+    if ($PSBoundParameters.ContainsKey('ShowProgress'))    { $structuralOverrides['ShowProgress']    = [bool]$ShowProgress }
 
     Invoke-RangerDiscoveryRuntime -ConfigPath $ConfigPath -ConfigObject $ConfigObject -OutputPath $OutputPath -CredentialOverrides $credentialOverrides -IncludeDomains $IncludeDomain -ExcludeDomains $ExcludeDomain -NoRender:$NoRender -StructuralOverrides $structuralOverrides -AllowInteractiveInput:(-not $Unattended) -Unattended:$Unattended -BaselineManifestPath $BaselineManifestPath
 }
@@ -432,5 +441,214 @@ function Test-AzureLocalRangerPrerequisites {
         Validation         = $validation
         SelectedCollectors = @($selectedCollectors | ForEach-Object { $_.Id })
         Checks             = $checks
+    }
+}
+
+function Invoke-RangerWizard {
+    <#
+    .SYNOPSIS
+        Interactively guides you through building a Ranger configuration and optionally launches a run.
+
+    .DESCRIPTION
+        Invoke-RangerWizard walks through a prompted question sequence to collect:
+          • Cluster FQDN and node list
+          • Azure subscription ID, tenant ID, and resource group
+          • Credential strategy (current context, prompt, or path to a saved credential)
+          • Output path and report formats
+          • Scope selection (domains to include / exclude)
+
+        At the end of the sequence you can either:
+          (S) Save the configuration to a YAML file, or
+          (R) Run immediately using the collected configuration, or
+          (B) Both — save and run.
+
+        The wizard requires an interactive host. In non-interactive sessions it throws an
+        InvalidOperationException rather than attempting to run.
+
+    .PARAMETER OutputConfigPath
+        Pre-fill the save path for the generated config file. If not supplied the wizard prompts.
+
+    .PARAMETER SkipRun
+        Complete the wizard and save the config file, but do not launch a run regardless of
+        the user's choice at the end of the session.
+
+    .EXAMPLE
+        Invoke-RangerWizard
+
+    .EXAMPLE
+        Invoke-RangerWizard -OutputConfigPath C:\ranger\new-env.yml
+
+    .LINK
+        https://azurelocal.github.io/azurelocal-ranger/operator/wizard/
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$OutputConfigPath,
+        [switch]$SkipRun
+    )
+
+    if (-not (Test-RangerInteractivePromptAvailable)) {
+        throw [System.InvalidOperationException]::new(
+            "Invoke-RangerWizard requires an interactive host. Use Invoke-AzureLocalRanger with a config file in non-interactive sessions."
+        )
+    }
+
+    # ── helpers ────────────────────────────────────────────────────────────────
+    function Prompt-WizardValue {
+        param([string]$Label, [string]$Default, [switch]$Secret)
+        $prompt = if ($Default) { "$Label [$Default]" } else { $Label }
+        if ($Secret) {
+            $raw = Read-Host -Prompt $prompt -AsSecureString
+            if ($raw.Length -eq 0 -and $Default) { return $Default }
+            return $raw
+        }
+        $raw = Read-Host -Prompt $prompt
+        if ([string]::IsNullOrWhiteSpace($raw) -and $Default) { return $Default }
+        return $raw
+    }
+
+    function Prompt-WizardList {
+        param([string]$Label, [string]$Hint)
+        $raw = Read-Host -Prompt "$Label (comma-separated$Hint)"
+        if ([string]::IsNullOrWhiteSpace($raw)) { return @() }
+        return @($raw -split '\s*,\s*' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    }
+
+    # ── banner ─────────────────────────────────────────────────────────────────
+    Write-Host ''
+    Write-Host '  ╔══════════════════════════════════════╗' -ForegroundColor Cyan
+    Write-Host '  ║   AzureLocalRanger — Setup Wizard    ║' -ForegroundColor Cyan
+    Write-Host '  ╚══════════════════════════════════════╝' -ForegroundColor Cyan
+    Write-Host '  Press Enter to accept the default shown in [brackets].' -ForegroundColor Gray
+    Write-Host ''
+
+    # ── Section 1: Environment ─────────────────────────────────────────────────
+    Write-Host '── Environment ──────────────────────────' -ForegroundColor DarkCyan
+    $envName     = Prompt-WizardValue -Label 'Environment name (short label)'  -Default 'prod-azlocal-01'
+    $clusterName = Prompt-WizardValue -Label 'Cluster name (CNO / display name)' -Default "$envName"
+    $clusterFqdn = Prompt-WizardValue -Label 'Cluster FQDN or NetBIOS name (leave blank to skip)'
+
+    # ── Section 2: Nodes ──────────────────────────────────────────────────────
+    Write-Host ''
+    Write-Host '── Cluster Nodes ────────────────────────' -ForegroundColor DarkCyan
+    $clusterNodes = Prompt-WizardList -Label 'Node FQDNs' -Hint ', e.g. node01.lab.local,node02.lab.local'
+
+    # ── Section 3: Azure ──────────────────────────────────────────────────────
+    Write-Host ''
+    Write-Host '── Azure Integration (optional) ─────────' -ForegroundColor DarkCyan
+    $subscriptionId = Prompt-WizardValue -Label 'Subscription ID (GUID, blank to skip)'
+    $tenantId       = Prompt-WizardValue -Label 'Tenant ID (GUID, blank to skip)'
+    $resourceGroup  = Prompt-WizardValue -Label 'Resource group name'
+
+    # ── Section 4: Credentials ────────────────────────────────────────────────
+    Write-Host ''
+    Write-Host '── Credentials ──────────────────────────' -ForegroundColor DarkCyan
+    Write-Host '  Credential strategy options:' -ForegroundColor Gray
+    Write-Host '    [1] Use current session context (default)' -ForegroundColor Gray
+    Write-Host '    [2] Prompt at run time' -ForegroundColor Gray
+    $credStrategy = Prompt-WizardValue -Label 'Credential strategy' -Default '1'
+
+    $clusterUsername = ''
+    $domainUsername  = ''
+    if ($credStrategy -eq '2') {
+        $clusterUsername = Prompt-WizardValue -Label 'Cluster WinRM username (DOMAIN\\user)'
+        $domainUsername  = Prompt-WizardValue -Label 'Domain username (DOMAIN\\user, blank = same as cluster)'
+    }
+
+    # ── Section 5: Output ─────────────────────────────────────────────────────
+    Write-Host ''
+    Write-Host '── Output ───────────────────────────────' -ForegroundColor DarkCyan
+    $outputPath    = Prompt-WizardValue -Label 'Output root path' -Default 'C:\AzureLocalRanger'
+    $formatsRaw    = Prompt-WizardValue -Label 'Report formats' -Default 'html,markdown,json,svg'
+    $reportFormats = @($formatsRaw -split '\s*,\s*' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+
+    # ── Section 6: Scope ──────────────────────────────────────────────────────
+    Write-Host ''
+    Write-Host '── Collection Scope ─────────────────────' -ForegroundColor DarkCyan
+    Write-Host '  Available domains: clusterNode, hardware, storage, networking, virtualMachines,' -ForegroundColor Gray
+    Write-Host '    identitySecurity, azureIntegration, monitoring, managementTools, performance, oemIntegration' -ForegroundColor Gray
+    $includeDomains = Prompt-WizardList -Label 'Include only these domains' -Hint ', blank = all'
+    $excludeDomains = Prompt-WizardList -Label 'Exclude these domains' -Hint ', blank = none'
+
+    # ── Assemble config ────────────────────────────────────────────────────────
+    $wizardConfig = [ordered]@{
+        environment = [ordered]@{
+            name        = $envName
+            clusterName = $clusterName
+            description = "Generated by Invoke-RangerWizard on $(Get-Date -Format 'yyyy-MM-dd')"
+        }
+        targets = [ordered]@{
+            cluster = [ordered]@{
+                fqdn  = $clusterFqdn
+                nodes = $clusterNodes
+            }
+            azure = [ordered]@{
+                subscriptionId = $subscriptionId
+                resourceGroup  = $resourceGroup
+                tenantId       = $tenantId
+            }
+            bmc = [ordered]@{ endpoints = @() }
+        }
+        credentials = [ordered]@{
+            azure = [ordered]@{ method = 'existing-context' }
+        }
+        domains = [ordered]@{
+            include = $includeDomains
+            exclude = $excludeDomains
+        }
+        output = [ordered]@{
+            mode         = 'current-state'
+            formats      = $reportFormats
+            rootPath     = $outputPath
+            showProgress = $true
+        }
+        behavior = [ordered]@{
+            promptForMissingCredentials = ($credStrategy -eq '2')
+            degradationMode             = 'graceful'
+            transport                   = 'auto'
+        }
+    }
+
+    if ($credStrategy -eq '2') {
+        if (-not [string]::IsNullOrWhiteSpace($clusterUsername)) {
+            $wizardConfig.credentials['cluster'] = [ordered]@{ username = $clusterUsername }
+        }
+        if (-not [string]::IsNullOrWhiteSpace($domainUsername)) {
+            $wizardConfig.credentials['domain'] = [ordered]@{ username = $domainUsername }
+        }
+    }
+
+    # ── Save choice ────────────────────────────────────────────────────────────
+    Write-Host ''
+    Write-Host '── What would you like to do? ───────────' -ForegroundColor DarkCyan
+    Write-Host '    [S] Save configuration only' -ForegroundColor Gray
+    Write-Host '    [R] Run immediately (without saving)' -ForegroundColor Gray
+    Write-Host '    [B] Both — save and run' -ForegroundColor Gray
+    $action = (Prompt-WizardValue -Label 'Choice' -Default 'B').ToUpper().Trim()
+    if ($SkipRun -and $action -ne 'S') { $action = 'S' }
+
+    $savedPath = $null
+    if ($action -in @('S', 'B')) {
+        $saveTo = if (-not [string]::IsNullOrWhiteSpace($OutputConfigPath)) {
+            $OutputConfigPath
+        } else {
+            Prompt-WizardValue -Label 'Save config to path' -Default "C:\AzureLocalRanger\$envName-ranger.yml"
+        }
+        $resolvedSave = Resolve-RangerPath -Path $saveTo
+        New-Item -ItemType Directory -Path (Split-Path -Parent $resolvedSave) -Force | Out-Null
+        $wizardConfig | ConvertTo-Json -Depth 50 | Set-Content -Path $resolvedSave -Encoding UTF8
+        $savedPath = $resolvedSave
+        Write-Host "  Configuration saved: $resolvedSave" -ForegroundColor Green
+    }
+
+    if ($action -in @('R', 'B')) {
+        Write-Host ''
+        Write-Host '  Launching AzureLocalRanger…' -ForegroundColor Cyan
+        $runParams = @{ ConfigObject = $wizardConfig; ShowProgress = $true }
+        Invoke-AzureLocalRanger @runParams
+    }
+    else {
+        Write-Host ''
+        Write-Host "  Run 'Invoke-AzureLocalRanger -ConfigPath $savedPath' when ready." -ForegroundColor Gray
     }
 }

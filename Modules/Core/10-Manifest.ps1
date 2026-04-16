@@ -45,6 +45,15 @@ function New-RangerManifest {
                 skippedReason = $null
             }
             schemaValidation     = [ordered]@{ isValid = $null; errors = @(); warnings = @() }
+            # Issue #30: populated by Get-RangerConnectivityMatrix before collectors run
+            connectivity         = [ordered]@{
+                posture      = 'unknown'
+                probeTimeUtc = $null
+                cluster      = [ordered]@{ reachable = $null; targets = @() }
+                azure        = [ordered]@{ reachable = $null; enabled = $null; endpoint = $null }
+                bmc          = [ordered]@{ reachable = $null; endpoints = @() }
+                arc          = [ordered]@{ available = $false }
+            }
         }
         target = [ordered]@{
             environmentLabel = $Config.environment.name

@@ -8,6 +8,15 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-04-16
+
+### Added
+
+- **Issue #26** — Arc Run Command transport. `Invoke-AzureLocalRanger` now routes WinRM workloads through Azure Arc Run Command (`Invoke-AzConnectedMachineRunCommand`) when cluster nodes are unreachable on ports 5985/5986. New functions: `Invoke-RangerArcRunCommand`, `Test-RangerArcTransportAvailable`. Transport mode configured via `behavior.transport` (auto / winrm / arc). Falls back gracefully when `Az.ConnectedMachine` is absent. `Az.ConnectedMachine` added to `ExternalModuleDependencies`.
+- **Issue #30** — Disconnected / semi-connected discovery. A pre-run connectivity matrix (`Get-RangerConnectivityMatrix`) probes all transport surfaces (cluster WinRM, Azure management plane, BMC HTTPS) and classifies posture as `connected`, `semi-connected`, or `disconnected`. Collectors whose transport is unreachable receive `status: skipped` instead of failing mid-run. Full matrix stored at `manifest.run.connectivity`. New `behavior.degradationMode` config key (graceful / strict). New file: `Modules/Private/70-Connectivity.ps1`.
+- **Issue #76** — Spectre.Console TUI progress display. A live per-collector progress bar using `PwshSpectreConsole` renders during collection when the module is installed and the session is interactive. Falls back to `Write-Progress` automatically. Suppressed in CI and `Unattended` mode. New file: `Modules/Private/80-ProgressDisplay.ps1`. New `-ShowProgress` parameter on `Invoke-AzureLocalRanger`. New `output.showProgress` config key.
+- **Issue #75** — Interactive configuration wizard. `Invoke-RangerWizard` walks through a guided question sequence (cluster, nodes, Azure IDs, credentials, output, scope), then offers to save the config as YAML, launch a run, or both. Available as a public exported command.
+
 ## [1.1.2] — 2026-04-15
 
 ### Fixed
