@@ -264,10 +264,17 @@ function Test-RangerCollectorConnectivitySatisfied {
 
     switch ($Definition.RequiredCredential) {
         'cluster' {
+            # Only skip when we actually probed targets and found them unreachable.
+            # If targets list is empty (all placeholders or none configured) we cannot
+            # assert unreachability — let the collector proceed and self-determine N/A.
+            if (@($ConnectivityMatrix.cluster.targets).Count -eq 0) { return $true }
             return [bool]$ConnectivityMatrix.cluster.reachable
         }
         'azure' {
-            # Azure collectors are skippable in disconnected mode; they must not fail the run.
+            # Only skip when Azure is explicitly configured AND the probe confirmed unreachable.
+            # When azure is not configured (placeholder subscriptionId), enabled = $false;
+            # pass through so the collector can return 'not-applicable' rather than being silently skipped.
+            if (-not $ConnectivityMatrix.azure.enabled) { return $true }
             return [bool]$ConnectivityMatrix.azure.reachable
         }
         'bmc' {
