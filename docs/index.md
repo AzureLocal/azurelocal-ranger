@@ -29,7 +29,7 @@ If you are new to Ranger, the cleanest path through the docs is:
 
 ## Current Project Phase
 
-AzureLocalRanger is at **v1.1.1**. This patch release ships the no-config prerequisite-check fix after the completed `v1.1.0` milestone closeout, and the current documentation reflects that shipped baseline.
+AzureLocalRanger is at **v1.2.0**. This release delivers the UX & Transport milestone: Arc Run Command transport, disconnected/semi-connected discovery, Spectre.Console TUI progress display, and the interactive configuration wizard (`Invoke-RangerWizard`).
 
 ```powershell
 Import-Module .\AzureLocalRanger.psd1 -Force
