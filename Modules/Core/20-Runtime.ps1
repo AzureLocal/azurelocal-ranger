@@ -458,6 +458,10 @@ function Invoke-RangerDiscoveryRuntime {
         $config.behavior.promptForMissingCredentials = $false
     }
 
+    # v1.6.0 (#196/#197): auto-discover missing resourceGroup and cluster FQDN
+    # from Azure Arc before any prompting or validation, headless or interactive.
+    Invoke-RangerAzureAutoDiscovery -Config $config | Out-Null
+
     if ($AllowInteractiveInput) {
         $config = Invoke-RangerInteractiveInput -Config $config
     }
@@ -467,6 +471,49 @@ function Invoke-RangerDiscoveryRuntime {
     $validation = Test-RangerConfiguration -Config $config -PassThru
     if (-not $validation.IsValid) {
         throw ($validation.Errors -join [Environment]::NewLine)
+    }
+
+    # v1.6.0 (#212): pre-run permission audit. Runs by default; skip when
+    # behavior.skipPreCheck is true (set by -SkipPreCheck parameter or config)
+    # or when the selected collectors are operating in fixture mode (no live
+    # Azure / cluster calls will occur so an ARM permission audit is moot).
+    $skipPreCheck = [bool]($config.behavior.skipPreCheck)
+    $fixtureMap = $null
+    try { $fixtureMap = $config.domains.hints.fixtures } catch { }
+    $isFixtureMode = $false
+    try {
+        $selected = Resolve-RangerSelectedCollectors -Config $config
+        if ($fixtureMap -is [System.Collections.IDictionary] -and @($selected).Count -gt 0) {
+            $isFixtureMode = @($selected | Where-Object { -not $fixtureMap.Contains($_.Id) -or [string]::IsNullOrWhiteSpace([string]$fixtureMap[$_.Id]) }).Count -eq 0
+        }
+    } catch { }
+
+    if ($skipPreCheck) {
+        Write-RangerLog -Level debug -Message 'Pre-check skipped (-SkipPreCheck or behavior.skipPreCheck=true).'
+    }
+    elseif ($isFixtureMode) {
+        Write-RangerLog -Level debug -Message 'Pre-check skipped — all selected collectors are running in fixture mode.'
+    }
+    else {
+        try {
+            $audit = Invoke-RangerPermissionAudit -Config $config
+            Format-RangerPermissionAuditConsole -Result $audit
+            switch ($audit.OverallReadiness) {
+                'Insufficient' {
+                    throw "Pre-run permission audit failed (Insufficient). Re-run with -SkipPreCheck to bypass, or address the remediation steps above."
+                }
+                'Partial' {
+                    Write-RangerLog -Level warn -Message "Pre-run permission audit returned Partial — some collectors may fail. $(@($audit.Recommendations) -join '; ')"
+                }
+                default {
+                    Write-RangerLog -Level info -Message 'Pre-check passed.'
+                }
+            }
+        }
+        catch {
+            if ($_.Exception.Message -like 'Pre-run permission audit failed*') { throw }
+            Write-RangerLog -Level warn -Message "Pre-run permission audit threw — $($_.Exception.Message). Continuing; set -SkipPreCheck to suppress."
+        }
     }
 
     $selectedCollectors = Resolve-RangerSelectedCollectors -Config $config

@@ -20,10 +20,11 @@ function Resolve-RangerClusterArcResource {
     $resourceGroup  = $Config.targets.azure.resourceGroup
     $clusterName    = $Config.environment.clusterName
 
+    # v1.6.0 (#196): resourceGroup is no longer required — we fall back to a
+    # subscription-wide ARM search by resource type + name when RG is missing.
     if ([string]::IsNullOrWhiteSpace($subscriptionId) -or
-        $subscriptionId -eq '00000000-0000-0000-0000-000000000000' -or
-        [string]::IsNullOrWhiteSpace($resourceGroup)) {
-        Write-RangerLog -Level debug -Message 'Resolve-RangerClusterArcResource: Azure target not configured — skipping Arc query'
+        $subscriptionId -eq '00000000-0000-0000-0000-000000000000') {
+        Write-RangerLog -Level debug -Message 'Resolve-RangerClusterArcResource: subscriptionId not configured — skipping Arc query'
         return $null
     }
 
@@ -33,17 +34,32 @@ function Resolve-RangerClusterArcResource {
     }
 
     try {
-        $resources = @(Get-AzResource `
-            -ResourceType 'microsoft.azurestackhci/clusters' `
-            -ResourceGroupName $resourceGroup `
-            -ErrorAction Stop)
-
-        if ($resources.Count -eq 0) {
-            Write-RangerLog -Level debug -Message "Resolve-RangerClusterArcResource: no HCI cluster resource found in $resourceGroup"
+        $resources = if (-not [string]::IsNullOrWhiteSpace($resourceGroup)) {
+            @(Get-AzResource `
+                -ResourceType 'microsoft.azurestackhci/clusters' `
+                -ResourceGroupName $resourceGroup `
+                -ErrorAction Stop)
+        }
+        elseif (-not [string]::IsNullOrWhiteSpace($clusterName)) {
+            # #196: subscription-wide search by type + name when RG is unknown
+            Write-RangerLog -Level info -Message "Resolve-RangerClusterArcResource: resourceGroup not configured — searching subscription for HCI cluster '$clusterName'"
+            @(Get-AzResource `
+                -ResourceType 'microsoft.azurestackhci/clusters' `
+                -Name $clusterName `
+                -ErrorAction Stop)
+        }
+        else {
+            Write-RangerLog -Level debug -Message 'Resolve-RangerClusterArcResource: neither resourceGroup nor clusterName set — skipping Arc query'
             return $null
         }
 
-        # If there are multiple clusters in the RG, narrow by name
+        if ($resources.Count -eq 0) {
+            $scope = if ($resourceGroup) { "in $resourceGroup" } else { "matching name '$clusterName' in subscription $subscriptionId" }
+            Write-RangerLog -Level debug -Message "Resolve-RangerClusterArcResource: no HCI cluster resource found $scope"
+            return $null
+        }
+
+        # If multiple clusters are returned, narrow by exact name
         $resource = if ($resources.Count -gt 1 -and -not [string]::IsNullOrWhiteSpace($clusterName)) {
             $resources | Where-Object { $_.Name -ieq $clusterName } | Select-Object -First 1
         } else {
@@ -51,7 +67,18 @@ function Resolve-RangerClusterArcResource {
         }
 
         if (-not $resource) {
+            if ($resources.Count -gt 1) {
+                $names = @($resources | ForEach-Object { $_.Name }) -join ', '
+                Write-RangerLog -Level warn -Message "Resolve-RangerClusterArcResource: multiple HCI clusters found in subscription [$names] and clusterName did not uniquely match — cannot auto-resolve"
+            }
             return $null
+        }
+
+        # #196: when resourceGroup was discovered (not configured), write it back
+        # into the resolved config so downstream callers see the discovered value.
+        if ([string]::IsNullOrWhiteSpace($resourceGroup) -and $resource.ResourceGroupName) {
+            $Config.targets.azure.resourceGroup = [string]$resource.ResourceGroupName
+            Write-RangerLog -Level info -Message "Resolve-RangerClusterArcResource: auto-discovered resourceGroup '$($resource.ResourceGroupName)' for cluster '$($resource.Name)'"
         }
 
         # Fetch extended properties with a versioned API for richer node list
@@ -62,7 +89,7 @@ function Resolve-RangerClusterArcResource {
             $resource
         }
 
-        Write-RangerLog -Level debug -Message "Resolve-RangerClusterArcResource: resolved Arc resource '$($fullResource.Name)' in $resourceGroup"
+        Write-RangerLog -Level debug -Message "Resolve-RangerClusterArcResource: resolved Arc resource '$($fullResource.Name)' in $($fullResource.ResourceGroupName)"
         return $fullResource
     }
     catch {

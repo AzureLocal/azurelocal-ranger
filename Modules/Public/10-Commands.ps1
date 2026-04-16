@@ -187,8 +187,29 @@ function Invoke-AzureLocalRanger {
         [ValidateSet('existing-context', 'managed-identity', 'device-code', 'service-principal', 'azure-cli')]
         [string]$AzureMethod,
 
-        [string]$ClusterName
+        [string]$ClusterName,
+
+        # v1.6.0 (#211): inline wizard entry point. When -Wizard is set, the
+        # interactive wizard runs; the resulting config is then used directly
+        # (R)un or written to -OutputConfigPath (S)ave. -SkipRun forces save-only.
+        [switch]$Wizard,
+        [string]$OutputConfigPath,
+        [switch]$SkipRun,
+
+        # v1.6.0 (#212): pre-run permission audit runs by default; pass to opt out.
+        [switch]$SkipPreCheck
     )
+
+    # #211: -Wizard dispatches to Invoke-RangerWizard, which already handles
+    # save / run / both internally (it calls back into Invoke-AzureLocalRanger
+    # on Run). Standalone Invoke-RangerWizard remains supported with the same
+    # surface area.
+    if ($Wizard) {
+        $wizardArgs = @{}
+        if ($PSBoundParameters.ContainsKey('OutputConfigPath')) { $wizardArgs['OutputConfigPath'] = $OutputConfigPath }
+        if ($SkipRun) { $wizardArgs['SkipRun'] = $true }
+        return Invoke-RangerWizard @wizardArgs
+    }
 
     $credentialOverrides = @{
         cluster = $ClusterCredential
@@ -212,6 +233,7 @@ function Invoke-AzureLocalRanger {
     if ($PSBoundParameters.ContainsKey('RetryCount'))        { $structuralOverrides['RetryCount']        = $RetryCount }
     if ($PSBoundParameters.ContainsKey('TimeoutSeconds'))    { $structuralOverrides['TimeoutSeconds']    = $TimeoutSeconds }
     if ($PSBoundParameters.ContainsKey('AzureMethod'))       { $structuralOverrides['AzureMethod']       = $AzureMethod }
+    if ($PSBoundParameters.ContainsKey('SkipPreCheck'))      { $structuralOverrides['SkipPreCheck']      = [bool]$SkipPreCheck }
 
     Invoke-RangerDiscoveryRuntime -ConfigPath $ConfigPath -ConfigObject $ConfigObject -OutputPath $OutputPath -CredentialOverrides $credentialOverrides -IncludeDomains $IncludeDomain -ExcludeDomains $ExcludeDomain -NoRender:$NoRender -StructuralOverrides $structuralOverrides -AllowInteractiveInput:(-not $Unattended) -Unattended:$Unattended -BaselineManifestPath $BaselineManifestPath
 }
@@ -547,6 +569,63 @@ function Test-AzureLocalRangerPrerequisites {
         Validation         = $validation
         SelectedCollectors = @($selectedCollectors | ForEach-Object { $_.Id })
         Checks             = $checks
+    }
+}
+
+function Test-RangerPermissions {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#202): dedicated pre-run RBAC and resource-provider audit.
+    .DESCRIPTION
+        Runs a structured permission audit against the resolved Ranger config.
+        Checks Azure context, Subscription Reader, HCI cluster read, Arc machine
+        read, Key Vault access (when keyvault:// refs exist), and required
+        resource provider registrations. Returns OverallReadiness = Full /
+        Partial / Insufficient with per-check status and remediation.
+
+    .PARAMETER ConfigPath
+        Optional path to a Ranger YAML/JSON config. When omitted the audit uses
+        the built-in defaults merged with any -ConfigObject supplied.
+
+    .PARAMETER ConfigObject
+        Optional in-memory config hashtable. Merged over defaults.
+
+    .PARAMETER OutputFormat
+        console (default) — colour-coded summary printed to host, object returned.
+        json              — JSON string returned; nothing printed.
+        markdown          — GFM markdown string returned; nothing printed.
+
+    .EXAMPLE
+        Test-RangerPermissions -ConfigPath .\ranger.yml
+
+    .EXAMPLE
+        Test-RangerPermissions -ConfigPath .\ranger.yml -OutputFormat json | Out-File audit.json
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$ConfigPath,
+        $ConfigObject,
+        [ValidateSet('console', 'json', 'markdown')]
+        [string]$OutputFormat = 'console'
+    )
+
+    $config = Import-RangerConfiguration -ConfigPath $ConfigPath -ConfigObject $ConfigObject
+    # Silently try auto-discovery so the audit checks the actual resolved scope.
+    try { Invoke-RangerAzureAutoDiscovery -Config $config | Out-Null } catch { }
+
+    $result = Invoke-RangerPermissionAudit -Config $config
+
+    switch ($OutputFormat) {
+        'console'  {
+            Format-RangerPermissionAuditConsole -Result $result
+            return $result
+        }
+        'json'     {
+            return ($result | ConvertTo-Json -Depth 10)
+        }
+        'markdown' {
+            return (Format-RangerPermissionAuditMarkdown -Result $result)
+        }
     }
 }
 

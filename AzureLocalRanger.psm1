@@ -25,5 +25,6 @@ Export-ModuleMember -Function @(
     'New-AzureLocalRangerConfig',
     'Export-AzureLocalRangerReport',
     'Test-AzureLocalRangerPrerequisites',
+    'Test-RangerPermissions',
     'Invoke-RangerWizard'
 )

@@ -13,6 +13,7 @@
         'New-AzureLocalRangerConfig',
         'Export-AzureLocalRangerReport',
         'Test-AzureLocalRangerPrerequisites',
+        'Test-RangerPermissions',
         'Invoke-RangerWizard'
     )
     CmdletsToExport   = @()

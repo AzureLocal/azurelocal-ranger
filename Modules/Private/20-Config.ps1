@@ -576,6 +576,12 @@ function Set-RangerStructuralOverrides {
         $Config.credentials.azure.method = $StructuralOverrides['AzureMethod']
     }
 
+    # v1.6.0 (#212): -SkipPreCheck parameter overrides behavior.skipPreCheck
+    if ($StructuralOverrides.ContainsKey('SkipPreCheck')) {
+        if (-not ($Config.behavior -is [System.Collections.IDictionary])) { $Config.behavior = [ordered]@{} }
+        $Config.behavior.skipPreCheck = [bool]$StructuralOverrides['SkipPreCheck']
+    }
+
     return $Config
 }
 
@@ -705,6 +711,11 @@ function Invoke-RangerInteractiveInput {
         [System.Collections.IDictionary]$Config
     )
 
+    # v1.6.0 (#196/#197): auto-discovery runs unconditionally (headless and
+    # interactive) so missing resourceGroup/FQDN are filled from Azure Arc
+    # before we ever prompt or fail validation.
+    Invoke-RangerAzureAutoDiscovery -Config $Config | Out-Null
+
     if (-not [bool]$Config.behavior.promptForMissingRequired) {
         return $Config
     }
@@ -713,7 +724,13 @@ function Invoke-RangerInteractiveInput {
         return $Config
     }
 
-    foreach ($missing in @(Get-RangerMissingRequiredInputs -Config $Config)) {
+    $missingList = @(Get-RangerMissingRequiredInputs -Config $Config)
+    if ($missingList.Count -gt 0) {
+        # v1.6.0 (#211): surface the inline wizard as the recommended alternative
+        # to field-by-field prompting.
+        Write-Host '  Tip: Run Invoke-AzureLocalRanger -Wizard to create a config file interactively.' -ForegroundColor DarkGray
+    }
+    foreach ($missing in $missingList) {
         $prompt = "[Ranger] $($missing.Prompt) is required.`nEnter $($missing.Prompt) (e.g., $($missing.Example)):"
         $value = Read-Host -Prompt $prompt
         if (-not [string]::IsNullOrWhiteSpace($value)) {
@@ -722,6 +739,86 @@ function Invoke-RangerInteractiveInput {
     }
 
     return $Config
+}
+
+function Invoke-RangerAzureAutoDiscovery {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#196/#197): populate missing resourceGroup and cluster FQDN from
+        Azure Arc when subscriptionId + clusterName are present.
+    .DESCRIPTION
+        Runs before interactive prompts and before the headless required-input
+        check. Silently returns when Az is unavailable, when credentials are not
+        logged in, or when the cluster cannot be found — the caller's existing
+        prompt-or-fail path takes over.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Config
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Config.targets.azure.subscriptionId) -or
+        $Config.targets.azure.subscriptionId -eq '00000000-0000-0000-0000-000000000000' -or
+        [string]::IsNullOrWhiteSpace($Config.environment.clusterName)) {
+        return $false
+    }
+
+    $needRg   = [string]::IsNullOrWhiteSpace($Config.targets.azure.resourceGroup)
+    $needFqdn = [string]::IsNullOrWhiteSpace($Config.targets.cluster.fqdn)
+    if (-not $needRg -and -not $needFqdn) {
+        return $false
+    }
+
+    $arc = $null
+    try {
+        $arc = Resolve-RangerClusterArcResource -Config $Config
+    } catch {
+        Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: Arc lookup threw — $($_.Exception.Message)"
+        return $false
+    }
+
+    if (-not $arc) {
+        return $false
+    }
+
+    $filled = $false
+
+    # #196: Resolve-RangerClusterArcResource already writes resourceGroup back
+    # into Config when it auto-discovers. Record that we filled it here.
+    if ($needRg -and -not [string]::IsNullOrWhiteSpace($Config.targets.azure.resourceGroup)) {
+        $filled = $true
+    }
+
+    # #197: derive cluster FQDN from the Arc resource when missing.
+    if ($needFqdn) {
+        $fqdn = $null
+        # Prefer an explicit dnsName / clusterName on properties, then compose
+        # {resource-name}.{domainName} when both are known.
+        try {
+            if ($arc.Properties) {
+                if ($arc.Properties.reportedProperties -and $arc.Properties.reportedProperties.clusterId) {
+                    # clusterId often carries a DNS-style name; only accept when it looks like one
+                    $candidate = [string]$arc.Properties.reportedProperties.clusterId
+                    if ($candidate -match '\.') { $fqdn = $candidate }
+                }
+                if (-not $fqdn -and $arc.Properties.dnsName) { $fqdn = [string]$arc.Properties.dnsName }
+                if (-not $fqdn -and $arc.Properties.domainName -and $arc.Name) {
+                    $dn = [string]$arc.Properties.domainName
+                    if ($dn -match '\.') { $fqdn = "$($arc.Name).$dn" }
+                }
+            }
+        } catch {
+            Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: FQDN extraction failed — $($_.Exception.Message)"
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($fqdn)) {
+            $Config.targets.cluster.fqdn = $fqdn
+            Write-RangerLog -Level info -Message "Invoke-RangerAzureAutoDiscovery: auto-discovered cluster FQDN '$fqdn' from Azure Arc"
+            $filled = $true
+        }
+    }
+
+    return $filled
 }
 
 function Import-RangerYamlFile {
