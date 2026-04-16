@@ -7,7 +7,7 @@
   <rect width="2080" height="900" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Identity and Access Surface Map</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.4.2</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.5.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='1572' y='-10' width='240' height='86' rx='12' fill='#fff1f2' stroke='#fecdd3' stroke-dasharray='4 2' />

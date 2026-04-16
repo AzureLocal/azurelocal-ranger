@@ -1,8 +1,8 @@
 # Project Status
 
-## Current Release Track — v1.4.2
+## Current Release Track — v1.5.0
 
-AzureLocalRanger v1.4.2 is the current release — fully field-validated against a live tplabs-clus01 cluster via Operation TRAILHEAD (8-phase P0-P7 cycle). It delivers handoff-quality HTML reports with type-aware table rendering, improved SVG and draw.io diagram output, PDF cover pages, and WAF Assessment integration with an external rule engine.
+AzureLocalRanger v1.5.0 — Document Quality — is the current release. It lands the as-built document redesign (Installation and Configuration Record with per-node, network, storage, Azure, identity, validation, and deviations records), distinct mode differentiation (CONFIDENTIAL as-built vs INTERNAL current-state), inline architecture diagrams in HTML, fixed-layout tables, severity-coloured finding callouts, print CSS, and two priority bug fixes (wizard format defaults, Key Vault DNS graceful fallback). v1.4.2 was field-validated against a live tplabs-clus01 cluster via Operation TRAILHEAD; v1.5.0 is a stabilisation release on that foundation.
 
 ```powershell
 Install-Module AzureLocalRanger -Force
@@ -31,10 +31,13 @@ Import-Module AzureLocalRanger
 | PDF output | ✅ Complete — cover page, type-aware plain-text sections (#96) |
 | WAF Assessment integration | ✅ Complete — Azure Advisor + manifest rule engine, 23 built-in rules (#94) |
 | Pester test suite | ✅ 76 tests passing |
-| Field validation (TRAILHEAD) | ✅ v1.4.2 gate closed — all 7 collectors, 76/76 Pester, 33-file output, WAF rule engine confirmed |
+| Field validation (TRAILHEAD) | ✅ v1.4.2 gate closed — all 7 collectors, 76/76 Pester, 33-file output, WAF rule engine confirmed. v1.5.0 is a doc-quality stabilisation on the same engine |
+| As-built document redesign | ✅ Complete — Installation and Configuration Record with per-node/network/storage/Azure/identity/validation/deviations records (#193) |
+| Mode differentiation (as-built vs current-state) | ✅ Complete — distinct tier titles, classification banners, subtitles, mode-specific section suppression (#194) |
+| HTML report visual quality | ✅ Complete — inline architecture diagrams, fixed-layout tables, severity callouts, print CSS, sign-off signature lines (#192) |
 | Report output (HTML/Markdown/JSON/DOCX/XLSX/PDF) | ✅ Complete |
 | Diagram output (SVG/draw.io) | ✅ Complete |
-| PSGallery release | ✅ `1.4.2` current on PSGallery |
+| PSGallery release | 🟡 `1.4.2` current on PSGallery; `1.5.0` ready for publish |
 | Arc-first node inventory | ✅ Complete |
 | Domain auto-detection | ✅ Complete |
 | Parameter-first input model | ✅ Complete |

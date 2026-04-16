@@ -2,6 +2,14 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
+## v1.5.0 Highlights — Document Quality
+
+- **As-built document redesign (#193)** — new Installation and Configuration Record tier with per-node configuration, network address allocation, storage configuration, Azure integration, identity/security records, a validation record, and a known-issues/deviations register; deployment past-tense framing
+- **Mode differentiation (#194)** — distinct tier titles per mode, CONFIDENTIAL vs INTERNAL classification banner, Post-Deployment As-Built Package vs Live Discovery Report subtitle, Health Status traffic lights and WAF scorecard suppressed in as-built
+- **HTML report quality (#192)** — inline architecture diagrams, fixed-layout data tables with constrained column widths, severity-coloured finding callout boxes, print stylesheet, visible sign-off signature lines
+- **Wizard default formats (#195)** — default changed from `html,markdown,json,svg` (invalid `json`) to `html,markdown,docx,xlsx,pdf,svg`; prompt label now lists the valid set
+- **Key Vault DNS error handling (#198)** — actionable error on DNS failure naming likely causes; graceful fallback to `Get-Credential` when `behavior.promptForMissingCredentials: true`
+
 ## v1.4.2 Highlights
 
 - **TRAILHEAD test configs** — added `credentials.domain` section and `svg`/`drawio` output formats to tplabs config files so the field test cycle produces diagram output
