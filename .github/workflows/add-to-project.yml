@@ -11,5 +11,5 @@ jobs:
     uses: AzureLocal/.github/.github/workflows/reusable-add-to-project.yml@main
     with:
       id-prefix: RANGER
-      solution-option-id: '199aba19'
+      solution-option-id: '03eaae82'
     secrets: inherit
