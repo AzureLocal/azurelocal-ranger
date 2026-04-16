@@ -8,6 +8,19 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [1.4.2] — 2026-04-16
+
+### Fixed
+
+- **TRAILHEAD test configs** — Added `credentials.domain` section to both `tests/trailhead/configs/tplabs-current-state.yml` and `tplabs-as-built.yml`. Without this section the module fell back to `keyvault://kv-ranger/domain-read`, which does not exist in the tplabs environment.
+- **TRAILHEAD test configs** — Added `svg` and `drawio` to `output.formats` in both tplabs configs. `Invoke-RangerOutputGeneration` only calls `Invoke-RangerDiagramGeneration` when `svg` or `drawio` appears in the normalised formats list; omitting them silently skipped all diagram output.
+- **New-RangerFieldTestCycle.ps1** — Removed `SupportsShouldProcess` from `[CmdletBinding()]` to eliminate parameter conflict with previously explicit `[switch]$WhatIf`.
+- **deploy-docs.yml** — Removed `release: [published]` trigger. GitHub Pages environment protection allows deployments only from `main`; release-tag triggers always failed the environment protection check.
+
+### Validated
+
+- **Operation TRAILHEAD v1.4.2** — Full 8-phase (P0-P7) field validation cycle completed against live tplabs-clus01 (4-node Dell AX-760, TierPoint Labs, Raleigh NC). All 7 collectors succeeded (hardware partial due to firmware Redfish limitation, gracefully handled). All output formats generated: HTML, Markdown, JSON, XLSX, PDF, 13×SVG, 13×draw.io (33 files total). as-built vs current-state differentiation confirmed. Wizard (`Invoke-RangerWizard`) guided config + run confirmed. Pester 76/76 passing. WAF Assessment rule engine scored 48% overall ("At Risk"), 11/23 rules passing.
+
 ## [1.4.1] — 2026-04-16
 
 ### Fixed

@@ -1,8 +1,8 @@
 # Project Status
 
-## Current Release Track — v1.4.1
+## Current Release Track — v1.4.2
 
-AzureLocalRanger v1.4.1 is the current release — patch fixing `Invoke-RangerWizard` in VS Code and Windows Terminal. It delivers handoff-quality HTML reports with type-aware table rendering, improved SVG and draw.io diagram output, PDF cover pages, and WAF Assessment integration with an external rule engine.
+AzureLocalRanger v1.4.2 is the current release — fully field-validated against a live tplabs-clus01 cluster via Operation TRAILHEAD (8-phase P0-P7 cycle). It delivers handoff-quality HTML reports with type-aware table rendering, improved SVG and draw.io diagram output, PDF cover pages, and WAF Assessment integration with an external rule engine.
 
 ```powershell
 Install-Module AzureLocalRanger -Force
@@ -30,11 +30,11 @@ Import-Module AzureLocalRanger
 | Diagram engine quality | ✅ Complete — group containers, per-kind styles, SVG + draw.io (#140) |
 | PDF output | ✅ Complete — cover page, type-aware plain-text sections (#96) |
 | WAF Assessment integration | ✅ Complete — Azure Advisor + manifest rule engine, 23 built-in rules (#94) |
-| Pester test suite | ✅ 74 tests passing |
-| Field validation (TRAILHEAD) | ✅ v1.1.2 gate closed — all 6 collectors succeeded, zero auth retries |
+| Pester test suite | ✅ 76 tests passing |
+| Field validation (TRAILHEAD) | ✅ v1.4.2 gate closed — all 7 collectors, 76/76 Pester, 33-file output, WAF rule engine confirmed |
 | Report output (HTML/Markdown/JSON/DOCX/XLSX/PDF) | ✅ Complete |
 | Diagram output (SVG/draw.io) | ✅ Complete |
-| PSGallery release | ✅ `1.4.0` current on PSGallery |
+| PSGallery release | ✅ `1.4.2` current on PSGallery |
 | Arc-first node inventory | ✅ Complete |
 | Domain auto-detection | ✅ Complete |
 | Parameter-first input model | ✅ Complete |

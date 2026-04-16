@@ -48,6 +48,10 @@ credentials:
     username: MGMT\svc.azl.local
     passwordRef: keyvault://kv-tplabs-platform/domain-admin-password
 
+  domain:
+    username: MGMT\svc.azl.local
+    passwordRef: keyvault://kv-tplabs-platform/domain-admin-password
+
   bmc:
     username: idrac_azl_admin
     passwordRef: keyvault://kv-tplabs-platform/idrac-password
@@ -67,6 +71,8 @@ output:
     - json
     - xlsx
     - pdf
+    - svg
+    - drawio
   rootPath: C:\AzureLocalRanger\trailhead-as-built
   diagramFormat: svg
   keepRawEvidence: true
