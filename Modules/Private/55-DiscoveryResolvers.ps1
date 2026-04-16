@@ -3,6 +3,106 @@
 # call Resolve-RangerNodeInventory / Resolve-RangerDomainContext instead of
 # hard-coding a single static-config path.
 
+function Resolve-RangerClusterFqdn {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#203): resolve a short cluster name to an FQDN using TrustedHosts
+        and DNS before falling through to a prompt.
+    .DESCRIPTION
+        Three-step chain:
+          1. Passthrough — dotted name is already an FQDN.
+          2. WinRM TrustedHosts — match <shortname>.* entries.
+          3. DNS — [System.Net.Dns]::GetHostEntry().
+        Returns $null when all three fail; caller decides to prompt or throw.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name
+    )
+
+    $name = $Name.Trim()
+    if ([string]::IsNullOrWhiteSpace($name)) { return $null }
+
+    # Step 1 — passthrough
+    if ($name -match '\.') {
+        return $name
+    }
+
+    $shortName = $name.Split('.')[0]
+
+    # Step 2 — TrustedHosts scan
+    try {
+        $th = Get-Item -Path WSMan:\localhost\Client\TrustedHosts -ErrorAction SilentlyContinue
+        if ($th -and -not [string]::IsNullOrWhiteSpace($th.Value)) {
+            $entries = @($th.Value -split '\s*,\s*' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+            $match = $entries | Where-Object {
+                $_ -match ("^{0}\." -f [regex]::Escape($shortName))
+            } | Select-Object -First 1
+            if ($match) {
+                Write-RangerLog -Level debug -Message "Resolve-RangerClusterFqdn: '$shortName' matched TrustedHosts entry '$match'"
+                return $match.Trim()
+            }
+        }
+    } catch {
+        Write-RangerLog -Level debug -Message "Resolve-RangerClusterFqdn: TrustedHosts lookup failed — $($_.Exception.Message)"
+    }
+
+    # Step 3 — DNS
+    try {
+        $entry = [System.Net.Dns]::GetHostEntry($shortName)
+        if ($entry -and -not [string]::IsNullOrWhiteSpace($entry.HostName) -and $entry.HostName -match '\.') {
+            Write-RangerLog -Level debug -Message "Resolve-RangerClusterFqdn: '$shortName' resolved via DNS to '$($entry.HostName)'"
+            return $entry.HostName
+        }
+    } catch {
+        Write-RangerLog -Level debug -Message "Resolve-RangerClusterFqdn: DNS GetHostEntry failed for '$shortName' — $($_.Exception.Message)"
+    }
+
+    return $null
+}
+
+function Resolve-RangerNodeFqdn {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#203): resolve a short node name to an FQDN by appending the
+        cluster domain suffix or via DNS.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+
+        [string]$ClusterFqdn
+    )
+
+    $name = $Name.Trim()
+    if ([string]::IsNullOrWhiteSpace($name)) { return $null }
+
+    # Step 1 — passthrough
+    if ($name -match '\.') {
+        return $name
+    }
+
+    # Step 2 — append cluster domain suffix
+    if (-not [string]::IsNullOrWhiteSpace($ClusterFqdn) -and $ClusterFqdn -match '\.') {
+        $suffix = $ClusterFqdn.Substring($ClusterFqdn.IndexOf('.') + 1)
+        if (-not [string]::IsNullOrWhiteSpace($suffix)) {
+            return ('{0}.{1}' -f $name, $suffix)
+        }
+    }
+
+    # Step 3 — DNS
+    try {
+        $entry = [System.Net.Dns]::GetHostEntry($name)
+        if ($entry -and -not [string]::IsNullOrWhiteSpace($entry.HostName) -and $entry.HostName -match '\.') {
+            return $entry.HostName
+        }
+    } catch {
+        Write-RangerLog -Level debug -Message "Resolve-RangerNodeFqdn: DNS GetHostEntry failed for '$name' — $($_.Exception.Message)"
+    }
+
+    return $null
+}
+
 function Resolve-RangerClusterArcResource {
     <#
     .SYNOPSIS
@@ -98,6 +198,84 @@ function Resolve-RangerClusterArcResource {
     }
 }
 
+function Resolve-RangerArcMachinesForCluster {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#204): return Arc machines belonging to the cluster, with a
+        subscription-wide fallback when they live outside the cluster RG.
+    .OUTPUTS
+        [ordered]@{
+            Machines  = @(<Az Arc machine resource objects>)
+            CrossRg   = @('node-name-in-other-rg', ...)
+        }
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Config,
+
+        [string[]]$NodeHints
+    )
+
+    $subscriptionId = $Config.targets.azure.subscriptionId
+    $clusterRg      = $Config.targets.azure.resourceGroup
+    $result = [ordered]@{ Machines = @(); CrossRg = @() }
+
+    if ([string]::IsNullOrWhiteSpace($subscriptionId) -or
+        $subscriptionId -eq '00000000-0000-0000-0000-000000000000' -or
+        -not (Get-Command -Name Get-AzResource -ErrorAction SilentlyContinue)) {
+        return $result
+    }
+
+    $hints = @($NodeHints | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { $_.Split('.')[0].ToUpperInvariant() })
+
+    # Step 1 — RG-scoped query (fast path).
+    $rgMachines = @()
+    if (-not [string]::IsNullOrWhiteSpace($clusterRg)) {
+        try {
+            $rgMachines = @(Get-AzResource -ResourceType 'Microsoft.HybridCompute/machines' -ResourceGroupName $clusterRg -ErrorAction Stop)
+        } catch {
+            Write-RangerLog -Level debug -Message "Resolve-RangerArcMachinesForCluster: RG-scoped query failed — $($_.Exception.Message)"
+        }
+    }
+
+    # Decide if we need the subscription-wide fallback. Required when either
+    # RG-scoped returned nothing, or its results don't cover all known nodes.
+    $need = $hints.Count -gt 0 -and $rgMachines.Count -lt $hints.Count
+    if ($rgMachines.Count -eq 0) { $need = $true }
+
+    $subMachines = @()
+    if ($need) {
+        try {
+            $subMachines = @(Get-AzResource -ResourceType 'Microsoft.HybridCompute/machines' -ErrorAction Stop)
+        } catch {
+            Write-RangerLog -Level debug -Message "Resolve-RangerArcMachinesForCluster: subscription-wide fallback failed — $($_.Exception.Message)"
+        }
+    }
+
+    # Merge + dedupe by ResourceId
+    $seen = New-Object System.Collections.Generic.HashSet[string]
+    $merged = New-Object System.Collections.Generic.List[object]
+    foreach ($m in @($rgMachines + $subMachines)) {
+        if (-not $m -or -not $m.ResourceId) { continue }
+        if ($seen.Add([string]$m.ResourceId)) {
+            # When node hints are provided, filter by name match.
+            if ($hints.Count -gt 0) {
+                $short = [string]$m.Name.Split('.')[0].ToUpperInvariant()
+                if ($short -notin $hints) { continue }
+            }
+            [void]$merged.Add($m)
+            if (-not [string]::IsNullOrWhiteSpace($clusterRg) -and
+                $m.ResourceGroupName -and $m.ResourceGroupName -ne $clusterRg) {
+                $result.CrossRg += $m.Name
+                Write-RangerLog -Level warn -Message ("Resolve-RangerArcMachinesForCluster: node '{0}' found in resource group '{1}' — not in cluster RG '{2}'." -f $m.Name, $m.ResourceGroupName, $clusterRg)
+            }
+        }
+    }
+
+    $result.Machines = @($merged)
+    return $result
+}
+
 function Resolve-RangerNodeInventory {
     <#
     .SYNOPSIS
@@ -142,6 +320,19 @@ function Resolve-RangerNodeInventory {
         if ($arcNodes.Count -gt 0) {
             $result.Sources += 'arc'
             Write-RangerLog -Level info -Message "Resolve-RangerNodeInventory: Arc returned $($arcNodes.Count) nodes"
+        }
+    }
+
+    # v1.6.0 (#204): when Arc cluster properties did not surface a node list
+    # (or when we already have hints from config), supplement with a
+    # subscription-wide Arc machines lookup that tolerates cross-RG placement.
+    if ($arcNodes.Count -eq 0 -and @($Config.targets.cluster.nodes).Count -gt 0) {
+        $hints = @($Config.targets.cluster.nodes | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        $arcMachines = Resolve-RangerArcMachinesForCluster -Config $Config -NodeHints $hints
+        if ($arcMachines.Machines.Count -gt 0) {
+            $arcNodes = @($arcMachines.Machines | ForEach-Object { $_.Name })
+            $result.Sources += 'arc-machines'
+            Write-RangerLog -Level info -Message "Resolve-RangerNodeInventory: Arc machines query returned $($arcNodes.Count) node(s); cross-RG: $($arcMachines.CrossRg.Count)"
         }
     }
 

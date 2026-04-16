@@ -757,9 +757,7 @@ function Invoke-RangerAzureAutoDiscovery {
         [System.Collections.IDictionary]$Config
     )
 
-    if ([string]::IsNullOrWhiteSpace($Config.targets.azure.subscriptionId) -or
-        $Config.targets.azure.subscriptionId -eq '00000000-0000-0000-0000-000000000000' -or
-        [string]::IsNullOrWhiteSpace($Config.environment.clusterName)) {
+    if ([string]::IsNullOrWhiteSpace($Config.environment.clusterName)) {
         return $false
     }
 
@@ -769,19 +767,36 @@ function Invoke-RangerAzureAutoDiscovery {
         return $false
     }
 
+    $filled = $false
+    $hasSub = -not [string]::IsNullOrWhiteSpace($Config.targets.azure.subscriptionId) -and
+              $Config.targets.azure.subscriptionId -ne '00000000-0000-0000-0000-000000000000'
+
     $arc = $null
-    try {
-        $arc = Resolve-RangerClusterArcResource -Config $Config
-    } catch {
-        Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: Arc lookup threw — $($_.Exception.Message)"
-        return $false
+    if ($hasSub) {
+        try {
+            $arc = Resolve-RangerClusterArcResource -Config $Config
+        } catch {
+            Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: Arc lookup threw — $($_.Exception.Message)"
+        }
     }
 
     if (-not $arc) {
-        return $false
+        # v1.6.0 (#203): Arc unavailable or not configured — try on-prem
+        # TrustedHosts/DNS fallback for FQDN. RG is Arc-only, so skip when no Arc.
+        if ($needFqdn) {
+            try {
+                $resolvedName = Resolve-RangerClusterFqdn -Name $Config.environment.clusterName
+                if (-not [string]::IsNullOrWhiteSpace($resolvedName)) {
+                    $Config.targets.cluster.fqdn = $resolvedName
+                    Write-RangerLog -Level info -Message "Invoke-RangerAzureAutoDiscovery: resolved cluster FQDN '$resolvedName' via TrustedHosts/DNS fallback"
+                    $filled = $true
+                }
+            } catch {
+                Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: TrustedHosts/DNS fallback threw — $($_.Exception.Message)"
+            }
+        }
+        return $filled
     }
-
-    $filled = $false
 
     # #196: Resolve-RangerClusterArcResource already writes resourceGroup back
     # into Config when it auto-discovers. Record that we filled it here.
@@ -815,6 +830,20 @@ function Invoke-RangerAzureAutoDiscovery {
             $Config.targets.cluster.fqdn = $fqdn
             Write-RangerLog -Level info -Message "Invoke-RangerAzureAutoDiscovery: auto-discovered cluster FQDN '$fqdn' from Azure Arc"
             $filled = $true
+        }
+        else {
+            # v1.6.0 (#203): Arc didn't yield an FQDN — try on-prem fallback chain
+            # (TrustedHosts + DNS) using the cluster short name.
+            try {
+                $resolvedName = Resolve-RangerClusterFqdn -Name $Config.environment.clusterName
+                if (-not [string]::IsNullOrWhiteSpace($resolvedName)) {
+                    $Config.targets.cluster.fqdn = $resolvedName
+                    Write-RangerLog -Level info -Message "Invoke-RangerAzureAutoDiscovery: resolved cluster FQDN '$resolvedName' via TrustedHosts/DNS fallback"
+                    $filled = $true
+                }
+            } catch {
+                Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: TrustedHosts/DNS fallback threw — $($_.Exception.Message)"
+            }
         }
     }
 
