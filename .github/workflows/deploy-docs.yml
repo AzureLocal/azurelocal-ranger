@@ -6,6 +6,8 @@ on:
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
+  release:
+    types: [published]
   workflow_dispatch:
 
 # Reusable workflow needs pages:write + id-token:write for actions/deploy-pages@v4.

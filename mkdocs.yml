@@ -1,4 +1,4 @@
-site_name: Azure Local Ranger v1.2.0
+site_name: Azure Local Ranger
 site_description: AzureLocalRanger — automated discovery, documentation, and reporting for Azure Local (formerly Azure Stack HCI) clusters
 site_author: Azure Local Cloud
 site_url: https://azurelocal.github.io/azurelocal-ranger/
