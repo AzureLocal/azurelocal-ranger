@@ -10,6 +10,13 @@ on:
     types: [published]
   workflow_dispatch:
 
+# Serialise all Pages deployments for this repo so push-to-main and release events
+# can never race each other. cancel-in-progress: false queues the second run rather
+# than cancelling it, which prevents missed deployments.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 # Reusable workflow needs pages:write + id-token:write for actions/deploy-pages@v4.
 # Caller must grant these explicitly or the run fails during startup validation.
 permissions:
