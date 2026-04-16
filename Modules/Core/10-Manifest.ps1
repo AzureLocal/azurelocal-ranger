@@ -1,18 +1,34 @@
+function Get-RangerToolVersion {
+    # Issue #161: toolVersion was a hardcoded parameter default ('1.1.0') that was never updated
+    # when the module version changed. Derive it dynamically from the loaded module so the manifest
+    # always reflects the version that actually ran.
+    $mod = Get-Module -Name 'AzureLocalRanger' -ErrorAction SilentlyContinue
+    if ($mod -and $mod.Version) {
+        return $mod.Version.ToString()
+    }
+    # Fallback: read from the manifest file next to the psm1
+    $psdPath = Join-Path -Path $PSScriptRoot -ChildPath '..\..\AzureLocalRanger.psd1'
+    $resolvedPsd = [System.IO.Path]::GetFullPath($psdPath)
+    if (Test-Path -Path $resolvedPsd) {
+        $psd = Import-PowerShellDataFile -Path $resolvedPsd -ErrorAction SilentlyContinue
+        if ($psd -and $psd.ModuleVersion) { return [string]$psd.ModuleVersion }
+    }
+    return 'unknown'
+}
+
 function New-RangerManifest {
     param(
         [Parameter(Mandatory = $true)]
         [System.Collections.IDictionary]$Config,
 
         [Parameter(Mandatory = $true)]
-        [object[]]$SelectedCollectors,
-
-        [string]$ToolVersion = '1.1.0'
+        [object[]]$SelectedCollectors
     )
 
     $targetNodes = @($Config.targets.cluster.nodes)
     [ordered]@{
         run = [ordered]@{
-            toolVersion          = $ToolVersion
+            toolVersion          = Get-RangerToolVersion
             schemaVersion        = Get-RangerManifestSchemaVersion
             startTimeUtc         = (Get-Date).ToUniversalTime().ToString('o')
             endTimeUtc           = $null
@@ -50,13 +66,16 @@ function New-RangerManifest {
 }
 
 function Get-RangerManifestSchemaContract {
-    $schemaPath = Join-Path -Path $PSScriptRoot -ChildPath '..\..\repo-management\contracts\manifest-schema.json'
-    $resolvedPath = [System.IO.Path]::GetFullPath($schemaPath)
-    if (-not (Test-Path -Path $resolvedPath)) {
-        throw "Manifest schema contract file was not found: $resolvedPath"
+    # Issue #160: schema was previously loaded from repo-management/contracts/manifest-schema.json,
+    # a path that only exists in the source repo and never in a PSGallery-installed module.
+    # Embedding inline removes the file-path dependency entirely and works from any install location.
+    return [ordered]@{
+        schemaVersion        = '1.1.0-draft'
+        requiredTopLevelKeys = @('run', 'target', 'topology', 'collectors', 'domains', 'relationships', 'findings', 'artifacts', 'evidence')
+        requiredRunKeys      = @('toolVersion', 'schemaVersion', 'startTimeUtc', 'mode', 'selectedCollectors')
+        collectorStatuses    = @('success', 'partial', 'failed', 'skipped', 'not-applicable')
+        reservedDomains      = @('clusterNode', 'hardware', 'storage', 'networking', 'virtualMachines', 'identitySecurity', 'azureIntegration', 'monitoring', 'managementTools', 'performance', 'oemIntegration')
     }
-
-    return Get-Content -Path $resolvedPath -Raw | ConvertFrom-Json -Depth 50
 }
 
 function Test-RangerManifestSchema {

@@ -61,7 +61,7 @@ function Invoke-RangerCollectorExecution {
         EndTimeUtc      = $end
         TargetScope     = @($Definition.RequiredTargets)
         CredentialScope = $Definition.RequiredCredential
-        Messages        = @($messages + @($result.Messages))
+        Messages        = @(@($messages) + @($result.Messages) | Where-Object { $null -ne $_ })
         Domains         = if ($result.Domains) { $result.Domains } else { @{} }
         Topology        = $result.Topology
         Relationships   = @($result.Relationships)
@@ -457,32 +457,23 @@ function Invoke-RangerDiscoveryRuntime {
     $script:_rangerPrevInformationPreference = $InformationPreference
     $script:_rangerPrevProgressPreference = $ProgressPreference
 
+    # Issue #163: never set $DebugPreference = 'Continue' — MSAL 4.x and the Az SDK emit
+    # thousands of internal debug lines via Write-Debug, inflating ranger.log from ~2 KB to
+    # 512 KB+ and burying actionable output. Ranger uses Write-RangerLog for all structured
+    # logging; $DebugPreference is left at its caller-set value in all log levels.
     switch ($script:RangerLogLevel) {
         'debug' {
-            $VerbosePreference = 'Continue'
-            $DebugPreference = 'Continue'
+            $VerbosePreference     = 'Continue'
             $InformationPreference = 'Continue'
-            $ProgressPreference = 'Continue'
+            $ProgressPreference    = 'Continue'
         }
-        'info' {
-            $VerbosePreference = 'SilentlyContinue'
-            $DebugPreference = 'SilentlyContinue'
+        default {
+            $VerbosePreference     = 'SilentlyContinue'
             $InformationPreference = 'SilentlyContinue'
-            $ProgressPreference = 'SilentlyContinue'
-        }
-        'warn' {
-            $VerbosePreference = 'SilentlyContinue'
-            $DebugPreference = 'SilentlyContinue'
-            $InformationPreference = 'SilentlyContinue'
-            $ProgressPreference = 'SilentlyContinue'
-        }
-        'error' {
-            $VerbosePreference = 'SilentlyContinue'
-            $DebugPreference = 'SilentlyContinue'
-            $InformationPreference = 'SilentlyContinue'
-            $ProgressPreference = 'SilentlyContinue'
+            $ProgressPreference    = 'SilentlyContinue'
         }
     }
+    $DebugPreference = 'SilentlyContinue'
 
     # Install a global Write-Warning proxy so warnings from ANY module (Az, WinRM, S2D, etc.) are
     # captured in the run log for the duration of this run, then restored in the finally block.

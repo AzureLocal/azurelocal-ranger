@@ -167,19 +167,18 @@ function Get-RangerRemoteCredentialCandidates {
         [PSCredential]$DomainCredential
     )
 
+    # Issue #165: domain credential must be tried before cluster credential.
+    # On domain-joined Azure Local clusters the cluster/LCM account (e.g. lcm-*) is a
+    # deployment service account that has no WinRM PSRemoting rights. The domain admin
+    # account is the correct credential for Invoke-Command remoting. Trying cluster first
+    # caused every authorization probe to fail with "Access is denied", burning a retry
+    # before eventually succeeding with the domain account — or failing entirely when
+    # retries were exhausted.
     $candidates = New-Object System.Collections.Generic.List[object]
     $seenUsers = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-    if ($ClusterCredential) {
-        [void]$seenUsers.Add([string]$ClusterCredential.UserName)
-        [void]$candidates.Add([ordered]@{
-            Name       = 'cluster'
-            Credential = $ClusterCredential
-            UserName   = [string]$ClusterCredential.UserName
-        })
-    }
-
-    if ($DomainCredential -and $seenUsers.Add([string]$DomainCredential.UserName)) {
+    if ($DomainCredential) {
+        [void]$seenUsers.Add([string]$DomainCredential.UserName)
         [void]$candidates.Add([ordered]@{
             Name       = 'domain'
             Credential = $DomainCredential
@@ -187,7 +186,15 @@ function Get-RangerRemoteCredentialCandidates {
         })
     }
 
-    if (-not $ClusterCredential -and -not $DomainCredential) {
+    if ($ClusterCredential -and $seenUsers.Add([string]$ClusterCredential.UserName)) {
+        [void]$candidates.Add([ordered]@{
+            Name       = 'cluster'
+            Credential = $ClusterCredential
+            UserName   = [string]$ClusterCredential.UserName
+        })
+    }
+
+    if (-not $DomainCredential -and -not $ClusterCredential) {
         [void]$candidates.Add([ordered]@{
             Name       = 'current-context'
             Credential = $null
@@ -426,7 +433,10 @@ function Invoke-RangerRedfishRequest {
         [string]$Method = 'Get'
     )
 
-    Invoke-RangerRetry -RetryCount 1 -ScriptBlock {
+    # Issue #162: pass -Label and -Target so retry detail entries in audit-manifest.json
+    # carry a meaningful label ('Invoke-RangerRedfishRequest') and the actual URI instead of
+    # the generic 'operation' label and an empty target string.
+    Invoke-RangerRetry -RetryCount 1 -Label 'Invoke-RangerRedfishRequest' -Target $Uri -ScriptBlock {
         Invoke-RestMethod -Uri $Uri -Method $Method -Credential $Credential -SkipCertificateCheck -ContentType 'application/json' -ErrorAction Stop
     }
 }
