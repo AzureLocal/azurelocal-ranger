@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Executive Summary</title>
+  <title>Technical As-Built</title>
   <style>
         :root { color-scheme: light; --page-max: 1280px; }
         * { box-sizing: border-box; }
@@ -102,7 +102,7 @@
     <div class="shell">
         <header class="report-head">
             <span class="banner banner-as-built">CONFIDENTIAL — CUSTOMER DELIVERABLE</span>
-            <h1>Executive Summary<span class="subtitle">Post-Deployment As-Built Package — azlocal-iic-01</span></h1>
+            <h1>Technical As-Built<span class="subtitle">Post-Deployment As-Built Package — azlocal-iic-01</span></h1>
             <p class="meta">Mode: as-built | Ranger Version: 1.4.2 | Generated: 04/06/2026 12:08:32</p>
         </header>
         
@@ -116,9 +116,35 @@
 <li>Environment Overview</li>
 <li>Topology and Operating Model</li>
 <li>Domain Coverage</li>
+<li>Node Inventory</li>
+<li>Collector Status</li>
 <li>Operational Risk Summary</li>
 <li>Workload Summary</li>
 <li>Capacity Summary</li>
+<li>Priority Recommendations</li>
+<li>VM Inventory</li>
+<li>VM Density Metrics</li>
+<li>Storage Pool Capacity</li>
+<li>ESU Enrollment</li>
+<li>Coverage Assessment</li>
+<li>Security Posture Summary</li>
+<li>Management Tool Coverage</li>
+<li>Domain Inventory</li>
+<li>Physical Disk Inventory</li>
+<li>Network Adapter Inventory</li>
+<li>Domain Summary</li>
+<li>Storage Resiliency</li>
+<li>Event Log Summary</li>
+<li>Security Audit</li>
+<li>Raw Data Appendix</li>
+<li>Installation Register (Bill of Materials)</li>
+<li>Per-Node Configuration Record</li>
+<li>Network Address Allocation Record</li>
+<li>Storage Configuration Record</li>
+<li>Identity and Security Record</li>
+<li>Azure Integration Record</li>
+<li>Validation Record</li>
+<li>Known Issues and Deviations</li>
 <li>Acceptance and Sign-Off</li>
                 </ul>
             </section>
@@ -127,6 +153,8 @@
                 <ul>
                     <li><strong>[WARNING]</strong> One or more node certificates expire within 90 days<br />Review certificate ownership and renew expiring node certificates before handoff.</li>
 <li><strong>[WARNING]</strong> iDRAC firmware below recommended baseline on all nodes<br />Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window.</li>
+<li><strong>[INFORMATIONAL]</strong> Azure Policy assignments discovered at resource group scope<br />Verify policy scope extends to arc resource group and monitor for compliance drift.</li>
+<li><strong>[INFORMATIONAL]</strong> Cluster event history includes a transient network quorum warning<br />Review switch port configuration to confirm management NICs are on dedicated VLANs and bonded correctly.</li>
                 </ul>
             </section>
         </div>
@@ -173,8 +201,8 @@
         <section>
   <h2>Document Control</h2>
   <table class='kv-table'><tbody><tr><th scope='row'>Document Title</th><td>Azure Local As-Built Documentation — azlocal-iic-01</td></tr>
-<tr><th scope='row'>Package ID</th><td>azlocal-iic-01-as-built-20260416T231555Z</td></tr>
-<tr><th scope='row'>Report Tier</th><td>executive</td></tr>
+<tr><th scope='row'>Package ID</th><td>azlocal-iic-01-as-built-20260416T231556Z</td></tr>
+<tr><th scope='row'>Report Tier</th><td>technical</td></tr>
 <tr><th scope='row'>Revision</th><td>1.0 (initial handoff)</td></tr>
 <tr><th scope='row'>Classification</th><td>CONFIDENTIAL — CUSTOMER DELIVERABLE</td></tr>
 <tr><th scope='row'>Prepared By Azure Local Ranger v1.4.2</th><td></td></tr>
@@ -230,6 +258,40 @@
 <li>Management services: 4</li></ul>
 </section>
 <section>
+  <h2>Node Inventory</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Model</th><th>State</th><th>OS</th><th>OS Build</th><th>CPU Sockets</th><th>RAM (GiB)</th></tr></thead><tbody><tr><td>azl-iic-n01</td></tr>
+<tr><td>PowerEdge R760</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>512</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>PowerEdge R760</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>512</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>PowerEdge R760</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>—</td></tr>
+<tr><td>512</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>Collector Status</h2>
+  <ul><li>hardware: success ()</li>
+<li>management-performance: success ()</li>
+<li>monitoring-observability: success ()</li>
+<li>storage-networking: success ()</li>
+<li>topology-cluster: success ()</li>
+<li>waf-assessment: success ()</li>
+<li>workload-identity-azure: success ()</li></ul>
+</section>
+<section>
   <h2>Operational Risk Summary</h2>
   <ul><li>Nodes not healthy: 0</li>
 <li>Unhealthy disks: 0</li>
@@ -261,6 +323,508 @@
 <li>vCPU:pCPU overcommit ratio: Not computed</li>
 <li>Memory overcommit ratio: Not computed</li>
 <li>Average VMs per node: N/A</li></ul>
+</section>
+<section>
+  <h2>Priority Recommendations</h2>
+  <ul><li>[WARNING] One or more node certificates expire within 90 days: Review certificate ownership and renew expiring node certificates before handoff.</li>
+<li>[WARNING] iDRAC firmware below recommended baseline on all nodes: Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window.</li>
+<li>[INFORMATIONAL] Azure Policy assignments discovered at resource group scope: Verify policy scope extends to arc resource group and monitor for compliance drift.</li>
+<li>[INFORMATIONAL] Cluster event history includes a transient network quorum warning: Review switch port configuration to confirm management NICs are on dedicated VLANs and bonded correctly.</li></ul>
+</section>
+<section>
+  <h2>VM Inventory</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Name</th><th>State</th><th>vCPU</th><th>RAM (GiB)</th><th>Host Node</th><th>Generation</th></tr></thead><tbody><tr><td>avd-iic-sh01</td></tr>
+<tr><td>Running</td></tr>
+<tr><td>8</td></tr>
+<tr><td>16</td></tr>
+<tr><td>azl-iic-n01</td></tr>
+<tr><td>2</td></tr>
+<tr><td>avd-iic-sh02</td></tr>
+<tr><td>Running</td></tr>
+<tr><td>8</td></tr>
+<tr><td>16</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>2</td></tr>
+<tr><td>avd-iic-sh03</td></tr>
+<tr><td>Running</td></tr>
+<tr><td>8</td></tr>
+<tr><td>16</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>2</td></tr>
+<tr><td>arc-iic-vm01</td></tr>
+<tr><td>Running</td></tr>
+<tr><td>4</td></tr>
+<tr><td>8</td></tr>
+<tr><td>azl-iic-n01</td></tr>
+<tr><td>2</td></tr>
+<tr><td>arc-iic-vm02</td></tr>
+<tr><td>Running</td></tr>
+<tr><td>4</td></tr>
+<tr><td>8</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>2</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>VM Density Metrics</h2>
+  <ul><li>VMs per node (average): N/A</li>
+<li>Highest-density node: N/A</li>
+<li>vCPU:pCPU overcommit ratio: Not computed</li>
+<li>Memory overcommit ratio: Not computed</li>
+<li>Arc-connected VMs: </li>
+<li>VMs using Arc IP fallback: </li>
+<li>Avg CPU utilization (all nodes): 38.3%</li>
+<li>Avg available memory (all nodes): 176 GiB</li></ul>
+</section>
+<section>
+  <h2>Storage Pool Capacity</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Pool</th><th>Raw (GiB)</th><th>Usable (GiB)</th><th>Used (GiB)</th><th>Reserve (GiB)</th><th>Safe Alloc (GiB)</th><th>Posture</th></tr></thead><tbody><tr><td>—</td></tr>
+<tr><td>0</td></tr>
+<tr><td>0</td></tr>
+<tr><td>0</td></tr>
+<tr><td>0</td></tr>
+<tr><td>0</td></tr>
+<tr><td>—</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>ESU Enrollment</h2>
+  <ul><li>Eligible Arc-connected VMs: </li>
+<li>Enrolled in ESU: </li>
+<li>Not enrolled in ESU: </li>
+<li>Ineligible: </li>
+<li></li></ul>
+</section>
+<section>
+  <h2>Coverage Assessment</h2>
+  <ul><li>Monitoring coverage (AMA): 100% (3 of 3 nodes have Azure Monitor Agent)</li>
+<li>Backup coverage estimate: 20% (based on backup items vs VM count)</li>
+<li>Defender for Cloud: Not confirmed or not collected</li>
+<li>WDAC policy: Not collected</li>
+<li>BitLocker status: Not collected</li>
+<li>Certificates expiring in &lt;90 days: 1</li></ul>
+</section>
+<section>
+  <h2>Security Posture Summary</h2>
+  <ul><li>Secured-Core enabled nodes:  of 3</li>
+<li>Syslog forwarding nodes: </li>
+<li>RBAC assignments at resource group: 1</li>
+<li>Policy assignments tracked: 2</li>
+<li>Policy exemptions: </li>
+<li>Active Directory site: Not collected</li></ul>
+</section>
+<section>
+  <h2>Management Tool Coverage</h2>
+  <ul><li>WAC installed nodes:  of 3</li>
+<li>SCVMM agent nodes: </li>
+<li>SCOM agent nodes: </li>
+<li>Running management services: 4</li>
+<li>Third-party agent types:  (0)</li></ul>
+</section>
+<section>
+  <h2>Domain Inventory</h2>
+  <ul><li>Storage pools: 1</li>
+<li>Virtual disks: 3</li>
+<li>Cluster networks: 4</li>
+<li>Management tools: 4</li>
+<li>Monitoring components: 5</li>
+<li>Cluster roles: 5</li>
+<li>Replication entries: 0</li>
+<li>Update resources: 1</li></ul>
+</section>
+<section>
+  <h2>Physical Disk Inventory</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Model</th><th>Media Type</th><th>Size (GiB)</th><th>Health</th><th>Firmware</th></tr></thead><tbody><tr><td>azl-iic-n01</td></tr>
+<tr><td>PhysicalDisk 001</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n01</td></tr>
+<tr><td>PhysicalDisk 002</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n01</td></tr>
+<tr><td>PhysicalDisk 003</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n01</td></tr>
+<tr><td>PhysicalDisk 004</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n01</td></tr>
+<tr><td>PhysicalDisk 005</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n01</td></tr>
+<tr><td>PhysicalDisk 006</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n01</td></tr>
+<tr><td>PhysicalDisk 007</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n01</td></tr>
+<tr><td>PhysicalDisk 008</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>PhysicalDisk 009</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>PhysicalDisk 010</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>PhysicalDisk 011</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>PhysicalDisk 012</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>PhysicalDisk 013</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>PhysicalDisk 014</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>PhysicalDisk 015</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>PhysicalDisk 016</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>PhysicalDisk 017</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>PhysicalDisk 018</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>PhysicalDisk 019</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>PhysicalDisk 020</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>PhysicalDisk 021</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>PhysicalDisk 022</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>PhysicalDisk 023</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>PhysicalDisk 024</td></tr>
+<tr><td>NVMe</td></tr>
+<tr><td>1789</td></tr>
+<tr><td>Healthy</td></tr>
+<tr><td>—</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>Network Adapter Inventory</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Adapter</th><th>Link Speed</th><th>Status</th><th>MAC Address</th><th>Driver</th></tr></thead><tbody><tr><td>azl-iic-n01</td></tr>
+<tr><td>NIC1</td></tr>
+<tr><td>25000000000</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>00:50:56:IIC:0:00</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n01</td></tr>
+<tr><td>NIC2</td></tr>
+<tr><td>25000000000</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>00:50:56:IIC:0:01</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n01</td></tr>
+<tr><td>NIC3</td></tr>
+<tr><td>25000000000</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>00:50:56:IIC:0:02</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n01</td></tr>
+<tr><td>NIC4</td></tr>
+<tr><td>25000000000</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>00:50:56:IIC:0:03</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>NIC1</td></tr>
+<tr><td>25000000000</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>00:50:56:IIC:1:00</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>NIC2</td></tr>
+<tr><td>25000000000</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>00:50:56:IIC:1:01</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>NIC3</td></tr>
+<tr><td>25000000000</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>00:50:56:IIC:1:02</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>NIC4</td></tr>
+<tr><td>25000000000</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>00:50:56:IIC:1:03</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>NIC1</td></tr>
+<tr><td>25000000000</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>00:50:56:IIC:2:00</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>NIC2</td></tr>
+<tr><td>25000000000</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>00:50:56:IIC:2:01</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>NIC3</td></tr>
+<tr><td>25000000000</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>00:50:56:IIC:2:02</td></tr>
+<tr><td>—</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>NIC4</td></tr>
+<tr><td>25000000000</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>00:50:56:IIC:2:03</td></tr>
+<tr><td>—</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>Domain Summary</h2>
+  <ul><li>Node manufacturers: Dell Inc. (3)</li>
+<li>Storage media types: NVMe (24)</li>
+<li>Adapter states: Up (12)</li>
+<li>VM generations: 2 (5)</li>
+<li>Azure resource types: Microsoft.AzureStackHCI/clusters (1), Microsoft.DesktopVirtualization/hostPools (1), Microsoft.HybridCompute/machines (3), Microsoft.ResourceConnector/appliances (1), Microsoft.ExtendedLocation/customLocations (1), Microsoft.RecoveryServices/vaults (1)</li>
+<li>Monitoring: telemetry=1, AMA=3, DCR=1</li>
+<li>Performance: avg CPU=38.3%, avg available memory=176 GiB</li>
+<li>ESU: eligible=, enrolled=, not enrolled=</li></ul>
+</section>
+<section>
+  <h2>Storage Resiliency</h2>
+  <ul><li>Total raw: 0 GiB (0 TiB)</li>
+<li>Total usable (after resiliency): 0 GiB (0 TiB)</li>
+<li>Resiliency overhead: N/A% of raw</li>
+<li>Reserve target: 0 GiB  |  Safe allocatable: 0 GiB</li></ul>
+</section>
+<section>
+  <h2>Event Log Summary</h2>
+  <ul><li>No events recorded in this collection window.</li></ul>
+</section>
+<section>
+  <h2>Security Audit</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Area</th><th>Item</th><th>Value</th></tr></thead><tbody><tr><td>Certificates</td><td>Total tracked</td><td>1</td></tr>
+<tr><td>Certificates</td><td>Expiring within 90 days</td><td>1</td></tr>
+<tr><td>Policy</td><td>Assignments</td><td>2</td></tr>
+<tr><td>Policy</td><td>Exemptions</td><td></td></tr>
+<tr><td>Policy</td><td>Non-compliant</td><td></td></tr>
+<tr><td>Identity</td><td>AD CNO objects tracked</td><td>1</td></tr>
+<tr><td>Identity</td><td>RBAC assignments at RG scope</td><td>1</td></tr>
+<tr><td>Workload Protection</td><td>Backup items tracked</td><td>1</td></tr>
+<tr><td>Workload Protection</td><td>ASR protected items</td><td>1</td></tr>
+<tr><td>Endpoint</td><td>Defender for Cloud enabled</td><td>Not confirmed</td></tr>
+<tr><td>Endpoint</td><td>Secured-Core enabled nodes</td><td> of 3</td></tr>
+<tr><td>Endpoint</td><td>WDAC policy</td><td>Not collected</td></tr>
+<tr><td>Endpoint</td><td>BitLocker</td><td>Not collected</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>Raw Data Appendix</h2>
+  <ul><li>The complete collection manifest (ranger-manifest.json) is included in this package.</li>
+<li>It contains the full raw evidence from all collectors, including every data point used to generate this report.</li>
+<li>To regenerate reports from the saved manifest without re-running discovery, use:</li>
+<li>  Invoke-AzureLocalRanger -ManifestPath &lt;path-to-manifest.json&gt; -OutputPath &lt;output-folder&gt;</li>
+<li>Manifest schema version: 1.1.0-draft</li>
+<li>Collection completed: 04/06/2026 12:08:32</li>
+<li>Ranger version: 1.4.2</li></ul>
+</section>
+<section>
+  <h2>Installation Register (Bill of Materials)</h2>
+  <div class='table-wrapper'><table class='data-table'><caption>Each unit listed above was installed and commissioned as part of this deployment. Serial numbers are recorded as discovered at handoff; missing values indicate the collector could not access the field.</caption><thead><tr><th>Hostname</th><th>FQDN</th><th>Manufacturer</th><th>Model</th><th>Serial</th><th>BIOS at Deployment</th><th>OS Installed</th><th>OS Build</th></tr></thead><tbody><tr><td>azl-iic-n01</td></tr>
+<tr><td>azl-iic-n01.iic.local</td></tr>
+<tr><td>Dell Inc.</td></tr>
+<tr><td>PowerEdge R760</td></tr>
+<tr><td>Not recorded</td></tr>
+<tr><td>2.10.0.0</td></tr>
+<tr><td>Microsoft Azure Stack HCI</td></tr>
+<tr><td>10.0.25398.1189</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>azl-iic-n02.iic.local</td></tr>
+<tr><td>Dell Inc.</td></tr>
+<tr><td>PowerEdge R760</td></tr>
+<tr><td>Not recorded</td></tr>
+<tr><td>2.10.0.0</td></tr>
+<tr><td>Microsoft Azure Stack HCI</td></tr>
+<tr><td>10.0.25398.1189</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>azl-iic-n03.iic.local</td></tr>
+<tr><td>Dell Inc.</td></tr>
+<tr><td>PowerEdge R760</td></tr>
+<tr><td>Not recorded</td></tr>
+<tr><td>2.10.0.0</td></tr>
+<tr><td>Microsoft Azure Stack HCI</td></tr>
+<tr><td>10.0.25398.1189</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>Per-Node Configuration Record</h2>
+  <div class='table-wrapper'><table class='data-table'><caption>Each node was configured with the values above at the time of deployment.</caption><thead><tr><th>Node</th><th>State at Handoff</th><th>Logical CPUs</th><th>Installed Memory</th><th>Domain Joined</th><th>BIOS Version</th></tr></thead><tbody><tr><td>azl-iic-n01</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>64</td></tr>
+<tr><td>512 GiB</td></tr>
+<tr><td>iic.local</td></tr>
+<tr><td>2.10.0.0</td></tr>
+<tr><td>azl-iic-n02</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>64</td></tr>
+<tr><td>512 GiB</td></tr>
+<tr><td>iic.local</td></tr>
+<tr><td>2.10.0.0</td></tr>
+<tr><td>azl-iic-n03</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>64</td></tr>
+<tr><td>512 GiB</td></tr>
+<tr><td>iic.local</td></tr>
+<tr><td>2.10.0.0</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>Network Address Allocation Record</h2>
+  <div class='table-wrapper'><table class='data-table'><caption>Cluster networks were assigned and configured as recorded above during deployment.</caption><thead><tr><th>Cluster Network</th><th>Role</th><th>Network Address</th><th>Mask</th><th>Metric</th><th>State</th></tr></thead><tbody><tr><td>Management</td></tr>
+<tr><td>Cluster + Client (Management)</td></tr>
+<tr><td>10.0.0.0</td></tr>
+<tr><td>255.255.255.0</td></tr>
+<tr><td>100</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>Storage-1</td></tr>
+<tr><td>Cluster Only (Storage)</td></tr>
+<tr><td>10.0.1.0</td></tr>
+<tr><td>255.255.255.0</td></tr>
+<tr><td>200</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>Storage-2</td></tr>
+<tr><td>Cluster Only (Storage)</td></tr>
+<tr><td>10.0.1.128</td></tr>
+<tr><td>255.255.255.128</td></tr>
+<tr><td>200</td></tr>
+<tr><td>Up</td></tr>
+<tr><td>Workload</td></tr>
+<tr><td>Cluster + Client (Workload)</td></tr>
+<tr><td>10.0.2.0</td></tr>
+<tr><td>255.255.255.0</td></tr>
+<tr><td>300</td></tr>
+<tr><td>Up</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>Storage Configuration Record</h2>
+  <div class='table-wrapper'><table class='data-table'><caption>Storage pools and their capacities were provisioned at deployment as shown. CSV and virtual-disk details are included in the delivery-registers workbook.</caption><thead><tr><th>Storage Pool</th><th>Raw Capacity</th><th>Usable Capacity</th><th>Health at Handoff</th></tr></thead><tbody><tr><td>S2D on azlocal-iic-01</td></tr>
+<tr><td>43068 GiB</td></tr>
+<tr><td>—</td></tr>
+<tr><td>Healthy</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>Identity and Security Record</h2>
+  <table class='kv-table'><tbody><tr><th scope='row'>Identity mode</th><td>ad</td></tr>
+<tr><th scope='row'>Active Directory site</th><td>Not collected</td></tr>
+<tr><th scope='row'>Secured-Core nodes enrolled</th><td> of 3</td></tr>
+<tr><th scope='row'>BitLocker</th><td>Not collected</td></tr>
+<tr><th scope='row'>WDAC policy</th><td>Not collected</td></tr>
+<tr><th scope='row'>Certificates tracked</th><td>1</td></tr>
+<tr><th scope='row'>Certificates expiring &lt;90d</th><td>1</td></tr>
+<tr><th scope='row'>RBAC assignments at RG scope</th><td>1</td></tr></tbody></table>
+</section>
+<section>
+  <h2>Azure Integration Record</h2>
+  <table class='kv-table'><tbody><tr><th scope='row'>Tenant ID</th><td>00000000-0000-0000-0000-000000000000</td></tr>
+<tr><th scope='row'>Subscription ID</th><td>33333333-3333-3333-3333-333333333333</td></tr>
+<tr><th scope='row'>Resource Group</th><td>rg-iic-compute-01</td></tr>
+<tr><th scope='row'>Arc-connected machines</th><td>1</td></tr>
+<tr><th scope='row'>AKS clusters</th><td>1</td></tr>
+<tr><th scope='row'>Azure Monitor Agents</th><td>3</td></tr>
+<tr><th scope='row'>Backup items</th><td>1</td></tr>
+<tr><th scope='row'>ASR protected items</th><td>1</td></tr></tbody></table>
+</section>
+<section>
+  <h2>Validation Record</h2>
+  <table class='kv-table'><tbody><tr><th scope='row'>Validation report</th><td>See cluster-validation report artifact (Test-Cluster output)</td></tr>
+<tr><th scope='row'>Collectors run</th><td>7</td></tr>
+<tr><th scope='row'>Collectors successful</th><td>7</td></tr>
+<tr><th scope='row'>Collectors partial</th><td>0</td></tr>
+<tr><th scope='row'>Collectors failed</th><td>0</td></tr>
+<tr><th scope='row'>Schema validation</th><td>Passed</td></tr>
+<tr><th scope='row'>Critical findings</th><td>0</td></tr>
+<tr><th scope='row'>Warning findings</th><td>2</td></tr></tbody></table>
+</section>
+<section>
+  <h2>Known Issues and Deviations</h2>
+  <div class='table-wrapper'><table class='data-table'><caption>Deviations listed below were documented at handoff. Items are accepted as-built unless explicitly marked for follow-up remediation.</caption><thead><tr><th>Severity</th><th>Item</th><th>Deviation</th><th>Remediation Path</th></tr></thead><tbody><tr><td>WARNING</td></tr>
+<tr><td>One or more node certificates expire within 90 days</td></tr>
+<tr><td>Identity posture data indicates certificate on azl-iic-n01 expires within 90 days.</td></tr>
+<tr><td>Review certificate ownership and renew expiring node certificates before handoff.</td></tr>
+<tr><td>WARNING</td></tr>
+<tr><td>iDRAC firmware below recommended baseline on all nodes</td></tr>
+<tr><td>OEM integration data shows iDRAC firmware at 7.10.30.00. The recommended baseline is 7.20 or later.</td></tr>
+<tr><td>Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window.</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Acceptance and Sign-Off</h2>
@@ -1146,6 +1710,24 @@
   <p>OEM integration data shows iDRAC firmware at 7.10.30.00. The recommended baseline is 7.20 or later.</p>
   <p><strong>Current state:</strong> iDRAC firmware 7.10.30.00</p>
   <p><strong>Recommendation:</strong> Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window.</p>
+</article>
+<article class="callout callout-informational">
+  <header class="callout-head">
+    <span class="callout-badge">INFORMATIONAL</span>
+    <h3>Azure Policy assignments discovered at resource group scope</h3>
+  </header>
+  <p>2 policy assignments are enforcing tagging and security control auditing.</p>
+  <p><strong>Current state:</strong> 2 policy assignments active</p>
+  <p><strong>Recommendation:</strong> Verify policy scope extends to arc resource group and monitor for compliance drift.</p>
+</article>
+<article class="callout callout-informational">
+  <header class="callout-head">
+    <span class="callout-badge">INFORMATIONAL</span>
+    <h3>Cluster event history includes a transient network quorum warning</h3>
+  </header>
+  <p>A Management network quorum warning event was recorded on 2026-04-06. Cluster recovered automatically.</p>
+  <p><strong>Current state:</strong> single event logged; cluster healthy</p>
+  <p><strong>Recommendation:</strong> Review switch port configuration to confirm management NICs are on dedicated VLANs and bonded correctly.</p>
 </article>
         </section>
     </div>

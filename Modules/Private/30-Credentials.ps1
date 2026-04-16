@@ -106,7 +106,29 @@ function Get-RangerSecretFromUri {
     }
 
     if ($providerFailures.Count -gt 0) {
-        throw "Could not resolve Key Vault secret '$Uri'. $($providerFailures -join ' ')"
+        $joined = $providerFailures -join ' '
+        $dnsPatterns = @('getaddrinfo failed', 'No such host is known', 'could not be resolved', 'name or service not known')
+        $isDnsFailure = $false
+        foreach ($pattern in $dnsPatterns) {
+            if ($joined -match [regex]::Escape($pattern)) { $isDnsFailure = $true; break }
+        }
+
+        if ($isDnsFailure) {
+            $kvHost = "$($parsed.VaultName).vault.azure.net"
+            $message = @(
+                "Key Vault hostname '$kvHost' could not be resolved.",
+                "Likely causes: (1) VPN or private endpoint network not connected, (2) Key Vault name '$($parsed.VaultName)' is incorrect in your config, (3) DNS resolver cannot reach the private zone.",
+                "Action: verify the Key Vault name, confirm you are on the required network, or enable 'behavior.promptForMissingCredentials' in your config to be prompted interactively when KV is unreachable.",
+                "Provider detail: $joined"
+            ) -join ' '
+            $ex = [System.Management.Automation.RuntimeException]::new($message)
+            $ex.Data['RangerKeyVaultDnsFailure'] = $true
+            $ex.Data['RangerKeyVaultHost'] = $kvHost
+            $ex.Data['RangerKeyVaultUri'] = $Uri
+            throw $ex
+        }
+
+        throw "Could not resolve Key Vault secret '$Uri'. $joined"
     }
 
     throw 'Neither Az.KeyVault nor the Azure CLI is available for Key Vault secret resolution.'
@@ -153,9 +175,25 @@ function Resolve-RangerCredentialDefinition {
     }
 
     if ($CredentialBlock -and $CredentialBlock.username) {
-        $password = Resolve-RangerPasswordValue -CredentialBlock $CredentialBlock
-        if ($password) {
-            return [PSCredential]::new([string]$CredentialBlock.username, $password)
+        try {
+            $password = Resolve-RangerPasswordValue -CredentialBlock $CredentialBlock
+            if ($password) {
+                return [PSCredential]::new([string]$CredentialBlock.username, $password)
+            }
+        }
+        catch {
+            $isDnsFailure = $false
+            if ($_.Exception.Data -and $_.Exception.Data.Contains('RangerKeyVaultDnsFailure')) {
+                $isDnsFailure = [bool]$_.Exception.Data['RangerKeyVaultDnsFailure']
+            }
+
+            if ($isDnsFailure -and $AllowPrompt) {
+                Write-Warning $_.Exception.Message
+                Write-Warning "Falling back to interactive prompt for '$Name' credential because Key Vault is unreachable."
+            }
+            else {
+                throw
+            }
         }
     }
 

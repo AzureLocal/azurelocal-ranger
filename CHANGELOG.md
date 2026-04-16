@@ -8,6 +8,19 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-04-16
+
+### Added
+
+- **As-built document redesign (#193)** — The as-built mid-tier is now an Installation and Configuration Record with per-node configuration, network address allocation, storage configuration, Azure integration, identity and security records, a validation record, and a known-issues/deviations register. Deployment past-tense framing throughout; minimal-color formal styling. `samples/output/iic-as-built/` regenerated.
+- **Mode differentiation (#194)** — as-built now uses distinct tier names ("Installation and Configuration Record", "Technical As-Built"), a CONFIDENTIAL classification banner, and a "Post-Deployment As-Built Package" subtitle. current-state retains "Management Summary", "Technical Deep-Dive", Health Status traffic lights, and an INTERNAL banner. Field engineers can tell the two deliverables apart at a glance.
+- **HTML report quality (#192)** — Inline architecture diagrams embedded under a new Architecture Diagrams section. Data tables use fixed layout with constrained column widths. Findings render as severity-colored callout boxes. A print stylesheet ensures clean browser-to-PDF output. Sign-off tables have visible signature lines.
+
+### Fixed
+
+- **Wizard default formats (#195)** — Default report formats changed from `html,markdown,json,svg` (where `json` was invalid) to `html,markdown,docx,xlsx,pdf,svg`. The prompt label now lists the valid set so operators can reference it inline.
+- **Key Vault DNS error handling (#198)** — DNS resolution failures against Key Vault now emit an actionable error naming the likely causes (VPN not connected, wrong KV name, private endpoint unreachable). When `behavior.promptForMissingCredentials: true`, Ranger falls back to `Get-Credential` rather than aborting the run.
+
 ## [1.4.2] — 2026-04-16
 
 ### Fixed

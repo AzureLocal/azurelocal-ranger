@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '1.4.2'
+    ModuleVersion     = '1.5.0'
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
@@ -53,6 +53,31 @@
                 'Az.ConnectedMachine'
             )
             ReleaseNotes = @'
+## v1.5.0 — Document Quality
+
+### Added
+- **As-built document redesign (#193)** — Formal Installation and Configuration Record with
+  per-node configuration, network address allocation, storage configuration, Azure integration,
+  identity and security records, validation record, and known-issues/deviations register.
+  Deployment past-tense framing; minimal-color formal styling.
+- **Mode differentiation (#194)** — as-built uses distinct tier names (Installation and
+  Configuration Record, Technical As-Built), CONFIDENTIAL classification banner, and
+  Post-Deployment subtitle. current-state retains Management Summary, Technical Deep-Dive,
+  Health Status traffic lights, and INTERNAL banner.
+- **HTML report quality (#192)** — Inline architecture diagrams embedded under Architecture
+  Diagrams section. Fixed-layout data tables with constrained column widths. Findings rendered
+  as severity-colored callout boxes. Print CSS for clean browser-to-PDF output. Sign-off table
+  with visible signature lines.
+
+### Fixed
+- **Wizard default formats (#195)** — Default report formats changed from
+  `html,markdown,json,svg` (where `json` was invalid) to `html,markdown,docx,xlsx,pdf,svg`.
+  Label now hints the valid format set.
+- **Key Vault DNS error handling (#198)** — DNS resolution failures against Key Vault emit an
+  actionable error naming likely causes (VPN not connected, wrong KV name, private endpoint
+  unreachable). When `behavior.promptForMissingCredentials: true`, Ranger now falls back to
+  `Get-Credential` rather than aborting the run.
+
 ## v1.4.1 — Patch
 
 ### Fixed

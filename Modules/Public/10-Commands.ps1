@@ -665,7 +665,7 @@ function Invoke-RangerWizard {
     Write-Host ''
     Write-Host '── Output ───────────────────────────────' -ForegroundColor DarkCyan
     $outputPath    = Prompt-WizardValue -Label 'Output root path' -Default 'C:\AzureLocalRanger'
-    $formatsRaw    = Prompt-WizardValue -Label 'Report formats' -Default 'html,markdown,json,svg'
+    $formatsRaw    = Prompt-WizardValue -Label 'Report formats [html,markdown,docx,xlsx,pdf,svg,drawio]' -Default 'html,markdown,docx,xlsx,pdf,svg'
     $reportFormats = @($formatsRaw -split '\s*,\s*' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 
     # ── Section 6: Scope ──────────────────────────────────────────────────────

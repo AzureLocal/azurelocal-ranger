@@ -223,10 +223,24 @@ function Get-RangerReservedDomainPayloads {
 }
 
 function Get-RangerReportTierDefinitions {
+    param(
+        [string]$Mode = 'current-state'
+    )
+
+    # v1.5.0 (#193/#194): as-built and current-state use distinct tier names so
+    # a recipient can immediately tell which deliverable they are holding.
+    if ($Mode -eq 'as-built') {
+        return @(
+            [pscustomobject][ordered]@{ Name = 'executive';  Title = 'Executive Summary';                 Audience = 'executive' }
+            [pscustomobject][ordered]@{ Name = 'management'; Title = 'Installation and Configuration Record'; Audience = 'management' }
+            [pscustomobject][ordered]@{ Name = 'technical';  Title = 'Technical As-Built';                Audience = 'technical' }
+        )
+    }
+
     @(
-        [pscustomobject][ordered]@{ Name = 'executive';  Title = 'Executive Summary'; Audience = 'executive' }
-        [pscustomobject][ordered]@{ Name = 'management'; Title = 'Management Summary'; Audience = 'management' }
-        [pscustomobject][ordered]@{ Name = 'technical';  Title = 'Technical Deep Dive'; Audience = 'technical' }
+        [pscustomobject][ordered]@{ Name = 'executive';  Title = 'Executive Summary';    Audience = 'executive' }
+        [pscustomobject][ordered]@{ Name = 'management'; Title = 'Management Summary';   Audience = 'management' }
+        [pscustomobject][ordered]@{ Name = 'technical';  Title = 'Technical Deep Dive';  Audience = 'technical' }
     )
 }
 

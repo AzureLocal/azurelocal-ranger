@@ -14,7 +14,8 @@ Describe 'Azure Local Ranger simulation tests (IIC synthetic manifest)' {
         $mdFiles = @(Get-ChildItem -Path (Join-Path $outputRoot 'reports') -Filter '*.md' -ErrorAction SilentlyContinue)
         $mdFiles.Count | Should -Be 3
         (@($mdFiles.Name | Where-Object { $_ -match 'Executive' })).Count   | Should -Be 1
-        (@($mdFiles.Name | Where-Object { $_ -match 'Management' })).Count  | Should -Be 1
+        # v1.5.0 (#194): as-built uses Installation and Configuration Record for the mid-tier
+        (@($mdFiles.Name | Where-Object { $_ -match 'Installation' })).Count | Should -Be 1
         (@($mdFiles.Name | Where-Object { $_ -match 'Technical' })).Count   | Should -Be 1
     }
 
@@ -32,10 +33,11 @@ Describe 'Azure Local Ranger simulation tests (IIC synthetic manifest)' {
         $null = Export-AzureLocalRangerReport -ManifestPath $manifestPath -OutputPath $outputRoot -Formats @('markdown')
 
         $execReport = Get-ChildItem -Path (Join-Path $outputRoot 'reports') -Filter '*Executive*' | Select-Object -First 1
-        $mgmtReport = Get-ChildItem -Path (Join-Path $outputRoot 'reports') -Filter '*Management*' | Select-Object -First 1
+        # v1.5.0 (#194): synthetic fixture is as-built; mid-tier is Installation and Configuration Record
+        $midReport  = Get-ChildItem -Path (Join-Path $outputRoot 'reports') -Filter '*Installation*' | Select-Object -First 1
 
         (Get-Content -Path $execReport.FullName -Raw) | Should -Match '(?i)warning|Priority Recommendations'
-        (Get-Content -Path $mgmtReport.FullName -Raw) | Should -Match '(?i)warning|Priority Recommendations'
+        (Get-Content -Path $midReport.FullName -Raw)  | Should -Match '(?i)warning|Priority Recommendations'
     }
 
     It 'generates at least 5 diagrams in as-built mode' {

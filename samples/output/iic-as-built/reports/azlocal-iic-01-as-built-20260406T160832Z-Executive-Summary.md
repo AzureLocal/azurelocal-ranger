@@ -6,34 +6,28 @@
 - Generated: 04/06/2026 12:08:32
 - Schema validation: passed or warnings only
 
-## At-a-Glance Health Status
-
-- ● GREEN — Overall Health
-- ● GREEN — Azure Integration
-- ○ UNKNOWN — Security Posture
-- ● GREEN — Monitoring Coverage
-
 ## Table of Contents
 
 - Document Control
 - Run Summary
 - Readiness Snapshot
-- Health Status
 - Environment Overview
 - Topology and Operating Model
 - Domain Coverage
 - Operational Risk Summary
 - Workload Summary
 - Capacity Summary
-- Sign-Off
+- Acceptance and Sign-Off
 
 ## Document Control
 
-**Environment**: azlocal-iic-01
-**Package ID**: azlocal-iic-01-as-built-20260416T180412Z
+**Document Title**: Azure Local As-Built Documentation — azlocal-iic-01
+**Package ID**: azlocal-iic-01-as-built-20260416T231555Z
 **Report Tier**: executive
-**Tool Version**: 1.4.2
-**Discovery Run Completed**: 04/06/2026 12:08:32
+**Revision**: 1.0 (initial handoff)
+**Classification**: CONFIDENTIAL — CUSTOMER DELIVERABLE
+**Prepared By Azure Local Ranger v1.4.2**: 
+**Prepared On**: 04/06/2026 12:08:32
 **Schema Version**: 1.1.0-draft
 **Document Status**: FINAL — AS-BUILT HANDOFF
 
@@ -54,13 +48,6 @@
 - Informational findings: 2
 - Successful collectors: 7 of 7
 - Partial or failed collectors: 0
-
-## Health Status
-
-- Overall health: GREEN ( critical,  warning findings)
-- Azure integration: GREEN (10 Azure resources discovered)
-- Security posture: GRAY (Secured-Core enabled on  node(s))
-- Monitoring coverage: GREEN (100% of nodes have Azure Monitor Agent)
 
 ## Environment Overview
 
@@ -124,7 +111,7 @@
 - Memory overcommit ratio: Not computed
 - Average VMs per node: N/A
 
-## Sign-Off
+## Acceptance and Sign-Off
 
 | Role | Name | Date | Signature |
 | --- | --- | --- | --- |

@@ -1,0 +1,1809 @@
+%PDF-1.4
+%Ranger
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 16 /Kids [4 0 R 6 0 R 8 0 R 10 0 R 12 0 R 14 0 R 16 0 R 18 0 R 20 0 R 22 0 R 24 0 R 26 0 R 28 0 R 30 0 R 32 0 R 34 0 R] >>
+endobj
+3 0 obj
+<< /Length 1624 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+( ) Tj
+T*
+( ) Tj
+T*
+( ) Tj
+T*
+(  Azure Local Ranger) Tj
+T*
+(  ============================================================) Tj
+T*
+( ) Tj
+T*
+(  Technical As-Built) Tj
+T*
+( ) Tj
+T*
+(  Cluster:          azlocal-iic-01) Tj
+T*
+(  Mode:             as-built) Tj
+T*
+(  Ranger Version:   1.4.2) Tj
+T*
+(  Generated:        04/06/2026 12:08:32) Tj
+T*
+( ) Tj
+T*
+(  ============================================================) Tj
+T*
+( ) Tj
+T*
+(  CONFIDENTIAL ? INTERNAL USE ONLY) Tj
+T*
+( ) Tj
+T*
+(  This document was generated automatically by Azure Local Ranger.) Tj
+T*
+(  Review all findings and recommendations before use as a formal record.) Tj
+T*
+( ) Tj
+T*
+(Technical As-Built) Tj
+T*
+(==================) Tj
+T*
+( ) Tj
+T*
+(Cluster: azlocal-iic-01) Tj
+T*
+(Mode: as-built) Tj
+T*
+(Ranger Version: 1.4.2) Tj
+T*
+(Generated: 04/06/2026 12:08:32) Tj
+T*
+( ) Tj
+T*
+(Table of Contents) Tj
+T*
+(-----------------) Tj
+T*
+(- Document Control) Tj
+T*
+(- Run Summary) Tj
+T*
+(- Readiness Snapshot) Tj
+T*
+(- Environment Overview) Tj
+T*
+(- Topology and Operating Model) Tj
+T*
+(- Domain Coverage) Tj
+T*
+(- Node Inventory) Tj
+T*
+(- Collector Status) Tj
+T*
+(- Operational Risk Summary) Tj
+T*
+(- Workload Summary) Tj
+T*
+(- Capacity Summary) Tj
+T*
+(- Priority Recommendations) Tj
+T*
+(- VM Inventory) Tj
+T*
+(- VM Density Metrics) Tj
+T*
+(- Storage Pool Capacity) Tj
+T*
+(- ESU Enrollment) Tj
+T*
+(- Coverage Assessment) Tj
+T*
+(- Security Posture Summary) Tj
+T*
+(- Management Tool Coverage) Tj
+T*
+(- Domain Inventory) Tj
+T*
+ET
+
+endstream
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 3 0 R >>
+endobj
+5 0 obj
+<< /Length 1945 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(- Physical Disk Inventory) Tj
+T*
+(- Network Adapter Inventory) Tj
+T*
+(- Domain Summary) Tj
+T*
+(- Storage Resiliency) Tj
+T*
+(- Event Log Summary) Tj
+T*
+(- Security Audit) Tj
+T*
+(- Raw Data Appendix) Tj
+T*
+(- Installation Register \\(Bill of Materials\\)) Tj
+T*
+(- Per-Node Configuration Record) Tj
+T*
+(- Network Address Allocation Record) Tj
+T*
+(- Storage Configuration Record) Tj
+T*
+(- Identity and Security Record) Tj
+T*
+(- Azure Integration Record) Tj
+T*
+(- Validation Record) Tj
+T*
+(- Known Issues and Deviations) Tj
+T*
+(- Acceptance and Sign-Off) Tj
+T*
+( ) Tj
+T*
+(Document Control) Tj
+T*
+(----------------) Tj
+T*
+(Document Title:              Azure Local As-Built Documentation ? azlocal-iic-01) Tj
+T*
+(Package ID:                  azlocal-iic-01-as-built-20260416T231556Z) Tj
+T*
+(Report Tier:                 technical) Tj
+T*
+(Revision:                    1.0 \\(initial handoff\\)) Tj
+T*
+(Classification:              CONFIDENTIAL ? CUSTOMER DELIVERABLE) Tj
+T*
+(Prepared By Azure Local Ranger v1.4.2: ) Tj
+T*
+(Prepared On:                 4/6/2026 12:08:32 PM) Tj
+T*
+(Schema Version:              1.1.0-draft) Tj
+T*
+(Document Status:             FINAL ? AS-BUILT HANDOFF) Tj
+T*
+( ) Tj
+T*
+(Run Summary) Tj
+T*
+(-----------) Tj
+T*
+(- Mode: as-built) Tj
+T*
+(- Generated: 04/06/2026 12:08:32) Tj
+T*
+(- Cluster: azlocal-iic-01) Tj
+T*
+(- Nodes: 3) Tj
+T*
+(- Collectors: 7/7 successful) Tj
+T*
+(- Artifacts currently recorded: 0) Tj
+T*
+( ) Tj
+T*
+(Readiness Snapshot) Tj
+T*
+(------------------) Tj
+T*
+(- Schema validation: passed) Tj
+T*
+(- Critical findings: 0) Tj
+T*
+(- Warning findings: 2) Tj
+T*
+(- Informational findings: 2) Tj
+T*
+(- Successful collectors: 7 of 7) Tj
+T*
+(- Partial or failed collectors: 0) Tj
+T*
+( ) Tj
+T*
+(Environment Overview) Tj
+T*
+(--------------------) Tj
+T*
+(- VMs discovered: 5) Tj
+T*
+ET
+
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Length 1465 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(- Azure resources discovered: 10) Tj
+T*
+(- Connected Azure auth method: service-principal) Tj
+T*
+(- Monitoring resources: 5) Tj
+T*
+(- Management services running: 4) Tj
+T*
+( ) Tj
+T*
+(Topology and Operating Model) Tj
+T*
+(----------------------------) Tj
+T*
+(- Deployment type: hyperconverged) Tj
+T*
+(- Identity mode: ad) Tj
+T*
+(- Connectivity mode: connected) Tj
+T*
+(- Storage architecture: storage-spaces-direct) Tj
+T*
+(- Network architecture: switched) Tj
+T*
+(- Variant markers: connected) Tj
+T*
+( ) Tj
+T*
+(Domain Coverage) Tj
+T*
+(---------------) Tj
+T*
+(- Cluster nodes: 3) Tj
+T*
+(- Cluster roles: 5) Tj
+T*
+(- Storage pools: 1) Tj
+T*
+(- Physical disks: 24) Tj
+T*
+(- Network adapters: 12) Tj
+T*
+(- VMs discovered: 5) Tj
+T*
+(- Azure resources: 10) Tj
+T*
+(- Alerting resources: 2) Tj
+T*
+(- Management services: 4) Tj
+T*
+( ) Tj
+T*
+(Node Inventory) Tj
+T*
+(--------------) Tj
+T*
+(Node  |  Model  |  State  |  OS  |  OS Build  |  CPU Sockets  |  RAM \\(GiB\\)) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(PowerEdge R760) Tj
+T*
+(Up) Tj
+T*
+(?) Tj
+T*
+(?) Tj
+T*
+(?) Tj
+T*
+(512) Tj
+T*
+(azl-iic-n02) Tj
+T*
+(PowerEdge R760) Tj
+T*
+(Up) Tj
+T*
+(?) Tj
+T*
+(?) Tj
+T*
+(?) Tj
+T*
+(512) Tj
+T*
+(azl-iic-n03) Tj
+T*
+(PowerEdge R760) Tj
+T*
+(Up) Tj
+T*
+(?) Tj
+T*
+(?) Tj
+T*
+(?) Tj
+T*
+ET
+
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 7 0 R >>
+endobj
+9 0 obj
+<< /Length 2035 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(512) Tj
+T*
+( ) Tj
+T*
+(Collector Status) Tj
+T*
+(----------------) Tj
+T*
+(- hardware: success \\(\\)) Tj
+T*
+(- management-performance: success \\(\\)) Tj
+T*
+(- monitoring-observability: success \\(\\)) Tj
+T*
+(- storage-networking: success \\(\\)) Tj
+T*
+(- topology-cluster: success \\(\\)) Tj
+T*
+(- waf-assessment: success \\(\\)) Tj
+T*
+(- workload-identity-azure: success \\(\\)) Tj
+T*
+( ) Tj
+T*
+(Operational Risk Summary) Tj
+T*
+(------------------------) Tj
+T*
+(- Nodes not healthy: 0) Tj
+T*
+(- Unhealthy disks: 0) Tj
+T*
+(- High CPU nodes: 0) Tj
+T*
+(- Certificates expiring within 90 days: 1) Tj
+T*
+(- Azure Policy assignments: 2) Tj
+T*
+(- Schema warnings: 0) Tj
+T*
+(- Azure Advisor recommendations:  total, 3 high-impact) Tj
+T*
+( ) Tj
+T*
+(Workload Summary) Tj
+T*
+(----------------) Tj
+T*
+(- Total VMs: 5) Tj
+T*
+(- Total nodes: 3) Tj
+T*
+(- AKS clusters: 1) Tj
+T*
+(- Arc-connected machines: 1) Tj
+T*
+(- Update compliance: No update resources tracked) Tj
+T*
+(- Licensing: Not collected) Tj
+T*
+(- VMs using Arc IP fallback: Not collected) Tj
+T*
+( ) Tj
+T*
+(Capacity Summary) Tj
+T*
+(----------------) Tj
+T*
+(- Storage total raw: 0 TiB) Tj
+T*
+(- Storage total usable: 0 TiB) Tj
+T*
+(- Storage used by workloads: 0 TiB \\(0% of usable\\)) Tj
+T*
+(- Storage reserve target: 0 TiB \\(0% of usable\\)) Tj
+T*
+(- Storage free usable: 0 TiB) Tj
+T*
+(- Projected safe allocatable: 0 TiB) Tj
+T*
+(- Thin provisioning ratio: Not computed) Tj
+T*
+(- vCPU:pCPU overcommit ratio: Not computed) Tj
+T*
+(- Memory overcommit ratio: Not computed) Tj
+T*
+(- Average VMs per node: N/A) Tj
+T*
+( ) Tj
+T*
+(Priority Recommendations) Tj
+T*
+(------------------------) Tj
+T*
+(- [WARNING] One or more node certificates expire within 90 days: Review certificate) Tj
+T*
+(ownership and renew expiring node certificates before handoff.) Tj
+T*
+(- [WARNING] iDRAC firmware below recommended baseline on all nodes: Update iDRAC firmware) Tj
+T*
+ET
+
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 9 0 R >>
+endobj
+11 0 obj
+<< /Length 1574 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(via Dell OME or Lifecycle Controller during next maintenance window.) Tj
+T*
+(- [INFORMATIONAL] Azure Policy assignments discovered at resource group scope: Verify) Tj
+T*
+(policy scope extends to arc resource group and monitor for compliance drift.) Tj
+T*
+(- [INFORMATIONAL] Cluster event history includes a transient network quorum warning: Review) Tj
+T*
+(switch port configuration to confirm management NICs are on dedicated VLANs and bonded) Tj
+T*
+(correctly.) Tj
+T*
+( ) Tj
+T*
+(VM Inventory) Tj
+T*
+(------------) Tj
+T*
+(Name  |  State  |  vCPU  |  RAM \\(GiB\\)  |  Host Node  |  Generation) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(avd-iic-sh01) Tj
+T*
+(Running) Tj
+T*
+(8) Tj
+T*
+(16) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(2) Tj
+T*
+(avd-iic-sh02) Tj
+T*
+(Running) Tj
+T*
+(8) Tj
+T*
+(16) Tj
+T*
+(azl-iic-n02) Tj
+T*
+(2) Tj
+T*
+(avd-iic-sh03) Tj
+T*
+(Running) Tj
+T*
+(8) Tj
+T*
+(16) Tj
+T*
+(azl-iic-n03) Tj
+T*
+(2) Tj
+T*
+(arc-iic-vm01) Tj
+T*
+(Running) Tj
+T*
+(4) Tj
+T*
+(8) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(2) Tj
+T*
+(arc-iic-vm02) Tj
+T*
+(Running) Tj
+T*
+(4) Tj
+T*
+(8) Tj
+T*
+(azl-iic-n02) Tj
+T*
+(2) Tj
+T*
+( ) Tj
+T*
+(VM Density Metrics) Tj
+T*
+(------------------) Tj
+T*
+(- VMs per node \\(average\\): N/A) Tj
+T*
+(- Highest-density node: N/A) Tj
+T*
+(- vCPU:pCPU overcommit ratio: Not computed) Tj
+T*
+(- Memory overcommit ratio: Not computed) Tj
+T*
+(- Arc-connected VMs: ) Tj
+T*
+(- VMs using Arc IP fallback: ) Tj
+T*
+ET
+
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 11 0 R >>
+endobj
+13 0 obj
+<< /Length 1812 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(- Avg CPU utilization \\(all nodes\\): 38.3%) Tj
+T*
+(- Avg available memory \\(all nodes\\): 176 GiB) Tj
+T*
+( ) Tj
+T*
+(Storage Pool Capacity) Tj
+T*
+(---------------------) Tj
+T*
+(Pool  |  Raw \\(GiB\\)  |  Usable \\(GiB\\)  |  Used \\(GiB\\)  |  Reserve \\(GiB\\)  |  Safe Alloc \\(GiB\\)) Tj
+T*
+(|  Posture) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(?) Tj
+T*
+(0) Tj
+T*
+(0) Tj
+T*
+(0) Tj
+T*
+(0) Tj
+T*
+(0) Tj
+T*
+(?) Tj
+T*
+( ) Tj
+T*
+(ESU Enrollment) Tj
+T*
+(--------------) Tj
+T*
+(- Eligible Arc-connected VMs: ) Tj
+T*
+(- Enrolled in ESU: ) Tj
+T*
+(- Not enrolled in ESU: ) Tj
+T*
+(- Ineligible: ) Tj
+T*
+(- ) Tj
+T*
+( ) Tj
+T*
+(Coverage Assessment) Tj
+T*
+(-------------------) Tj
+T*
+(- Monitoring coverage \\(AMA\\): 100% \\(3 of 3 nodes have Azure Monitor Agent\\)) Tj
+T*
+(- Backup coverage estimate: 20% \\(based on backup items vs VM count\\)) Tj
+T*
+(- Defender for Cloud: Not confirmed or not collected) Tj
+T*
+(- WDAC policy: Not collected) Tj
+T*
+(- BitLocker status: Not collected) Tj
+T*
+(- Certificates expiring in <90 days: 1) Tj
+T*
+( ) Tj
+T*
+(Security Posture Summary) Tj
+T*
+(------------------------) Tj
+T*
+(- Secured-Core enabled nodes:  of 3) Tj
+T*
+(- Syslog forwarding nodes: ) Tj
+T*
+(- RBAC assignments at resource group: 1) Tj
+T*
+(- Policy assignments tracked: 2) Tj
+T*
+(- Policy exemptions: ) Tj
+T*
+(- Active Directory site: Not collected) Tj
+T*
+( ) Tj
+T*
+(Management Tool Coverage) Tj
+T*
+(------------------------) Tj
+T*
+(- WAC installed nodes:  of 3) Tj
+T*
+(- SCVMM agent nodes: ) Tj
+T*
+(- SCOM agent nodes: ) Tj
+T*
+(- Running management services: 4) Tj
+T*
+(- Third-party agent types:  \\(0\\)) Tj
+T*
+( ) Tj
+T*
+ET
+
+endstream
+endobj
+14 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 13 0 R >>
+endobj
+15 0 obj
+<< /Length 1242 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(Domain Inventory) Tj
+T*
+(----------------) Tj
+T*
+(- Storage pools: 1) Tj
+T*
+(- Virtual disks: 3) Tj
+T*
+(- Cluster networks: 4) Tj
+T*
+(- Management tools: 4) Tj
+T*
+(- Monitoring components: 5) Tj
+T*
+(- Cluster roles: 5) Tj
+T*
+(- Replication entries: 0) Tj
+T*
+(- Update resources: 1) Tj
+T*
+( ) Tj
+T*
+(Physical Disk Inventory) Tj
+T*
+(-----------------------) Tj
+T*
+(Node  |  Model  |  Media Type  |  Size \\(GiB\\)  |  Health  |  Firmware) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(PhysicalDisk 001) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(PhysicalDisk 002) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(PhysicalDisk 003) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(PhysicalDisk 004) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(PhysicalDisk 005) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(PhysicalDisk 006) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+ET
+
+endstream
+endobj
+16 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 15 0 R >>
+endobj
+17 0 obj
+<< /Length 943 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(?) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(PhysicalDisk 007) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(PhysicalDisk 008) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n02) Tj
+T*
+(PhysicalDisk 009) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n02) Tj
+T*
+(PhysicalDisk 010) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n02) Tj
+T*
+(PhysicalDisk 011) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n02) Tj
+T*
+(PhysicalDisk 012) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n02) Tj
+T*
+(PhysicalDisk 013) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n02) Tj
+T*
+(PhysicalDisk 014) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n02) Tj
+T*
+ET
+
+endstream
+endobj
+18 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 17 0 R >>
+endobj
+19 0 obj
+<< /Length 951 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(PhysicalDisk 015) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n02) Tj
+T*
+(PhysicalDisk 016) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n03) Tj
+T*
+(PhysicalDisk 017) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n03) Tj
+T*
+(PhysicalDisk 018) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n03) Tj
+T*
+(PhysicalDisk 019) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n03) Tj
+T*
+(PhysicalDisk 020) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n03) Tj
+T*
+(PhysicalDisk 021) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n03) Tj
+T*
+(PhysicalDisk 022) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n03) Tj
+T*
+(PhysicalDisk 023) Tj
+T*
+(NVMe) Tj
+T*
+ET
+
+endstream
+endobj
+20 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 19 0 R >>
+endobj
+21 0 obj
+<< /Length 1118 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n03) Tj
+T*
+(PhysicalDisk 024) Tj
+T*
+(NVMe) Tj
+T*
+(1789) Tj
+T*
+(Healthy) Tj
+T*
+(?) Tj
+T*
+( ) Tj
+T*
+(Network Adapter Inventory) Tj
+T*
+(-------------------------) Tj
+T*
+(Node  |  Adapter  |  Link Speed  |  Status  |  MAC Address  |  Driver) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(NIC1) Tj
+T*
+(25000000000) Tj
+T*
+(Up) Tj
+T*
+(00:50:56:IIC:0:00) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(NIC2) Tj
+T*
+(25000000000) Tj
+T*
+(Up) Tj
+T*
+(00:50:56:IIC:0:01) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(NIC3) Tj
+T*
+(25000000000) Tj
+T*
+(Up) Tj
+T*
+(00:50:56:IIC:0:02) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(NIC4) Tj
+T*
+(25000000000) Tj
+T*
+(Up) Tj
+T*
+(00:50:56:IIC:0:03) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n02) Tj
+T*
+(NIC1) Tj
+T*
+(25000000000) Tj
+T*
+(Up) Tj
+T*
+(00:50:56:IIC:1:00) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n02) Tj
+T*
+(NIC2) Tj
+T*
+(25000000000) Tj
+T*
+(Up) Tj
+T*
+(00:50:56:IIC:1:01) Tj
+T*
+(?) Tj
+T*
+ET
+
+endstream
+endobj
+22 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 21 0 R >>
+endobj
+23 0 obj
+<< /Length 1459 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(azl-iic-n02) Tj
+T*
+(NIC3) Tj
+T*
+(25000000000) Tj
+T*
+(Up) Tj
+T*
+(00:50:56:IIC:1:02) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n02) Tj
+T*
+(NIC4) Tj
+T*
+(25000000000) Tj
+T*
+(Up) Tj
+T*
+(00:50:56:IIC:1:03) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n03) Tj
+T*
+(NIC1) Tj
+T*
+(25000000000) Tj
+T*
+(Up) Tj
+T*
+(00:50:56:IIC:2:00) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n03) Tj
+T*
+(NIC2) Tj
+T*
+(25000000000) Tj
+T*
+(Up) Tj
+T*
+(00:50:56:IIC:2:01) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n03) Tj
+T*
+(NIC3) Tj
+T*
+(25000000000) Tj
+T*
+(Up) Tj
+T*
+(00:50:56:IIC:2:02) Tj
+T*
+(?) Tj
+T*
+(azl-iic-n03) Tj
+T*
+(NIC4) Tj
+T*
+(25000000000) Tj
+T*
+(Up) Tj
+T*
+(00:50:56:IIC:2:03) Tj
+T*
+(?) Tj
+T*
+( ) Tj
+T*
+(Domain Summary) Tj
+T*
+(--------------) Tj
+T*
+(- Node manufacturers: Dell Inc. \\(3\\)) Tj
+T*
+(- Storage media types: NVMe \\(24\\)) Tj
+T*
+(- Adapter states: Up \\(12\\)) Tj
+T*
+(- VM generations: 2 \\(5\\)) Tj
+T*
+(- Azure resource types: Microsoft.AzureStackHCI/clusters \\(1\\),) Tj
+T*
+(Microsoft.DesktopVirtualization/hostPools \\(1\\), Microsoft.HybridCompute/machines \\(3\\),) Tj
+T*
+(Microsoft.ResourceConnector/appliances \\(1\\), Microsoft.ExtendedLocation/customLocations \\(1\\),) Tj
+T*
+(Microsoft.RecoveryServices/vaults \\(1\\)) Tj
+T*
+(- Monitoring: telemetry=1, AMA=3, DCR=1) Tj
+T*
+(- Performance: avg CPU=38.3%, avg available memory=176 GiB) Tj
+T*
+(- ESU: eligible=, enrolled=, not enrolled=) Tj
+T*
+ET
+
+endstream
+endobj
+24 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 23 0 R >>
+endobj
+25 0 obj
+<< /Length 2379 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+( ) Tj
+T*
+(Storage Resiliency) Tj
+T*
+(------------------) Tj
+T*
+(- Total raw: 0 GiB \\(0 TiB\\)) Tj
+T*
+(- Total usable \\(after resiliency\\): 0 GiB \\(0 TiB\\)) Tj
+T*
+(- Resiliency overhead: N/A% of raw) Tj
+T*
+(- Reserve target: 0 GiB  |  Safe allocatable: 0 GiB) Tj
+T*
+( ) Tj
+T*
+(Event Log Summary) Tj
+T*
+(-----------------) Tj
+T*
+(- No events recorded in this collection window.) Tj
+T*
+( ) Tj
+T*
+(Security Audit) Tj
+T*
+(--------------) Tj
+T*
+(Area  |  Item  |  Value) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(Certificates  |  Total tracked  |  1) Tj
+T*
+(Certificates  |  Expiring within 90 days  |  1) Tj
+T*
+(Policy  |  Assignments  |  2) Tj
+T*
+(Policy  |  Exemptions  |  ) Tj
+T*
+(Policy  |  Non-compliant  |  ) Tj
+T*
+(Identity  |  AD CNO objects tracked  |  1) Tj
+T*
+(Identity  |  RBAC assignments at RG scope  |  1) Tj
+T*
+(Workload Protection  |  Backup items tracked  |  1) Tj
+T*
+(Workload Protection  |  ASR protected items  |  1) Tj
+T*
+(Endpoint  |  Defender for Cloud enabled  |  Not confirmed) Tj
+T*
+(Endpoint  |  Secured-Core enabled nodes  |   of 3) Tj
+T*
+(Endpoint  |  WDAC policy  |  Not collected) Tj
+T*
+(Endpoint  |  BitLocker  |  Not collected) Tj
+T*
+( ) Tj
+T*
+(Raw Data Appendix) Tj
+T*
+(-----------------) Tj
+T*
+(- The complete collection manifest \\(ranger-manifest.json\\) is included in this package.) Tj
+T*
+(- It contains the full raw evidence from all collectors, including every data point used to) Tj
+T*
+(generate this report.) Tj
+T*
+(- To regenerate reports from the saved manifest without re-running discovery, use:) Tj
+T*
+(-   Invoke-AzureLocalRanger -ManifestPath <path-to-manifest.json> -OutputPath) Tj
+T*
+(<output-folder>) Tj
+T*
+(- Manifest schema version: 1.1.0-draft) Tj
+T*
+(- Collection completed: 04/06/2026 12:08:32) Tj
+T*
+(- Ranger version: 1.4.2) Tj
+T*
+( ) Tj
+T*
+(Installation Register \\(Bill of Materials\\)) Tj
+T*
+(-----------------------------------------) Tj
+T*
+(Hostname  |  FQDN  |  Manufacturer  |  Model  |  Serial  |  BIOS at Deployment  |  OS) Tj
+T*
+(Installed  |  OS Build) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(azl-iic-n01.iic.local) Tj
+T*
+(Dell Inc.) Tj
+T*
+ET
+
+endstream
+endobj
+26 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 25 0 R >>
+endobj
+27 0 obj
+<< /Length 1465 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(PowerEdge R760) Tj
+T*
+(Not recorded) Tj
+T*
+(2.10.0.0) Tj
+T*
+(Microsoft Azure Stack HCI) Tj
+T*
+(10.0.25398.1189) Tj
+T*
+(azl-iic-n02) Tj
+T*
+(azl-iic-n02.iic.local) Tj
+T*
+(Dell Inc.) Tj
+T*
+(PowerEdge R760) Tj
+T*
+(Not recorded) Tj
+T*
+(2.10.0.0) Tj
+T*
+(Microsoft Azure Stack HCI) Tj
+T*
+(10.0.25398.1189) Tj
+T*
+(azl-iic-n03) Tj
+T*
+(azl-iic-n03.iic.local) Tj
+T*
+(Dell Inc.) Tj
+T*
+(PowerEdge R760) Tj
+T*
+(Not recorded) Tj
+T*
+(2.10.0.0) Tj
+T*
+(Microsoft Azure Stack HCI) Tj
+T*
+(10.0.25398.1189) Tj
+T*
+( ) Tj
+T*
+(Per-Node Configuration Record) Tj
+T*
+(-----------------------------) Tj
+T*
+(Node  |  State at Handoff  |  Logical CPUs  |  Installed Memory  |  Domain Joined  |  BIOS) Tj
+T*
+(Version) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(azl-iic-n01) Tj
+T*
+(Up) Tj
+T*
+(64) Tj
+T*
+(512 GiB) Tj
+T*
+(iic.local) Tj
+T*
+(2.10.0.0) Tj
+T*
+(azl-iic-n02) Tj
+T*
+(Up) Tj
+T*
+(64) Tj
+T*
+(512 GiB) Tj
+T*
+(iic.local) Tj
+T*
+(2.10.0.0) Tj
+T*
+(azl-iic-n03) Tj
+T*
+(Up) Tj
+T*
+(64) Tj
+T*
+(512 GiB) Tj
+T*
+(iic.local) Tj
+T*
+(2.10.0.0) Tj
+T*
+( ) Tj
+T*
+(Network Address Allocation Record) Tj
+T*
+(---------------------------------) Tj
+T*
+(Cluster Network  |  Role  |  Network Address  |  Mask  |  Metric  |  State) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+ET
+
+endstream
+endobj
+28 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 27 0 R >>
+endobj
+29 0 obj
+<< /Length 1657 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(Management) Tj
+T*
+(Cluster + Client \\(Management\\)) Tj
+T*
+(10.0.0.0) Tj
+T*
+(255.255.255.0) Tj
+T*
+(100) Tj
+T*
+(Up) Tj
+T*
+(Storage-1) Tj
+T*
+(Cluster Only \\(Storage\\)) Tj
+T*
+(10.0.1.0) Tj
+T*
+(255.255.255.0) Tj
+T*
+(200) Tj
+T*
+(Up) Tj
+T*
+(Storage-2) Tj
+T*
+(Cluster Only \\(Storage\\)) Tj
+T*
+(10.0.1.128) Tj
+T*
+(255.255.255.128) Tj
+T*
+(200) Tj
+T*
+(Up) Tj
+T*
+(Workload) Tj
+T*
+(Cluster + Client \\(Workload\\)) Tj
+T*
+(10.0.2.0) Tj
+T*
+(255.255.255.0) Tj
+T*
+(300) Tj
+T*
+(Up) Tj
+T*
+( ) Tj
+T*
+(Storage Configuration Record) Tj
+T*
+(----------------------------) Tj
+T*
+(Storage Pool  |  Raw Capacity  |  Usable Capacity  |  Health at Handoff) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(S2D on azlocal-iic-01) Tj
+T*
+(43068 GiB) Tj
+T*
+(?) Tj
+T*
+(Healthy) Tj
+T*
+( ) Tj
+T*
+(Identity and Security Record) Tj
+T*
+(----------------------------) Tj
+T*
+(Identity mode:               ad) Tj
+T*
+(Active Directory site:       Not collected) Tj
+T*
+(Secured-Core nodes enrolled:  of 3) Tj
+T*
+(BitLocker:                   Not collected) Tj
+T*
+(WDAC policy:                 Not collected) Tj
+T*
+(Certificates tracked:        1) Tj
+T*
+(Certificates expiring <90d:  1) Tj
+T*
+(RBAC assignments at RG scope: 1) Tj
+T*
+( ) Tj
+T*
+(Azure Integration Record) Tj
+T*
+(------------------------) Tj
+T*
+(Tenant ID:                   00000000-0000-0000-0000-000000000000) Tj
+T*
+(Subscription ID:             33333333-3333-3333-3333-333333333333) Tj
+T*
+(Resource Group:              rg-iic-compute-01) Tj
+T*
+ET
+
+endstream
+endobj
+30 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 29 0 R >>
+endobj
+31 0 obj
+<< /Length 2835 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(Arc-connected machines:      1) Tj
+T*
+(AKS clusters:                1) Tj
+T*
+(Azure Monitor Agents:        3) Tj
+T*
+(Backup items:                1) Tj
+T*
+(ASR protected items:         1) Tj
+T*
+( ) Tj
+T*
+(Validation Record) Tj
+T*
+(-----------------) Tj
+T*
+(Validation report:           See cluster-validation report artifact \\(Test-Cluster output\\)) Tj
+T*
+(Collectors run:              7) Tj
+T*
+(Collectors successful:       7) Tj
+T*
+(Collectors partial:          0) Tj
+T*
+(Collectors failed:           0) Tj
+T*
+(Schema validation:           Passed) Tj
+T*
+(Critical findings:           0) Tj
+T*
+(Warning findings:            2) Tj
+T*
+( ) Tj
+T*
+(Known Issues and Deviations) Tj
+T*
+(---------------------------) Tj
+T*
+(Severity  |  Item  |  Deviation  |  Remediation Path) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(WARNING) Tj
+T*
+(One or more node certificates expire within 90 days) Tj
+T*
+(Identity posture data indicates certificate on azl-iic-n01 expires within 90 days.) Tj
+T*
+(Review certificate ownership and renew expiring node certificates before handoff.) Tj
+T*
+(WARNING) Tj
+T*
+(iDRAC firmware below recommended baseline on all nodes) Tj
+T*
+(OEM integration data shows iDRAC firmware at 7.10.30.00. The recommended baseline is 7.20) Tj
+T*
+(or later.) Tj
+T*
+(Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window.) Tj
+T*
+( ) Tj
+T*
+(Acceptance and Sign-Off) Tj
+T*
+(-----------------------) Tj
+T*
+(Role                         Name             Date         Signature) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(Implementation Engineer      _______________  ___________  _______________) Tj
+T*
+(Technical Reviewer           _______________  ___________  _______________) Tj
+T*
+(Customer Representative      _______________  ___________  _______________) Tj
+T*
+( ) Tj
+T*
+(Recommendations) Tj
+T*
+(---------------) Tj
+T*
+(- [WARNING] One or more node certificates expire within 90 days: Review certificate) Tj
+T*
+(ownership and renew expiring node certificates before handoff.) Tj
+T*
+(- [WARNING] iDRAC firmware below recommended baseline on all nodes: Update iDRAC firmware) Tj
+T*
+(via Dell OME or Lifecycle Controller during next maintenance window.) Tj
+T*
+(- [INFORMATIONAL] Azure Policy assignments discovered at resource group scope: Verify) Tj
+T*
+(policy scope extends to arc resource group and monitor for compliance drift.) Tj
+T*
+(- [INFORMATIONAL] Cluster event history includes a transient network quorum warning: Review) Tj
+T*
+(switch port configuration to confirm management NICs are on dedicated VLANs and bonded) Tj
+T*
+(correctly.) Tj
+T*
+ET
+
+endstream
+endobj
+32 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 31 0 R >>
+endobj
+33 0 obj
+<< /Length 1858 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+( ) Tj
+T*
+(Findings) Tj
+T*
+(--------) Tj
+T*
+([WARNING] One or more node certificates expire within 90 days) Tj
+T*
+(  Identity posture data indicates certificate on azl-iic-n01 expires within 90 days.) Tj
+T*
+(  Current state: 1 certificate expiring within 90 days) Tj
+T*
+(  Recommendation: Review certificate ownership and renew expiring node certificates before) Tj
+T*
+(handoff.) Tj
+T*
+(  Affected components: azl-iic-n01) Tj
+T*
+( ) Tj
+T*
+([WARNING] iDRAC firmware below recommended baseline on all nodes) Tj
+T*
+(  OEM integration data shows iDRAC firmware at 7.10.30.00. The recommended baseline is 7.20) Tj
+T*
+(  or later.) Tj
+T*
+(  Current state: iDRAC firmware 7.10.30.00) Tj
+T*
+(  Recommendation: Update iDRAC firmware via Dell OME or Lifecycle Controller during next) Tj
+T*
+(maintenance window.) Tj
+T*
+(  Affected components: azl-iic-n01, azl-iic-n02, azl-iic-n03) Tj
+T*
+( ) Tj
+T*
+([INFORMATIONAL] Azure Policy assignments discovered at resource group scope) Tj
+T*
+(  2 policy assignments are enforcing tagging and security control auditing.) Tj
+T*
+(  Current state: 2 policy assignments active) Tj
+T*
+(  Recommendation: Verify policy scope extends to arc resource group and monitor for) Tj
+T*
+(compliance drift.) Tj
+T*
+(  Affected components: rg-iic-compute-01) Tj
+T*
+( ) Tj
+T*
+([INFORMATIONAL] Cluster event history includes a transient network quorum warning) Tj
+T*
+(  A Management network quorum warning event was recorded on 2026-04-06. Cluster recovered) Tj
+T*
+(  automatically.) Tj
+T*
+(  Current state: single event logged; cluster healthy) Tj
+T*
+(  Recommendation: Review switch port configuration to confirm management NICs are on) Tj
+T*
+(dedicated VLANs and bonded correctly.) Tj
+T*
+(  Affected components: azlocal-iic-01) Tj
+T*
+( ) Tj
+T*
+ET
+
+endstream
+endobj
+34 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 33 0 R >>
+endobj
+35 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 36
+0000000000 65535 f 
+0000000017 00000 n `n0000000066 00000 n `n0000000227 00000 n `n0000001903 00000 n `n0000002030 00000 n `n0000004027 00000 n `n0000004154 00000 n `n0000005671 00000 n `n0000005798 00000 n `n0000007885 00000 n `n0000008013 00000 n `n0000009640 00000 n `n0000009769 00000 n `n0000011634 00000 n `n0000011763 00000 n `n0000013058 00000 n `n0000013187 00000 n `n0000014182 00000 n `n0000014311 00000 n `n0000015314 00000 n `n0000015443 00000 n `n0000016614 00000 n `n0000016743 00000 n `n0000018255 00000 n `n0000018384 00000 n `n0000020816 00000 n `n0000020945 00000 n `n0000022463 00000 n `n0000022592 00000 n `n0000024302 00000 n `n0000024431 00000 n `n0000027319 00000 n `n0000027448 00000 n `n0000029359 00000 n `n0000029488 00000 n `ntrailer
+<< /Size 36 /Root 1 0 R >>
+startxref
+29559
+%%EOF

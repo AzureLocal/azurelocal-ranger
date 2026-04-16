@@ -8,17 +8,17 @@ Ranger supports two outcomes through one discovery engine:
 - **Current-state** — recurring operational snapshot of a live Azure Local deployment
 - **As-built** — formal documentation package for customer or operational handoff
 
-## Next Release — v1.5.0 — Document Quality
+## Shipped — v1.5.0 — Document Quality (2026-04-16)
 
-Stabilisation milestone. Fixes broken report output, crashes, and incorrect defaults in the current product before any new capability is added.
+Stabilisation milestone. Fixed broken report output, crashes, and incorrect defaults before new capability work begins.
 
 | Item | Detail | Issue |
 | --- | --- | --- |
-| HTML reports — quality overhaul (#192) | Fix misaligned tables, embed diagrams correctly, and raise overall visual quality to handoff standard | [#192](https://github.com/AzureLocal/azurelocal-ranger/issues/192) |
-| as-built report redesign (#193) | Redesign as-built report structure to reflect a real as-built document — current structure does not match the format | [#193](https://github.com/AzureLocal/azurelocal-ranger/issues/193) |
-| as-built vs current-state differentiation (#194) | Make the two output modes visually distinct — today they are effectively identical | [#194](https://github.com/AzureLocal/azurelocal-ranger/issues/194) |
-| Wizard format list bug (#195) | Fix wizard default format list — `json` is invalid and `docx`/`xlsx`/`pdf` are missing | [#195](https://github.com/AzureLocal/azurelocal-ranger/issues/195) |
-| Key Vault DNS crash (#198) | Replace hard crash on Key Vault DNS failure with a graceful fallback and actionable error | [#198](https://github.com/AzureLocal/azurelocal-ranger/issues/198) |
+| HTML reports — quality overhaul | Fixed-layout tables with constrained column widths, inline architecture diagrams, severity-coloured finding callouts, print stylesheet, visible sign-off signature lines | [#192](https://github.com/AzureLocal/azurelocal-ranger/issues/192) |
+| as-built report redesign | New Installation and Configuration Record with per-node configuration, network address allocation, storage configuration, Azure integration, identity/security, validation record, and known-issues/deviations register | [#193](https://github.com/AzureLocal/azurelocal-ranger/issues/193) |
+| as-built vs current-state differentiation | Distinct tier names, classification banner (CONFIDENTIAL vs INTERNAL), subtitle (Post-Deployment As-Built Package vs Live Discovery Report); Health Status traffic lights and WAF scorecard suppressed in as-built | [#194](https://github.com/AzureLocal/azurelocal-ranger/issues/194) |
+| Wizard format list bug | Default changed from `html,markdown,json,svg` (invalid `json`) to `html,markdown,docx,xlsx,pdf,svg` with prompt label listing valid set | [#195](https://github.com/AzureLocal/azurelocal-ranger/issues/195) |
+| Key Vault DNS crash | Actionable error message on DNS failure naming likely causes; graceful fallback to `Get-Credential` when `behavior.promptForMissingCredentials: true` | [#198](https://github.com/AzureLocal/azurelocal-ranger/issues/198) |
 
 ## v1.6.0 — Platform Intelligence
 

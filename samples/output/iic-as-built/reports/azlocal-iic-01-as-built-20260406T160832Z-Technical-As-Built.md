@@ -1,4 +1,4 @@
-# Technical Deep Dive
+# Technical As-Built
 
 - Cluster: azlocal-iic-01
 - Mode: as-built
@@ -6,19 +6,11 @@
 - Generated: 04/06/2026 12:08:32
 - Schema validation: passed or warnings only
 
-## At-a-Glance Health Status
-
-- ● GREEN — Overall Health
-- ● GREEN — Azure Integration
-- ○ UNKNOWN — Security Posture
-- ● GREEN — Monitoring Coverage
-
 ## Table of Contents
 
 - Document Control
 - Run Summary
 - Readiness Snapshot
-- Health Status
 - Environment Overview
 - Topology and Operating Model
 - Domain Coverage
@@ -35,9 +27,6 @@
 - Coverage Assessment
 - Security Posture Summary
 - Management Tool Coverage
-- WAF Assessment — Scorecard
-- WAF Assessment — Findings
-- WAF Assessment — Azure Advisor Recommendations
 - Domain Inventory
 - Physical Disk Inventory
 - Network Adapter Inventory
@@ -46,16 +35,25 @@
 - Event Log Summary
 - Security Audit
 - Raw Data Appendix
-- Installation Register
-- Sign-Off
+- Installation Register (Bill of Materials)
+- Per-Node Configuration Record
+- Network Address Allocation Record
+- Storage Configuration Record
+- Identity and Security Record
+- Azure Integration Record
+- Validation Record
+- Known Issues and Deviations
+- Acceptance and Sign-Off
 
 ## Document Control
 
-**Environment**: azlocal-iic-01
-**Package ID**: azlocal-iic-01-as-built-20260416T180413Z
+**Document Title**: Azure Local As-Built Documentation — azlocal-iic-01
+**Package ID**: azlocal-iic-01-as-built-20260416T231556Z
 **Report Tier**: technical
-**Tool Version**: 1.4.2
-**Discovery Run Completed**: 04/06/2026 12:08:32
+**Revision**: 1.0 (initial handoff)
+**Classification**: CONFIDENTIAL — CUSTOMER DELIVERABLE
+**Prepared By Azure Local Ranger v1.4.2**: 
+**Prepared On**: 04/06/2026 12:08:32
 **Schema Version**: 1.1.0-draft
 **Document Status**: FINAL — AS-BUILT HANDOFF
 
@@ -76,13 +74,6 @@
 - Informational findings: 2
 - Successful collectors: 7 of 7
 - Partial or failed collectors: 0
-
-## Health Status
-
-- Overall health: GREEN ( critical,  warning findings)
-- Azure integration: GREEN (10 Azure resources discovered)
-- Security posture: GRAY (Secured-Core enabled on  node(s))
-- Monitoring coverage: GREEN (100% of nodes have Azure Monitor Agent)
 
 ## Environment Overview
 
@@ -280,145 +271,6 @@
 - SCOM agent nodes: 
 - Running management services: 4
 - Third-party agent types:  (0)
-
-## WAF Assessment — Scorecard
-
-| Pillar | Score | Status | Rules Passing | Top Finding |
-| --- --- --- --- --- |
-| Reliability |
-| 67% |
-| Needs Attention |
-| 4 / 6 |
-| Cluster quorum is configured |
-| Security |
-| 17% |
-| At Risk |
-| 1 / 6 |
-| Secured-Core is enabled on cluster nodes |
-| Cost Optimization |
-| 50% |
-| Needs Attention |
-| 1 / 2 |
-| ESU-eligible VMs are enrolled in Extended Security Updates |
-| Operational Excellence |
-| 33% |
-| At Risk |
-| 2 / 6 |
-| Azure Monitor alert rules are defined |
-| Performance Efficiency |
-| 67% |
-| Needs Attention |
-| 2 / 3 |
-| Storage utilization is within safe limits |
-
-_Overall WAF score: 43% (10 of 23 rules passing). Evaluated from saved manifest — no re-collection required._
-
-## WAF Assessment — Findings
-
-| Rule | Pillar | Severity | Finding | Recommendation |
-| --- --- --- --- --- |
-| COST-001 |
-| Cost Optimization |
-| informational |
-| ESU-eligible VMs are enrolled in Extended Security Updates |
-| Enroll eligible Arc-connected VMs in Extended Security Updates via the Azure portal (Arc > Extended Security Updates). No licensing cost applies for Arc-enrolled VMs on Azure Local. |
-| OE-002 |
-| Operational Excellence |
-| warning |
-| Azure Monitor alert rules are defined |
-| Define metric and log-based alert rules for key Azure Local health signals: cluster health faults, storage capacity threshold, node CPU and memory pressure. |
-| OE-004 |
-| Operational Excellence |
-| warning |
-| Azure Monitor Agent is deployed on cluster nodes |
-| Deploy Azure Monitor Agent to all cluster nodes via the Azure Local portal (Monitoring > Insights) or via Arc extension management. |
-| OE-003 |
-| Operational Excellence |
-| informational |
-| Update maintenance configurations are defined |
-| Create maintenance configurations in Azure Update Manager to schedule regular update windows for the cluster nodes. |
-| OE-005 |
-| Operational Excellence |
-| informational |
-| HCI Insights is enabled in Log Analytics |
-| Enable HCI Insights from the Azure Local cluster resource in the Azure portal under Monitoring > Insights. |
-| PERF-002 |
-| Performance Efficiency |
-| warning |
-| Storage utilization is within safe limits |
-| Review the Storage Pool Capacity section of this report. Decommission unused VMs or volumes, or expand storage capacity to restore headroom. |
-| REL-004 |
-| Reliability |
-| warning |
-| Cluster quorum is configured |
-| Verify cluster quorum configuration via Get-ClusterQuorum. A witness (cloud or disk) is strongly recommended for even-node clusters. |
-| REL-005 |
-| Reliability |
-| warning |
-| No unhealthy storage pools |
-| Review pool health via Get-StoragePool. Trigger repair jobs and monitor until pools return to Healthy state. |
-| SEC-001 |
-| Security |
-| warning |
-| Secured-Core is enabled on cluster nodes |
-| Enable Secured-Core on all cluster nodes via the Azure Local portal or PowerShell. Verify UEFI Secure Boot and TPM 2.0 are active on each node. |
-| SEC-002 |
-| Security |
-| warning |
-| BitLocker encryption is enabled |
-| Enable BitLocker on Cluster Shared Volumes using Enable-AzureStackHCIBitLocker or via the Azure Local portal. |
-| SEC-004 |
-| Security |
-| warning |
-| No certificates expiring within 90 days |
-| Review certificates approaching expiry using the identitySecurity manifest domain. Renew or rotate certificates before expiry to prevent service disruption. |
-| SEC-005 |
-| Security |
-| warning |
-| Defender for Cloud is enabled |
-| Enable Microsoft Defender for Cloud via the Azure portal for the subscription hosting the Azure Local cluster resources. |
-| SEC-003 |
-| Security |
-| informational |
-| WDAC application control policy is present |
-| Deploy a WDAC policy via the Azure Local portal (Security > Application control). Use Microsoft's recommended block list as a baseline. |
-
-## WAF Assessment — Azure Advisor Recommendations
-
-| Pillar | Impact | Finding | Recommendation |
-| --- --- --- --- |
-| — |
-| High |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| High |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| High |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| Medium |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| Medium |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| Medium |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| Medium |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| Medium |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
 
 ## Domain Inventory
 
@@ -707,23 +559,153 @@ _Overall WAF score: 43% (10 of 23 rules passing). Evaluated from saved manifest 
 - Collection completed: 04/06/2026 12:08:32
 - Ranger version: 1.4.2
 
-## Installation Register
+## Installation Register (Bill of Materials)
 
-- Cluster FQDN: azlocal-iic-01
-- Node count: 3
-- Nodes: azl-iic-n01 (Up), azl-iic-n02 (Up), azl-iic-n03 (Up)
-- Deployment type: hyperconverged
-- Identity mode: ad
-- Connectivity mode: connected
-- Storage architecture: storage-spaces-direct
-- Network architecture: switched
-- Storage pool count: 1
-- Physical disk count: 24
-- Azure subscription: 33333333-3333-3333-3333-333333333333
-- Azure resource group: rg-iic-compute-01
-- VM count: 5
+| Hostname | FQDN | Manufacturer | Model | Serial | BIOS at Deployment | OS Installed | OS Build |
+| --- --- --- --- --- --- --- --- |
+| azl-iic-n01 |
+| azl-iic-n01.iic.local |
+| Dell Inc. |
+| PowerEdge R760 |
+| Not recorded |
+| 2.10.0.0 |
+| Microsoft Azure Stack HCI |
+| 10.0.25398.1189 |
+| azl-iic-n02 |
+| azl-iic-n02.iic.local |
+| Dell Inc. |
+| PowerEdge R760 |
+| Not recorded |
+| 2.10.0.0 |
+| Microsoft Azure Stack HCI |
+| 10.0.25398.1189 |
+| azl-iic-n03 |
+| azl-iic-n03.iic.local |
+| Dell Inc. |
+| PowerEdge R760 |
+| Not recorded |
+| 2.10.0.0 |
+| Microsoft Azure Stack HCI |
+| 10.0.25398.1189 |
 
-## Sign-Off
+_Each unit listed above was installed and commissioned as part of this deployment. Serial numbers are recorded as discovered at handoff; missing values indicate the collector could not access the field._
+
+## Per-Node Configuration Record
+
+| Node | State at Handoff | Logical CPUs | Installed Memory | Domain Joined | BIOS Version |
+| --- --- --- --- --- --- |
+| azl-iic-n01 |
+| Up |
+| 64 |
+| 512 GiB |
+| iic.local |
+| 2.10.0.0 |
+| azl-iic-n02 |
+| Up |
+| 64 |
+| 512 GiB |
+| iic.local |
+| 2.10.0.0 |
+| azl-iic-n03 |
+| Up |
+| 64 |
+| 512 GiB |
+| iic.local |
+| 2.10.0.0 |
+
+_Each node was configured with the values above at the time of deployment._
+
+## Network Address Allocation Record
+
+| Cluster Network | Role | Network Address | Mask | Metric | State |
+| --- --- --- --- --- --- |
+| Management |
+| Cluster + Client (Management) |
+| 10.0.0.0 |
+| 255.255.255.0 |
+| 100 |
+| Up |
+| Storage-1 |
+| Cluster Only (Storage) |
+| 10.0.1.0 |
+| 255.255.255.0 |
+| 200 |
+| Up |
+| Storage-2 |
+| Cluster Only (Storage) |
+| 10.0.1.128 |
+| 255.255.255.128 |
+| 200 |
+| Up |
+| Workload |
+| Cluster + Client (Workload) |
+| 10.0.2.0 |
+| 255.255.255.0 |
+| 300 |
+| Up |
+
+_Cluster networks were assigned and configured as recorded above during deployment._
+
+## Storage Configuration Record
+
+| Storage Pool | Raw Capacity | Usable Capacity | Health at Handoff |
+| --- --- --- --- |
+| S2D on azlocal-iic-01 |
+| 43068 GiB |
+| — |
+| Healthy |
+
+_Storage pools and their capacities were provisioned at deployment as shown. CSV and virtual-disk details are included in the delivery-registers workbook._
+
+## Identity and Security Record
+
+**Identity mode**: ad
+**Active Directory site**: Not collected
+**Secured-Core nodes enrolled**:  of 3
+**BitLocker**: Not collected
+**WDAC policy**: Not collected
+**Certificates tracked**: 1
+**Certificates expiring <90d**: 1
+**RBAC assignments at RG scope**: 1
+
+## Azure Integration Record
+
+**Tenant ID**: 00000000-0000-0000-0000-000000000000
+**Subscription ID**: 33333333-3333-3333-3333-333333333333
+**Resource Group**: rg-iic-compute-01
+**Arc-connected machines**: 1
+**AKS clusters**: 1
+**Azure Monitor Agents**: 3
+**Backup items**: 1
+**ASR protected items**: 1
+
+## Validation Record
+
+**Validation report**: See cluster-validation report artifact (Test-Cluster output)
+**Collectors run**: 7
+**Collectors successful**: 7
+**Collectors partial**: 0
+**Collectors failed**: 0
+**Schema validation**: Passed
+**Critical findings**: 0
+**Warning findings**: 2
+
+## Known Issues and Deviations
+
+| Severity | Item | Deviation | Remediation Path |
+| --- --- --- --- |
+| WARNING |
+| One or more node certificates expire within 90 days |
+| Identity posture data indicates certificate on azl-iic-n01 expires within 90 days. |
+| Review certificate ownership and renew expiring node certificates before handoff. |
+| WARNING |
+| iDRAC firmware below recommended baseline on all nodes |
+| OEM integration data shows iDRAC firmware at 7.10.30.00. The recommended baseline is 7.20 or later. |
+| Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window. |
+
+_Deviations listed below were documented at handoff. Items are accepted as-built unless explicitly marked for follow-up remediation._
+
+## Acceptance and Sign-Off
 
 | Role | Name | Date | Signature |
 | --- | --- | --- | --- |

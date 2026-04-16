@@ -15,14 +15,15 @@ function Invoke-RangerOutputGeneration {
     $reportFormats = @($normalizedFormats | Where-Object { $_ -in @('html', 'markdown', 'md', 'docx', 'xlsx', 'pdf') })
     $diagramFormats = @($normalizedFormats | Where-Object { $_ -in @('svg', 'drawio', 'xml') })
 
-    if ($reportFormats.Count -gt 0) {
-        foreach ($artifact in (Write-RangerReportArtifacts -Manifest $Manifest -PackageRoot $PackageRoot -Formats $reportFormats -Mode $Mode)) {
+    # v1.5.0 (#192): render diagrams first so HTML reports can inline the SVGs.
+    if ($diagramFormats.Count -gt 0) {
+        foreach ($artifact in (Invoke-RangerDiagramGeneration -Manifest $Manifest -PackageRoot $PackageRoot -Formats $diagramFormats -Mode $Mode)) {
             [void]$artifacts.Add($artifact)
         }
     }
 
-    if ($diagramFormats.Count -gt 0) {
-        foreach ($artifact in (Invoke-RangerDiagramGeneration -Manifest $Manifest -PackageRoot $PackageRoot -Formats $diagramFormats -Mode $Mode)) {
+    if ($reportFormats.Count -gt 0) {
+        foreach ($artifact in (Write-RangerReportArtifacts -Manifest $Manifest -PackageRoot $PackageRoot -Formats $reportFormats -Mode $Mode)) {
             [void]$artifacts.Add($artifact)
         }
     }
@@ -55,7 +56,7 @@ function Write-RangerReportArtifacts {
     $artifacts = New-Object System.Collections.ArrayList
     $tierPayloads = New-Object System.Collections.ArrayList
 
-    foreach ($tier in (Get-RangerReportTierDefinitions)) {
+    foreach ($tier in (Get-RangerReportTierDefinitions -Mode $Mode)) {
         $content = New-RangerReportPayload -Manifest $Manifest -Tier $tier.Name -Mode $Mode
         [void]$tierPayloads.Add([ordered]@{ Definition = $tier; Content = $content })
         if ('markdown' -in $Formats -or 'md' -in $Formats) {
@@ -66,7 +67,8 @@ function Write-RangerReportArtifacts {
 
         if ('html' -in $Formats) {
             $htmlPath = Join-Path -Path $reportsRoot -ChildPath ("{0}-{1}.html" -f $prefix, (Get-RangerSafeName -Value $tier.Title))
-            (ConvertTo-RangerHtmlReport -Report $content) | Set-Content -Path $htmlPath -Encoding UTF8
+            $diagramsPath = Join-Path -Path $PackageRoot -ChildPath 'diagrams'
+            (ConvertTo-RangerHtmlReport -Report $content -DiagramsPath $diagramsPath) | Set-Content -Path $htmlPath -Encoding UTF8
             [void]$artifacts.Add((New-RangerArtifactRecord -Type 'html-report' -RelativePath ([System.IO.Path]::GetRelativePath($PackageRoot, $htmlPath)) -Status generated -Audience $tier.Audience))
         }
 
@@ -235,7 +237,9 @@ function New-RangerReportPayload {
         body    = $readinessBody
     })
 
-    # Issue #73: Health status section with traffic light indicators (all tiers)
+    # Issue #73: Health status section with traffic light indicators (current-state only —
+    # as-built is a deployment record, not a live health dashboard). See #194.
+    if ($Mode -ne 'as-built') {
     [void]$sections.Add([ordered]@{
         heading = 'Health Status'
         body    = @(
@@ -253,6 +257,7 @@ function New-RangerReportPayload {
             )
         }
     })
+    }
 
     [void]$sections.Add([ordered]@{
         heading = 'Environment Overview'
@@ -483,8 +488,9 @@ function New-RangerReportPayload {
         })
     }
 
-    # WAF Assessment scorecard — management + technical (#94)
-    if ($Tier -ne 'executive') {
+    # WAF Assessment scorecard — management + technical (#94). Suppressed in as-built mode,
+    # which is a deployment record rather than an operational posture assessment (#194).
+    if ($Tier -ne 'executive' -and $Mode -ne 'as-built') {
         $wafEval = Invoke-RangerWafRuleEvaluation -Manifest $Manifest
         $wafPillarRows = @($wafEval.pillarScores | ForEach-Object {
             @(
@@ -716,15 +722,27 @@ function New-RangerReportPayload {
     }
 
     if ($Mode -eq 'as-built') {
+        # #193/#194: Formal as-built document structure.
+        # Document Control is always first; management + technical tiers add BOM,
+        # per-node/network/storage/Azure/identity records, validation, deviations, sign-off.
         $sections.Insert(0, (New-RangerAsBuiltDocumentControlSection -Manifest $Manifest -Tier $Tier))
+
         if ($Tier -ne 'executive') {
-            [void]$sections.Add((New-RangerAsBuiltInstallationRegisterSection -Manifest $Manifest))
+            [void]$sections.Add((New-RangerAsBuiltInstallationRegisterSection        -Manifest $Manifest))
+            [void]$sections.Add((New-RangerAsBuiltNodeConfigurationSection           -Manifest $Manifest))
+            [void]$sections.Add((New-RangerAsBuiltNetworkAllocationSection           -Manifest $Manifest))
+            [void]$sections.Add((New-RangerAsBuiltStorageConfigurationSection        -Manifest $Manifest))
+            [void]$sections.Add((New-RangerAsBuiltIdentitySecuritySection            -Manifest $Manifest))
+            [void]$sections.Add((New-RangerAsBuiltAzureIntegrationSection            -Manifest $Manifest))
+            [void]$sections.Add((New-RangerAsBuiltValidationRecordSection            -Manifest $Manifest))
+            [void]$sections.Add((New-RangerAsBuiltDeviationsSection                  -Manifest $Manifest))
         }
+
         [void]$sections.Add((New-RangerAsBuiltSignOffSection))
     }
 
     return [ordered]@{
-        Title           = ((Get-RangerReportTierDefinitions | Where-Object { $_.Name -eq $Tier } | Select-Object -First 1).Title)
+        Title           = ((Get-RangerReportTierDefinitions -Mode $Mode | Where-Object { $_.Name -eq $Tier } | Select-Object -First 1).Title)
         Tier            = $Tier
         ClusterName     = $summary.ClusterName
         Mode            = $Mode
@@ -736,8 +754,8 @@ function New-RangerReportPayload {
         Sections        = @($sections)
         Version         = $Manifest.run.toolVersion
         GeneratedAt     = $Manifest.run.endTimeUtc
-        # Issue #73: Visual stats passed to HTML renderer
-        VisualStats     = [ordered]@{
+        # Issue #73: Visual stats passed to HTML renderer (current-state only — #194).
+        VisualStats     = if ($Mode -eq 'as-built') { $null } else { [ordered]@{
             healthLights = @(
                 [ordered]@{ label = 'Overall Health';      color = $summary.OverallHealthColor }
                 [ordered]@{ label = 'Azure Integration';   color = $summary.AzureIntegrationColor }
@@ -751,7 +769,7 @@ function New-RangerReportPayload {
                 [ordered]@{ label = 'Monitoring coverage';  percent = $summary.MonitoringCoveragePercent }
                 [ordered]@{ label = 'Backup coverage';      percent = $summary.BackupCoveragePercent }
             )
-        }
+        } }
     }
 }
 
@@ -1015,8 +1033,17 @@ function New-RangerHtmlSignOffTable {
 function ConvertTo-RangerHtmlReport {
     param(
         [Parameter(Mandatory = $true)]
-        [System.Collections.IDictionary]$Report
+        [System.Collections.IDictionary]$Report,
+
+        # v1.5.0 (#192): when provided, SVG diagrams from this folder are
+        # embedded inline in an Architecture Diagrams section.
+        [string]$DiagramsPath
     )
+
+    $isAsBuilt = ($Report.Mode -eq 'as-built')
+    $modeSubtitle = if ($isAsBuilt) { 'Post-Deployment As-Built Package' } else { 'Live Discovery Report' }
+    $classification = if ($isAsBuilt) { 'CONFIDENTIAL — CUSTOMER DELIVERABLE' } else { 'INTERNAL — DISCOVERY REPORT' }
+    $bodyClass = if ($isAsBuilt) { 'mode-as-built' } else { 'mode-current-state' }
 
     $tocHtml = @(
         foreach ($heading in @($Report.TableOfContents)) {
@@ -1120,6 +1147,64 @@ function ConvertTo-RangerHtmlReport {
         ) -join [Environment]::NewLine
     }
 
+    # v1.5.0 (#192): inline architecture diagrams when SVG files are present.
+    $diagramsHtml = ''
+    if ($DiagramsPath -and (Test-Path -Path $DiagramsPath)) {
+        $svgFiles = @(Get-ChildItem -Path $DiagramsPath -Filter '*.svg' -File -ErrorAction SilentlyContinue | Sort-Object Name)
+        if ($svgFiles.Count -gt 0) {
+            $diagramBlocks = @(
+                foreach ($svg in $svgFiles) {
+                    $title = ($svg.BaseName -replace '^[^-]+-(?:[^-]+-)*\d+T\d+Z-', '') -replace '-', ' '
+                    $title = (Get-Culture).TextInfo.ToTitleCase($title)
+                    try {
+                        $raw = Get-Content -Path $svg.FullName -Raw -ErrorAction Stop
+                        $clean = ($raw -replace '<\?xml[^?]*\?>', '') -replace '<!DOCTYPE[^>]*>', ''
+                    } catch {
+                        continue
+                    }
+                    @"
+<figure class="diagram">
+  <figcaption>$([System.Net.WebUtility]::HtmlEncode($title))</figcaption>
+  <div class="diagram-body">$clean</div>
+</figure>
+"@
+                }
+            ) -join [Environment]::NewLine
+
+            if ($diagramBlocks.Trim().Length -gt 0) {
+                $diagramsHtml = @"
+<section class="diagrams">
+  <h2>Architecture Diagrams</h2>
+  $diagramBlocks
+</section>
+"@
+            }
+        }
+    }
+
+    # Strengthen finding callouts (#192): each severity gets its own styled box.
+    $findingHtml = if (@($Report.Findings).Count -eq 0) {
+        '<p class="data-unavailable">No findings were recorded for this output tier.</p>'
+    }
+    else {
+        @(
+            foreach ($finding in $Report.Findings) {
+                $sev = [string]$finding.severity
+                @"
+<article class="callout callout-$sev">
+  <header class="callout-head">
+    <span class="callout-badge">$([System.Net.WebUtility]::HtmlEncode($sev.ToUpperInvariant()))</span>
+    <h3>$([System.Net.WebUtility]::HtmlEncode([string]$finding.title))</h3>
+  </header>
+  <p>$([System.Net.WebUtility]::HtmlEncode([string]$finding.description))</p>
+  <p><strong>Current state:</strong> $([System.Net.WebUtility]::HtmlEncode([string]$finding.currentState))</p>
+  <p><strong>Recommendation:</strong> $([System.Net.WebUtility]::HtmlEncode([string]$finding.recommendation))</p>
+</article>
+"@
+            }
+        ) -join [Environment]::NewLine
+    }
+
     @"
 <!DOCTYPE html>
 <html lang="en">
@@ -1127,56 +1212,105 @@ function ConvertTo-RangerHtmlReport {
   <meta charset="utf-8" />
   <title>$([System.Net.WebUtility]::HtmlEncode($Report.Title))</title>
   <style>
-        :root { color-scheme: light; }
-        body { font-family: Segoe UI, Arial, sans-serif; margin: 0; color: #16202a; background: linear-gradient(180deg, #f8fbff 0%, #eef6fb 100%); }
-        .shell { max-width: 1280px; margin: 0 auto; padding: 2rem; }
-        header { border-bottom: 2px solid #0e7490; margin-bottom: 1.5rem; padding-bottom: 1rem; }
-    h1, h2, h3 { color: #0f172a; }
-    .meta { color: #475569; }
+        :root { color-scheme: light; --page-max: 1280px; }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
+        body { font-family: Segoe UI, Arial, sans-serif; color: #16202a; background: #f4f7fb; }
+        body.mode-as-built { background: #ffffff; }
+        .shell { max-width: var(--page-max); margin: 0 auto; padding: 2rem; }
+        .banner { font-size: 0.72rem; letter-spacing: 0.14em; font-weight: 700; text-transform: uppercase; padding: 0.4rem 1rem; border-radius: 4px; display: inline-block; margin-bottom: 0.75rem; }
+        .banner-as-built { background: #0f172a; color: #f8fafc; }
+        .banner-current-state { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+        header.report-head { border-bottom: 2px solid #0f172a; margin-bottom: 1.5rem; padding-bottom: 1rem; }
+        body.mode-as-built header.report-head { border-bottom-color: #0f172a; }
+        h1 { margin: 0.25rem 0 0.15rem; font-size: 1.9rem; color: #0f172a; }
+        h1 .subtitle { display: block; font-size: 0.95rem; font-weight: 500; color: #475569; margin-top: 0.3rem; }
+        h2 { color: #0f172a; margin-top: 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.35rem; font-size: 1.25rem; }
+        h3 { color: #0f172a; margin: 0.25rem 0 0.5rem; font-size: 1.05rem; }
+        .meta { color: #475569; margin: 0.15rem 0; font-size: 0.9rem; }
         .hero { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; align-items: start; }
-        .panel { background: rgba(255,255,255,0.92); border: 1px solid #dbe7ef; border-radius: 16px; padding: 1rem 1.25rem; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06); }
+        .panel { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem 1.25rem; }
         .toc ul, .recommendations ul { margin: 0.5rem 0 0 1rem; }
-        .collector-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin: 1rem 0 1.5rem; }
-        .collector-card { border-radius: 14px; padding: 0.85rem 1rem; background: #ffffff; border: 1px solid #d7e3ed; }
-        .collector-card.status-success { border-color: #86efac; }
-        .collector-card.status-partial { border-color: #fbbf24; }
-        .collector-card.status-failed { border-color: #fca5a5; }
-        .collector-card.status-skipped { border-color: #cbd5e1; }
-    .finding { border-left: 4px solid #94a3b8; padding: 0.75rem 1rem; margin: 1rem 0; background: #f8fafc; }
-    .finding-critical { border-left-color: #b91c1c; }
-    .finding-warning { border-left-color: #d97706; }
-    .finding-good { border-left-color: #15803d; }
-    .finding-informational { border-left-color: #2563eb; }
-        section { margin: 1rem 0; background: rgba(255,255,255,0.92); border: 1px solid #dbe7ef; border-radius: 16px; padding: 1rem 1.25rem; }
+        .collector-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; margin: 1rem 0 1.5rem; }
+        .collector-card { border-radius: 8px; padding: 0.75rem 1rem; background: #ffffff; border: 1px solid #e2e8f0; border-left: 4px solid #94a3b8; }
+        .collector-card.status-success { border-left-color: #16a34a; }
+        .collector-card.status-partial { border-left-color: #d97706; }
+        .collector-card.status-failed  { border-left-color: #dc2626; }
+        .collector-card.status-skipped { border-left-color: #94a3b8; }
+        section { margin: 1rem 0; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem 1.25rem; }
+        body.mode-as-built section, body.mode-as-built .panel { border-radius: 4px; }
         @media (max-width: 900px) { .hero { grid-template-columns: 1fr; } }
-        /* Stats banner (traffic lights + capacity bars) */
-        .stats-banner { display: flex; gap: 2rem; flex-wrap: wrap; background: rgba(255,255,255,0.95); border: 1px solid #dbe7ef; border-radius: 16px; padding: 1rem 1.5rem; margin-bottom: 1rem; align-items: flex-start; }
+
+        /* Stats banner (traffic lights + capacity bars) — current-state only */
+        .stats-banner { display: flex; gap: 2rem; flex-wrap: wrap; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem 1.5rem; margin-bottom: 1rem; align-items: flex-start; }
         .stats-lights { display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center; }
         .tl-item { display: flex; align-items: center; gap: 6px; font-size: 0.92em; font-weight: 500; white-space: nowrap; }
         .stats-bars { display: flex; flex-direction: column; gap: 0.4rem; }
         .cap-item { display: flex; align-items: center; gap: 8px; font-size: 0.88em; }
         .cap-label { min-width: 160px; color: #475569; }
-        /* Data tables (#168) */
+
+        /* Data tables — fixed layout, constrained widths (#192) */
         .table-wrapper { overflow-x: auto; margin: 0.75rem 0; }
-        .data-table { width: 100%; border-collapse: collapse; font-size: 0.875em; }
-        .data-table caption { text-align: left; font-size: 0.85em; color: #64748b; padding-bottom: 0.4rem; }
-        .data-table thead th { background: #1e3a5f; color: #ffffff; padding: 0.45rem 0.75rem; text-align: left; font-weight: 600; white-space: nowrap; }
-        .data-table tbody td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+        .data-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 0.875em; word-wrap: break-word; overflow-wrap: anywhere; }
+        .data-table caption { text-align: left; font-size: 0.85em; color: #64748b; padding-bottom: 0.4rem; caption-side: bottom; font-style: italic; }
+        .data-table thead th { background: #1e3a5f; color: #ffffff; padding: 0.5rem 0.75rem; text-align: left; font-weight: 600; border-bottom: 2px solid #0f172a; }
+        body.mode-as-built .data-table thead th { background: #0f172a; }
+        .data-table tbody td { padding: 0.45rem 0.75rem; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
         .data-table tbody tr:nth-child(even) { background: #f8fafc; }
-        .data-table tbody tr:hover { background: #eff6ff; }
-        .kv-table { border-collapse: collapse; font-size: 0.9em; width: 100%; max-width: 640px; }
-        .kv-table th { color: #475569; font-weight: 600; padding: 0.3rem 1.5rem 0.3rem 0; width: 220px; vertical-align: top; text-align: left; }
-        .kv-table td { padding: 0.3rem 0; color: #0f172a; }
+
+        /* Key-value grid (#192): fixed key column width */
+        .kv-table { border-collapse: collapse; font-size: 0.9em; width: 100%; max-width: 760px; table-layout: fixed; }
+        .kv-table th { color: #475569; font-weight: 600; padding: 0.35rem 1.5rem 0.35rem 0; width: 240px; vertical-align: top; text-align: left; border-bottom: 1px solid #f1f5f9; }
+        .kv-table td { padding: 0.35rem 0; color: #0f172a; border-bottom: 1px solid #f1f5f9; word-wrap: break-word; }
+
+        /* Findings as callouts (#192) */
+        .callout { border-left: 4px solid #94a3b8; padding: 0.85rem 1rem; margin: 0.9rem 0; background: #f8fafc; border-radius: 0 6px 6px 0; }
+        .callout-head { display: flex; align-items: baseline; gap: 0.6rem; }
+        .callout-head h3 { margin: 0; font-size: 1rem; }
+        .callout-badge { font-size: 0.7rem; letter-spacing: 0.08em; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 3px; background: #cbd5e1; color: #0f172a; }
+        .callout-critical      { background: #fef2f2; border-left-color: #b91c1c; }
+        .callout-critical      .callout-badge { background: #b91c1c; color: #fff; }
+        .callout-warning       { background: #fff7ed; border-left-color: #d97706; }
+        .callout-warning       .callout-badge { background: #d97706; color: #fff; }
+        .callout-informational { background: #eff6ff; border-left-color: #2563eb; }
+        .callout-informational .callout-badge { background: #2563eb; color: #fff; }
+        .callout-good          { background: #f0fdf4; border-left-color: #15803d; }
+        .callout-good          .callout-badge { background: #15803d; color: #fff; }
+
+        /* Sign-off table (#192): visible signature lines */
         .sign-off-note { color: #64748b; font-size: 0.9em; margin-bottom: 1rem; }
-        .sign-off-table td { min-width: 130px; height: 44px; }
+        .sign-off-table { table-layout: fixed; }
+        .sign-off-table td { height: 48px; border-bottom: 1px solid #475569; }
         .data-unavailable { color: #94a3b8; font-style: italic; padding: 0.4rem 0; font-size: 0.9em; }
+
+        /* Diagrams section (#192): inline SVG figures */
+        .diagrams figure.diagram { margin: 0 0 1.25rem; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem; background: #fafbfc; page-break-inside: avoid; }
+        .diagrams figure.diagram figcaption { font-weight: 600; color: #334155; margin-bottom: 0.5rem; font-size: 0.95rem; }
+        .diagrams .diagram-body svg { max-width: 100%; height: auto; display: block; }
+
+        /* WAF RAG coloring on score cells (#192) */
+        .waf-score-red   { background: #fee2e2 !important; color: #991b1b; font-weight: 600; }
+        .waf-score-amber { background: #fef3c7 !important; color: #92400e; font-weight: 600; }
+        .waf-score-green { background: #dcfce7 !important; color: #166534; font-weight: 600; }
+
+        /* Print CSS (#192) */
+        @media print {
+            body { background: #ffffff; }
+            .shell { max-width: none; padding: 0.75in; }
+            section, .panel, .stats-banner, .callout, .diagrams figure.diagram { break-inside: avoid; box-shadow: none; }
+            header.report-head { break-after: avoid; }
+            h2 { break-after: avoid; }
+            .data-table { font-size: 0.78em; }
+            .collector-grid { grid-template-columns: repeat(2, 1fr); }
+            a { color: inherit; text-decoration: none; }
+        }
   </style>
 </head>
-<body>
+<body class="$bodyClass">
     <div class="shell">
-        <header>
-            <h1>$([System.Net.WebUtility]::HtmlEncode($Report.Title))</h1>
-            <p class="meta">Cluster: $([System.Net.WebUtility]::HtmlEncode($Report.ClusterName))</p>
+        <header class="report-head">
+            <span class="banner banner-$(if ($isAsBuilt) { 'as-built' } else { 'current-state' })">$([System.Net.WebUtility]::HtmlEncode($classification))</span>
+            <h1>$([System.Net.WebUtility]::HtmlEncode($Report.Title))<span class="subtitle">$([System.Net.WebUtility]::HtmlEncode($modeSubtitle)) — $([System.Net.WebUtility]::HtmlEncode($Report.ClusterName))</span></h1>
             <p class="meta">Mode: $([System.Net.WebUtility]::HtmlEncode($Report.Mode)) | Ranger Version: $([System.Net.WebUtility]::HtmlEncode($Report.Version)) | Generated: $([System.Net.WebUtility]::HtmlEncode($Report.GeneratedAt))</p>
         </header>
         $statsBannerHtml
@@ -1201,6 +1335,7 @@ function ConvertTo-RangerHtmlReport {
             </div>
         </section>
         $sectionHtml
+        $diagramsHtml
         <section>
             <h2>Findings</h2>
             $findingHtml

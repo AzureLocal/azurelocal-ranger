@@ -7,7 +7,7 @@ endobj
 << /Type /Pages /Count 4 /Kids [4 0 R 6 0 R 8 0 R 10 0 R] >>
 endobj
 3 0 obj
-<< /Length 1728 >>
+<< /Length 1848 >>
 stream
 BT
 /F1 10 Tf
@@ -79,8 +79,6 @@ T*
 T*
 (- Readiness Snapshot) Tj
 T*
-(- Health Status) Tj
-T*
 (- Environment Overview) Tj
 T*
 (- Topology and Operating Model) Tj
@@ -93,7 +91,7 @@ T*
 T*
 (- Capacity Summary) Tj
 T*
-(- Sign-Off) Tj
+(- Acceptance and Sign-Off) Tj
 T*
 ( ) Tj
 T*
@@ -101,17 +99,19 @@ T*
 T*
 (----------------) Tj
 T*
-(Environment:                 azlocal-iic-01) Tj
+(Document Title:              Azure Local As-Built Documentation ? azlocal-iic-01) Tj
 T*
-(Package ID:                  azlocal-iic-01-as-built-20260416T180412Z) Tj
+(Package ID:                  azlocal-iic-01-as-built-20260416T231555Z) Tj
 T*
 (Report Tier:                 executive) Tj
 T*
-(Tool Version:                1.4.2) Tj
+(Revision:                    1.0 \\(initial handoff\\)) Tj
 T*
-(Discovery Run Completed:     4/6/2026 12:08:32 PM) Tj
+(Classification:              CONFIDENTIAL ? CUSTOMER DELIVERABLE) Tj
 T*
-(Schema Version:              1.1.0-draft) Tj
+(Prepared By Azure Local Ranger v1.4.2: ) Tj
+T*
+(Prepared On:                 4/6/2026 12:08:32 PM) Tj
 T*
 ET
 
@@ -121,12 +121,14 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 11 0 R >> >> /Contents 3 0 R >>
 endobj
 5 0 obj
-<< /Length 1838 >>
+<< /Length 1701 >>
 stream
 BT
 /F1 10 Tf
 50 780 Td
 14 TL
+(Schema Version:              1.1.0-draft) Tj
+T*
 (Document Status:             FINAL ? AS-BUILT HANDOFF) Tj
 T*
 ( ) Tj
@@ -164,20 +166,6 @@ T*
 (- Successful collectors: 7 of 7) Tj
 T*
 (- Partial or failed collectors: 0) Tj
-T*
-( ) Tj
-T*
-(Health Status) Tj
-T*
-(-------------) Tj
-T*
-(- Overall health: GREEN \\( critical,  warning findings\\)) Tj
-T*
-(- Azure integration: GREEN \\(10 Azure resources discovered\\)) Tj
-T*
-(- Security posture: GRAY \\(Secured-Core enabled on  node\\(s\\)\\)) Tj
-T*
-(- Monitoring coverage: GREEN \\(100% of nodes have Azure Monitor Agent\\)) Tj
 T*
 ( ) Tj
 T*
@@ -227,20 +215,6 @@ T*
 T*
 (- Physical disks: 24) Tj
 T*
-ET
-
-endstream
-endobj
-6 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 11 0 R >> >> /Contents 5 0 R >>
-endobj
-7 0 obj
-<< /Length 2075 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
 (- Network adapters: 12) Tj
 T*
 (- VMs discovered: 5) Tj
@@ -253,6 +227,20 @@ T*
 T*
 ( ) Tj
 T*
+ET
+
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 11 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Length 2231 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
 (Operational Risk Summary) Tj
 T*
 (------------------------) Tj
@@ -319,9 +307,9 @@ T*
 T*
 ( ) Tj
 T*
-(Sign-Off) Tj
+(Acceptance and Sign-Off) Tj
 T*
-(--------) Tj
+(-----------------------) Tj
 T*
 (Role                         Name             Date         Signature) Tj
 T*
@@ -341,20 +329,6 @@ T*
 T*
 (- [WARNING] One or more node certificates expire within 90 days: Review certificate) Tj
 T*
-ET
-
-endstream
-endobj
-8 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 11 0 R >> >> /Contents 7 0 R >>
-endobj
-9 0 obj
-<< /Length 1212 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
 (ownership and renew expiring node certificates before handoff.) Tj
 T*
 (- [WARNING] iDRAC firmware below recommended baseline on all nodes: Update iDRAC firmware) Tj
@@ -367,6 +341,20 @@ T*
 T*
 (--------) Tj
 T*
+ET
+
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 11 0 R >> >> /Contents 7 0 R >>
+endobj
+9 0 obj
+<< /Length 910 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
 ([WARNING] One or more node certificates expire within 90 days) Tj
 T*
 (  Identity posture data indicates certificate on azl-iic-n01 expires within 90 days.) Tj
@@ -410,8 +398,8 @@ endobj
 xref
 0 12
 0000000000 65535 f 
-0000000017 00000 n `n0000000066 00000 n `n0000000142 00000 n `n0000001922 00000 n `n0000002049 00000 n `n0000003939 00000 n `n0000004066 00000 n `n0000006193 00000 n `n0000006320 00000 n `n0000007584 00000 n `n0000007712 00000 n `ntrailer
+0000000017 00000 n `n0000000066 00000 n `n0000000142 00000 n `n0000002042 00000 n `n0000002169 00000 n `n0000003922 00000 n `n0000004049 00000 n `n0000006332 00000 n `n0000006459 00000 n `n0000007420 00000 n `n0000007548 00000 n `ntrailer
 << /Size 12 /Root 1 0 R >>
 startxref
-7783
+7619
 %%EOF
