@@ -4,7 +4,7 @@
 << /Type /Catalog /Pages 2 0 R >>
 endobj
 2 0 obj
-<< /Type /Pages /Count 16 /Kids [4 0 R 6 0 R 8 0 R 10 0 R 12 0 R 14 0 R 16 0 R 18 0 R 20 0 R 22 0 R 24 0 R 26 0 R 28 0 R 30 0 R 32 0 R 34 0 R] >>
+<< /Type /Pages /Count 10 /Kids [4 0 R 6 0 R 8 0 R 10 0 R 12 0 R 14 0 R 16 0 R 18 0 R 20 0 R 22 0 R] >>
 endobj
 3 0 obj
 << /Length 1644 >>
@@ -118,7 +118,7 @@ ET
 endstream
 endobj
 4 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 3 0 R >>
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 3 0 R >>
 endobj
 5 0 obj
 << /Length 1860 >>
@@ -232,10 +232,10 @@ ET
 endstream
 endobj
 6 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 5 0 R >>
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 5 0 R >>
 endobj
 7 0 obj
-<< /Length 1431 >>
+<< /Length 1960 >>
 stream
 BT
 /F1 10 Tf
@@ -275,51 +275,21 @@ T*
 T*
 (--------------) Tj
 T*
-(Node  |  Model  |  State  |  OS  |  OS Build  |  CPU Sockets  |  RAM \\(GiB\\)) Tj
+(Node  |  Model  |  State  |  OS  |  OS Version / Build  |  Logical CPUs  |  RAM \\(GiB\\)) Tj
 T*
 (--------------------------------------------------------------------------------) Tj
 T*
-(azl-iic-n01) Tj
+(azl-iic-n01  |  PowerEdge R760  |  Up  |  Microsoft Azure Stack HCI  |  10.0.25398.1189  |) Tj
 T*
-(PowerEdge R760) Tj
+(64  |  512) Tj
 T*
-(Up) Tj
+(azl-iic-n02  |  PowerEdge R760  |  Up  |  Microsoft Azure Stack HCI  |  10.0.25398.1189  |) Tj
 T*
-(?) Tj
+(64  |  512) Tj
 T*
-(?) Tj
+(azl-iic-n03  |  PowerEdge R760  |  Up  |  Microsoft Azure Stack HCI  |  10.0.25398.1189  |) Tj
 T*
-(?) Tj
-T*
-(512) Tj
-T*
-(azl-iic-n02) Tj
-T*
-(PowerEdge R760) Tj
-T*
-(Up) Tj
-T*
-(?) Tj
-T*
-(?) Tj
-T*
-(?) Tj
-T*
-(512) Tj
-T*
-(azl-iic-n03) Tj
-T*
-(PowerEdge R760) Tj
-T*
-(Up) Tj
-T*
-(?) Tj
-T*
-(?) Tj
-T*
-(?) Tj
-T*
-(512) Tj
+(64  |  512) Tj
 T*
 ( ) Tj
 T*
@@ -341,20 +311,6 @@ T*
 T*
 (- workload-identity-azure: success \\(\\)) Tj
 T*
-ET
-
-endstream
-endobj
-8 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 7 0 R >>
-endobj
-9 0 obj
-<< /Length 2339 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
 ( ) Tj
 T*
 (Operational Risk Summary) Tj
@@ -385,6 +341,20 @@ T*
 T*
 (- Total nodes: 3) Tj
 T*
+ET
+
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 7 0 R >>
+endobj
+9 0 obj
+<< /Length 2587 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
 (- AKS clusters: 1) Tj
 T*
 (- Arc-connected machines: 1) Tj
@@ -455,79 +425,15 @@ T*
 T*
 (--------------------------------------------------------------------------------) Tj
 T*
-ET
-
-endstream
-endobj
-10 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 9 0 R >>
-endobj
-11 0 obj
-<< /Length 1319 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
-(avd-iic-sh01) Tj
+(avd-iic-sh01  |  Running  |  8  |  16  |  azl-iic-n01  |  2) Tj
 T*
-(Running) Tj
+(avd-iic-sh02  |  Running  |  8  |  16  |  azl-iic-n02  |  2) Tj
 T*
-(8) Tj
+(avd-iic-sh03  |  Running  |  8  |  16  |  azl-iic-n03  |  2) Tj
 T*
-(16) Tj
+(arc-iic-vm01  |  Running  |  4  |  8  |  azl-iic-n01  |  2) Tj
 T*
-(azl-iic-n01) Tj
-T*
-(2) Tj
-T*
-(avd-iic-sh02) Tj
-T*
-(Running) Tj
-T*
-(8) Tj
-T*
-(16) Tj
-T*
-(azl-iic-n02) Tj
-T*
-(2) Tj
-T*
-(avd-iic-sh03) Tj
-T*
-(Running) Tj
-T*
-(8) Tj
-T*
-(16) Tj
-T*
-(azl-iic-n03) Tj
-T*
-(2) Tj
-T*
-(arc-iic-vm01) Tj
-T*
-(Running) Tj
-T*
-(4) Tj
-T*
-(8) Tj
-T*
-(azl-iic-n01) Tj
-T*
-(2) Tj
-T*
-(arc-iic-vm02) Tj
-T*
-(Running) Tj
-T*
-(4) Tj
-T*
-(8) Tj
-T*
-(azl-iic-n02) Tj
-T*
-(2) Tj
+(arc-iic-vm02  |  Running  |  4  |  8  |  azl-iic-n02  |  2) Tj
 T*
 ( ) Tj
 T*
@@ -549,6 +455,20 @@ T*
 T*
 (- Avg CPU utilization \\(all nodes\\): 38.3%) Tj
 T*
+ET
+
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 9 0 R >>
+endobj
+11 0 obj
+<< /Length 2229 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
 (- Avg available memory \\(all nodes\\): 176 GiB) Tj
 T*
 ( ) Tj
@@ -563,33 +483,7 @@ T*
 T*
 (--------------------------------------------------------------------------------) Tj
 T*
-(?) Tj
-T*
-(0) Tj
-T*
-(0) Tj
-T*
-ET
-
-endstream
-endobj
-12 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 11 0 R >>
-endobj
-13 0 obj
-<< /Length 1732 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
-(0) Tj
-T*
-(0) Tj
-T*
-(0) Tj
-T*
-(?) Tj
+(?  |  0  |  0  |  0  |  0  |  0  |  ?) Tj
 T*
 ( ) Tj
 T*
@@ -669,69 +563,35 @@ T*
 T*
 (--------------------------------------------------------------------------------) Tj
 T*
-(Reliability) Tj
+(Reliability  |  0%  |  At Risk  |  4 / 6  |  Cluster quorum is configured) Tj
 T*
-(0%) Tj
+(Security  |  0%  |  At Risk  |  1 / 6  |  Secured-Core is enabled on cluster nodes) Tj
 T*
-(At Risk) Tj
-T*
-(4 / 6) Tj
-T*
-(Cluster quorum is configured) Tj
-T*
-(Security) Tj
-T*
-(0%) Tj
+(Cost Optimization  |  0%  |  At Risk  |  1 / 2  |  ESU-eligible VMs are enrolled in) Tj
 T*
 ET
 
 endstream
 endobj
-14 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 13 0 R >>
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 11 0 R >>
 endobj
-15 0 obj
-<< /Length 2033 >>
+13 0 obj
+<< /Length 3915 >>
 stream
 BT
 /F1 10 Tf
 50 780 Td
 14 TL
-(At Risk) Tj
+(Extended Security Updates) Tj
 T*
-(1 / 6) Tj
+(Operational Excellence  |  0%  |  At Risk  |  2 / 6  |  Azure Monitor alert rules are) Tj
 T*
-(Secured-Core is enabled on cluster nodes) Tj
+(defined) Tj
 T*
-(Cost Optimization) Tj
+(Performance Efficiency  |  0%  |  At Risk  |  2 / 3  |  Storage utilization is within safe) Tj
 T*
-(0%) Tj
-T*
-(At Risk) Tj
-T*
-(1 / 2) Tj
-T*
-(ESU-eligible VMs are enrolled in Extended Security Updates) Tj
-T*
-(Operational Excellence) Tj
-T*
-(0%) Tj
-T*
-(At Risk) Tj
-T*
-(2 / 6) Tj
-T*
-(Azure Monitor alert rules are defined) Tj
-T*
-(Performance Efficiency) Tj
-T*
-(0%) Tj
-T*
-(At Risk) Tj
-T*
-(2 / 3) Tj
-T*
-(Storage utilization is within safe limits) Tj
+(limits) Tj
 T*
 ( ) Tj
 T*
@@ -743,263 +603,121 @@ T*
 T*
 (--------------------------------------------------------------------------------) Tj
 T*
-(COST-001) Tj
+(COST-001  |  Cost Optimization  |  informational  |  ESU-eligible VMs are enrolled in) Tj
 T*
-(Cost Optimization) Tj
+(Extended Security Updates  |  Enroll eligible Arc-connected VMs in Extended Security) Tj
 T*
-(informational) Tj
+(Updates via the Azure portal \\(Arc > Extended Security Updates\\). No licensing cost applies) Tj
 T*
-(ESU-eligible VMs are enrolled in Extended Security Updates) Tj
+(for Arc-enrolled VMs on Azure Local.) Tj
 T*
-(Enroll eligible Arc-connected VMs in Extended Security Updates via the Azure portal \\(Arc >) Tj
-T*
-(Extended Security Updates\\). No licensing cost applies for Arc-enrolled VMs on Azure Local.) Tj
-T*
-(OE-002) Tj
-T*
-(Operational Excellence) Tj
-T*
-(warning) Tj
-T*
-(Azure Monitor alert rules are defined) Tj
+(OE-002  |  Operational Excellence  |  warning  |  Azure Monitor alert rules are defined  |) Tj
 T*
 (Define metric and log-based alert rules for key Azure Local health signals: cluster health) Tj
 T*
 (faults, storage capacity threshold, node CPU and memory pressure.) Tj
 T*
-(OE-004) Tj
+(OE-004  |  Operational Excellence  |  warning  |  Azure Monitor Agent is deployed on) Tj
 T*
-(Operational Excellence) Tj
+(cluster nodes  |  Deploy Azure Monitor Agent to all cluster nodes via the Azure Local) Tj
 T*
-(warning) Tj
+(portal \\(Monitoring > Insights\\) or via Arc extension management.) Tj
 T*
-(Azure Monitor Agent is deployed on cluster nodes) Tj
+(OE-003  |  Operational Excellence  |  informational  |  Update maintenance configurations) Tj
 T*
-(Deploy Azure Monitor Agent to all cluster nodes via the Azure Local portal \\(Monitoring >) Tj
+(are defined  |  Create maintenance configurations in Azure Update Manager to schedule) Tj
 T*
-(Insights\\) or via Arc extension management.) Tj
+(regular update windows for the cluster nodes.) Tj
 T*
-(OE-003) Tj
+(OE-005  |  Operational Excellence  |  informational  |  HCI Insights is enabled in Log) Tj
 T*
-(Operational Excellence) Tj
+(Analytics  |  Enable HCI Insights from the Azure Local cluster resource in the Azure portal) Tj
 T*
-(informational) Tj
+(under Monitoring > Insights.) Tj
 T*
-(Update maintenance configurations are defined) Tj
+(PERF-002  |  Performance Efficiency  |  warning  |  Storage utilization is within safe) Tj
 T*
-(Create maintenance configurations in Azure Update Manager to schedule regular update) Tj
+(limits  |  Review the Storage Pool Capacity section of this report. Decommission unused VMs) Tj
 T*
-(windows for the cluster nodes.) Tj
+(or volumes, or expand storage capacity to restore headroom.) Tj
 T*
-(OE-005) Tj
+(REL-004  |  Reliability  |  warning  |  Cluster quorum is configured  |  Verify cluster) Tj
 T*
-(Operational Excellence) Tj
+(quorum configuration via Get-ClusterQuorum. A witness \\(cloud or disk\\) is strongly) Tj
 T*
-(informational) Tj
+(recommended for even-node clusters.) Tj
 T*
-ET
-
-endstream
-endobj
-16 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 15 0 R >>
-endobj
-17 0 obj
-<< /Length 2205 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
-(HCI Insights is enabled in Log Analytics) Tj
+(REL-005  |  Reliability  |  warning  |  No unhealthy storage pools  |  Review pool health) Tj
 T*
-(Enable HCI Insights from the Azure Local cluster resource in the Azure portal under) Tj
+(via Get-StoragePool. Trigger repair jobs and monitor until pools return to Healthy state.) Tj
 T*
-(Monitoring > Insights.) Tj
+(SEC-001  |  Security  |  warning  |  Secured-Core is enabled on cluster nodes  |  Enable) Tj
 T*
-(PERF-002) Tj
+(Secured-Core on all cluster nodes via the Azure Local portal or PowerShell. Verify UEFI) Tj
 T*
-(Performance Efficiency) Tj
+(Secure Boot and TPM 2.0 are active on each node.) Tj
 T*
-(warning) Tj
+(SEC-002  |  Security  |  warning  |  BitLocker encryption is enabled  |  Enable BitLocker) Tj
 T*
-(Storage utilization is within safe limits) Tj
+(on Cluster Shared Volumes using Enable-AzureStackHCIBitLocker or via the Azure Local portal.) Tj
 T*
-(Review the Storage Pool Capacity section of this report. Decommission unused VMs or) Tj
+(SEC-004  |  Security  |  warning  |  No certificates expiring within 90 days  |  Review) Tj
 T*
-(volumes, or expand storage capacity to restore headroom.) Tj
+(certificates approaching expiry using the identitySecurity manifest domain. Renew or rotate) Tj
 T*
-(REL-004) Tj
+(certificates before expiry to prevent service disruption.) Tj
 T*
-(Reliability) Tj
+(SEC-005  |  Security  |  warning  |  Defender for Cloud is enabled  |  Enable Microsoft) Tj
 T*
-(warning) Tj
+(Defender for Cloud via the Azure portal for the subscription hosting the Azure Local) Tj
 T*
-(Cluster quorum is configured) Tj
+(cluster resources.) Tj
 T*
-(Verify cluster quorum configuration via Get-ClusterQuorum. A witness \\(cloud or disk\\) is) Tj
-T*
-(strongly recommended for even-node clusters.) Tj
-T*
-(REL-005) Tj
-T*
-(Reliability) Tj
-T*
-(warning) Tj
-T*
-(No unhealthy storage pools) Tj
-T*
-(Review pool health via Get-StoragePool. Trigger repair jobs and monitor until pools return) Tj
-T*
-(to Healthy state.) Tj
-T*
-(SEC-001) Tj
-T*
-(Security) Tj
-T*
-(warning) Tj
-T*
-(Secured-Core is enabled on cluster nodes) Tj
-T*
-(Enable Secured-Core on all cluster nodes via the Azure Local portal or PowerShell. Verify) Tj
-T*
-(UEFI Secure Boot and TPM 2.0 are active on each node.) Tj
-T*
-(SEC-002) Tj
-T*
-(Security) Tj
-T*
-(warning) Tj
-T*
-(BitLocker encryption is enabled) Tj
-T*
-(Enable BitLocker on Cluster Shared Volumes using Enable-AzureStackHCIBitLocker or via the) Tj
-T*
-(Azure Local portal.) Tj
-T*
-(SEC-004) Tj
-T*
-(Security) Tj
-T*
-(warning) Tj
-T*
-(No certificates expiring within 90 days) Tj
-T*
-(Review certificates approaching expiry using the identitySecurity manifest domain. Renew or) Tj
-T*
-(rotate certificates before expiry to prevent service disruption.) Tj
-T*
-(SEC-005) Tj
-T*
-(Security) Tj
-T*
-(warning) Tj
-T*
-(Defender for Cloud is enabled) Tj
-T*
-(Enable Microsoft Defender for Cloud via the Azure portal for the subscription hosting the) Tj
-T*
-(Azure Local cluster resources.) Tj
-T*
-(SEC-003) Tj
-T*
-(Security) Tj
-T*
-(informational) Tj
-T*
-(WDAC application control policy is present) Tj
+(SEC-003  |  Security  |  informational  |  WDAC application control policy is present  |) Tj
 T*
 (Deploy a WDAC policy via the Azure Local portal \\(Security > Application control\\). Use) Tj
 T*
-ET
-
-endstream
-endobj
-18 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 17 0 R >>
-endobj
-19 0 obj
-<< /Length 1500 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
 (Microsoft's recommended block list as a baseline.) Tj
 T*
 ( ) Tj
 T*
 (WAF Assessment ? Azure Advisor Recommendations) Tj
 T*
+ET
+
+endstream
+endobj
+14 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 13 0 R >>
+endobj
+15 0 obj
+<< /Length 3286 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
 (----------------------------------------------) Tj
 T*
 (Pillar  |  Impact  |  Finding  |  Recommendation) Tj
 T*
 (--------------------------------------------------------------------------------) Tj
 T*
-(?) Tj
+(?  |  High  |  System.Collections.Specialized.OrderedDictionary  |  ?) Tj
 T*
-(High) Tj
+(?  |  High  |  System.Collections.Specialized.OrderedDictionary  |  ?) Tj
 T*
-(System.Collections.Specialized.OrderedDictionary) Tj
+(?  |  High  |  System.Collections.Specialized.OrderedDictionary  |  ?) Tj
 T*
-(?) Tj
+(?  |  Medium  |  System.Collections.Specialized.OrderedDictionary  |  ?) Tj
 T*
-(?) Tj
+(?  |  Medium  |  System.Collections.Specialized.OrderedDictionary  |  ?) Tj
 T*
-(High) Tj
+(?  |  Medium  |  System.Collections.Specialized.OrderedDictionary  |  ?) Tj
 T*
-(System.Collections.Specialized.OrderedDictionary) Tj
+(?  |  Medium  |  System.Collections.Specialized.OrderedDictionary  |  ?) Tj
 T*
-(?) Tj
-T*
-(?) Tj
-T*
-(High) Tj
-T*
-(System.Collections.Specialized.OrderedDictionary) Tj
-T*
-(?) Tj
-T*
-(?) Tj
-T*
-(Medium) Tj
-T*
-(System.Collections.Specialized.OrderedDictionary) Tj
-T*
-(?) Tj
-T*
-(?) Tj
-T*
-(Medium) Tj
-T*
-(System.Collections.Specialized.OrderedDictionary) Tj
-T*
-(?) Tj
-T*
-(?) Tj
-T*
-(Medium) Tj
-T*
-(System.Collections.Specialized.OrderedDictionary) Tj
-T*
-(?) Tj
-T*
-(?) Tj
-T*
-(Medium) Tj
-T*
-(System.Collections.Specialized.OrderedDictionary) Tj
-T*
-(?) Tj
-T*
-(?) Tj
-T*
-(Medium) Tj
-T*
-(System.Collections.Specialized.OrderedDictionary) Tj
-T*
-(?) Tj
+(?  |  Medium  |  System.Collections.Specialized.OrderedDictionary  |  ?) Tj
 T*
 ( ) Tj
 T*
@@ -1025,20 +743,6 @@ T*
 T*
 ( ) Tj
 T*
-ET
-
-endstream
-endobj
-20 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 19 0 R >>
-endobj
-21 0 obj
-<< /Length 1121 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
 (Physical Disk Inventory) Tj
 T*
 (-----------------------) Tj
@@ -1047,503 +751,101 @@ T*
 T*
 (--------------------------------------------------------------------------------) Tj
 T*
-(azl-iic-n01) Tj
+(azl-iic-n01  |  PhysicalDisk 001  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(PhysicalDisk 001) Tj
+(azl-iic-n01  |  PhysicalDisk 002  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(NVMe) Tj
+(azl-iic-n01  |  PhysicalDisk 003  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(1789) Tj
+(azl-iic-n01  |  PhysicalDisk 004  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(Healthy) Tj
+(azl-iic-n01  |  PhysicalDisk 005  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(?) Tj
+(azl-iic-n01  |  PhysicalDisk 006  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(azl-iic-n01) Tj
+(azl-iic-n01  |  PhysicalDisk 007  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(PhysicalDisk 002) Tj
+(azl-iic-n01  |  PhysicalDisk 008  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(NVMe) Tj
+(azl-iic-n02  |  PhysicalDisk 009  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(1789) Tj
+(azl-iic-n02  |  PhysicalDisk 010  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(Healthy) Tj
+(azl-iic-n02  |  PhysicalDisk 011  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(?) Tj
+(azl-iic-n02  |  PhysicalDisk 012  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(azl-iic-n01) Tj
+(azl-iic-n02  |  PhysicalDisk 013  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(PhysicalDisk 003) Tj
+(azl-iic-n02  |  PhysicalDisk 014  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(NVMe) Tj
+(azl-iic-n02  |  PhysicalDisk 015  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(1789) Tj
+(azl-iic-n02  |  PhysicalDisk 016  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(Healthy) Tj
+(azl-iic-n03  |  PhysicalDisk 017  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(?) Tj
+(azl-iic-n03  |  PhysicalDisk 018  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(azl-iic-n01) Tj
+(azl-iic-n03  |  PhysicalDisk 019  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(PhysicalDisk 004) Tj
+(azl-iic-n03  |  PhysicalDisk 020  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(NVMe) Tj
+(azl-iic-n03  |  PhysicalDisk 021  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(1789) Tj
+(azl-iic-n03  |  PhysicalDisk 022  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n01) Tj
-T*
-(PhysicalDisk 005) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n01) Tj
-T*
-(PhysicalDisk 006) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n01) Tj
-T*
-(PhysicalDisk 007) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n01) Tj
-T*
-(PhysicalDisk 008) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
+(azl-iic-n03  |  PhysicalDisk 023  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
 ET
 
 endstream
 endobj
-22 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 21 0 R >>
+16 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 15 0 R >>
 endobj
-23 0 obj
-<< /Length 939 >>
+17 0 obj
+<< /Length 2807 >>
 stream
 BT
 /F1 10 Tf
 50 780 Td
 14 TL
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n02) Tj
-T*
-(PhysicalDisk 009) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n02) Tj
-T*
-(PhysicalDisk 010) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n02) Tj
-T*
-(PhysicalDisk 011) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n02) Tj
-T*
-(PhysicalDisk 012) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n02) Tj
-T*
-(PhysicalDisk 013) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n02) Tj
-T*
-(PhysicalDisk 014) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n02) Tj
-T*
-(PhysicalDisk 015) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n02) Tj
-T*
-(PhysicalDisk 016) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-ET
-
-endstream
-endobj
-24 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 23 0 R >>
-endobj
-25 0 obj
-<< /Length 957 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
-(azl-iic-n03) Tj
-T*
-(PhysicalDisk 017) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n03) Tj
-T*
-(PhysicalDisk 018) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n03) Tj
-T*
-(PhysicalDisk 019) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n03) Tj
-T*
-(PhysicalDisk 020) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n03) Tj
-T*
-(PhysicalDisk 021) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n03) Tj
-T*
-(PhysicalDisk 022) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n03) Tj
-T*
-(PhysicalDisk 023) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n03) Tj
-T*
-(PhysicalDisk 024) Tj
-T*
-(NVMe) Tj
-T*
-(1789) Tj
-T*
-(Healthy) Tj
-T*
-(?) Tj
+(azl-iic-n03  |  PhysicalDisk 024  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
 ( ) Tj
 T*
 (Network Adapter Inventory) Tj
 T*
-ET
-
-endstream
-endobj
-26 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 25 0 R >>
-endobj
-27 0 obj
-<< /Length 1128 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
 (-------------------------) Tj
 T*
 (Node  |  Adapter  |  Link Speed  |  Status  |  MAC Address  |  Driver) Tj
 T*
 (--------------------------------------------------------------------------------) Tj
 T*
-(azl-iic-n01) Tj
+(azl-iic-n01  |  NIC1  |  25000000000  |  Up  |  00:50:56:IIC:0:00  |  ?) Tj
 T*
-(NIC1) Tj
+(azl-iic-n01  |  NIC2  |  25000000000  |  Up  |  00:50:56:IIC:0:01  |  ?) Tj
 T*
-(25000000000) Tj
+(azl-iic-n01  |  NIC3  |  25000000000  |  Up  |  00:50:56:IIC:0:02  |  ?) Tj
 T*
-(Up) Tj
+(azl-iic-n01  |  NIC4  |  25000000000  |  Up  |  00:50:56:IIC:0:03  |  ?) Tj
 T*
-(00:50:56:IIC:0:00) Tj
+(azl-iic-n02  |  NIC1  |  25000000000  |  Up  |  00:50:56:IIC:1:00  |  ?) Tj
 T*
-(?) Tj
+(azl-iic-n02  |  NIC2  |  25000000000  |  Up  |  00:50:56:IIC:1:01  |  ?) Tj
 T*
-(azl-iic-n01) Tj
+(azl-iic-n02  |  NIC3  |  25000000000  |  Up  |  00:50:56:IIC:1:02  |  ?) Tj
 T*
-(NIC2) Tj
+(azl-iic-n02  |  NIC4  |  25000000000  |  Up  |  00:50:56:IIC:1:03  |  ?) Tj
 T*
-(25000000000) Tj
+(azl-iic-n03  |  NIC1  |  25000000000  |  Up  |  00:50:56:IIC:2:00  |  ?) Tj
 T*
-(Up) Tj
+(azl-iic-n03  |  NIC2  |  25000000000  |  Up  |  00:50:56:IIC:2:01  |  ?) Tj
 T*
-(00:50:56:IIC:0:01) Tj
+(azl-iic-n03  |  NIC3  |  25000000000  |  Up  |  00:50:56:IIC:2:02  |  ?) Tj
 T*
-(?) Tj
-T*
-(azl-iic-n01) Tj
-T*
-(NIC3) Tj
-T*
-(25000000000) Tj
-T*
-(Up) Tj
-T*
-(00:50:56:IIC:0:02) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n01) Tj
-T*
-(NIC4) Tj
-T*
-(25000000000) Tj
-T*
-(Up) Tj
-T*
-(00:50:56:IIC:0:03) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n02) Tj
-T*
-(NIC1) Tj
-T*
-(25000000000) Tj
-T*
-(Up) Tj
-T*
-(00:50:56:IIC:1:00) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n02) Tj
-T*
-(NIC2) Tj
-T*
-(25000000000) Tj
-T*
-(Up) Tj
-T*
-(00:50:56:IIC:1:01) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n02) Tj
-T*
-(NIC3) Tj
-T*
-(25000000000) Tj
-T*
-(Up) Tj
-T*
-(00:50:56:IIC:1:02) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n02) Tj
-T*
-(NIC4) Tj
-T*
-(25000000000) Tj
-T*
-(Up) Tj
-T*
-(00:50:56:IIC:1:03) Tj
-T*
-ET
-
-endstream
-endobj
-28 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 27 0 R >>
-endobj
-29 0 obj
-<< /Length 1658 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
-(?) Tj
-T*
-(azl-iic-n03) Tj
-T*
-(NIC1) Tj
-T*
-(25000000000) Tj
-T*
-(Up) Tj
-T*
-(00:50:56:IIC:2:00) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n03) Tj
-T*
-(NIC2) Tj
-T*
-(25000000000) Tj
-T*
-(Up) Tj
-T*
-(00:50:56:IIC:2:01) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n03) Tj
-T*
-(NIC3) Tj
-T*
-(25000000000) Tj
-T*
-(Up) Tj
-T*
-(00:50:56:IIC:2:02) Tj
-T*
-(?) Tj
-T*
-(azl-iic-n03) Tj
-T*
-(NIC4) Tj
-T*
-(25000000000) Tj
-T*
-(Up) Tj
-T*
-(00:50:56:IIC:2:03) Tj
-T*
-(?) Tj
+(azl-iic-n03  |  NIC4  |  25000000000  |  Up  |  00:50:56:IIC:2:03  |  ?) Tj
 T*
 ( ) Tj
 T*
@@ -1595,20 +897,6 @@ T*
 T*
 (- No events recorded in this collection window.) Tj
 T*
-ET
-
-endstream
-endobj
-30 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 29 0 R >>
-endobj
-31 0 obj
-<< /Length 2769 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
 ( ) Tj
 T*
 (Security Audit) Tj
@@ -1623,6 +911,20 @@ T*
 T*
 (Certificates  |  Expiring within 90 days  |  1) Tj
 T*
+ET
+
+endstream
+endobj
+18 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 17 0 R >>
+endobj
+19 0 obj
+<< /Length 2886 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
 (Policy  |  Assignments  |  2) Tj
 T*
 (Policy  |  Exemptions  |  ) Tj
@@ -1709,20 +1011,6 @@ T*
 T*
 (handoff.) Tj
 T*
-ET
-
-endstream
-endobj
-32 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 31 0 R >>
-endobj
-33 0 obj
-<< /Length 1456 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
 (  Affected components: azl-iic-n01) Tj
 T*
 ( ) Tj
@@ -1737,6 +1025,20 @@ T*
 T*
 (  Recommendation: Update iDRAC firmware via Dell OME or Lifecycle Controller during next) Tj
 T*
+ET
+
+endstream
+endobj
+20 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 19 0 R >>
+endobj
+21 0 obj
+<< /Length 1048 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
 (maintenance window.) Tj
 T*
 (  Affected components: azl-iic-n01, azl-iic-n02, azl-iic-n03) Tj
@@ -1777,17 +1079,17 @@ ET
 
 endstream
 endobj
-34 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 33 0 R >>
+22 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 21 0 R >>
 endobj
-35 0 obj
+23 0 obj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
 endobj
 xref
-0 36
+0 24
 0000000000 65535 f 
-0000000017 00000 n `n0000000066 00000 n `n0000000227 00000 n `n0000001923 00000 n `n0000002050 00000 n `n0000003962 00000 n `n0000004089 00000 n `n0000005572 00000 n `n0000005699 00000 n `n0000008090 00000 n `n0000008218 00000 n `n0000009590 00000 n `n0000009719 00000 n `n0000011504 00000 n `n0000011633 00000 n `n0000013719 00000 n `n0000013848 00000 n `n0000016106 00000 n `n0000016235 00000 n `n0000017788 00000 n `n0000017917 00000 n `n0000019091 00000 n `n0000019220 00000 n `n0000020211 00000 n `n0000020340 00000 n `n0000021349 00000 n `n0000021478 00000 n `n0000022659 00000 n `n0000022788 00000 n `n0000024499 00000 n `n0000024628 00000 n `n0000027450 00000 n `n0000027579 00000 n `n0000029088 00000 n `n0000029217 00000 n `ntrailer
-<< /Size 36 /Root 1 0 R >>
+0000000017 00000 n `n0000000066 00000 n `n0000000185 00000 n `n0000001881 00000 n `n0000002008 00000 n `n0000003920 00000 n `n0000004047 00000 n `n0000006059 00000 n `n0000006186 00000 n `n0000008825 00000 n `n0000008953 00000 n `n0000011235 00000 n `n0000011364 00000 n `n0000015332 00000 n `n0000015461 00000 n `n0000018800 00000 n `n0000018929 00000 n `n0000021789 00000 n `n0000021918 00000 n `n0000024857 00000 n `n0000024986 00000 n `n0000026087 00000 n `n0000026216 00000 n `ntrailer
+<< /Size 24 /Root 1 0 R >>
 startxref
-29288
+26287
 %%EOF

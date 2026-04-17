@@ -242,27 +242,9 @@
 </section>
 <section>
   <h2>Node Inventory</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Model</th><th>State</th><th>OS</th><th>OS Build</th><th>CPU Sockets</th><th>RAM (GiB)</th></tr></thead><tbody><tr><td>azl-iic-n01</td></tr>
-<tr><td>PowerEdge R760</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>512</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PowerEdge R760</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>512</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PowerEdge R760</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>512</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Model</th><th>State</th><th>OS</th><th>OS Version / Build</th><th>Logical CPUs</th><th>RAM (GiB)</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td>PowerEdge R760</td><td>Up</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td><td>64</td><td>512</td></tr>
+<tr><td>azl-iic-n02</td><td>PowerEdge R760</td><td>Up</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td><td>64</td><td>512</td></tr>
+<tr><td>azl-iic-n03</td><td>PowerEdge R760</td><td>Up</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td><td>64</td><td>512</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Collector Status</h2>
@@ -316,36 +298,11 @@
 </section>
 <section>
   <h2>VM Inventory</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Name</th><th>State</th><th>vCPU</th><th>RAM (GiB)</th><th>Host Node</th><th>Generation</th></tr></thead><tbody><tr><td>avd-iic-sh01</td></tr>
-<tr><td>Running</td></tr>
-<tr><td>8</td></tr>
-<tr><td>16</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>2</td></tr>
-<tr><td>avd-iic-sh02</td></tr>
-<tr><td>Running</td></tr>
-<tr><td>8</td></tr>
-<tr><td>16</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>2</td></tr>
-<tr><td>avd-iic-sh03</td></tr>
-<tr><td>Running</td></tr>
-<tr><td>8</td></tr>
-<tr><td>16</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>2</td></tr>
-<tr><td>arc-iic-vm01</td></tr>
-<tr><td>Running</td></tr>
-<tr><td>4</td></tr>
-<tr><td>8</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>2</td></tr>
-<tr><td>arc-iic-vm02</td></tr>
-<tr><td>Running</td></tr>
-<tr><td>4</td></tr>
-<tr><td>8</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>2</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Name</th><th>State</th><th>vCPU</th><th>RAM (GiB)</th><th>Host Node</th><th>Generation</th></tr></thead><tbody><tr><td>avd-iic-sh01</td><td>Running</td><td>8</td><td>16</td><td>azl-iic-n01</td><td>2</td></tr>
+<tr><td>avd-iic-sh02</td><td>Running</td><td>8</td><td>16</td><td>azl-iic-n02</td><td>2</td></tr>
+<tr><td>avd-iic-sh03</td><td>Running</td><td>8</td><td>16</td><td>azl-iic-n03</td><td>2</td></tr>
+<tr><td>arc-iic-vm01</td><td>Running</td><td>4</td><td>8</td><td>azl-iic-n01</td><td>2</td></tr>
+<tr><td>arc-iic-vm02</td><td>Running</td><td>4</td><td>8</td><td>azl-iic-n02</td><td>2</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>VM Density Metrics</h2>
@@ -360,13 +317,7 @@
 </section>
 <section>
   <h2>Storage Pool Capacity</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Pool</th><th>Raw (GiB)</th><th>Usable (GiB)</th><th>Used (GiB)</th><th>Reserve (GiB)</th><th>Safe Alloc (GiB)</th><th>Posture</th></tr></thead><tbody><tr><td>—</td></tr>
-<tr><td>0</td></tr>
-<tr><td>0</td></tr>
-<tr><td>0</td></tr>
-<tr><td>0</td></tr>
-<tr><td>0</td></tr>
-<tr><td>—</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Pool</th><th>Raw (GiB)</th><th>Usable (GiB)</th><th>Used (GiB)</th><th>Reserve (GiB)</th><th>Safe Alloc (GiB)</th><th>Posture</th></tr></thead><tbody><tr><td>—</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>—</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>ESU Enrollment</h2>
@@ -404,66 +355,22 @@
 </section>
 <section>
   <h2>WAF Assessment — Scorecard</h2>
-  <div class='table-wrapper'><table class='data-table'><caption>Overall WAF score: 0% (10 of 23 rules passing). Evaluated from saved manifest — no re-collection required.</caption><thead><tr><th>Pillar</th><th>Score</th><th>Status</th><th>Rules Passing</th><th>Top Finding</th></tr></thead><tbody><tr><td>Reliability</td></tr>
-<tr><td>0%</td></tr>
-<tr><td>At Risk</td></tr>
-<tr><td>4 / 6</td></tr>
-<tr><td>Cluster quorum is configured</td></tr>
-<tr><td>Security</td></tr>
-<tr><td>0%</td></tr>
-<tr><td>At Risk</td></tr>
-<tr><td>1 / 6</td></tr>
-<tr><td>Secured-Core is enabled on cluster nodes</td></tr>
-<tr><td>Cost Optimization</td></tr>
-<tr><td>0%</td></tr>
-<tr><td>At Risk</td></tr>
-<tr><td>1 / 2</td></tr>
-<tr><td>ESU-eligible VMs are enrolled in Extended Security Updates</td></tr>
-<tr><td>Operational Excellence</td></tr>
-<tr><td>0%</td></tr>
-<tr><td>At Risk</td></tr>
-<tr><td>2 / 6</td></tr>
-<tr><td>Azure Monitor alert rules are defined</td></tr>
-<tr><td>Performance Efficiency</td></tr>
-<tr><td>0%</td></tr>
-<tr><td>At Risk</td></tr>
-<tr><td>2 / 3</td></tr>
-<tr><td>Storage utilization is within safe limits</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><caption>Overall WAF score: 0% (10 of 23 rules passing). Evaluated from saved manifest — no re-collection required.</caption><thead><tr><th>Pillar</th><th>Score</th><th>Status</th><th>Rules Passing</th><th>Top Finding</th></tr></thead><tbody><tr><td>Reliability</td><td>0%</td><td>At Risk</td><td>4 / 6</td><td>Cluster quorum is configured</td></tr>
+<tr><td>Security</td><td>0%</td><td>At Risk</td><td>1 / 6</td><td>Secured-Core is enabled on cluster nodes</td></tr>
+<tr><td>Cost Optimization</td><td>0%</td><td>At Risk</td><td>1 / 2</td><td>ESU-eligible VMs are enrolled in Extended Security Updates</td></tr>
+<tr><td>Operational Excellence</td><td>0%</td><td>At Risk</td><td>2 / 6</td><td>Azure Monitor alert rules are defined</td></tr>
+<tr><td>Performance Efficiency</td><td>0%</td><td>At Risk</td><td>2 / 3</td><td>Storage utilization is within safe limits</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>WAF Assessment — Azure Advisor Recommendations</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Pillar</th><th>Impact</th><th>Finding</th><th>Recommendation</th></tr></thead><tbody><tr><td>—</td></tr>
-<tr><td>High</td></tr>
-<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>High</td></tr>
-<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>High</td></tr>
-<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>Medium</td></tr>
-<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>Medium</td></tr>
-<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>Medium</td></tr>
-<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>Medium</td></tr>
-<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>Medium</td></tr>
-<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
-<tr><td>—</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Pillar</th><th>Impact</th><th>Finding</th><th>Recommendation</th></tr></thead><tbody><tr><td>—</td><td>High</td><td>System.Collections.Specialized.OrderedDictionary</td><td>—</td></tr>
+<tr><td>—</td><td>High</td><td>System.Collections.Specialized.OrderedDictionary</td><td>—</td></tr>
+<tr><td>—</td><td>High</td><td>System.Collections.Specialized.OrderedDictionary</td><td>—</td></tr>
+<tr><td>—</td><td>Medium</td><td>System.Collections.Specialized.OrderedDictionary</td><td>—</td></tr>
+<tr><td>—</td><td>Medium</td><td>System.Collections.Specialized.OrderedDictionary</td><td>—</td></tr>
+<tr><td>—</td><td>Medium</td><td>System.Collections.Specialized.OrderedDictionary</td><td>—</td></tr>
+<tr><td>—</td><td>Medium</td><td>System.Collections.Specialized.OrderedDictionary</td><td>—</td></tr>
+<tr><td>—</td><td>Medium</td><td>System.Collections.Specialized.OrderedDictionary</td><td>—</td></tr></tbody></table></div>
 </section>
         <section class="diagrams">
   <h2>Architecture Diagrams</h2>

@@ -48,7 +48,7 @@
 ## Document Control
 
 **Document Title**: Azure Local As-Built Documentation — azlocal-iic-01
-**Package ID**: azlocal-iic-01-as-built-20260417T001252Z
+**Package ID**: azlocal-iic-01-as-built-20260417T003248Z
 **Report Tier**: technical
 **Revision**: 1.0 (initial handoff)
 **Classification**: CONFIDENTIAL — CUSTOMER DELIVERABLE
@@ -106,29 +106,11 @@
 
 ## Node Inventory
 
-| Node | Model | State | OS | OS Build | CPU Sockets | RAM (GiB) |
+| Node | Model | State | OS | OS Version / Build | Logical CPUs | RAM (GiB) |
 | --- --- --- --- --- --- --- |
-| azl-iic-n01 |
-| PowerEdge R760 |
-| Up |
-| — |
-| — |
-| — |
-| 512 |
-| azl-iic-n02 |
-| PowerEdge R760 |
-| Up |
-| — |
-| — |
-| — |
-| 512 |
-| azl-iic-n03 |
-| PowerEdge R760 |
-| Up |
-| — |
-| — |
-| — |
-| 512 |
+| azl-iic-n01 | PowerEdge R760 | Up | Microsoft Azure Stack HCI | 10.0.25398.1189 | 64 | 512 |
+| azl-iic-n02 | PowerEdge R760 | Up | Microsoft Azure Stack HCI | 10.0.25398.1189 | 64 | 512 |
+| azl-iic-n03 | PowerEdge R760 | Up | Microsoft Azure Stack HCI | 10.0.25398.1189 | 64 | 512 |
 
 ## Collector Status
 
@@ -184,36 +166,11 @@
 
 | Name | State | vCPU | RAM (GiB) | Host Node | Generation |
 | --- --- --- --- --- --- |
-| avd-iic-sh01 |
-| Running |
-| 8 |
-| 16 |
-| azl-iic-n01 |
-| 2 |
-| avd-iic-sh02 |
-| Running |
-| 8 |
-| 16 |
-| azl-iic-n02 |
-| 2 |
-| avd-iic-sh03 |
-| Running |
-| 8 |
-| 16 |
-| azl-iic-n03 |
-| 2 |
-| arc-iic-vm01 |
-| Running |
-| 4 |
-| 8 |
-| azl-iic-n01 |
-| 2 |
-| arc-iic-vm02 |
-| Running |
-| 4 |
-| 8 |
-| azl-iic-n02 |
-| 2 |
+| avd-iic-sh01 | Running | 8 | 16 | azl-iic-n01 | 2 |
+| avd-iic-sh02 | Running | 8 | 16 | azl-iic-n02 | 2 |
+| avd-iic-sh03 | Running | 8 | 16 | azl-iic-n03 | 2 |
+| arc-iic-vm01 | Running | 4 | 8 | azl-iic-n01 | 2 |
+| arc-iic-vm02 | Running | 4 | 8 | azl-iic-n02 | 2 |
 
 ## VM Density Metrics
 
@@ -230,13 +187,7 @@
 
 | Pool | Raw (GiB) | Usable (GiB) | Used (GiB) | Reserve (GiB) | Safe Alloc (GiB) | Posture |
 | --- --- --- --- --- --- --- |
-| — |
-| 0 |
-| 0 |
-| 0 |
-| 0 |
-| 0 |
-| — |
+| — | 0 | 0 | 0 | 0 | 0 | — |
 
 ## ESU Enrollment
 
@@ -287,227 +238,47 @@
 
 | Node | Model | Media Type | Size (GiB) | Health | Firmware |
 | --- --- --- --- --- --- |
-| azl-iic-n01 |
-| PhysicalDisk 001 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n01 |
-| PhysicalDisk 002 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n01 |
-| PhysicalDisk 003 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n01 |
-| PhysicalDisk 004 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n01 |
-| PhysicalDisk 005 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n01 |
-| PhysicalDisk 006 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n01 |
-| PhysicalDisk 007 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n01 |
-| PhysicalDisk 008 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n02 |
-| PhysicalDisk 009 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n02 |
-| PhysicalDisk 010 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n02 |
-| PhysicalDisk 011 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n02 |
-| PhysicalDisk 012 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n02 |
-| PhysicalDisk 013 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n02 |
-| PhysicalDisk 014 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n02 |
-| PhysicalDisk 015 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n02 |
-| PhysicalDisk 016 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n03 |
-| PhysicalDisk 017 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n03 |
-| PhysicalDisk 018 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n03 |
-| PhysicalDisk 019 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n03 |
-| PhysicalDisk 020 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n03 |
-| PhysicalDisk 021 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n03 |
-| PhysicalDisk 022 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n03 |
-| PhysicalDisk 023 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n03 |
-| PhysicalDisk 024 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
+| azl-iic-n01 | PhysicalDisk 001 | NVMe | 1789 | Healthy | — |
+| azl-iic-n01 | PhysicalDisk 002 | NVMe | 1789 | Healthy | — |
+| azl-iic-n01 | PhysicalDisk 003 | NVMe | 1789 | Healthy | — |
+| azl-iic-n01 | PhysicalDisk 004 | NVMe | 1789 | Healthy | — |
+| azl-iic-n01 | PhysicalDisk 005 | NVMe | 1789 | Healthy | — |
+| azl-iic-n01 | PhysicalDisk 006 | NVMe | 1789 | Healthy | — |
+| azl-iic-n01 | PhysicalDisk 007 | NVMe | 1789 | Healthy | — |
+| azl-iic-n01 | PhysicalDisk 008 | NVMe | 1789 | Healthy | — |
+| azl-iic-n02 | PhysicalDisk 009 | NVMe | 1789 | Healthy | — |
+| azl-iic-n02 | PhysicalDisk 010 | NVMe | 1789 | Healthy | — |
+| azl-iic-n02 | PhysicalDisk 011 | NVMe | 1789 | Healthy | — |
+| azl-iic-n02 | PhysicalDisk 012 | NVMe | 1789 | Healthy | — |
+| azl-iic-n02 | PhysicalDisk 013 | NVMe | 1789 | Healthy | — |
+| azl-iic-n02 | PhysicalDisk 014 | NVMe | 1789 | Healthy | — |
+| azl-iic-n02 | PhysicalDisk 015 | NVMe | 1789 | Healthy | — |
+| azl-iic-n02 | PhysicalDisk 016 | NVMe | 1789 | Healthy | — |
+| azl-iic-n03 | PhysicalDisk 017 | NVMe | 1789 | Healthy | — |
+| azl-iic-n03 | PhysicalDisk 018 | NVMe | 1789 | Healthy | — |
+| azl-iic-n03 | PhysicalDisk 019 | NVMe | 1789 | Healthy | — |
+| azl-iic-n03 | PhysicalDisk 020 | NVMe | 1789 | Healthy | — |
+| azl-iic-n03 | PhysicalDisk 021 | NVMe | 1789 | Healthy | — |
+| azl-iic-n03 | PhysicalDisk 022 | NVMe | 1789 | Healthy | — |
+| azl-iic-n03 | PhysicalDisk 023 | NVMe | 1789 | Healthy | — |
+| azl-iic-n03 | PhysicalDisk 024 | NVMe | 1789 | Healthy | — |
 
 ## Network Adapter Inventory
 
 | Node | Adapter | Link Speed | Status | MAC Address | Driver |
 | --- --- --- --- --- --- |
-| azl-iic-n01 |
-| NIC1 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:0:00 |
-| — |
-| azl-iic-n01 |
-| NIC2 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:0:01 |
-| — |
-| azl-iic-n01 |
-| NIC3 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:0:02 |
-| — |
-| azl-iic-n01 |
-| NIC4 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:0:03 |
-| — |
-| azl-iic-n02 |
-| NIC1 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:1:00 |
-| — |
-| azl-iic-n02 |
-| NIC2 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:1:01 |
-| — |
-| azl-iic-n02 |
-| NIC3 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:1:02 |
-| — |
-| azl-iic-n02 |
-| NIC4 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:1:03 |
-| — |
-| azl-iic-n03 |
-| NIC1 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:2:00 |
-| — |
-| azl-iic-n03 |
-| NIC2 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:2:01 |
-| — |
-| azl-iic-n03 |
-| NIC3 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:2:02 |
-| — |
-| azl-iic-n03 |
-| NIC4 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:2:03 |
-| — |
+| azl-iic-n01 | NIC1 | 25000000000 | Up | 00:50:56:IIC:0:00 | — |
+| azl-iic-n01 | NIC2 | 25000000000 | Up | 00:50:56:IIC:0:01 | — |
+| azl-iic-n01 | NIC3 | 25000000000 | Up | 00:50:56:IIC:0:02 | — |
+| azl-iic-n01 | NIC4 | 25000000000 | Up | 00:50:56:IIC:0:03 | — |
+| azl-iic-n02 | NIC1 | 25000000000 | Up | 00:50:56:IIC:1:00 | — |
+| azl-iic-n02 | NIC2 | 25000000000 | Up | 00:50:56:IIC:1:01 | — |
+| azl-iic-n02 | NIC3 | 25000000000 | Up | 00:50:56:IIC:1:02 | — |
+| azl-iic-n02 | NIC4 | 25000000000 | Up | 00:50:56:IIC:1:03 | — |
+| azl-iic-n03 | NIC1 | 25000000000 | Up | 00:50:56:IIC:2:00 | — |
+| azl-iic-n03 | NIC2 | 25000000000 | Up | 00:50:56:IIC:2:01 | — |
+| azl-iic-n03 | NIC3 | 25000000000 | Up | 00:50:56:IIC:2:02 | — |
+| azl-iic-n03 | NIC4 | 25000000000 | Up | 00:50:56:IIC:2:03 | — |
 
 ## Domain Summary
 
@@ -563,30 +334,9 @@
 
 | Hostname | FQDN | Manufacturer | Model | Serial | BIOS at Deployment | OS Installed | OS Build |
 | --- --- --- --- --- --- --- --- |
-| azl-iic-n01 |
-| azl-iic-n01.iic.local |
-| Dell Inc. |
-| PowerEdge R760 |
-| Not recorded |
-| 2.10.0.0 |
-| Microsoft Azure Stack HCI |
-| 10.0.25398.1189 |
-| azl-iic-n02 |
-| azl-iic-n02.iic.local |
-| Dell Inc. |
-| PowerEdge R760 |
-| Not recorded |
-| 2.10.0.0 |
-| Microsoft Azure Stack HCI |
-| 10.0.25398.1189 |
-| azl-iic-n03 |
-| azl-iic-n03.iic.local |
-| Dell Inc. |
-| PowerEdge R760 |
-| Not recorded |
-| 2.10.0.0 |
-| Microsoft Azure Stack HCI |
-| 10.0.25398.1189 |
+| azl-iic-n01 | azl-iic-n01.iic.local | Dell Inc. | PowerEdge R760 | Not recorded | 2.10.0.0 | Microsoft Azure Stack HCI | 10.0.25398.1189 |
+| azl-iic-n02 | azl-iic-n02.iic.local | Dell Inc. | PowerEdge R760 | Not recorded | 2.10.0.0 | Microsoft Azure Stack HCI | 10.0.25398.1189 |
+| azl-iic-n03 | azl-iic-n03.iic.local | Dell Inc. | PowerEdge R760 | Not recorded | 2.10.0.0 | Microsoft Azure Stack HCI | 10.0.25398.1189 |
 
 _Each unit listed above was installed and commissioned as part of this deployment. Serial numbers are recorded as discovered at handoff; missing values indicate the collector could not access the field._
 
@@ -594,24 +344,9 @@ _Each unit listed above was installed and commissioned as part of this deploymen
 
 | Node | State at Handoff | Logical CPUs | Installed Memory | Domain Joined | BIOS Version |
 | --- --- --- --- --- --- |
-| azl-iic-n01 |
-| Up |
-| 64 |
-| 512 GiB |
-| iic.local |
-| 2.10.0.0 |
-| azl-iic-n02 |
-| Up |
-| 64 |
-| 512 GiB |
-| iic.local |
-| 2.10.0.0 |
-| azl-iic-n03 |
-| Up |
-| 64 |
-| 512 GiB |
-| iic.local |
-| 2.10.0.0 |
+| azl-iic-n01 | Up | 64 | 512 GiB | iic.local | 2.10.0.0 |
+| azl-iic-n02 | Up | 64 | 512 GiB | iic.local | 2.10.0.0 |
+| azl-iic-n03 | Up | 64 | 512 GiB | iic.local | 2.10.0.0 |
 
 _Each node was configured with the values above at the time of deployment._
 
@@ -619,30 +354,10 @@ _Each node was configured with the values above at the time of deployment._
 
 | Cluster Network | Role | Network Address | Mask | Metric | State |
 | --- --- --- --- --- --- |
-| Management |
-| Cluster + Client (Management) |
-| 10.0.0.0 |
-| 255.255.255.0 |
-| 100 |
-| Up |
-| Storage-1 |
-| Cluster Only (Storage) |
-| 10.0.1.0 |
-| 255.255.255.0 |
-| 200 |
-| Up |
-| Storage-2 |
-| Cluster Only (Storage) |
-| 10.0.1.128 |
-| 255.255.255.128 |
-| 200 |
-| Up |
-| Workload |
-| Cluster + Client (Workload) |
-| 10.0.2.0 |
-| 255.255.255.0 |
-| 300 |
-| Up |
+| Management | Cluster + Client (Management) | 10.0.0.0 | 255.255.255.0 | 100 | Up |
+| Storage-1 | Cluster Only (Storage) | 10.0.1.0 | 255.255.255.0 | 200 | Up |
+| Storage-2 | Cluster Only (Storage) | 10.0.1.128 | 255.255.255.128 | 200 | Up |
+| Workload | Cluster + Client (Workload) | 10.0.2.0 | 255.255.255.0 | 300 | Up |
 
 _Cluster networks were assigned and configured as recorded above during deployment._
 
@@ -650,10 +365,7 @@ _Cluster networks were assigned and configured as recorded above during deployme
 
 | Storage Pool | Raw Capacity | Usable Capacity | Health at Handoff |
 | --- --- --- --- |
-| S2D on azlocal-iic-01 |
-| 43068 GiB |
-| — |
-| Healthy |
+| S2D on azlocal-iic-01 | 43068 GiB | — | Healthy |
 
 _Storage pools and their capacities were provisioned at deployment as shown. CSV and virtual-disk details are included in the delivery-registers workbook._
 
@@ -694,14 +406,8 @@ _Storage pools and their capacities were provisioned at deployment as shown. CSV
 
 | Severity | Item | Deviation | Remediation Path |
 | --- --- --- --- |
-| WARNING |
-| One or more node certificates expire within 90 days |
-| Identity posture data indicates certificate on azl-iic-n01 expires within 90 days. |
-| Review certificate ownership and renew expiring node certificates before handoff. |
-| WARNING |
-| iDRAC firmware below recommended baseline on all nodes |
-| OEM integration data shows iDRAC firmware at 7.10.30.00. The recommended baseline is 7.20 or later. |
-| Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window. |
+| WARNING | One or more node certificates expire within 90 days | Identity posture data indicates certificate on azl-iic-n01 expires within 90 days. | Review certificate ownership and renew expiring node certificates before handoff. |
+| WARNING | iDRAC firmware below recommended baseline on all nodes | OEM integration data shows iDRAC firmware at 7.10.30.00. The recommended baseline is 7.20 or later. | Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window. |
 
 _Deviations listed below were documented at handoff. Items are accepted as-built unless explicitly marked for follow-up remediation._
 

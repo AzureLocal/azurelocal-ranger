@@ -93,29 +93,11 @@
 
 ## Node Inventory
 
-| Node | Model | State | OS | OS Build | CPU Sockets | RAM (GiB) |
+| Node | Model | State | OS | OS Version / Build | Logical CPUs | RAM (GiB) |
 | --- --- --- --- --- --- --- |
-| azl-iic-n01 |
-| PowerEdge R760 |
-| Up |
-| — |
-| — |
-| — |
-| 512 |
-| azl-iic-n02 |
-| PowerEdge R760 |
-| Up |
-| — |
-| — |
-| — |
-| 512 |
-| azl-iic-n03 |
-| PowerEdge R760 |
-| Up |
-| — |
-| — |
-| — |
-| 512 |
+| azl-iic-n01 | PowerEdge R760 | Up | Microsoft Azure Stack HCI | 10.0.25398.1189 | 64 | 512 |
+| azl-iic-n02 | PowerEdge R760 | Up | Microsoft Azure Stack HCI | 10.0.25398.1189 | 64 | 512 |
+| azl-iic-n03 | PowerEdge R760 | Up | Microsoft Azure Stack HCI | 10.0.25398.1189 | 64 | 512 |
 
 ## Collector Status
 
@@ -171,36 +153,11 @@
 
 | Name | State | vCPU | RAM (GiB) | Host Node | Generation |
 | --- --- --- --- --- --- |
-| avd-iic-sh01 |
-| Running |
-| 8 |
-| 16 |
-| azl-iic-n01 |
-| 2 |
-| avd-iic-sh02 |
-| Running |
-| 8 |
-| 16 |
-| azl-iic-n02 |
-| 2 |
-| avd-iic-sh03 |
-| Running |
-| 8 |
-| 16 |
-| azl-iic-n03 |
-| 2 |
-| arc-iic-vm01 |
-| Running |
-| 4 |
-| 8 |
-| azl-iic-n01 |
-| 2 |
-| arc-iic-vm02 |
-| Running |
-| 4 |
-| 8 |
-| azl-iic-n02 |
-| 2 |
+| avd-iic-sh01 | Running | 8 | 16 | azl-iic-n01 | 2 |
+| avd-iic-sh02 | Running | 8 | 16 | azl-iic-n02 | 2 |
+| avd-iic-sh03 | Running | 8 | 16 | azl-iic-n03 | 2 |
+| arc-iic-vm01 | Running | 4 | 8 | azl-iic-n01 | 2 |
+| arc-iic-vm02 | Running | 4 | 8 | azl-iic-n02 | 2 |
 
 ## VM Density Metrics
 
@@ -217,13 +174,7 @@
 
 | Pool | Raw (GiB) | Usable (GiB) | Used (GiB) | Reserve (GiB) | Safe Alloc (GiB) | Posture |
 | --- --- --- --- --- --- --- |
-| — |
-| 0 |
-| 0 |
-| 0 |
-| 0 |
-| 0 |
-| — |
+| — | 0 | 0 | 0 | 0 | 0 | — |
 
 ## ESU Enrollment
 
@@ -263,31 +214,11 @@
 
 | Pillar | Score | Status | Rules Passing | Top Finding |
 | --- --- --- --- --- |
-| Reliability |
-| 0% |
-| At Risk |
-| 4 / 6 |
-| Cluster quorum is configured |
-| Security |
-| 0% |
-| At Risk |
-| 1 / 6 |
-| Secured-Core is enabled on cluster nodes |
-| Cost Optimization |
-| 0% |
-| At Risk |
-| 1 / 2 |
-| ESU-eligible VMs are enrolled in Extended Security Updates |
-| Operational Excellence |
-| 0% |
-| At Risk |
-| 2 / 6 |
-| Azure Monitor alert rules are defined |
-| Performance Efficiency |
-| 0% |
-| At Risk |
-| 2 / 3 |
-| Storage utilization is within safe limits |
+| Reliability | 0% | At Risk | 4 / 6 | Cluster quorum is configured |
+| Security | 0% | At Risk | 1 / 6 | Secured-Core is enabled on cluster nodes |
+| Cost Optimization | 0% | At Risk | 1 / 2 | ESU-eligible VMs are enrolled in Extended Security Updates |
+| Operational Excellence | 0% | At Risk | 2 / 6 | Azure Monitor alert rules are defined |
+| Performance Efficiency | 0% | At Risk | 2 / 3 | Storage utilization is within safe limits |
 
 _Overall WAF score: 0% (10 of 23 rules passing). Evaluated from saved manifest — no re-collection required._
 
@@ -295,38 +226,14 @@ _Overall WAF score: 0% (10 of 23 rules passing). Evaluated from saved manifest �
 
 | Pillar | Impact | Finding | Recommendation |
 | --- --- --- --- |
-| — |
-| High |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| High |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| High |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| Medium |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| Medium |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| Medium |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| Medium |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| Medium |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
+| — | High | System.Collections.Specialized.OrderedDictionary | — |
+| — | High | System.Collections.Specialized.OrderedDictionary | — |
+| — | High | System.Collections.Specialized.OrderedDictionary | — |
+| — | Medium | System.Collections.Specialized.OrderedDictionary | — |
+| — | Medium | System.Collections.Specialized.OrderedDictionary | — |
+| — | Medium | System.Collections.Specialized.OrderedDictionary | — |
+| — | Medium | System.Collections.Specialized.OrderedDictionary | — |
+| — | Medium | System.Collections.Specialized.OrderedDictionary | — |
 
 ## Recommendations
 

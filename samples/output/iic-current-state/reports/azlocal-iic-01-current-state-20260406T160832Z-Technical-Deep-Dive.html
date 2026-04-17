@@ -251,27 +251,9 @@
 </section>
 <section>
   <h2>Node Inventory</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Model</th><th>State</th><th>OS</th><th>OS Build</th><th>CPU Sockets</th><th>RAM (GiB)</th></tr></thead><tbody><tr><td>azl-iic-n01</td></tr>
-<tr><td>PowerEdge R760</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>512</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PowerEdge R760</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>512</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PowerEdge R760</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>512</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Model</th><th>State</th><th>OS</th><th>OS Version / Build</th><th>Logical CPUs</th><th>RAM (GiB)</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td>PowerEdge R760</td><td>Up</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td><td>64</td><td>512</td></tr>
+<tr><td>azl-iic-n02</td><td>PowerEdge R760</td><td>Up</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td><td>64</td><td>512</td></tr>
+<tr><td>azl-iic-n03</td><td>PowerEdge R760</td><td>Up</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td><td>64</td><td>512</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Collector Status</h2>
@@ -325,36 +307,11 @@
 </section>
 <section>
   <h2>VM Inventory</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Name</th><th>State</th><th>vCPU</th><th>RAM (GiB)</th><th>Host Node</th><th>Generation</th></tr></thead><tbody><tr><td>avd-iic-sh01</td></tr>
-<tr><td>Running</td></tr>
-<tr><td>8</td></tr>
-<tr><td>16</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>2</td></tr>
-<tr><td>avd-iic-sh02</td></tr>
-<tr><td>Running</td></tr>
-<tr><td>8</td></tr>
-<tr><td>16</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>2</td></tr>
-<tr><td>avd-iic-sh03</td></tr>
-<tr><td>Running</td></tr>
-<tr><td>8</td></tr>
-<tr><td>16</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>2</td></tr>
-<tr><td>arc-iic-vm01</td></tr>
-<tr><td>Running</td></tr>
-<tr><td>4</td></tr>
-<tr><td>8</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>2</td></tr>
-<tr><td>arc-iic-vm02</td></tr>
-<tr><td>Running</td></tr>
-<tr><td>4</td></tr>
-<tr><td>8</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>2</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Name</th><th>State</th><th>vCPU</th><th>RAM (GiB)</th><th>Host Node</th><th>Generation</th></tr></thead><tbody><tr><td>avd-iic-sh01</td><td>Running</td><td>8</td><td>16</td><td>azl-iic-n01</td><td>2</td></tr>
+<tr><td>avd-iic-sh02</td><td>Running</td><td>8</td><td>16</td><td>azl-iic-n02</td><td>2</td></tr>
+<tr><td>avd-iic-sh03</td><td>Running</td><td>8</td><td>16</td><td>azl-iic-n03</td><td>2</td></tr>
+<tr><td>arc-iic-vm01</td><td>Running</td><td>4</td><td>8</td><td>azl-iic-n01</td><td>2</td></tr>
+<tr><td>arc-iic-vm02</td><td>Running</td><td>4</td><td>8</td><td>azl-iic-n02</td><td>2</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>VM Density Metrics</h2>
@@ -369,13 +326,7 @@
 </section>
 <section>
   <h2>Storage Pool Capacity</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Pool</th><th>Raw (GiB)</th><th>Usable (GiB)</th><th>Used (GiB)</th><th>Reserve (GiB)</th><th>Safe Alloc (GiB)</th><th>Posture</th></tr></thead><tbody><tr><td>—</td></tr>
-<tr><td>0</td></tr>
-<tr><td>0</td></tr>
-<tr><td>0</td></tr>
-<tr><td>0</td></tr>
-<tr><td>0</td></tr>
-<tr><td>—</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Pool</th><th>Raw (GiB)</th><th>Usable (GiB)</th><th>Used (GiB)</th><th>Reserve (GiB)</th><th>Safe Alloc (GiB)</th><th>Posture</th></tr></thead><tbody><tr><td>—</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>—</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>ESU Enrollment</h2>
@@ -413,134 +364,38 @@
 </section>
 <section>
   <h2>WAF Assessment — Scorecard</h2>
-  <div class='table-wrapper'><table class='data-table'><caption>Overall WAF score: 0% (10 of 23 rules passing). Evaluated from saved manifest — no re-collection required.</caption><thead><tr><th>Pillar</th><th>Score</th><th>Status</th><th>Rules Passing</th><th>Top Finding</th></tr></thead><tbody><tr><td>Reliability</td></tr>
-<tr><td>0%</td></tr>
-<tr><td>At Risk</td></tr>
-<tr><td>4 / 6</td></tr>
-<tr><td>Cluster quorum is configured</td></tr>
-<tr><td>Security</td></tr>
-<tr><td>0%</td></tr>
-<tr><td>At Risk</td></tr>
-<tr><td>1 / 6</td></tr>
-<tr><td>Secured-Core is enabled on cluster nodes</td></tr>
-<tr><td>Cost Optimization</td></tr>
-<tr><td>0%</td></tr>
-<tr><td>At Risk</td></tr>
-<tr><td>1 / 2</td></tr>
-<tr><td>ESU-eligible VMs are enrolled in Extended Security Updates</td></tr>
-<tr><td>Operational Excellence</td></tr>
-<tr><td>0%</td></tr>
-<tr><td>At Risk</td></tr>
-<tr><td>2 / 6</td></tr>
-<tr><td>Azure Monitor alert rules are defined</td></tr>
-<tr><td>Performance Efficiency</td></tr>
-<tr><td>0%</td></tr>
-<tr><td>At Risk</td></tr>
-<tr><td>2 / 3</td></tr>
-<tr><td>Storage utilization is within safe limits</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><caption>Overall WAF score: 0% (10 of 23 rules passing). Evaluated from saved manifest — no re-collection required.</caption><thead><tr><th>Pillar</th><th>Score</th><th>Status</th><th>Rules Passing</th><th>Top Finding</th></tr></thead><tbody><tr><td>Reliability</td><td>0%</td><td>At Risk</td><td>4 / 6</td><td>Cluster quorum is configured</td></tr>
+<tr><td>Security</td><td>0%</td><td>At Risk</td><td>1 / 6</td><td>Secured-Core is enabled on cluster nodes</td></tr>
+<tr><td>Cost Optimization</td><td>0%</td><td>At Risk</td><td>1 / 2</td><td>ESU-eligible VMs are enrolled in Extended Security Updates</td></tr>
+<tr><td>Operational Excellence</td><td>0%</td><td>At Risk</td><td>2 / 6</td><td>Azure Monitor alert rules are defined</td></tr>
+<tr><td>Performance Efficiency</td><td>0%</td><td>At Risk</td><td>2 / 3</td><td>Storage utilization is within safe limits</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>WAF Assessment — Findings</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Rule</th><th>Pillar</th><th>Severity</th><th>Finding</th><th>Recommendation</th></tr></thead><tbody><tr><td>COST-001</td></tr>
-<tr><td>Cost Optimization</td></tr>
-<tr><td>informational</td></tr>
-<tr><td>ESU-eligible VMs are enrolled in Extended Security Updates</td></tr>
-<tr><td>Enroll eligible Arc-connected VMs in Extended Security Updates via the Azure portal (Arc &gt; Extended Security Updates). No licensing cost applies for Arc-enrolled VMs on Azure Local.</td></tr>
-<tr><td>OE-002</td></tr>
-<tr><td>Operational Excellence</td></tr>
-<tr><td>warning</td></tr>
-<tr><td>Azure Monitor alert rules are defined</td></tr>
-<tr><td>Define metric and log-based alert rules for key Azure Local health signals: cluster health faults, storage capacity threshold, node CPU and memory pressure.</td></tr>
-<tr><td>OE-004</td></tr>
-<tr><td>Operational Excellence</td></tr>
-<tr><td>warning</td></tr>
-<tr><td>Azure Monitor Agent is deployed on cluster nodes</td></tr>
-<tr><td>Deploy Azure Monitor Agent to all cluster nodes via the Azure Local portal (Monitoring &gt; Insights) or via Arc extension management.</td></tr>
-<tr><td>OE-003</td></tr>
-<tr><td>Operational Excellence</td></tr>
-<tr><td>informational</td></tr>
-<tr><td>Update maintenance configurations are defined</td></tr>
-<tr><td>Create maintenance configurations in Azure Update Manager to schedule regular update windows for the cluster nodes.</td></tr>
-<tr><td>OE-005</td></tr>
-<tr><td>Operational Excellence</td></tr>
-<tr><td>informational</td></tr>
-<tr><td>HCI Insights is enabled in Log Analytics</td></tr>
-<tr><td>Enable HCI Insights from the Azure Local cluster resource in the Azure portal under Monitoring &gt; Insights.</td></tr>
-<tr><td>PERF-002</td></tr>
-<tr><td>Performance Efficiency</td></tr>
-<tr><td>warning</td></tr>
-<tr><td>Storage utilization is within safe limits</td></tr>
-<tr><td>Review the Storage Pool Capacity section of this report. Decommission unused VMs or volumes, or expand storage capacity to restore headroom.</td></tr>
-<tr><td>REL-004</td></tr>
-<tr><td>Reliability</td></tr>
-<tr><td>warning</td></tr>
-<tr><td>Cluster quorum is configured</td></tr>
-<tr><td>Verify cluster quorum configuration via Get-ClusterQuorum. A witness (cloud or disk) is strongly recommended for even-node clusters.</td></tr>
-<tr><td>REL-005</td></tr>
-<tr><td>Reliability</td></tr>
-<tr><td>warning</td></tr>
-<tr><td>No unhealthy storage pools</td></tr>
-<tr><td>Review pool health via Get-StoragePool. Trigger repair jobs and monitor until pools return to Healthy state.</td></tr>
-<tr><td>SEC-001</td></tr>
-<tr><td>Security</td></tr>
-<tr><td>warning</td></tr>
-<tr><td>Secured-Core is enabled on cluster nodes</td></tr>
-<tr><td>Enable Secured-Core on all cluster nodes via the Azure Local portal or PowerShell. Verify UEFI Secure Boot and TPM 2.0 are active on each node.</td></tr>
-<tr><td>SEC-002</td></tr>
-<tr><td>Security</td></tr>
-<tr><td>warning</td></tr>
-<tr><td>BitLocker encryption is enabled</td></tr>
-<tr><td>Enable BitLocker on Cluster Shared Volumes using Enable-AzureStackHCIBitLocker or via the Azure Local portal.</td></tr>
-<tr><td>SEC-004</td></tr>
-<tr><td>Security</td></tr>
-<tr><td>warning</td></tr>
-<tr><td>No certificates expiring within 90 days</td></tr>
-<tr><td>Review certificates approaching expiry using the identitySecurity manifest domain. Renew or rotate certificates before expiry to prevent service disruption.</td></tr>
-<tr><td>SEC-005</td></tr>
-<tr><td>Security</td></tr>
-<tr><td>warning</td></tr>
-<tr><td>Defender for Cloud is enabled</td></tr>
-<tr><td>Enable Microsoft Defender for Cloud via the Azure portal for the subscription hosting the Azure Local cluster resources.</td></tr>
-<tr><td>SEC-003</td></tr>
-<tr><td>Security</td></tr>
-<tr><td>informational</td></tr>
-<tr><td>WDAC application control policy is present</td></tr>
-<tr><td>Deploy a WDAC policy via the Azure Local portal (Security &gt; Application control). Use Microsoft&#39;s recommended block list as a baseline.</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Rule</th><th>Pillar</th><th>Severity</th><th>Finding</th><th>Recommendation</th></tr></thead><tbody><tr><td>COST-001</td><td>Cost Optimization</td><td>informational</td><td>ESU-eligible VMs are enrolled in Extended Security Updates</td><td>Enroll eligible Arc-connected VMs in Extended Security Updates via the Azure portal (Arc &gt; Extended Security Updates). No licensing cost applies for Arc-enrolled VMs on Azure Local.</td></tr>
+<tr><td>OE-002</td><td>Operational Excellence</td><td>warning</td><td>Azure Monitor alert rules are defined</td><td>Define metric and log-based alert rules for key Azure Local health signals: cluster health faults, storage capacity threshold, node CPU and memory pressure.</td></tr>
+<tr><td>OE-004</td><td>Operational Excellence</td><td>warning</td><td>Azure Monitor Agent is deployed on cluster nodes</td><td>Deploy Azure Monitor Agent to all cluster nodes via the Azure Local portal (Monitoring &gt; Insights) or via Arc extension management.</td></tr>
+<tr><td>OE-003</td><td>Operational Excellence</td><td>informational</td><td>Update maintenance configurations are defined</td><td>Create maintenance configurations in Azure Update Manager to schedule regular update windows for the cluster nodes.</td></tr>
+<tr><td>OE-005</td><td>Operational Excellence</td><td>informational</td><td>HCI Insights is enabled in Log Analytics</td><td>Enable HCI Insights from the Azure Local cluster resource in the Azure portal under Monitoring &gt; Insights.</td></tr>
+<tr><td>PERF-002</td><td>Performance Efficiency</td><td>warning</td><td>Storage utilization is within safe limits</td><td>Review the Storage Pool Capacity section of this report. Decommission unused VMs or volumes, or expand storage capacity to restore headroom.</td></tr>
+<tr><td>REL-004</td><td>Reliability</td><td>warning</td><td>Cluster quorum is configured</td><td>Verify cluster quorum configuration via Get-ClusterQuorum. A witness (cloud or disk) is strongly recommended for even-node clusters.</td></tr>
+<tr><td>REL-005</td><td>Reliability</td><td>warning</td><td>No unhealthy storage pools</td><td>Review pool health via Get-StoragePool. Trigger repair jobs and monitor until pools return to Healthy state.</td></tr>
+<tr><td>SEC-001</td><td>Security</td><td>warning</td><td>Secured-Core is enabled on cluster nodes</td><td>Enable Secured-Core on all cluster nodes via the Azure Local portal or PowerShell. Verify UEFI Secure Boot and TPM 2.0 are active on each node.</td></tr>
+<tr><td>SEC-002</td><td>Security</td><td>warning</td><td>BitLocker encryption is enabled</td><td>Enable BitLocker on Cluster Shared Volumes using Enable-AzureStackHCIBitLocker or via the Azure Local portal.</td></tr>
+<tr><td>SEC-004</td><td>Security</td><td>warning</td><td>No certificates expiring within 90 days</td><td>Review certificates approaching expiry using the identitySecurity manifest domain. Renew or rotate certificates before expiry to prevent service disruption.</td></tr>
+<tr><td>SEC-005</td><td>Security</td><td>warning</td><td>Defender for Cloud is enabled</td><td>Enable Microsoft Defender for Cloud via the Azure portal for the subscription hosting the Azure Local cluster resources.</td></tr>
+<tr><td>SEC-003</td><td>Security</td><td>informational</td><td>WDAC application control policy is present</td><td>Deploy a WDAC policy via the Azure Local portal (Security &gt; Application control). Use Microsoft&#39;s recommended block list as a baseline.</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>WAF Assessment — Azure Advisor Recommendations</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Pillar</th><th>Impact</th><th>Finding</th><th>Recommendation</th></tr></thead><tbody><tr><td>—</td></tr>
-<tr><td>High</td></tr>
-<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>High</td></tr>
-<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>High</td></tr>
-<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>Medium</td></tr>
-<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>Medium</td></tr>
-<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>Medium</td></tr>
-<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>Medium</td></tr>
-<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>Medium</td></tr>
-<tr><td>System.Collections.Specialized.OrderedDictionary</td></tr>
-<tr><td>—</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Pillar</th><th>Impact</th><th>Finding</th><th>Recommendation</th></tr></thead><tbody><tr><td>—</td><td>High</td><td>System.Collections.Specialized.OrderedDictionary</td><td>—</td></tr>
+<tr><td>—</td><td>High</td><td>System.Collections.Specialized.OrderedDictionary</td><td>—</td></tr>
+<tr><td>—</td><td>High</td><td>System.Collections.Specialized.OrderedDictionary</td><td>—</td></tr>
+<tr><td>—</td><td>Medium</td><td>System.Collections.Specialized.OrderedDictionary</td><td>—</td></tr>
+<tr><td>—</td><td>Medium</td><td>System.Collections.Specialized.OrderedDictionary</td><td>—</td></tr>
+<tr><td>—</td><td>Medium</td><td>System.Collections.Specialized.OrderedDictionary</td><td>—</td></tr>
+<tr><td>—</td><td>Medium</td><td>System.Collections.Specialized.OrderedDictionary</td><td>—</td></tr>
+<tr><td>—</td><td>Medium</td><td>System.Collections.Specialized.OrderedDictionary</td><td>—</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Domain Inventory</h2>
@@ -555,225 +410,45 @@
 </section>
 <section>
   <h2>Physical Disk Inventory</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Model</th><th>Media Type</th><th>Size (GiB)</th><th>Health</th><th>Firmware</th></tr></thead><tbody><tr><td>azl-iic-n01</td></tr>
-<tr><td>PhysicalDisk 001</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>PhysicalDisk 002</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>PhysicalDisk 003</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>PhysicalDisk 004</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>PhysicalDisk 005</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>PhysicalDisk 006</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>PhysicalDisk 007</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>PhysicalDisk 008</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PhysicalDisk 009</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PhysicalDisk 010</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PhysicalDisk 011</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PhysicalDisk 012</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PhysicalDisk 013</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PhysicalDisk 014</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PhysicalDisk 015</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PhysicalDisk 016</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PhysicalDisk 017</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PhysicalDisk 018</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PhysicalDisk 019</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PhysicalDisk 020</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PhysicalDisk 021</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PhysicalDisk 022</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PhysicalDisk 023</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PhysicalDisk 024</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Model</th><th>Media Type</th><th>Size (GiB)</th><th>Health</th><th>Firmware</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td>PhysicalDisk 001</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>PhysicalDisk 002</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>PhysicalDisk 003</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>PhysicalDisk 004</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>PhysicalDisk 005</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>PhysicalDisk 006</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>PhysicalDisk 007</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>PhysicalDisk 008</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>PhysicalDisk 009</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>PhysicalDisk 010</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>PhysicalDisk 011</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>PhysicalDisk 012</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>PhysicalDisk 013</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>PhysicalDisk 014</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>PhysicalDisk 015</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>PhysicalDisk 016</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>PhysicalDisk 017</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>PhysicalDisk 018</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>PhysicalDisk 019</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>PhysicalDisk 020</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>PhysicalDisk 021</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>PhysicalDisk 022</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>PhysicalDisk 023</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>PhysicalDisk 024</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Network Adapter Inventory</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Adapter</th><th>Link Speed</th><th>Status</th><th>MAC Address</th><th>Driver</th></tr></thead><tbody><tr><td>azl-iic-n01</td></tr>
-<tr><td>NIC1</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:0:00</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>NIC2</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:0:01</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>NIC3</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:0:02</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>NIC4</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:0:03</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>NIC1</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:1:00</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>NIC2</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:1:01</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>NIC3</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:1:02</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>NIC4</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:1:03</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>NIC1</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:2:00</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>NIC2</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:2:01</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>NIC3</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:2:02</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>NIC4</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:2:03</td></tr>
-<tr><td>—</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Adapter</th><th>Link Speed</th><th>Status</th><th>MAC Address</th><th>Driver</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td>NIC1</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:0:00</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>NIC2</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:0:01</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>NIC3</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:0:02</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>NIC4</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:0:03</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>NIC1</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:1:00</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>NIC2</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:1:01</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>NIC3</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:1:02</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>NIC4</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:1:03</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>NIC1</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:2:00</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>NIC2</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:2:01</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>NIC3</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:2:02</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>NIC4</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:2:03</td><td>—</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Domain Summary</h2>

@@ -201,7 +201,7 @@
         <section>
   <h2>Document Control</h2>
   <table class='kv-table'><tbody><tr><th scope='row'>Document Title</th><td>Azure Local As-Built Documentation — azlocal-iic-01</td></tr>
-<tr><th scope='row'>Package ID</th><td>azlocal-iic-01-as-built-20260417T001252Z</td></tr>
+<tr><th scope='row'>Package ID</th><td>azlocal-iic-01-as-built-20260417T003248Z</td></tr>
 <tr><th scope='row'>Report Tier</th><td>technical</td></tr>
 <tr><th scope='row'>Revision</th><td>1.0 (initial handoff)</td></tr>
 <tr><th scope='row'>Classification</th><td>CONFIDENTIAL — CUSTOMER DELIVERABLE</td></tr>
@@ -259,27 +259,9 @@
 </section>
 <section>
   <h2>Node Inventory</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Model</th><th>State</th><th>OS</th><th>OS Build</th><th>CPU Sockets</th><th>RAM (GiB)</th></tr></thead><tbody><tr><td>azl-iic-n01</td></tr>
-<tr><td>PowerEdge R760</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>512</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PowerEdge R760</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>512</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PowerEdge R760</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>—</td></tr>
-<tr><td>512</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Model</th><th>State</th><th>OS</th><th>OS Version / Build</th><th>Logical CPUs</th><th>RAM (GiB)</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td>PowerEdge R760</td><td>Up</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td><td>64</td><td>512</td></tr>
+<tr><td>azl-iic-n02</td><td>PowerEdge R760</td><td>Up</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td><td>64</td><td>512</td></tr>
+<tr><td>azl-iic-n03</td><td>PowerEdge R760</td><td>Up</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td><td>64</td><td>512</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Collector Status</h2>
@@ -333,36 +315,11 @@
 </section>
 <section>
   <h2>VM Inventory</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Name</th><th>State</th><th>vCPU</th><th>RAM (GiB)</th><th>Host Node</th><th>Generation</th></tr></thead><tbody><tr><td>avd-iic-sh01</td></tr>
-<tr><td>Running</td></tr>
-<tr><td>8</td></tr>
-<tr><td>16</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>2</td></tr>
-<tr><td>avd-iic-sh02</td></tr>
-<tr><td>Running</td></tr>
-<tr><td>8</td></tr>
-<tr><td>16</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>2</td></tr>
-<tr><td>avd-iic-sh03</td></tr>
-<tr><td>Running</td></tr>
-<tr><td>8</td></tr>
-<tr><td>16</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>2</td></tr>
-<tr><td>arc-iic-vm01</td></tr>
-<tr><td>Running</td></tr>
-<tr><td>4</td></tr>
-<tr><td>8</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>2</td></tr>
-<tr><td>arc-iic-vm02</td></tr>
-<tr><td>Running</td></tr>
-<tr><td>4</td></tr>
-<tr><td>8</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>2</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Name</th><th>State</th><th>vCPU</th><th>RAM (GiB)</th><th>Host Node</th><th>Generation</th></tr></thead><tbody><tr><td>avd-iic-sh01</td><td>Running</td><td>8</td><td>16</td><td>azl-iic-n01</td><td>2</td></tr>
+<tr><td>avd-iic-sh02</td><td>Running</td><td>8</td><td>16</td><td>azl-iic-n02</td><td>2</td></tr>
+<tr><td>avd-iic-sh03</td><td>Running</td><td>8</td><td>16</td><td>azl-iic-n03</td><td>2</td></tr>
+<tr><td>arc-iic-vm01</td><td>Running</td><td>4</td><td>8</td><td>azl-iic-n01</td><td>2</td></tr>
+<tr><td>arc-iic-vm02</td><td>Running</td><td>4</td><td>8</td><td>azl-iic-n02</td><td>2</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>VM Density Metrics</h2>
@@ -377,13 +334,7 @@
 </section>
 <section>
   <h2>Storage Pool Capacity</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Pool</th><th>Raw (GiB)</th><th>Usable (GiB)</th><th>Used (GiB)</th><th>Reserve (GiB)</th><th>Safe Alloc (GiB)</th><th>Posture</th></tr></thead><tbody><tr><td>—</td></tr>
-<tr><td>0</td></tr>
-<tr><td>0</td></tr>
-<tr><td>0</td></tr>
-<tr><td>0</td></tr>
-<tr><td>0</td></tr>
-<tr><td>—</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Pool</th><th>Raw (GiB)</th><th>Usable (GiB)</th><th>Used (GiB)</th><th>Reserve (GiB)</th><th>Safe Alloc (GiB)</th><th>Posture</th></tr></thead><tbody><tr><td>—</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>—</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>ESU Enrollment</h2>
@@ -432,225 +383,45 @@
 </section>
 <section>
   <h2>Physical Disk Inventory</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Model</th><th>Media Type</th><th>Size (GiB)</th><th>Health</th><th>Firmware</th></tr></thead><tbody><tr><td>azl-iic-n01</td></tr>
-<tr><td>PhysicalDisk 001</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>PhysicalDisk 002</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>PhysicalDisk 003</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>PhysicalDisk 004</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>PhysicalDisk 005</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>PhysicalDisk 006</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>PhysicalDisk 007</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>PhysicalDisk 008</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PhysicalDisk 009</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PhysicalDisk 010</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PhysicalDisk 011</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PhysicalDisk 012</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PhysicalDisk 013</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PhysicalDisk 014</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PhysicalDisk 015</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>PhysicalDisk 016</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PhysicalDisk 017</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PhysicalDisk 018</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PhysicalDisk 019</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PhysicalDisk 020</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PhysicalDisk 021</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PhysicalDisk 022</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PhysicalDisk 023</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>PhysicalDisk 024</td></tr>
-<tr><td>NVMe</td></tr>
-<tr><td>1789</td></tr>
-<tr><td>Healthy</td></tr>
-<tr><td>—</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Model</th><th>Media Type</th><th>Size (GiB)</th><th>Health</th><th>Firmware</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td>PhysicalDisk 001</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>PhysicalDisk 002</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>PhysicalDisk 003</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>PhysicalDisk 004</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>PhysicalDisk 005</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>PhysicalDisk 006</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>PhysicalDisk 007</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>PhysicalDisk 008</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>PhysicalDisk 009</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>PhysicalDisk 010</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>PhysicalDisk 011</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>PhysicalDisk 012</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>PhysicalDisk 013</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>PhysicalDisk 014</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>PhysicalDisk 015</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>PhysicalDisk 016</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>PhysicalDisk 017</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>PhysicalDisk 018</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>PhysicalDisk 019</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>PhysicalDisk 020</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>PhysicalDisk 021</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>PhysicalDisk 022</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>PhysicalDisk 023</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>PhysicalDisk 024</td><td>NVMe</td><td>1789</td><td>Healthy</td><td>—</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Network Adapter Inventory</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Adapter</th><th>Link Speed</th><th>Status</th><th>MAC Address</th><th>Driver</th></tr></thead><tbody><tr><td>azl-iic-n01</td></tr>
-<tr><td>NIC1</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:0:00</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>NIC2</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:0:01</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>NIC3</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:0:02</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n01</td></tr>
-<tr><td>NIC4</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:0:03</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>NIC1</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:1:00</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>NIC2</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:1:01</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>NIC3</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:1:02</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>NIC4</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:1:03</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>NIC1</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:2:00</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>NIC2</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:2:01</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>NIC3</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:2:02</td></tr>
-<tr><td>—</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>NIC4</td></tr>
-<tr><td>25000000000</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>00:50:56:IIC:2:03</td></tr>
-<tr><td>—</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Adapter</th><th>Link Speed</th><th>Status</th><th>MAC Address</th><th>Driver</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td>NIC1</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:0:00</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>NIC2</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:0:01</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>NIC3</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:0:02</td><td>—</td></tr>
+<tr><td>azl-iic-n01</td><td>NIC4</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:0:03</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>NIC1</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:1:00</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>NIC2</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:1:01</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>NIC3</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:1:02</td><td>—</td></tr>
+<tr><td>azl-iic-n02</td><td>NIC4</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:1:03</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>NIC1</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:2:00</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>NIC2</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:2:01</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>NIC3</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:2:02</td><td>—</td></tr>
+<tr><td>azl-iic-n03</td><td>NIC4</td><td>25000000000</td><td>Up</td><td>00:50:56:IIC:2:03</td><td>—</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Domain Summary</h2>
@@ -702,85 +473,26 @@
 </section>
 <section>
   <h2>Installation Register (Bill of Materials)</h2>
-  <div class='table-wrapper'><table class='data-table'><caption>Each unit listed above was installed and commissioned as part of this deployment. Serial numbers are recorded as discovered at handoff; missing values indicate the collector could not access the field.</caption><thead><tr><th>Hostname</th><th>FQDN</th><th>Manufacturer</th><th>Model</th><th>Serial</th><th>BIOS at Deployment</th><th>OS Installed</th><th>OS Build</th></tr></thead><tbody><tr><td>azl-iic-n01</td></tr>
-<tr><td>azl-iic-n01.iic.local</td></tr>
-<tr><td>Dell Inc.</td></tr>
-<tr><td>PowerEdge R760</td></tr>
-<tr><td>Not recorded</td></tr>
-<tr><td>2.10.0.0</td></tr>
-<tr><td>Microsoft Azure Stack HCI</td></tr>
-<tr><td>10.0.25398.1189</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>azl-iic-n02.iic.local</td></tr>
-<tr><td>Dell Inc.</td></tr>
-<tr><td>PowerEdge R760</td></tr>
-<tr><td>Not recorded</td></tr>
-<tr><td>2.10.0.0</td></tr>
-<tr><td>Microsoft Azure Stack HCI</td></tr>
-<tr><td>10.0.25398.1189</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>azl-iic-n03.iic.local</td></tr>
-<tr><td>Dell Inc.</td></tr>
-<tr><td>PowerEdge R760</td></tr>
-<tr><td>Not recorded</td></tr>
-<tr><td>2.10.0.0</td></tr>
-<tr><td>Microsoft Azure Stack HCI</td></tr>
-<tr><td>10.0.25398.1189</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><caption>Each unit listed above was installed and commissioned as part of this deployment. Serial numbers are recorded as discovered at handoff; missing values indicate the collector could not access the field.</caption><thead><tr><th>Hostname</th><th>FQDN</th><th>Manufacturer</th><th>Model</th><th>Serial</th><th>BIOS at Deployment</th><th>OS Installed</th><th>OS Build</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td>azl-iic-n01.iic.local</td><td>Dell Inc.</td><td>PowerEdge R760</td><td>Not recorded</td><td>2.10.0.0</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td></tr>
+<tr><td>azl-iic-n02</td><td>azl-iic-n02.iic.local</td><td>Dell Inc.</td><td>PowerEdge R760</td><td>Not recorded</td><td>2.10.0.0</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td></tr>
+<tr><td>azl-iic-n03</td><td>azl-iic-n03.iic.local</td><td>Dell Inc.</td><td>PowerEdge R760</td><td>Not recorded</td><td>2.10.0.0</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Per-Node Configuration Record</h2>
-  <div class='table-wrapper'><table class='data-table'><caption>Each node was configured with the values above at the time of deployment.</caption><thead><tr><th>Node</th><th>State at Handoff</th><th>Logical CPUs</th><th>Installed Memory</th><th>Domain Joined</th><th>BIOS Version</th></tr></thead><tbody><tr><td>azl-iic-n01</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>64</td></tr>
-<tr><td>512 GiB</td></tr>
-<tr><td>iic.local</td></tr>
-<tr><td>2.10.0.0</td></tr>
-<tr><td>azl-iic-n02</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>64</td></tr>
-<tr><td>512 GiB</td></tr>
-<tr><td>iic.local</td></tr>
-<tr><td>2.10.0.0</td></tr>
-<tr><td>azl-iic-n03</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>64</td></tr>
-<tr><td>512 GiB</td></tr>
-<tr><td>iic.local</td></tr>
-<tr><td>2.10.0.0</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><caption>Each node was configured with the values above at the time of deployment.</caption><thead><tr><th>Node</th><th>State at Handoff</th><th>Logical CPUs</th><th>Installed Memory</th><th>Domain Joined</th><th>BIOS Version</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td>Up</td><td>64</td><td>512 GiB</td><td>iic.local</td><td>2.10.0.0</td></tr>
+<tr><td>azl-iic-n02</td><td>Up</td><td>64</td><td>512 GiB</td><td>iic.local</td><td>2.10.0.0</td></tr>
+<tr><td>azl-iic-n03</td><td>Up</td><td>64</td><td>512 GiB</td><td>iic.local</td><td>2.10.0.0</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Network Address Allocation Record</h2>
-  <div class='table-wrapper'><table class='data-table'><caption>Cluster networks were assigned and configured as recorded above during deployment.</caption><thead><tr><th>Cluster Network</th><th>Role</th><th>Network Address</th><th>Mask</th><th>Metric</th><th>State</th></tr></thead><tbody><tr><td>Management</td></tr>
-<tr><td>Cluster + Client (Management)</td></tr>
-<tr><td>10.0.0.0</td></tr>
-<tr><td>255.255.255.0</td></tr>
-<tr><td>100</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>Storage-1</td></tr>
-<tr><td>Cluster Only (Storage)</td></tr>
-<tr><td>10.0.1.0</td></tr>
-<tr><td>255.255.255.0</td></tr>
-<tr><td>200</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>Storage-2</td></tr>
-<tr><td>Cluster Only (Storage)</td></tr>
-<tr><td>10.0.1.128</td></tr>
-<tr><td>255.255.255.128</td></tr>
-<tr><td>200</td></tr>
-<tr><td>Up</td></tr>
-<tr><td>Workload</td></tr>
-<tr><td>Cluster + Client (Workload)</td></tr>
-<tr><td>10.0.2.0</td></tr>
-<tr><td>255.255.255.0</td></tr>
-<tr><td>300</td></tr>
-<tr><td>Up</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><caption>Cluster networks were assigned and configured as recorded above during deployment.</caption><thead><tr><th>Cluster Network</th><th>Role</th><th>Network Address</th><th>Mask</th><th>Metric</th><th>State</th></tr></thead><tbody><tr><td>Management</td><td>Cluster + Client (Management)</td><td>10.0.0.0</td><td>255.255.255.0</td><td>100</td><td>Up</td></tr>
+<tr><td>Storage-1</td><td>Cluster Only (Storage)</td><td>10.0.1.0</td><td>255.255.255.0</td><td>200</td><td>Up</td></tr>
+<tr><td>Storage-2</td><td>Cluster Only (Storage)</td><td>10.0.1.128</td><td>255.255.255.128</td><td>200</td><td>Up</td></tr>
+<tr><td>Workload</td><td>Cluster + Client (Workload)</td><td>10.0.2.0</td><td>255.255.255.0</td><td>300</td><td>Up</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Storage Configuration Record</h2>
-  <div class='table-wrapper'><table class='data-table'><caption>Storage pools and their capacities were provisioned at deployment as shown. CSV and virtual-disk details are included in the delivery-registers workbook.</caption><thead><tr><th>Storage Pool</th><th>Raw Capacity</th><th>Usable Capacity</th><th>Health at Handoff</th></tr></thead><tbody><tr><td>S2D on azlocal-iic-01</td></tr>
-<tr><td>43068 GiB</td></tr>
-<tr><td>—</td></tr>
-<tr><td>Healthy</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><caption>Storage pools and their capacities were provisioned at deployment as shown. CSV and virtual-disk details are included in the delivery-registers workbook.</caption><thead><tr><th>Storage Pool</th><th>Raw Capacity</th><th>Usable Capacity</th><th>Health at Handoff</th></tr></thead><tbody><tr><td>S2D on azlocal-iic-01</td><td>43068 GiB</td><td>—</td><td>Healthy</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Identity and Security Record</h2>
@@ -817,14 +529,8 @@
 </section>
 <section>
   <h2>Known Issues and Deviations</h2>
-  <div class='table-wrapper'><table class='data-table'><caption>Deviations listed below were documented at handoff. Items are accepted as-built unless explicitly marked for follow-up remediation.</caption><thead><tr><th>Severity</th><th>Item</th><th>Deviation</th><th>Remediation Path</th></tr></thead><tbody><tr><td>WARNING</td></tr>
-<tr><td>One or more node certificates expire within 90 days</td></tr>
-<tr><td>Identity posture data indicates certificate on azl-iic-n01 expires within 90 days.</td></tr>
-<tr><td>Review certificate ownership and renew expiring node certificates before handoff.</td></tr>
-<tr><td>WARNING</td></tr>
-<tr><td>iDRAC firmware below recommended baseline on all nodes</td></tr>
-<tr><td>OEM integration data shows iDRAC firmware at 7.10.30.00. The recommended baseline is 7.20 or later.</td></tr>
-<tr><td>Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window.</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><caption>Deviations listed below were documented at handoff. Items are accepted as-built unless explicitly marked for follow-up remediation.</caption><thead><tr><th>Severity</th><th>Item</th><th>Deviation</th><th>Remediation Path</th></tr></thead><tbody><tr><td>WARNING</td><td>One or more node certificates expire within 90 days</td><td>Identity posture data indicates certificate on azl-iic-n01 expires within 90 days.</td><td>Review certificate ownership and renew expiring node certificates before handoff.</td></tr>
+<tr><td>WARNING</td><td>iDRAC firmware below recommended baseline on all nodes</td><td>OEM integration data shows iDRAC firmware at 7.10.30.00. The recommended baseline is 7.20 or later.</td><td>Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window.</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Acceptance and Sign-Off</h2>

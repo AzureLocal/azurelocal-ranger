@@ -86,7 +86,7 @@ Write-Host '[3/3] Rendering reports and diagrams (all formats)...' -ForegroundCo
 $result = Export-AzureLocalRangerReport `
     -ManifestPath $manifestPath `
     -OutputPath   $OutputPath `
-    -Formats      @('html', 'markdown', 'json', 'xlsx', 'pdf', 'svg', 'drawio')
+    -Formats      @('html', 'markdown', 'json', 'xlsx', 'pdf', 'svg', 'drawio', 'docx', 'powerbi')
 
 # Summary
 Write-Host ''

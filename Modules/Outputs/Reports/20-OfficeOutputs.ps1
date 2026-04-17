@@ -431,13 +431,13 @@ function Get-RangerReportPlainTextLines {
         $lines.Add(('-' * [math]::Max(6, $section.heading.Length)))
         switch ($section.type) {
             'table' {
-                # Render headers
                 if ($section.headers) {
                     $lines.Add(($section.headers -join '  |  '))
                     $lines.Add(('-' * 80))
                 }
-                foreach ($row in @($section.rows)) {
-                    $lines.Add(($row -join '  |  '))
+                $tblRows = ConvertTo-RangerTableRowArray -Rows @($section.rows) -ColumnCount @($section.headers).Count
+                foreach ($row in $tblRows) {
+                    $lines.Add((@($row) -join '  |  '))
                 }
             }
             'kv' {
@@ -557,13 +557,16 @@ function New-RangerDocxTableXml {
     #>
     param(
         [string[]]$Headers,
-        [object[][]]$Rows,
+        [object[]]$Rows,
         [string]$Caption
     )
 
     if ($null -eq $Rows -or @($Rows).Count -eq 0) {
         return (New-RangerDocxParagraphXml -Text 'No data available.' -Style 'Normal')
     }
+
+    # Regroup if PowerShell flattened the 2D row array on binding.
+    $arrayRows = ConvertTo-RangerTableRowArray -Rows $Rows -ColumnCount $Headers.Count
 
     $tblPr = '<w:tblPr><w:tblStyle w:val="TableGrid"/><w:tblW w:w="0" w:type="auto"/><w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/><w:left w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/><w:right w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/></w:tblBorders></w:tblPr>'
 
@@ -573,8 +576,8 @@ function New-RangerDocxTableXml {
     }) -join ''
     $headerRow = "<w:tr><w:trPr><w:tblHeader/></w:trPr>$headerCells</w:tr>"
 
-    $bodyRows = @($Rows | ForEach-Object {
-        $cells = @($_ | ForEach-Object {
+    $bodyRows = @($arrayRows | ForEach-Object {
+        $cells = @(@($_) | ForEach-Object {
             $txt = ConvertTo-RangerXmlText -Value $_
             "<w:tc><w:p><w:r><w:t xml:space='preserve'>$txt</w:t></w:r></w:p></w:tc>"
         }) -join ''

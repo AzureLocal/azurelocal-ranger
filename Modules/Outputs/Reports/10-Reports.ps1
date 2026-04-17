@@ -313,17 +313,20 @@ function New-RangerReportPayload {
                 $name    = if ($n.name)  { $n.name  } elseif ($n.NodeName) { $n.NodeName } else { '—' }
                 $state   = if ($n.state) { $n.state } elseif ($n.NodeState) { $n.NodeState } else { '—' }
                 $model   = if ($n.model) { $n.model } else { '—' }
-                $os      = if ($n.operatingSystem) { $n.operatingSystem } elseif ($n.os) { $n.os } else { '—' }
-                $build   = if ($n.osBuildNumber) { $n.osBuildNumber } else { '—' }
-                $cpus    = if ($null -ne $n.processorCount) { [string]$n.processorCount } elseif ($null -ne $n.cpuSocketCount) { [string]$n.cpuSocketCount } else { '—' }
-                $ramGiB  = if ($null -ne $n.memoryGiB)  { [string][math]::Round([double]$n.memoryGiB, 0) } elseif ($null -ne $n.totalMemoryGiB) { [string][math]::Round([double]$n.totalMemoryGiB, 0) } else { '—' }
-                @($name, $model, $state, $os, $build, $cpus, $ramGiB)
+                # Accept the canonical Arc / Get-ComputerInfo field names as
+                # well as the legacy short aliases so all known manifest shapes
+                # surface in the Node Inventory table.
+                $os      = if ($n.osCaption) { $n.osCaption } elseif ($n.operatingSystem) { $n.operatingSystem } elseif ($n.os) { $n.os } else { '—' }
+                $build   = if ($n.osVersion) { $n.osVersion } elseif ($n.osBuildNumber) { $n.osBuildNumber } elseif ($n.buildNumber) { $n.buildNumber } else { '—' }
+                $cpus    = if ($null -ne $n.logicalProcessorCount) { [string]$n.logicalProcessorCount } elseif ($null -ne $n.processorCount) { [string]$n.processorCount } elseif ($null -ne $n.cpuSocketCount) { [string]$n.cpuSocketCount } else { '—' }
+                $ramGiB  = if ($null -ne $n.totalMemoryGiB) { [string][math]::Round([double]$n.totalMemoryGiB, 0) } elseif ($null -ne $n.memoryGiB) { [string][math]::Round([double]$n.memoryGiB, 0) } else { '—' }
+                ,@($name, $model, $state, $os, $build, $cpus, $ramGiB)
             }
         )
         [void]$sections.Add([ordered]@{
             heading = 'Node Inventory'
             type    = 'table'
-            headers = @('Node', 'Model', 'State', 'OS', 'OS Build', 'CPU Sockets', 'RAM (GiB)')
+            headers = @('Node', 'Model', 'State', 'OS', 'OS Version / Build', 'Logical CPUs', 'RAM (GiB)')
             rows    = $nodeRows
         })
     }
@@ -937,10 +940,11 @@ function ConvertTo-RangerMarkdownReport {
         $lines.Add('')
         switch ($section.type) {
             'table' {
-                if (@($section.rows).Count -gt 0) {
+                $tblRows = ConvertTo-RangerTableRowArray -Rows @($section.rows) -ColumnCount @($section.headers).Count
+                if ($tblRows.Count -gt 0) {
                     $lines.Add(('| ' + ($section.headers -join ' | ') + ' |'))
                     $lines.Add(('| ' + ($section.headers | ForEach-Object { '---' }) -join ' | ') + ' |')
-                    foreach ($row in @($section.rows)) {
+                    foreach ($row in $tblRows) {
                         $cells = @($row) | ForEach-Object { [string]($_ -replace '\|', '&#124;') }
                         $lines.Add('| ' + ($cells -join ' | ') + ' |')
                     }
@@ -1010,20 +1014,58 @@ function ConvertTo-RangerMarkdownReport {
 
 # --- HTML component helpers (#168) ---
 
+function ConvertTo-RangerTableRowArray {
+    <#
+    .SYNOPSIS
+        Normalize section.rows back to an array of per-row arrays.
+    .DESCRIPTION
+        PowerShell flattens 2D arrays when the payload builder uses
+        `@( ... | ForEach-Object { @(cell1, cell2) } )` — the outer @()
+        unrolls each row into the outer array. This helper detects the
+        flattened shape and regroups by column count, so all renderers
+        (HTML / Markdown / DOCX / PDF) get a consistent 2D structure.
+    #>
+    param(
+        [object[]]$Rows,
+        [int]$ColumnCount
+    )
+
+    if ($null -eq $Rows -or $Rows.Count -eq 0) { return @() }
+
+    $first = $null
+    foreach ($r in $Rows) { if ($null -ne $r) { $first = $r; break } }
+    $is2D = $null -ne $first -and ($first -is [System.Collections.IList] -and $first -isnot [string])
+
+    if ($is2D -or $ColumnCount -le 0) {
+        return @($Rows)
+    }
+
+    $out = New-Object System.Collections.ArrayList
+    $total = [int]$Rows.Count
+    $cols  = [int]$ColumnCount
+    for ($i = 0; $i -lt $total; $i += $cols) {
+        $end = [math]::Min($i + $cols - 1, $total - 1)
+        [void]$out.Add(@($Rows[$i..$end]))
+    }
+    return ,@($out.ToArray())
+}
+
 function New-RangerHtmlTable {
     [OutputType([string])]
     param(
         [string[]]$Headers,
-        [object[][]]$Rows,
+        [object[]]$Rows,
         [string]$Caption
     )
     if ($null -eq $Rows -or $Rows.Count -eq 0) {
         return '<p class="data-unavailable">No data available.</p>'
     }
+    $arrayRows = ConvertTo-RangerTableRowArray -Rows $Rows -ColumnCount $Headers.Count
+
     $captionHtml = if ($Caption) { "<caption>$([System.Net.WebUtility]::HtmlEncode($Caption))</caption>" } else { '' }
     $headerHtml  = ($Headers | ForEach-Object { "<th>$([System.Net.WebUtility]::HtmlEncode([string]$_))</th>" }) -join ''
-    $rowsHtml    = ($Rows | ForEach-Object {
-        $cells = ($_ | ForEach-Object { "<td>$([System.Net.WebUtility]::HtmlEncode([string]$_))</td>" }) -join ''
+    $rowsHtml    = ($arrayRows | ForEach-Object {
+        $cells = (@($_) | ForEach-Object { "<td>$([System.Net.WebUtility]::HtmlEncode([string]$_))</td>" }) -join ''
         "<tr>$cells</tr>"
     }) -join [Environment]::NewLine
     "<div class='table-wrapper'><table class='data-table'>$captionHtml<thead><tr>$headerHtml</tr></thead><tbody>$rowsHtml</tbody></table></div>"

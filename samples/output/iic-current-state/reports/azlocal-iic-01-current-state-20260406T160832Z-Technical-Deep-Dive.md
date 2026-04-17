@@ -102,29 +102,11 @@
 
 ## Node Inventory
 
-| Node | Model | State | OS | OS Build | CPU Sockets | RAM (GiB) |
+| Node | Model | State | OS | OS Version / Build | Logical CPUs | RAM (GiB) |
 | --- --- --- --- --- --- --- |
-| azl-iic-n01 |
-| PowerEdge R760 |
-| Up |
-| — |
-| — |
-| — |
-| 512 |
-| azl-iic-n02 |
-| PowerEdge R760 |
-| Up |
-| — |
-| — |
-| — |
-| 512 |
-| azl-iic-n03 |
-| PowerEdge R760 |
-| Up |
-| — |
-| — |
-| — |
-| 512 |
+| azl-iic-n01 | PowerEdge R760 | Up | Microsoft Azure Stack HCI | 10.0.25398.1189 | 64 | 512 |
+| azl-iic-n02 | PowerEdge R760 | Up | Microsoft Azure Stack HCI | 10.0.25398.1189 | 64 | 512 |
+| azl-iic-n03 | PowerEdge R760 | Up | Microsoft Azure Stack HCI | 10.0.25398.1189 | 64 | 512 |
 
 ## Collector Status
 
@@ -180,36 +162,11 @@
 
 | Name | State | vCPU | RAM (GiB) | Host Node | Generation |
 | --- --- --- --- --- --- |
-| avd-iic-sh01 |
-| Running |
-| 8 |
-| 16 |
-| azl-iic-n01 |
-| 2 |
-| avd-iic-sh02 |
-| Running |
-| 8 |
-| 16 |
-| azl-iic-n02 |
-| 2 |
-| avd-iic-sh03 |
-| Running |
-| 8 |
-| 16 |
-| azl-iic-n03 |
-| 2 |
-| arc-iic-vm01 |
-| Running |
-| 4 |
-| 8 |
-| azl-iic-n01 |
-| 2 |
-| arc-iic-vm02 |
-| Running |
-| 4 |
-| 8 |
-| azl-iic-n02 |
-| 2 |
+| avd-iic-sh01 | Running | 8 | 16 | azl-iic-n01 | 2 |
+| avd-iic-sh02 | Running | 8 | 16 | azl-iic-n02 | 2 |
+| avd-iic-sh03 | Running | 8 | 16 | azl-iic-n03 | 2 |
+| arc-iic-vm01 | Running | 4 | 8 | azl-iic-n01 | 2 |
+| arc-iic-vm02 | Running | 4 | 8 | azl-iic-n02 | 2 |
 
 ## VM Density Metrics
 
@@ -226,13 +183,7 @@
 
 | Pool | Raw (GiB) | Usable (GiB) | Used (GiB) | Reserve (GiB) | Safe Alloc (GiB) | Posture |
 | --- --- --- --- --- --- --- |
-| — |
-| 0 |
-| 0 |
-| 0 |
-| 0 |
-| 0 |
-| — |
+| — | 0 | 0 | 0 | 0 | 0 | — |
 
 ## ESU Enrollment
 
@@ -272,31 +223,11 @@
 
 | Pillar | Score | Status | Rules Passing | Top Finding |
 | --- --- --- --- --- |
-| Reliability |
-| 0% |
-| At Risk |
-| 4 / 6 |
-| Cluster quorum is configured |
-| Security |
-| 0% |
-| At Risk |
-| 1 / 6 |
-| Secured-Core is enabled on cluster nodes |
-| Cost Optimization |
-| 0% |
-| At Risk |
-| 1 / 2 |
-| ESU-eligible VMs are enrolled in Extended Security Updates |
-| Operational Excellence |
-| 0% |
-| At Risk |
-| 2 / 6 |
-| Azure Monitor alert rules are defined |
-| Performance Efficiency |
-| 0% |
-| At Risk |
-| 2 / 3 |
-| Storage utilization is within safe limits |
+| Reliability | 0% | At Risk | 4 / 6 | Cluster quorum is configured |
+| Security | 0% | At Risk | 1 / 6 | Secured-Core is enabled on cluster nodes |
+| Cost Optimization | 0% | At Risk | 1 / 2 | ESU-eligible VMs are enrolled in Extended Security Updates |
+| Operational Excellence | 0% | At Risk | 2 / 6 | Azure Monitor alert rules are defined |
+| Performance Efficiency | 0% | At Risk | 2 / 3 | Storage utilization is within safe limits |
 
 _Overall WAF score: 0% (10 of 23 rules passing). Evaluated from saved manifest — no re-collection required._
 
@@ -304,108 +235,32 @@ _Overall WAF score: 0% (10 of 23 rules passing). Evaluated from saved manifest �
 
 | Rule | Pillar | Severity | Finding | Recommendation |
 | --- --- --- --- --- |
-| COST-001 |
-| Cost Optimization |
-| informational |
-| ESU-eligible VMs are enrolled in Extended Security Updates |
-| Enroll eligible Arc-connected VMs in Extended Security Updates via the Azure portal (Arc > Extended Security Updates). No licensing cost applies for Arc-enrolled VMs on Azure Local. |
-| OE-002 |
-| Operational Excellence |
-| warning |
-| Azure Monitor alert rules are defined |
-| Define metric and log-based alert rules for key Azure Local health signals: cluster health faults, storage capacity threshold, node CPU and memory pressure. |
-| OE-004 |
-| Operational Excellence |
-| warning |
-| Azure Monitor Agent is deployed on cluster nodes |
-| Deploy Azure Monitor Agent to all cluster nodes via the Azure Local portal (Monitoring > Insights) or via Arc extension management. |
-| OE-003 |
-| Operational Excellence |
-| informational |
-| Update maintenance configurations are defined |
-| Create maintenance configurations in Azure Update Manager to schedule regular update windows for the cluster nodes. |
-| OE-005 |
-| Operational Excellence |
-| informational |
-| HCI Insights is enabled in Log Analytics |
-| Enable HCI Insights from the Azure Local cluster resource in the Azure portal under Monitoring > Insights. |
-| PERF-002 |
-| Performance Efficiency |
-| warning |
-| Storage utilization is within safe limits |
-| Review the Storage Pool Capacity section of this report. Decommission unused VMs or volumes, or expand storage capacity to restore headroom. |
-| REL-004 |
-| Reliability |
-| warning |
-| Cluster quorum is configured |
-| Verify cluster quorum configuration via Get-ClusterQuorum. A witness (cloud or disk) is strongly recommended for even-node clusters. |
-| REL-005 |
-| Reliability |
-| warning |
-| No unhealthy storage pools |
-| Review pool health via Get-StoragePool. Trigger repair jobs and monitor until pools return to Healthy state. |
-| SEC-001 |
-| Security |
-| warning |
-| Secured-Core is enabled on cluster nodes |
-| Enable Secured-Core on all cluster nodes via the Azure Local portal or PowerShell. Verify UEFI Secure Boot and TPM 2.0 are active on each node. |
-| SEC-002 |
-| Security |
-| warning |
-| BitLocker encryption is enabled |
-| Enable BitLocker on Cluster Shared Volumes using Enable-AzureStackHCIBitLocker or via the Azure Local portal. |
-| SEC-004 |
-| Security |
-| warning |
-| No certificates expiring within 90 days |
-| Review certificates approaching expiry using the identitySecurity manifest domain. Renew or rotate certificates before expiry to prevent service disruption. |
-| SEC-005 |
-| Security |
-| warning |
-| Defender for Cloud is enabled |
-| Enable Microsoft Defender for Cloud via the Azure portal for the subscription hosting the Azure Local cluster resources. |
-| SEC-003 |
-| Security |
-| informational |
-| WDAC application control policy is present |
-| Deploy a WDAC policy via the Azure Local portal (Security > Application control). Use Microsoft's recommended block list as a baseline. |
+| COST-001 | Cost Optimization | informational | ESU-eligible VMs are enrolled in Extended Security Updates | Enroll eligible Arc-connected VMs in Extended Security Updates via the Azure portal (Arc > Extended Security Updates). No licensing cost applies for Arc-enrolled VMs on Azure Local. |
+| OE-002 | Operational Excellence | warning | Azure Monitor alert rules are defined | Define metric and log-based alert rules for key Azure Local health signals: cluster health faults, storage capacity threshold, node CPU and memory pressure. |
+| OE-004 | Operational Excellence | warning | Azure Monitor Agent is deployed on cluster nodes | Deploy Azure Monitor Agent to all cluster nodes via the Azure Local portal (Monitoring > Insights) or via Arc extension management. |
+| OE-003 | Operational Excellence | informational | Update maintenance configurations are defined | Create maintenance configurations in Azure Update Manager to schedule regular update windows for the cluster nodes. |
+| OE-005 | Operational Excellence | informational | HCI Insights is enabled in Log Analytics | Enable HCI Insights from the Azure Local cluster resource in the Azure portal under Monitoring > Insights. |
+| PERF-002 | Performance Efficiency | warning | Storage utilization is within safe limits | Review the Storage Pool Capacity section of this report. Decommission unused VMs or volumes, or expand storage capacity to restore headroom. |
+| REL-004 | Reliability | warning | Cluster quorum is configured | Verify cluster quorum configuration via Get-ClusterQuorum. A witness (cloud or disk) is strongly recommended for even-node clusters. |
+| REL-005 | Reliability | warning | No unhealthy storage pools | Review pool health via Get-StoragePool. Trigger repair jobs and monitor until pools return to Healthy state. |
+| SEC-001 | Security | warning | Secured-Core is enabled on cluster nodes | Enable Secured-Core on all cluster nodes via the Azure Local portal or PowerShell. Verify UEFI Secure Boot and TPM 2.0 are active on each node. |
+| SEC-002 | Security | warning | BitLocker encryption is enabled | Enable BitLocker on Cluster Shared Volumes using Enable-AzureStackHCIBitLocker or via the Azure Local portal. |
+| SEC-004 | Security | warning | No certificates expiring within 90 days | Review certificates approaching expiry using the identitySecurity manifest domain. Renew or rotate certificates before expiry to prevent service disruption. |
+| SEC-005 | Security | warning | Defender for Cloud is enabled | Enable Microsoft Defender for Cloud via the Azure portal for the subscription hosting the Azure Local cluster resources. |
+| SEC-003 | Security | informational | WDAC application control policy is present | Deploy a WDAC policy via the Azure Local portal (Security > Application control). Use Microsoft's recommended block list as a baseline. |
 
 ## WAF Assessment — Azure Advisor Recommendations
 
 | Pillar | Impact | Finding | Recommendation |
 | --- --- --- --- |
-| — |
-| High |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| High |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| High |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| Medium |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| Medium |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| Medium |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| Medium |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
-| — |
-| Medium |
-| System.Collections.Specialized.OrderedDictionary |
-| — |
+| — | High | System.Collections.Specialized.OrderedDictionary | — |
+| — | High | System.Collections.Specialized.OrderedDictionary | — |
+| — | High | System.Collections.Specialized.OrderedDictionary | — |
+| — | Medium | System.Collections.Specialized.OrderedDictionary | — |
+| — | Medium | System.Collections.Specialized.OrderedDictionary | — |
+| — | Medium | System.Collections.Specialized.OrderedDictionary | — |
+| — | Medium | System.Collections.Specialized.OrderedDictionary | — |
+| — | Medium | System.Collections.Specialized.OrderedDictionary | — |
 
 ## Domain Inventory
 
@@ -422,227 +277,47 @@ _Overall WAF score: 0% (10 of 23 rules passing). Evaluated from saved manifest �
 
 | Node | Model | Media Type | Size (GiB) | Health | Firmware |
 | --- --- --- --- --- --- |
-| azl-iic-n01 |
-| PhysicalDisk 001 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n01 |
-| PhysicalDisk 002 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n01 |
-| PhysicalDisk 003 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n01 |
-| PhysicalDisk 004 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n01 |
-| PhysicalDisk 005 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n01 |
-| PhysicalDisk 006 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n01 |
-| PhysicalDisk 007 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n01 |
-| PhysicalDisk 008 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n02 |
-| PhysicalDisk 009 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n02 |
-| PhysicalDisk 010 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n02 |
-| PhysicalDisk 011 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n02 |
-| PhysicalDisk 012 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n02 |
-| PhysicalDisk 013 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n02 |
-| PhysicalDisk 014 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n02 |
-| PhysicalDisk 015 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n02 |
-| PhysicalDisk 016 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n03 |
-| PhysicalDisk 017 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n03 |
-| PhysicalDisk 018 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n03 |
-| PhysicalDisk 019 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n03 |
-| PhysicalDisk 020 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n03 |
-| PhysicalDisk 021 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n03 |
-| PhysicalDisk 022 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n03 |
-| PhysicalDisk 023 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
-| azl-iic-n03 |
-| PhysicalDisk 024 |
-| NVMe |
-| 1789 |
-| Healthy |
-| — |
+| azl-iic-n01 | PhysicalDisk 001 | NVMe | 1789 | Healthy | — |
+| azl-iic-n01 | PhysicalDisk 002 | NVMe | 1789 | Healthy | — |
+| azl-iic-n01 | PhysicalDisk 003 | NVMe | 1789 | Healthy | — |
+| azl-iic-n01 | PhysicalDisk 004 | NVMe | 1789 | Healthy | — |
+| azl-iic-n01 | PhysicalDisk 005 | NVMe | 1789 | Healthy | — |
+| azl-iic-n01 | PhysicalDisk 006 | NVMe | 1789 | Healthy | — |
+| azl-iic-n01 | PhysicalDisk 007 | NVMe | 1789 | Healthy | — |
+| azl-iic-n01 | PhysicalDisk 008 | NVMe | 1789 | Healthy | — |
+| azl-iic-n02 | PhysicalDisk 009 | NVMe | 1789 | Healthy | — |
+| azl-iic-n02 | PhysicalDisk 010 | NVMe | 1789 | Healthy | — |
+| azl-iic-n02 | PhysicalDisk 011 | NVMe | 1789 | Healthy | — |
+| azl-iic-n02 | PhysicalDisk 012 | NVMe | 1789 | Healthy | — |
+| azl-iic-n02 | PhysicalDisk 013 | NVMe | 1789 | Healthy | — |
+| azl-iic-n02 | PhysicalDisk 014 | NVMe | 1789 | Healthy | — |
+| azl-iic-n02 | PhysicalDisk 015 | NVMe | 1789 | Healthy | — |
+| azl-iic-n02 | PhysicalDisk 016 | NVMe | 1789 | Healthy | — |
+| azl-iic-n03 | PhysicalDisk 017 | NVMe | 1789 | Healthy | — |
+| azl-iic-n03 | PhysicalDisk 018 | NVMe | 1789 | Healthy | — |
+| azl-iic-n03 | PhysicalDisk 019 | NVMe | 1789 | Healthy | — |
+| azl-iic-n03 | PhysicalDisk 020 | NVMe | 1789 | Healthy | — |
+| azl-iic-n03 | PhysicalDisk 021 | NVMe | 1789 | Healthy | — |
+| azl-iic-n03 | PhysicalDisk 022 | NVMe | 1789 | Healthy | — |
+| azl-iic-n03 | PhysicalDisk 023 | NVMe | 1789 | Healthy | — |
+| azl-iic-n03 | PhysicalDisk 024 | NVMe | 1789 | Healthy | — |
 
 ## Network Adapter Inventory
 
 | Node | Adapter | Link Speed | Status | MAC Address | Driver |
 | --- --- --- --- --- --- |
-| azl-iic-n01 |
-| NIC1 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:0:00 |
-| — |
-| azl-iic-n01 |
-| NIC2 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:0:01 |
-| — |
-| azl-iic-n01 |
-| NIC3 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:0:02 |
-| — |
-| azl-iic-n01 |
-| NIC4 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:0:03 |
-| — |
-| azl-iic-n02 |
-| NIC1 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:1:00 |
-| — |
-| azl-iic-n02 |
-| NIC2 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:1:01 |
-| — |
-| azl-iic-n02 |
-| NIC3 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:1:02 |
-| — |
-| azl-iic-n02 |
-| NIC4 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:1:03 |
-| — |
-| azl-iic-n03 |
-| NIC1 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:2:00 |
-| — |
-| azl-iic-n03 |
-| NIC2 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:2:01 |
-| — |
-| azl-iic-n03 |
-| NIC3 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:2:02 |
-| — |
-| azl-iic-n03 |
-| NIC4 |
-| 25000000000 |
-| Up |
-| 00:50:56:IIC:2:03 |
-| — |
+| azl-iic-n01 | NIC1 | 25000000000 | Up | 00:50:56:IIC:0:00 | — |
+| azl-iic-n01 | NIC2 | 25000000000 | Up | 00:50:56:IIC:0:01 | — |
+| azl-iic-n01 | NIC3 | 25000000000 | Up | 00:50:56:IIC:0:02 | — |
+| azl-iic-n01 | NIC4 | 25000000000 | Up | 00:50:56:IIC:0:03 | — |
+| azl-iic-n02 | NIC1 | 25000000000 | Up | 00:50:56:IIC:1:00 | — |
+| azl-iic-n02 | NIC2 | 25000000000 | Up | 00:50:56:IIC:1:01 | — |
+| azl-iic-n02 | NIC3 | 25000000000 | Up | 00:50:56:IIC:1:02 | — |
+| azl-iic-n02 | NIC4 | 25000000000 | Up | 00:50:56:IIC:1:03 | — |
+| azl-iic-n03 | NIC1 | 25000000000 | Up | 00:50:56:IIC:2:00 | — |
+| azl-iic-n03 | NIC2 | 25000000000 | Up | 00:50:56:IIC:2:01 | — |
+| azl-iic-n03 | NIC3 | 25000000000 | Up | 00:50:56:IIC:2:02 | — |
+| azl-iic-n03 | NIC4 | 25000000000 | Up | 00:50:56:IIC:2:03 | — |
 
 ## Domain Summary
 
