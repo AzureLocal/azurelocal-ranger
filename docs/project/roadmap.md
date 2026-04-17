@@ -118,46 +118,32 @@ Stabilisation milestone. Fixed broken report output, crashes, and incorrect defa
 | Wizard format list bug | Default changed from `html,markdown,json,svg` (invalid `json`) to `html,markdown,docx,xlsx,pdf,svg` with prompt label listing valid set | [#195](https://github.com/AzureLocal/azurelocal-ranger/issues/195) |
 | Key Vault DNS crash | Actionable error message on DNS failure naming likely causes; graceful fallback to `Get-Credential` when `behavior.promptForMissingCredentials: true` | [#198](https://github.com/AzureLocal/azurelocal-ranger/issues/198) |
 
-## v2.0.0 — Extended Collectors & WAF Intelligence
+## v2.2.0 — WAF Compliance Guidance
 
-Second wave of ARM collectors covering the full Arc VM infrastructure surface, weighted WAF scoring, AHB cost analysis, and operational robustness patterns.
-
-### Arc VM Infrastructure
+Turn the WAF Assessment section from a snapshot of what is broken into an actionable compliance roadmap. Every feature builds on the weighted scoring engine shipped in v2.0.0 (#225).
 
 | Item | Detail | Issue |
 | --- | --- | --- |
-| Logical networks and subnet detail (#216) | Collect `Microsoft.AzureStackHCI/logicalNetworks` — subnets, VLANs, IP pools, DHCP, VM switch association | [#216](https://github.com/AzureLocal/azurelocal-ranger/issues/216) |
-| Storage paths collector (#217) | Collect `Microsoft.AzureStackHCI/storageContainers` with CSV cross-reference and orphaned container detection | [#217](https://github.com/AzureLocal/azurelocal-ranger/issues/217) |
-| Arc Resource Bridge and Arc VM collector (#219) | Collect `Microsoft.ResourceConnector/appliances` and `virtualMachineInstances`; classify VMs as native Hyper-V vs Arc-provisioned | [#219](https://github.com/AzureLocal/azurelocal-ranger/issues/219) |
-| Custom locations collector (#218) | Collect `Microsoft.ExtendedLocation/customLocations` associated with Arc infrastructure | [#218](https://github.com/AzureLocal/azurelocal-ranger/issues/218) |
-| Marketplace and custom image collector (#221) | Collect `marketplaceGalleryImages` and `galleryImages` with storagePathId cross-reference | [#221](https://github.com/AzureLocal/azurelocal-ranger/issues/221) |
-| Arc Gateway collector (#220) | Collect `Microsoft.HybridCompute/gateways` with per-node routing detection and mixed-routing findings | [#220](https://github.com/AzureLocal/azurelocal-ranger/issues/220) |
-| Arc machine extension collection (#215) | Inventory installed Arc extensions per node — version, status, and configuration | [#215](https://github.com/AzureLocal/azurelocal-ranger/issues/215) |
+| Structured remediation block per rule | Replace the one-line `recommendation` string with `{ rationale, steps[], samplePowerShell, estimatedEffort, estimatedImpact, dependencies[], docsUrl }` so every failing rule becomes a mini-runbook | [#236](https://github.com/AzureLocal/azurelocal-ranger/issues/236) |
+| Prioritized Compliance Roadmap section | Rank failing rules into Now / Next / Later tiers by `priorityScore = weight × severity × impact / effort` and surface as a new report section + Power BI CSV | [#241](https://github.com/AzureLocal/azurelocal-ranger/issues/241) |
+| Gap-to-goal projection | Greedy fix plan that shows "Current 65% — closing these 3 findings raises you to 82%" using the weighted scoring math | [#242](https://github.com/AzureLocal/azurelocal-ranger/issues/242) |
+| Per-pillar compliance checklist section | One subsection per WAF pillar (Reliability / Security / Cost / OpEx / Perf) with signable checkbox column in HTML, Markdown, and DOCX (Word content controls) | [#238](https://github.com/AzureLocal/azurelocal-ranger/issues/238) |
+| `Get-RangerRemediation` command | Emits copy-pasteable `.ps1` / markdown runbook / checklist for one or more findings; dry-run by default, `-Commit` to execute | [#243](https://github.com/AzureLocal/azurelocal-ranger/issues/243) |
 
-### WAF & Cost
+Dependency order inside the milestone: **#236 first** (foundation), then **#241 + #238** in parallel (consume the structured block), then **#242 + #243** on top (consume the priority score and remediation scripts).
 
-| Item | Detail | Issue |
-| --- | --- | --- |
-| Weighted WAF scoring (#225) | Weight 1–3 per check; warnings count as 0.5× weight — replaces flat pass/fail scoring | [#225](https://github.com/AzureLocal/azurelocal-ranger/issues/225) |
-| WAF config download and hot-swap (#226) | Download and upload `waf-rules.json` via CLI without re-running collection | [#226](https://github.com/AzureLocal/azurelocal-ranger/issues/226) |
-| AHB and cost analysis (#222) | Cluster-level AHB detection, per-core cost calculation, KPI cards, WAF Cost Optimization check, savings banner | [#222](https://github.com/AzureLocal/azurelocal-ranger/issues/222) |
+## v2.3.0 — Cloud Publishing
 
-### Report & Output
+Publish Ranger run output to Azure for downstream consumption — web apps, Event Grid pipelines, Fabric, Log Analytics, Sentinel hunts. Unlocks multi-run trending and cross-cluster dashboards without forcing every shop to reinvent the plumbing.
 
 | Item | Detail | Issue |
 | --- | --- | --- |
-| JSON evidence export (#229) | Raw collected data export — no scoring or assessment metadata, for downstream tooling | [#229](https://github.com/AzureLocal/azurelocal-ranger/issues/229) |
-| Portrait/landscape switching and cell coloring in PDF (#227) | Conditional page orientation and colour-coded cells in PDF output | [#227](https://github.com/AzureLocal/azurelocal-ranger/issues/227) |
-| Pricing footer with dated reference (#228) | Pricing footnote with dated URL reference in PDF and HTML reports | [#228](https://github.com/AzureLocal/azurelocal-ranger/issues/228) |
-| Agent version grouping and software version report (#224) | Group nodes by Arc agent version; surface version skew as a finding | [#224](https://github.com/AzureLocal/azurelocal-ranger/issues/224) |
-| VM distribution balance analysis (#223) | Detect VM distribution imbalance across cluster nodes | [#223](https://github.com/AzureLocal/azurelocal-ranger/issues/223) |
+| Azure Blob publisher | `Publish-RangerRun` command + `-PublishToStorage` flag. Uploads manifest, evidence, package index (optionally reports + Power BI bundle) to a named storage account. Managed Identity / Entra RBAC / Key-Vault-sourced SAS auth; blob tags for `cluster` / `mode` / `toolVersion` / `runId`; idempotent by SHA-256 | [#244](https://github.com/AzureLocal/azurelocal-ranger/issues/244) |
+| Catalog + latest-pointer blob | `_catalog/{cluster}/latest.json` overwritten per run and `_catalog/_index.json` updated with ETag concurrency. One well-known blob answers "latest run per cluster" and "all clusters in this account" without listing | [#245](https://github.com/AzureLocal/azurelocal-ranger/issues/245) |
+| Event-driven integration recipes | Docs page + working `samples/cloud-publishing/` with Bicep + C# Azure Function + Fabric Power Query + KQL workbook + Teams webhook samples. Covers the common "BlobCreated → Function → [consumer]" wiring so operators copy-paste instead of reinventing | [#246](https://github.com/AzureLocal/azurelocal-ranger/issues/246) |
+| Log Analytics Workspace alternative sink | Post a distilled record directly to `RangerRun_CL` + optional `RangerFinding_CL` custom tables via the Logs Ingestion API + DCE/DCR. Native Sentinel hunting rules, Workbooks, and alert rules without the blob-to-LAW bridge | [#247](https://github.com/AzureLocal/azurelocal-ranger/issues/247) |
 
-### Robustness
-
-| Item | Detail | Issue |
-| --- | --- | --- |
-| Module auto-install and auto-update on startup (#231) | Validate, install, and update required modules at startup with `-SkipModuleUpdate` opt-out | [#231](https://github.com/AzureLocal/azurelocal-ranger/issues/231) |
-| Concurrent collection guard and empty-data safeguard (#230) | Prevent overlapping collection runs; handle empty collector results without report failures | [#230](https://github.com/AzureLocal/azurelocal-ranger/issues/230) |
+Dependency order: **#244 first** (foundation), **#245** on top, then **#246** (docs + samples) and **#247** (alternative sink) in parallel.
 
 ## v2.5.0 — Extended Platform Coverage
 
