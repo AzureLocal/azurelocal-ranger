@@ -2,7 +2,7 @@
 
 - Cluster: azlocal-iic-01
 - Mode: current-state
-- Ranger Version: 1.5.0
+- Ranger Version: 1.6.0
 - Generated: 04/06/2026 12:08:32
 - Schema validation: passed or warnings only
 
@@ -273,32 +273,32 @@
 | Pillar | Score | Status | Rules Passing | Top Finding |
 | --- --- --- --- --- |
 | Reliability |
-| 67% |
-| Needs Attention |
+| 0% |
+| At Risk |
 | 4 / 6 |
 | Cluster quorum is configured |
 | Security |
-| 17% |
+| 0% |
 | At Risk |
 | 1 / 6 |
 | Secured-Core is enabled on cluster nodes |
 | Cost Optimization |
-| 50% |
-| Needs Attention |
+| 0% |
+| At Risk |
 | 1 / 2 |
 | ESU-eligible VMs are enrolled in Extended Security Updates |
 | Operational Excellence |
-| 33% |
+| 0% |
 | At Risk |
 | 2 / 6 |
 | Azure Monitor alert rules are defined |
 | Performance Efficiency |
-| 67% |
-| Needs Attention |
+| 0% |
+| At Risk |
 | 2 / 3 |
 | Storage utilization is within safe limits |
 
-_Overall WAF score: 43% (10 of 23 rules passing). Evaluated from saved manifest — no re-collection required._
+_Overall WAF score: 0% (10 of 23 rules passing). Evaluated from saved manifest — no re-collection required._
 
 ## WAF Assessment — Findings
 
@@ -692,7 +692,7 @@ _Overall WAF score: 43% (10 of 23 rules passing). Evaluated from saved manifest 
 -   Invoke-AzureLocalRanger -ManifestPath <path-to-manifest.json> -OutputPath <output-folder>
 - Manifest schema version: 1.1.0-draft
 - Collection completed: 04/06/2026 12:08:32
-- Ranger version: 1.5.0
+- Ranger version: 1.6.0
 
 ## Recommendations
 

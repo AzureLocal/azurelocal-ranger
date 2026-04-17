@@ -1,8 +1,12 @@
 # Project Status
 
-## Current Release Track — v1.5.0
+## Current Release Track — v1.6.0
 
-AzureLocalRanger v1.5.0 — Document Quality — is the current release. It lands the as-built document redesign (Installation and Configuration Record with per-node, network, storage, Azure, identity, validation, and deviations records), distinct mode differentiation (CONFIDENTIAL as-built vs INTERNAL current-state), inline architecture diagrams in HTML, fixed-layout tables, severity-coloured finding callouts, print CSS, and two priority bug fixes (wizard format defaults, Key Vault DNS graceful fallback). v1.4.2 was field-validated against a live tplabs-clus01 cluster via Operation TRAILHEAD; v1.5.0 is a stabilisation release on that foundation.
+AzureLocalRanger v1.6.0 — Platform Intelligence — is the current release. It lands auto-discovery of resource group and cluster FQDN (from Azure Arc and from on-prem TrustedHosts / DNS fallbacks), a multi-method Azure auth chain (service-principal-cert, tenant-matching context reuse, sovereign-cloud), a dedicated pre-run permission audit (`Test-RangerPermissions` with `-SkipPreCheck` opt-out), cross-RG node fallback, Azure Resource Graph single-query discovery, graceful degradation on partial Azure permissions, file-based progress IPC for background runspaces, high-fidelity PDF rendering via headless Edge, DOCX OOXML tables, XLSX formula-injection safety, a new Power BI CSV + star-schema export, and graduated WAF threshold scoring. v1.5.0 — Document Quality — remains the previous release.
+
+## Previous Release — v1.5.0 — Document Quality
+
+AzureLocalRanger v1.5.0 — Document Quality. It lands the as-built document redesign (Installation and Configuration Record with per-node, network, storage, Azure, identity, validation, and deviations records), distinct mode differentiation (CONFIDENTIAL as-built vs INTERNAL current-state), inline architecture diagrams in HTML, fixed-layout tables, severity-coloured finding callouts, print CSS, and two priority bug fixes (wizard format defaults, Key Vault DNS graceful fallback). v1.4.2 was field-validated against a live tplabs-clus01 cluster via Operation TRAILHEAD; v1.5.0 is a stabilisation release on that foundation.
 
 ```powershell
 Install-Module AzureLocalRanger -Force
@@ -37,7 +41,17 @@ Import-Module AzureLocalRanger
 | HTML report visual quality | ✅ Complete — inline architecture diagrams, fixed-layout tables, severity callouts, print CSS, sign-off signature lines (#192) |
 | Report output (HTML/Markdown/JSON/DOCX/XLSX/PDF) | ✅ Complete |
 | Diagram output (SVG/draw.io) | ✅ Complete |
-| PSGallery release | 🟡 `1.4.2` current on PSGallery; `1.5.0` ready for publish |
+| PSGallery release | 🟡 `1.4.2` current on PSGallery; `1.5.0` + `1.6.0` ready for publish |
+| Azure auto-discovery (RG + FQDN) | ✅ Complete — Arc-first with TrustedHosts / DNS on-prem fallback (#196, #197, #203) |
+| Multi-method Azure auth chain | ✅ Complete — SPN cert, SPN secret, MI, device-code, existing-context with tenant-match reuse, sovereign-cloud env (#200) |
+| Pre-run permission audit | ✅ Complete — `Test-RangerPermissions`, default-on with `-SkipPreCheck` opt-out (#202, #212) |
+| Cross-RG node/VM fallback | ✅ Complete — Arc machines query with subscription-wide fallback (#204) |
+| Azure Resource Graph fast path | ✅ Complete — `Search-AzGraph` single query with Get-AzResource fallback (#205) |
+| Graceful ARM degradation | ✅ Complete — error classifier, skipped-resources tracker, `behavior.failOnPartialDiscovery` gate (#206) |
+| Headless-browser PDF | ✅ Complete — Edge / Chrome `--print-to-pdf` with plain-text fallback (#207) |
+| Word (DOCX) OOXML tables | ✅ Complete — `table` / `kv` / `sign-off` render as real Word tables (#208) |
+| Power BI CSV + star-schema | ✅ Complete — nodes/volumes/pools/health-checks/adapters + `_relationships.json` (#210) |
+| Graduated WAF scoring | ✅ Complete — threshold bands, named aggregate calculations (#214) |
 | Arc-first node inventory | ✅ Complete |
 | Domain auto-detection | ✅ Complete |
 | Parameter-first input model | ✅ Complete |

@@ -2,7 +2,7 @@
 
 - Cluster: azlocal-iic-01
 - Mode: as-built
-- Ranger Version: 1.5.0
+- Ranger Version: 1.6.0
 - Generated: 04/06/2026 12:08:32
 - Schema validation: passed or warnings only
 
@@ -48,11 +48,11 @@
 ## Document Control
 
 **Document Title**: Azure Local As-Built Documentation — azlocal-iic-01
-**Package ID**: azlocal-iic-01-as-built-20260416T232955Z
+**Package ID**: azlocal-iic-01-as-built-20260417T001252Z
 **Report Tier**: technical
 **Revision**: 1.0 (initial handoff)
 **Classification**: CONFIDENTIAL — CUSTOMER DELIVERABLE
-**Prepared By Azure Local Ranger v1.5.0**: 
+**Prepared By Azure Local Ranger v1.6.0**: 
 **Prepared On**: 04/06/2026 12:08:32
 **Schema Version**: 1.1.0-draft
 **Document Status**: FINAL — AS-BUILT HANDOFF
@@ -557,7 +557,7 @@
 -   Invoke-AzureLocalRanger -ManifestPath <path-to-manifest.json> -OutputPath <output-folder>
 - Manifest schema version: 1.1.0-draft
 - Collection completed: 04/06/2026 12:08:32
-- Ranger version: 1.5.0
+- Ranger version: 1.6.0
 
 ## Installation Register (Bill of Materials)
 

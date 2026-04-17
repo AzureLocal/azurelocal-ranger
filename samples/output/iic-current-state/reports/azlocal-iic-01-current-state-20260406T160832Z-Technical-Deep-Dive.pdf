@@ -33,7 +33,7 @@ T*
 T*
 (  Mode:             current-state) Tj
 T*
-(  Ranger Version:   1.5.0) Tj
+(  Ranger Version:   1.6.0) Tj
 T*
 (  Generated:        04/06/2026 12:08:32) Tj
 T*
@@ -63,7 +63,7 @@ T*
 T*
 (Mode: current-state) Tj
 T*
-(Ranger Version: 1.5.0) Tj
+(Ranger Version: 1.6.0) Tj
 T*
 (Generated: 04/06/2026 12:08:32) Tj
 T*
@@ -577,7 +577,7 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 11 0 R >>
 endobj
 13 0 obj
-<< /Length 1742 >>
+<< /Length 1732 >>
 stream
 BT
 /F1 10 Tf
@@ -671,9 +671,9 @@ T*
 T*
 (Reliability) Tj
 T*
-(67%) Tj
+(0%) Tj
 T*
-(Needs Attention) Tj
+(At Risk) Tj
 T*
 (4 / 6) Tj
 T*
@@ -681,7 +681,7 @@ T*
 T*
 (Security) Tj
 T*
-(17%) Tj
+(0%) Tj
 T*
 ET
 
@@ -691,7 +691,7 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 35 0 R >> >> /Contents 13 0 R >>
 endobj
 15 0 obj
-<< /Length 2052 >>
+<< /Length 2033 >>
 stream
 BT
 /F1 10 Tf
@@ -705,9 +705,9 @@ T*
 T*
 (Cost Optimization) Tj
 T*
-(50%) Tj
+(0%) Tj
 T*
-(Needs Attention) Tj
+(At Risk) Tj
 T*
 (1 / 2) Tj
 T*
@@ -715,7 +715,7 @@ T*
 T*
 (Operational Excellence) Tj
 T*
-(33%) Tj
+(0%) Tj
 T*
 (At Risk) Tj
 T*
@@ -725,9 +725,9 @@ T*
 T*
 (Performance Efficiency) Tj
 T*
-(67%) Tj
+(0%) Tj
 T*
-(Needs Attention) Tj
+(At Risk) Tj
 T*
 (2 / 3) Tj
 T*
@@ -1667,7 +1667,7 @@ T*
 T*
 (- Collection completed: 04/06/2026 12:08:32) Tj
 T*
-(- Ranger version: 1.5.0) Tj
+(- Ranger version: 1.6.0) Tj
 T*
 ( ) Tj
 T*
@@ -1786,8 +1786,8 @@ endobj
 xref
 0 36
 0000000000 65535 f 
-0000000017 00000 n `n0000000066 00000 n `n0000000227 00000 n `n0000001923 00000 n `n0000002050 00000 n `n0000003962 00000 n `n0000004089 00000 n `n0000005572 00000 n `n0000005699 00000 n `n0000008090 00000 n `n0000008218 00000 n `n0000009590 00000 n `n0000009719 00000 n `n0000011514 00000 n `n0000011643 00000 n `n0000013748 00000 n `n0000013877 00000 n `n0000016135 00000 n `n0000016264 00000 n `n0000017817 00000 n `n0000017946 00000 n `n0000019120 00000 n `n0000019249 00000 n `n0000020240 00000 n `n0000020369 00000 n `n0000021378 00000 n `n0000021507 00000 n `n0000022688 00000 n `n0000022817 00000 n `n0000024528 00000 n `n0000024657 00000 n `n0000027479 00000 n `n0000027608 00000 n `n0000029117 00000 n `n0000029246 00000 n `ntrailer
+0000000017 00000 n `n0000000066 00000 n `n0000000227 00000 n `n0000001923 00000 n `n0000002050 00000 n `n0000003962 00000 n `n0000004089 00000 n `n0000005572 00000 n `n0000005699 00000 n `n0000008090 00000 n `n0000008218 00000 n `n0000009590 00000 n `n0000009719 00000 n `n0000011504 00000 n `n0000011633 00000 n `n0000013719 00000 n `n0000013848 00000 n `n0000016106 00000 n `n0000016235 00000 n `n0000017788 00000 n `n0000017917 00000 n `n0000019091 00000 n `n0000019220 00000 n `n0000020211 00000 n `n0000020340 00000 n `n0000021349 00000 n `n0000021478 00000 n `n0000022659 00000 n `n0000022788 00000 n `n0000024499 00000 n `n0000024628 00000 n `n0000027450 00000 n `n0000027579 00000 n `n0000029088 00000 n `n0000029217 00000 n `ntrailer
 << /Size 36 /Root 1 0 R >>
 startxref
-29317
+29288
 %%EOF

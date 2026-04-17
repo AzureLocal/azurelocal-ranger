@@ -2,6 +2,22 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
+## v1.6.0 Highlights — Platform Intelligence
+
+- **Auto-discovery (#196, #197, #203)** — resource group and cluster FQDN resolved from Azure Arc, then from on-prem TrustedHosts / DNS. Removes required prompts when credentials are present.
+- **Multi-method Azure auth (#200, #201)** — service-principal certificate support, tenant-matching context reuse (no MFA re-prompt), sovereign-cloud environment forwarding, and `Save-AzContext` handoff helpers for background runspaces.
+- **`Test-RangerPermissions` + `-SkipPreCheck` (#202, #212)** — dedicated pre-run RBAC and resource-provider audit runs by default; aborts on `Insufficient`, warns on `Partial`, skipped automatically in fixture mode.
+- **Cross-RG node fallback (#204)** — Arc machines query with subscription-wide fallback and per-cross-RG warnings.
+- **Azure Resource Graph fast path (#205)** — `Search-AzGraph` single-query discovery replaces per-type `Get-AzResource` loops; graceful fallback when `Az.ResourceGraph` is absent.
+- **Graceful degradation (#206)** — ARM error classifier, `manifest.run.skippedResources` tracker, `behavior.failOnPartialDiscovery` config gate.
+- **`-Wizard` inline (#211)** — `Invoke-AzureLocalRanger -Wizard` routes to the interactive wizard; prompt text surfaces it as the recommended alternative.
+- **Progress IPC (#213)** — file-based `Write`/`Read`/`Remove-RangerProgressState` for background-runspace progress.
+- **High-fidelity PDF (#207)** — headless Edge / Chrome renders the HTML report to PDF; plain-text fallback when no browser is available. Sample PDFs are now 10-20× larger and include full HTML formatting.
+- **DOCX OOXML tables (#208)** — `section.type='table'`, `'kv'`, `'sign-off'` now render as real Word tables with header styling and borders.
+- **XLSX formula-injection safety (#209)** — values starting with `=`, `+`, `-`, `@` are apostrophe-prefixed.
+- **Power BI CSV + star-schema (#210)** — `powerbi` output format produces 5 flat CSVs plus `_relationships.json` and `_metadata.json` ready for Power BI Desktop / Fabric import.
+- **Graduated WAF scoring (#214)** — threshold-banded point awards and named aggregate calculations.
+
 ## v1.5.0 Highlights — Document Quality
 
 - **As-built document redesign (#193)** — new Installation and Configuration Record tier with per-node configuration, network address allocation, storage configuration, Azure integration, identity/security records, a validation record, and a known-issues/deviations register; deployment past-tense framing

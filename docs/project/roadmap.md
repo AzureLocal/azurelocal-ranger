@@ -8,6 +8,47 @@ Ranger supports two outcomes through one discovery engine:
 - **Current-state** — recurring operational snapshot of a live Azure Local deployment
 - **As-built** — formal documentation package for customer or operational handoff
 
+## Shipped — v1.6.0 — Platform Intelligence (2026-04-16)
+
+Auth, connectivity, discovery, and output-format uplift. Establishes the engine foundations that all subsequent collector and WAF work depends on.
+
+### Auth & Connectivity
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Multi-method Azure auth chain | SPN cert (thumbprint / PFX), tenant-matching context reuse, sovereign-cloud environment, existing / device-code / MI / SPN-secret | [#200](https://github.com/AzureLocal/azurelocal-ranger/issues/200) |
+| Save-AzContext for background runspaces | `Export-RangerAzureContext` / `Import-RangerAzureContext` helpers for runspace handoff | [#201](https://github.com/AzureLocal/azurelocal-ranger/issues/201) |
+| Pre-run RBAC and resource-provider audit | `Test-RangerPermissions`; default-on at start of `Invoke-AzureLocalRanger` | [#202](https://github.com/AzureLocal/azurelocal-ranger/issues/202) |
+| WinRM TrustedHosts + DNS fallback chain | Passthrough → TrustedHosts scan → DNS `GetHostEntry` for cluster / node FQDN resolution | [#203](https://github.com/AzureLocal/azurelocal-ranger/issues/203) |
+| Node / VM cross-resource-group fallback | Arc machines query with subscription-wide fallback and per-cross-RG warnings | [#204](https://github.com/AzureLocal/azurelocal-ranger/issues/204) |
+| Azure Resource Graph single-query discovery | `Search-AzGraph` KQL fast path with `Get-AzResource` fallback | [#205](https://github.com/AzureLocal/azurelocal-ranger/issues/205) |
+| Graceful degradation on partial Azure permissions | Error classifier + `manifest.run.skippedResources` + `behavior.failOnPartialDiscovery` | [#206](https://github.com/AzureLocal/azurelocal-ranger/issues/206) |
+
+### Discovery
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Auto-discover resource group | Subscription-wide ARM search when `targets.azure.resourceGroup` is absent | [#196](https://github.com/AzureLocal/azurelocal-ranger/issues/196) |
+| Auto-discover cluster FQDN | Arc properties first, TrustedHosts / DNS on-prem fallback | [#197](https://github.com/AzureLocal/azurelocal-ranger/issues/197) |
+
+### Output Formats
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| PDF via headless Edge / Chrome | `--headless=new --print-to-pdf` renders HTML; plain-text fallback when no browser | [#207](https://github.com/AzureLocal/azurelocal-ranger/issues/207) |
+| DOCX OOXML tables | `section.type='table'` / `'kv'` / `'sign-off'` render as real Word tables | [#208](https://github.com/AzureLocal/azurelocal-ranger/issues/208) |
+| XLSX formula-injection safety | Cells starting with `=`, `+`, `-`, `@` are apostrophe-prefixed | [#209](https://github.com/AzureLocal/azurelocal-ranger/issues/209) |
+| Power BI CSV + star-schema export | Five CSVs + `_relationships.json` + `_metadata.json` bundle ready for Power BI Desktop / Fabric | [#210](https://github.com/AzureLocal/azurelocal-ranger/issues/210) |
+
+### Engine
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| `-Wizard` as inline parameter | `Invoke-AzureLocalRanger -Wizard` dispatches to the interactive wizard | [#211](https://github.com/AzureLocal/azurelocal-ranger/issues/211) |
+| `-SkipPreCheck` flag | Pre-run audit default-on; opt-out via flag or `behavior.skipPreCheck` | [#212](https://github.com/AzureLocal/azurelocal-ranger/issues/212) |
+| File-based progress IPC | `Write`/`Read`/`Remove-RangerProgressState` for background runspace progress | [#213](https://github.com/AzureLocal/azurelocal-ranger/issues/213) |
+| Graduated threshold WAF scoring | Threshold bands with named aggregate calculations in `waf-rules.json` | [#214](https://github.com/AzureLocal/azurelocal-ranger/issues/214) |
+
 ## Shipped — v1.5.0 — Document Quality (2026-04-16)
 
 Stabilisation milestone. Fixed broken report output, crashes, and incorrect defaults before new capability work begins.
@@ -19,47 +60,6 @@ Stabilisation milestone. Fixed broken report output, crashes, and incorrect defa
 | as-built vs current-state differentiation | Distinct tier names, classification banner (CONFIDENTIAL vs INTERNAL), subtitle (Post-Deployment As-Built Package vs Live Discovery Report); Health Status traffic lights and WAF scorecard suppressed in as-built | [#194](https://github.com/AzureLocal/azurelocal-ranger/issues/194) |
 | Wizard format list bug | Default changed from `html,markdown,json,svg` (invalid `json`) to `html,markdown,docx,xlsx,pdf,svg` with prompt label listing valid set | [#195](https://github.com/AzureLocal/azurelocal-ranger/issues/195) |
 | Key Vault DNS crash | Actionable error message on DNS failure naming likely causes; graceful fallback to `Get-Credential` when `behavior.promptForMissingCredentials: true` | [#198](https://github.com/AzureLocal/azurelocal-ranger/issues/198) |
-
-## v1.6.0 — Platform Intelligence
-
-Auth, connectivity, discovery, and output format uplift. Establishes the engine foundations that all subsequent collector and WAF work depends on.
-
-### Auth & Connectivity
-
-| Item | Detail | Issue |
-| --- | --- | --- |
-| Multi-method Azure auth chain (#200) | SPN cert, SPN secret, Managed Identity, Device Code, and existing context — automatic fallback chain | [#200](https://github.com/AzureLocal/azurelocal-ranger/issues/200) |
-| Save-AzContext for background runspaces (#201) | Propagate Azure context into background collection runspaces so Azure collectors work in parallel | [#201](https://github.com/AzureLocal/azurelocal-ranger/issues/201) |
-| Pre-run RBAC and resource provider audit (#202) | `Test-RangerPermissions` surfaces missing roles and unregistered providers before collection starts | [#202](https://github.com/AzureLocal/azurelocal-ranger/issues/202) |
-| WinRM TrustedHosts + DNS fallback chain (#203) | Resolve node addresses via FQDN, IP, and DNS fallback before failing — removes most pre-Arc connectivity errors | [#203](https://github.com/AzureLocal/azurelocal-ranger/issues/203) |
-| Node and VM cross-resource-group fallback (#204) | Find nodes and VMs whose ARM resources are in a different resource group from the cluster | [#204](https://github.com/AzureLocal/azurelocal-ranger/issues/204) |
-| Azure Resource Graph single-query discovery (#205) | Replace per-type `Get-AzResource` loops with a single Resource Graph query — faster and more reliable at scale | [#205](https://github.com/AzureLocal/azurelocal-ranger/issues/205) |
-| Graceful degradation on partial Azure permissions (#206) | Per-subscription try/catch/continue — partial permissions produce partial results, not a crash | [#206](https://github.com/AzureLocal/azurelocal-ranger/issues/206) |
-
-### Discovery
-
-| Item | Detail | Issue |
-| --- | --- | --- |
-| Auto-discover resource group (#196) | Derive resource group from subscription + cluster name — removes required prompt when Azure credentials are present | [#196](https://github.com/AzureLocal/azurelocal-ranger/issues/196) |
-| Auto-discover cluster FQDN from Arc (#197) | Derive cluster FQDN from Arc machine resources — removes required prompt when Azure credentials are present | [#197](https://github.com/AzureLocal/azurelocal-ranger/issues/197) |
-
-### Output Formats
-
-| Item | Detail | Issue |
-| --- | --- | --- |
-| PDF output (#207) | Headless Edge/Chrome `--print-to-pdf` — zero library dependency, no Office required | [#207](https://github.com/AzureLocal/azurelocal-ranger/issues/207) |
-| Word (DOCX) output (#208) | OOXML ZIP construction — no Office, no COM dependency | [#208](https://github.com/AzureLocal/azurelocal-ranger/issues/208) |
-| XLSX output (#209) | ImportExcel module — no COM, no Office, multi-tab workbook per report tier | [#209](https://github.com/AzureLocal/azurelocal-ranger/issues/209) |
-| Power BI CSV export (#210) | Star-schema CSV + manifest for direct Power BI import | [#210](https://github.com/AzureLocal/azurelocal-ranger/issues/210) |
-
-### Engine
-
-| Item | Detail | Issue |
-| --- | --- | --- |
-| `-Wizard` as inline parameter (#211) | Move wizard into `Invoke-AzureLocalRanger -Wizard` — eliminates the separate `Invoke-RangerWizard` entry point | [#211](https://github.com/AzureLocal/azurelocal-ranger/issues/211) |
-| `-SkipPreCheck` flag (#212) | Permission audit runs by default; opt out with `-SkipPreCheck` | [#212](https://github.com/AzureLocal/azurelocal-ranger/issues/212) |
-| File-based progress IPC (#213) | Write per-collector progress to temp files so background runspaces can report status to the foreground session | [#213](https://github.com/AzureLocal/azurelocal-ranger/issues/213) |
-| Graduated threshold WAF scoring (#214) | Weight 1–3 per check with named calculation references in `waf-rules.json` | [#214](https://github.com/AzureLocal/azurelocal-ranger/issues/214) |
 
 ## v2.0.0 — Extended Collectors & WAF Intelligence
 

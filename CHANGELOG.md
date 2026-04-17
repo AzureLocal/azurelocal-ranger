@@ -8,6 +8,40 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [1.6.0] — 2026-04-16
+
+### Added — Auth and Discovery
+
+- **Auto-discover resource group (#196)** — `Resolve-RangerClusterArcResource` falls back to a subscription-wide ARM search by cluster name when `targets.azure.resourceGroup` is absent; the discovered RG is written back into the resolved config for downstream callers.
+- **Auto-discover cluster FQDN (#197)** — new `Invoke-RangerAzureAutoDiscovery` runs before prompts and validation. Pulls the FQDN from Arc properties (`dnsName`, `reportedProperties.clusterId`, or `name + domainName`), or composes it from a resolved Arc domain. Eliminates the field-by-field prompt when Azure credentials are present.
+- **Multi-method Azure auth chain (#200)** — `Connect-RangerAzureContext` now supports `service-principal-cert` (certificate thumbprint or PFX path with optional password), tenant-matching existing-context reuse (no re-auth when the loaded context already matches the requested tenant), and sovereign-cloud environment forwarding.
+- **Save-AzContext handoff (#201)** — new `Export-RangerAzureContext` and `Import-RangerAzureContext` helpers. Runs save the Az session to a temp file for handoff into a background runspace that imports it as its first action; temp file is deleted by default after import.
+- **Azure Resource Graph single-query (#205)** — new `Get-RangerArmResourcesByGraph` runs a single `Search-AzGraph` KQL query for a configurable list of resource types, scoped optionally to subscription / RG / management group. `Resolve-RangerArcMachinesForCluster` now uses Resource Graph as the fast path with `Get-AzResource` fallback when `Az.ResourceGraph` is absent.
+
+### Added — Connectivity
+
+- **WinRM TrustedHosts + DNS fallback (#203)** — new `Resolve-RangerClusterFqdn` and `Resolve-RangerNodeFqdn` implement a passthrough → TrustedHosts scan → DNS `GetHostEntry` chain. Wired into `Invoke-RangerAzureAutoDiscovery` so on-prem environments resolve FQDNs without Azure.
+- **Node / VM cross-RG fallback (#204)** — new `Resolve-RangerArcMachinesForCluster` runs an RG-scoped Arc machines query first, then a subscription-wide fallback when nodes live outside the cluster RG. Emits a `warning` per cross-RG node and reports them via `CrossRg`.
+
+### Added — Commands and UX
+
+- **`Invoke-AzureLocalRanger -Wizard` (#211)** — inline `-Wizard` / `-OutputConfigPath` / `-SkipRun` parameters on the main command dispatch to `Invoke-RangerWizard`. Missing-input prompts now surface `Invoke-AzureLocalRanger -Wizard` as the recommended alternative to field-by-field prompting.
+- **`Test-RangerPermissions` (#202)** — new public command. Checks Azure context, Subscription Reader, HCI cluster read, Arc machine read, Key Vault secret access (when `keyvault://` refs exist), and `Microsoft.AzureStackHCI` / `Microsoft.HybridCompute` provider registration. `-OutputFormat console|json|markdown`.
+- **`-SkipPreCheck` (#212)** — the pre-run permission audit runs by default. Failed audit aborts with actionable remediation; partial emits a warning and continues. Skipped automatically in fixture mode. Opt out via `-SkipPreCheck` or `behavior.skipPreCheck: true`.
+- **File-based progress IPC (#213)** — new `Write-RangerProgressState`, `Read-RangerProgressState`, and `Remove-RangerProgressState` write atomic JSON snapshots to `$env:TEMP\ranger-progress-<RunId>.json`. Path-traversal-safe `RunId` sanitisation. Foundation for background-runspace progress reporting.
+
+### Added — Resilience
+
+- **Graceful degradation on partial Azure permissions (#206)** — new `Get-RangerArmErrorCategory` classifier (Authorization / NetworkUnreachable / NotFound / Throttled / Other) plus a skipped-resources tracker. `Resolve-RangerClusterArcResource` and Resource Graph queries record skips with category + reason; `manifest.run.skippedResources` surfaces partial runs. A warning finding is added when any skip occurred. New `behavior.failOnPartialDiscovery` (default `false`) aborts the run at end-of-collection when set.
+
+### Added — Output formats
+
+- **Headless-browser PDF (#207)** — new `Resolve-RangerHeadlessBrowser` and `Invoke-RangerHeadlessPdf`; the `pdf` format renders the HTML report through `msedge --headless=new --print-to-pdf` for high-fidelity output. The existing plain-text PDF writer remains the fallback when no browser is found. Sample output sizes jumped from ~40 KB plain-text to 440–812 KB rendered HTML.
+- **DOCX OOXML tables (#208)** — `section.type='table'`, `'kv'`, and `'sign-off'` now render as real Word tables with header styling, borders, and caption rows. Previously these section types rendered as empty paragraphs.
+- **XLSX formula-injection safety (#209)** — cell values that begin with `=`, `+`, `-`, or `@` are apostrophe-prefixed so Excel treats them as literal text. Existing multi-tab workbook, frozen header, and auto-filter behaviour retained.
+- **Power BI CSV + star-schema export (#210)** — new `Invoke-RangerPowerBiExport` produces `nodes.csv`, `volumes.csv`, `storage-pools.csv`, `health-checks.csv`, `network-adapters.csv`, `_relationships.json` (star-schema manifest), and `_metadata.json`. Added `powerbi` to supported `OutputFormats`. All CSV values sanitised against formula injection and embedded newlines.
+- **Graduated WAF scoring (#214)** — `Invoke-RangerWafRuleEvaluation` now supports a `thresholds` array with graduated point awards, named `calculation` references (`min` / `max` / `avg` / `sum` / `count` / `pct` aggregates pre-computed from the manifest), and `{value}` message substitution. Existing `check`-style pass/fail rules remain unchanged. Pillar and overall scores now weight by `awardedPoints` / `maxPoints`.
+
 ## [1.5.0] — 2026-04-16
 
 ### Added

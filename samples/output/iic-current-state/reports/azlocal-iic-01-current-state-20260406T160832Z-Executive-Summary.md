@@ -2,7 +2,7 @@
 
 - Cluster: azlocal-iic-01
 - Mode: current-state
-- Ranger Version: 1.5.0
+- Ranger Version: 1.6.0
 - Generated: 04/06/2026 12:08:32
 - Schema validation: passed or warnings only
 
