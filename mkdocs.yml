@@ -115,6 +115,7 @@ nav:
     - Wizard Guide: operator/wizard-guide.md
     - Authentication: operator/authentication.md
     - Configuration: operator/configuration.md
+    - Example ranger.yml: operator/example-config.md
     - Configuration Reference: operator/configuration-reference.md
     - Command Reference: operator/command-reference.md
     - Understanding Output: operator/understanding-output.md

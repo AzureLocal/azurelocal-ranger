@@ -2,6 +2,8 @@
 
 Complete reference for every key in `ranger-config.yml`.
 
+> **Looking for a full example to copy?** See [Example `ranger.yml`](example-config.md) — the complete annotated config with minimal, scheduled, and cloud-publishing variants.
+
 For the practical how-to, see [Configuration](configuration.md). For the formal schema spec, see [Configuration Model](../architecture/configuration-model.md).
 
 ---
@@ -258,7 +260,7 @@ behavior:
 
 Any `password`, `clientSecret`, or similar credential field can be replaced with a Key Vault reference URI:
 
-```
+```text
 keyvault://<vault-name>/<secret-name>
 ```
 
