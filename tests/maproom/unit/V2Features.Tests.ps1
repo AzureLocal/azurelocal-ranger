@@ -161,7 +161,7 @@ Describe 'v2.0.0 manifest analysis helpers (#222, #223, #224)' {
 
 Describe 'v2.0.0 Export-/Import-RangerWafConfig (#226)' {
     BeforeAll {
-        $script:ExportPath = Join-Path $env:TEMP ("ranger-waf-export-{0}.json" -f ([guid]::NewGuid()))
+        $script:ExportPath = Join-Path ([System.IO.Path]::GetTempPath()) ("ranger-waf-export-{0}.json" -f ([guid]::NewGuid()))
     }
     AfterAll {
         if (Test-Path $script:ExportPath) { Remove-Item $script:ExportPath -Force }
@@ -182,14 +182,14 @@ Describe 'v2.0.0 Export-/Import-RangerWafConfig (#226)' {
     }
 
     It 'Import-RangerWafConfig throws on malformed JSON' {
-        $bad = Join-Path $env:TEMP ("ranger-waf-bad-{0}.json" -f ([guid]::NewGuid()))
+        $bad = Join-Path ([System.IO.Path]::GetTempPath()) ("ranger-waf-bad-{0}.json" -f ([guid]::NewGuid()))
         'this is { not valid json' | Set-Content -Path $bad -Encoding UTF8
         try   { { Import-RangerWafConfig -Path $bad } | Should -Throw }
         finally { Remove-Item $bad -Force -ErrorAction SilentlyContinue }
     }
 
     It 'Import-RangerWafConfig throws on schema violation (missing id)' {
-        $bad = Join-Path $env:TEMP ("ranger-waf-bad-{0}.json" -f ([guid]::NewGuid()))
+        $bad = Join-Path ([System.IO.Path]::GetTempPath()) ("ranger-waf-bad-{0}.json" -f ([guid]::NewGuid()))
         @{ version = '1.0'; pillars = @('x'); rules = @(@{ pillar = 'x'; title = 'y' }) } | ConvertTo-Json -Depth 5 | Set-Content -Path $bad -Encoding UTF8
         try   { { Import-RangerWafConfig -Path $bad } | Should -Throw }
         finally { Remove-Item $bad -Force -ErrorAction SilentlyContinue }
@@ -198,7 +198,7 @@ Describe 'v2.0.0 Export-/Import-RangerWafConfig (#226)' {
 
 Describe 'v2.0.0 JSON evidence export (#229)' {
     BeforeAll {
-        $script:EvidenceDir = Join-Path $env:TEMP ("ranger-evidence-{0}" -f ([guid]::NewGuid()))
+        $script:EvidenceDir = Join-Path ([System.IO.Path]::GetTempPath()) ("ranger-evidence-{0}" -f ([guid]::NewGuid()))
         New-Item -ItemType Directory -Path $script:EvidenceDir -Force | Out-Null
         & (Get-Module AzureLocalRanger) { param($m, $p) Write-RangerJsonEvidenceExport -Manifest $m -PackageRoot $p } $script:Manifest $script:EvidenceDir | Out-Null
         $script:EvidenceFile = Get-ChildItem -Path (Join-Path $script:EvidenceDir 'reports') -Filter '*-evidence.json' | Select-Object -First 1
