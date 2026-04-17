@@ -245,10 +245,13 @@ function Get-RangerArmResourcesByGraph {
 
     $queryArgs = @{ Query = $kql; ErrorAction = 'Stop' }
     if (-not [string]::IsNullOrWhiteSpace($SubscriptionId)) {
-        $queryArgs.Subscription = @($SubscriptionId)
+        # Issue #BUG6 — explicitly cast to [string[]] so Search-AzGraph receives the correct
+        # parameter type. Passing @($SubscriptionId) produces object[] which causes
+        # "Argument types do not match" when the subscriptionId originates from YAML parsing.
+        $queryArgs.Subscription = [string[]]@([string]$SubscriptionId)
     }
     if ($ManagementGroups -and $ManagementGroups.Count -gt 0) {
-        $queryArgs.ManagementGroup = @($ManagementGroups)
+        $queryArgs.ManagementGroup = [string[]]@($ManagementGroups | ForEach-Object { [string]$_ })
     }
 
     try {

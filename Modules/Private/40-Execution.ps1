@@ -416,60 +416,73 @@ function Invoke-RangerRemoteCommand {
 
     $retryBlock = {
         $results = New-Object System.Collections.Generic.List[object]
+        $rangerLogPath = $script:RangerLogPath
+        $rangerCurrentLogLevel = if ($script:RangerLogLevel) { [string]$script:RangerLogLevel } else { 'info' }
+        $rangerShouldLogWarn = $rangerCurrentLogLevel -in @('debug', 'info', 'warn')
+
+        # Issue #BUG4 — per-node execution: invoke each target individually so a
+        # single-node WinRM failure (e.g. 0x80090304 Kerberos error on one node)
+        # does not abort collection from the remaining healthy nodes. After
+        # iterating all targets, re-throw the last captured exception only when
+        # every node failed — this lets Invoke-RangerRetry apply its transient-
+        # retry policy without masking partial-success results.
+        $lastNodeError = $null
+        $succeededNodes = 0
 
         foreach ($group in $targetGroups) {
             $groupTargets = @($group.Group | ForEach-Object { $_.computerName })
-            $invokeParams = @{
-                ComputerName   = $groupTargets
+
+            $baseParams = @{
                 ScriptBlock    = $ScriptBlock
                 Authentication = 'Negotiate'
             }
-
-            if ($Credential) {
-                $invokeParams.Credential = $Credential
-            }
-
-            if ($ArgumentList) {
-                $invokeParams.ArgumentList = $ArgumentList
-            }
-
-            if ($group.Name -eq 'https') {
-                $invokeParams.UseSSL = $true
-            }
+            if ($Credential)   { $baseParams.Credential   = $Credential }
+            if ($ArgumentList) { $baseParams.ArgumentList = $ArgumentList }
+            if ($group.Name -eq 'https') { $baseParams.UseSSL = $true }
 
             # Issue #113: apply per-session operation timeout when configured
             if ($TimeoutSeconds -gt 0) {
                 $sessionOption = New-PSSessionOption -OperationTimeout ($TimeoutSeconds * 1000) -OpenTimeout ($TimeoutSeconds * 1000)
-                $invokeParams.SessionOption = $sessionOption
+                $baseParams.SessionOption = $sessionOption
             }
 
-            $rangerRemoteWarnings = @()
-            $rangerLogPath = $script:RangerLogPath
-            $rangerCurrentLogLevel = if ($script:RangerLogLevel) { [string]$script:RangerLogLevel } else { 'info' }
-            $rangerShouldLogWarn = $rangerCurrentLogLevel -in @('debug', 'info', 'warn')
-            # Issue #159: catch at the innermost frame so the exception is re-thrown once rather
-            # than propagating through Invoke-RangerRetry → Invoke-RangerRemoteCommand →
-            # Test-RangerRemoteAuthorization, each recording a duplicate TerminatingError line in
-            # the PowerShell transcript.
-            try {
-                $rangerRemoteResult = Invoke-Command @invokeParams -WarningAction SilentlyContinue -WarningVariable +rangerRemoteWarnings -ErrorAction Stop
-            } catch {
-                throw
-            }
-            foreach ($w in @($rangerRemoteWarnings)) {
-                $warningMessage = if ($w -is [System.Management.Automation.WarningRecord]) { [string]$w.Message } else { [string]$w }
-                if ($rangerShouldLogWarn -and -not [string]::IsNullOrWhiteSpace($warningMessage) -and $rangerLogPath) {
-                    try {
-                        Add-Content -LiteralPath $rangerLogPath -Value "[$((Get-Date).ToString('s'))][WARN] [$($groupTargets -join ',')] $warningMessage" -Encoding UTF8 -ErrorAction Stop
+            foreach ($nodeTarget in $groupTargets) {
+                $invokeParams = $baseParams.Clone()
+                $invokeParams.ComputerName = @($nodeTarget)
+
+                $rangerRemoteWarnings = @()
+                # Issue #159: catch at the innermost frame so the exception is re-thrown once
+                # rather than propagating through multiple layers and duplicating transcript entries.
+                try {
+                    $rangerRemoteResult = Invoke-Command @invokeParams -WarningAction SilentlyContinue -WarningVariable +rangerRemoteWarnings -ErrorAction Stop
+                    $succeededNodes++
+                    foreach ($item in @($rangerRemoteResult)) {
+                        [void]$results.Add($item)
                     }
-                    catch {
+                } catch {
+                    $lastNodeError = $_
+                    if ($rangerShouldLogWarn -and $rangerLogPath) {
+                        try {
+                            Add-Content -LiteralPath $rangerLogPath -Value "[$((Get-Date).ToString('s'))][WARN] [WinRM] '$nodeTarget' failed: $($_.Exception.Message)" -Encoding UTF8 -ErrorAction SilentlyContinue
+                        } catch {}
+                    }
+                }
+
+                foreach ($w in @($rangerRemoteWarnings)) {
+                    $warningMessage = if ($w -is [System.Management.Automation.WarningRecord]) { [string]$w.Message } else { [string]$w }
+                    if ($rangerShouldLogWarn -and -not [string]::IsNullOrWhiteSpace($warningMessage) -and $rangerLogPath) {
+                        try {
+                            Add-Content -LiteralPath $rangerLogPath -Value "[$((Get-Date).ToString('s'))][WARN] [$nodeTarget] $warningMessage" -Encoding UTF8 -ErrorAction Stop
+                        } catch {}
                     }
                 }
             }
+        }
 
-            foreach ($item in @($rangerRemoteResult)) {
-                [void]$results.Add($item)
-            }
+        # Only surface an error when every node failed — this allows Invoke-RangerRetry
+        # to apply its transient-retry policy for genuine connectivity outages.
+        if ($succeededNodes -eq 0 -and $null -ne $lastNodeError) {
+            throw $lastNodeError.Exception
         }
 
         return $results.ToArray()

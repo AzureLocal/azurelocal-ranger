@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '2.5.0'
+    ModuleVersion     = '2.6.1'
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
@@ -60,6 +60,25 @@
                 'Az.ConnectedMachine'
             )
             ReleaseNotes = @'
+## v2.6.1 — TRAILHEAD Bug Fixes (P3 Live Validation)
+
+Bug-fix release addressing failures discovered during TRAILHEAD live validation
+against a 4-node Dell AX-760 Azure Local cluster.
+
+### Fixed
+- **Topology collector returns 0 nodes on partial WinRM failure (#259)** —
+  `Invoke-RangerRemoteCommand` now executes each cluster node individually rather
+  than batching all targets in one `Invoke-Command` call. A single-node Kerberos/
+  Negotiate error (0x80090304) no longer aborts collection from healthy nodes.
+- **licenseProfiles/default 404 causes transcript noise (#260)** —
+  `Get-AzResource` for optional Arc license profiles now uses
+  `-ErrorAction SilentlyContinue` so missing profiles (404) are returned as
+  `not-found` status without being promoted to terminating errors.
+- **Search-AzGraph 'Argument types do not match' (#261)** —
+  `Get-RangerArmResourcesByGraph` now explicitly casts subscription and
+  management-group arrays to `[string[]]`, fixing a type mismatch when
+  subscription IDs originate from YAML parsing.
+
 ## v2.5.0 — Extended Platform Coverage
 
 Workload/cost intelligence, multi-cluster orchestration, and executive-ready
@@ -110,62 +129,12 @@ already Arc-enrolled and the runner has Storage Blob Data Contributor.
 - **Cloud Publishing guide (#246)** — `docs/operator/cloud-publishing.md` with
   step-by-step RBAC setup, config examples, and troubleshooting.
 ## v2.2.0 — WAF Compliance Guidance
-
-Turn the WAF score from a static grade into an actionable roadmap: every rule
-now carries a structured remediation block, and the report ranks fixes by
-priority, projects your post-fix score, and can emit a copy-pasteable script.
-
-### Added
-- **Structured remediation block per WAF rule (#236)** — every rule in
-  `config/waf-rules.json` now carries `remediation.{rationale, steps,
-  samplePowerShell, estimatedEffort, estimatedImpact, dependencies, docsUrl}`.
-  Reports surface a new "Next Step" column in Findings and a full Remediation
-  Detail section per failing rule.
-- **WAF Compliance Roadmap (#241)** — failing rules are bucketed into
-  Now/Next/Later tiers by `priorityScore = (weight * severity * impact) / effort`.
-  Rendered as a ranked table in the technical tier; exported as
-  `powerbi/waf-roadmap.csv`.
-- **Gap-to-Goal projection (#242)** — greedy fix-plan: *"Current 67%. Closing
-  these 3 findings raises you to 82% (Excellent)."* Honours rule dependencies
-  so prerequisites fix first. Exported as `powerbi/waf-gap-to-goal.csv`.
-- **Per-pillar WAF Compliance Checklist (#238)** — one subsection per pillar
-  with every rule, status, weight, effort, next step, and a Signed Off column
-  for handoff / sprint artefact use. Exported as `powerbi/waf-checklist.csv`.
-- **Get-RangerRemediation (#243)** — new public command emits a copy-pasteable
-  remediation script from an existing manifest. Supports `-Format ps1|md|checklist`,
-  `-Commit` for live cmdlets (dry-run by default), `-IncludeDependencies` to
-  expand prerequisites, `-FindingId` to target specific rules.
-
-### Changed
-- `config/waf-rules.json` schema version bumped to `2.2.0` with a new
-  `prioritization` block defining severity / impact / effort factors.
-- Invoke-RangerWafRuleEvaluation now returns `roadmap` and `gapToGoal`
-  alongside the existing `pillarScores` / `ruleResults`.
+Structured remediation blocks per rule, WAF compliance roadmap (Now/Next/Later),
+gap-to-goal projection, per-pillar checklist, Get-RangerRemediation command.
 
 ## v2.1.0 — Preflight Hardening
-
-Close the three auth/preflight gaps identified against v2.0.0 so RBAC and
-credential problems surface up-front instead of mid-run.
-
-### Added
-- **Per-resource-type ARM probe (#235)** — pre-run permission audit now issues a
-  `Get-AzResource` against each v2.0.0 collector surface
-  (`logicalNetworks`, `storageContainers`, `customLocations`, `appliances`,
-  `gateways`, `marketplaceGalleryImages`, `galleryImages`). `Partial` overall
-  when some surfaces 403, `Fail` when all do. Skipped in fixture mode.
-- **Deep WinRM CIM probe (#234)** — `Invoke-RangerCimDepthProbe` runs after the
-  shallow WinRM preflight and issues a representative `Get-CimInstance`
-  against `root/MSCluster`, `root/virtualization/v2`, and
-  `root/Microsoft/Windows/Storage`. Non-blocking warning on `partial` /
-  `denied`; result captured in `manifest.run.remoteExecution.cimDepth`.
-- **Azure Advisor read probe (#233)** — pre-check calls
-  `Get-AzAdvisorRecommendation`. Denied 403 downgrades overall readiness to
-  `Partial` and emits an actionable finding. Absent `Az.Advisor` is a `Skip`
-  with an install hint, not a failure.
-
-### Changed
-- Overall readiness thresholds unchanged: `Insufficient` throws,
-  `Partial` warns and continues, `Full` proceeds silently.
+Per-resource-type ARM probe, deep WinRM CIM probe (root/MSCluster +
+root/virtualization/v2 + root/Microsoft/Windows/Storage), Azure Advisor read probe.
 
 ## v2.0.0 — Extended Collectors & WAF Intelligence
 

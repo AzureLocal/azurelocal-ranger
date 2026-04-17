@@ -775,12 +775,18 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                     $esuEligibility = $null
 
                     try {
-                        $licenseProfile = Get-AzResource -ResourceId "$machineResourceId/licenseProfiles/default" -ExpandProperties -ErrorAction Stop
-                        $licenseProps = Get-RangerCollectorPropertyValue -InputObject $licenseProfile -CandidateNames @('Properties', 'properties')
-                        $esuProfile = Get-RangerCollectorPropertyValue -InputObject $licenseProps -CandidateNames @('esuProfile', 'EsuProfile')
-                        $assignedLicense = Get-RangerCollectorPropertyValue -InputObject $esuProfile -CandidateNames @('assignedLicense', 'AssignedLicense')
-                        $esuEligibility = Get-RangerCollectorPropertyValue -InputObject $esuProfile -CandidateNames @('esuEligibility', 'EsuEligibility')
-                        $queryStatus = 'success'
+                        # Issue #BUG5 — use SilentlyContinue so a 404 (nodes without license
+                        # profiles) is returned as $null rather than promoted to a terminating
+                        # error, preventing false TerminatingError entries in the PS transcript.
+                        $licenseProfile = Get-AzResource -ResourceId "$machineResourceId/licenseProfiles/default" -ExpandProperties -ErrorAction SilentlyContinue
+                        if ($licenseProfile) {
+                            $licenseProps = Get-RangerCollectorPropertyValue -InputObject $licenseProfile -CandidateNames @('Properties', 'properties')
+                            $esuProfile = Get-RangerCollectorPropertyValue -InputObject $licenseProps -CandidateNames @('esuProfile', 'EsuProfile')
+                            $assignedLicense = Get-RangerCollectorPropertyValue -InputObject $esuProfile -CandidateNames @('assignedLicense', 'AssignedLicense')
+                            $esuEligibility = Get-RangerCollectorPropertyValue -InputObject $esuProfile -CandidateNames @('esuEligibility', 'EsuEligibility')
+                            $queryStatus = 'success'
+                        }
+                        # else: $queryStatus remains 'not-found' (resource doesn't exist on this node)
                     }
                     catch {
                         $queryStatus = 'unavailable'
