@@ -8,6 +8,18 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-04-17
+
+Cloud Publishing — push Ranger run packages to Azure Blob Storage and stream
+WAF telemetry to Log Analytics Workspace after every run.
+
+### Added
+
+- **Azure Blob publisher (#244)** — `Publish-RangerRun` uploads the run package (manifest, evidence, package-index, log, optionally reports + powerbi) to a named storage account. Auth chain: Managed Identity → Entra RBAC → SAS from Key Vault. SHA-256 idempotency skips unchanged blobs. Blob tags: `cluster`, `mode`, `toolVersion`, `runId`. `Invoke-AzureLocalRanger -PublishToStorage` triggers automatically post-run.
+- **Catalog + latest-pointer blobs (#245)** — after each publish, writes `_catalog/{cluster}/latest.json` (run summary + artifact paths + WAF score snapshot) and merges `_catalog/_index.json` so downstream consumers resolve the latest run per cluster without listing.
+- **Cloud Publishing guide + samples (#246)** — `docs/operator/cloud-publishing.md` with RBAC setup (Storage Blob Data Contributor), config schema, auth chain explanation, and troubleshooting. `samples/cloud-publishing/` with Bicep storage Bicep, KQL workbook, and Teams webhook starter.
+- **Log Analytics Workspace sink (#247)** — `Invoke-AzureLocalRanger -PublishToLogAnalytics` posts one `RangerRun_CL` row (scores, AHB adoption, node/VM counts, cloud-publish status) and one `RangerFinding_CL` row per failing WAF rule to a DCE/DCR pair via the Logs Ingestion API. Offline mode available for tests.
+
 ## [2.2.0] — 2026-04-17
 
 WAF Compliance Guidance — turn the WAF score into an actionable roadmap with

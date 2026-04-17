@@ -1,0 +1,32 @@
+// AzureLocalRanger — Log Analytics KQL workbook queries
+// Paste into Log Analytics workspace or Azure Workbook
+
+// ── Latest WAF score per cluster ──────────────────────────────────────────────
+RangerRun_CL
+| summarize arg_max(TimeGenerated, WafOverallScore, WafStatus, ToolVersion) by Cluster
+| project Cluster, WafOverallScore, WafStatus, ToolVersion, LastSeen = TimeGenerated
+| order by WafOverallScore asc
+
+// ── WAF score trend (last 30 days) ───────────────────────────────────────────
+RangerRun_CL
+| where TimeGenerated > ago(30d)
+| project TimeGenerated, Cluster, WafOverallScore, WafStatus
+| order by Cluster asc, TimeGenerated asc
+
+// ── Top failing rules across all clusters ────────────────────────────────────
+RangerFinding_CL
+| summarize FailCount = count(), AffectedClusters = dcount(Cluster) by RuleId, Pillar, Severity
+| order by FailCount desc
+| take 20
+
+// ── Findings per cluster (current) ───────────────────────────────────────────
+RangerFinding_CL
+| summarize arg_max(TimeGenerated, *) by Cluster, RuleId
+| summarize FindingCount = count() by Cluster
+| order by FindingCount desc
+
+// ── AHB adoption summary ──────────────────────────────────────────────────────
+RangerRun_CL
+| summarize arg_max(TimeGenerated, AhbAdoptionPct, AhbStatus, CoresWithAhb) by Cluster
+| project Cluster, AhbStatus, AhbAdoptionPct, CoresWithAhb
+| order by AhbAdoptionPct asc

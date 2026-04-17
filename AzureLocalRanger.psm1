@@ -9,6 +9,7 @@ $moduleFolders = @(
     (Join-Path $moduleRoot 'Modules\Outputs\Reports'),
     (Join-Path $moduleRoot 'Modules\Outputs\Templates'),
     (Join-Path $moduleRoot 'Modules\Outputs\Diagrams'),
+    (Join-Path $moduleRoot 'Modules\Outputs\Publishers'),
     (Join-Path $moduleRoot 'Modules\Public')
 )
 
@@ -31,5 +32,7 @@ Export-ModuleMember -Function @(
     'Export-RangerWafConfig',
     'Import-RangerWafConfig',
     # v2.2.0 (#243): copy-pasteable remediation script generator.
-    'Get-RangerRemediation'
+    'Get-RangerRemediation',
+    # v2.3.0 (#244): cloud-publishing entrypoints.
+    'Publish-RangerRun'
 )

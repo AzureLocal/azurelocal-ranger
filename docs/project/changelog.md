@@ -2,6 +2,13 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
+## v2.3.0 Highlights — Cloud Publishing
+
+- **Azure Blob publisher (#244)** — `Publish-RangerRun` uploads the run package (manifest, evidence, package-index, log, reports, powerbi) to a named storage account. Auth chain: Managed Identity → Entra RBAC → SAS from Key Vault. SHA-256 idempotency skips unchanged blobs. `Invoke-AzureLocalRanger -PublishToStorage` triggers automatically post-run.
+- **Catalog + latest-pointer blobs (#245)** — writes `_catalog/{cluster}/latest.json` (overwritten per run) and merges `_catalog/_index.json` with ETag concurrency. Downstream consumers find the latest run without listing.
+- **Cloud Publishing guide + samples (#246)** — `docs/operator/cloud-publishing.md` with RBAC setup, config examples, and troubleshooting. `samples/cloud-publishing/` with Bicep, KQL workbook, and Teams webhook starter files.
+- **Log Analytics Workspace sink (#247)** — `Invoke-AzureLocalRanger -PublishToLogAnalytics` posts one `RangerRun_CL` record (scores, AHB, counts, cloud-publish status) and one `RangerFinding_CL` row per failing WAF rule to a DCE/DCR pair via the Logs Ingestion API.
+
 ## v2.2.0 Highlights — WAF Compliance Guidance
 
 - **Structured remediation block per WAF rule (#236)** — every rule in `config/waf-rules.json` now carries a `remediation` block with `rationale`, `steps`, `samplePowerShell`, `estimatedEffort` (S/M/L), `estimatedImpact` (low/medium/high), `dependencies`, and `docsUrl`. Reports surface a new Next Step column in the Findings table and a full Remediation Detail section.

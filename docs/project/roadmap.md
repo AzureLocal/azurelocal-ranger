@@ -12,19 +12,6 @@ Ranger supports two outcomes through one discovery engine:
 
 **Upcoming** — what's next, in ship order. Each milestone link has the full issue backlog; tables below surface the highlights.
 
-## v2.3.0 — Cloud Publishing
-
-Publish Ranger run output to Azure for downstream consumption — web apps, Event Grid pipelines, Fabric, Log Analytics, Sentinel hunts. Unlocks multi-run trending and cross-cluster dashboards without forcing every shop to reinvent the plumbing. Milestone: [#23](https://github.com/AzureLocal/azurelocal-ranger/milestone/23).
-
-| Item | Detail | Issue |
-| --- | --- | --- |
-| Azure Blob publisher | `Publish-RangerRun` command + `-PublishToStorage` flag. Uploads manifest, evidence, package index (optionally reports + Power BI bundle) to a named storage account. Managed Identity / Entra RBAC / Key-Vault-sourced SAS auth; blob tags for `cluster` / `mode` / `toolVersion` / `runId`; idempotent by SHA-256 | [#244](https://github.com/AzureLocal/azurelocal-ranger/issues/244) |
-| Catalog + latest-pointer blob | `_catalog/{cluster}/latest.json` overwritten per run and `_catalog/_index.json` updated with ETag concurrency. One well-known blob answers "latest run per cluster" and "all clusters in this account" without listing | [#245](https://github.com/AzureLocal/azurelocal-ranger/issues/245) |
-| Event-driven integration recipes | Docs page + working `samples/cloud-publishing/` with Bicep + C# Azure Function + Fabric Power Query + KQL workbook + Teams webhook samples. Covers the common "BlobCreated → Function → [consumer]" wiring so operators copy-paste instead of reinventing | [#246](https://github.com/AzureLocal/azurelocal-ranger/issues/246) |
-| Log Analytics Workspace alternative sink | Post a distilled record directly to `RangerRun_CL` + optional `RangerFinding_CL` custom tables via the Logs Ingestion API + DCE/DCR. Native Sentinel hunting rules, Workbooks, and alert rules without the blob-to-LAW bridge | [#247](https://github.com/AzureLocal/azurelocal-ranger/issues/247) |
-
-Dependency order: **#244 first** (foundation), **#245** on top, then **#246** (docs + samples) and **#247** (alternative sink) in parallel.
-
 ## v2.5.0 — Extended Platform Coverage
 
 Extended hardware and protocol coverage, deep workload analysis, and long-horizon output formats. Milestone: [#4](https://github.com/AzureLocal/azurelocal-ranger/milestone/4).
@@ -61,6 +48,17 @@ Enterprise integrations, specialized hardware protocols, and advanced topology c
 ---
 
 **Shipped** — most recent first.
+
+## Shipped — v2.3.0 — Cloud Publishing (2026-04-17)
+
+Push Ranger run packages to Azure and stream WAF telemetry to Log Analytics after every run.
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Azure Blob publisher | `Publish-RangerRun` + `-PublishToStorage`. MI / Entra RBAC / Key-Vault SAS auth; SHA-256 idempotency; blob tags | [#244](https://github.com/AzureLocal/azurelocal-ranger/issues/244) |
+| Catalog blobs | `_catalog/{cluster}/latest.json` + `_catalog/_index.json` per run | [#245](https://github.com/AzureLocal/azurelocal-ranger/issues/245) |
+| Cloud Publishing guide | `docs/operator/cloud-publishing.md` + `samples/cloud-publishing/` | [#246](https://github.com/AzureLocal/azurelocal-ranger/issues/246) |
+| Log Analytics sink | `RangerRun_CL` + `RangerFinding_CL` via DCE/DCR Logs Ingestion API | [#247](https://github.com/AzureLocal/azurelocal-ranger/issues/247) |
 
 ## Shipped — v2.2.0 — WAF Compliance Guidance (2026-04-17)
 

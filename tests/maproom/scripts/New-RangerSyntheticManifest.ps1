@@ -119,7 +119,7 @@ $runEnd            = '2026-04-06T12:08:32Z'
 # BUILD: run block
 # =============================================================================
 $run = [ordered]@{
-    toolVersion       = '2.2.0'
+    toolVersion       = '2.3.0'
     schemaVersion     = '1.2.0-draft'
     startTimeUtc      = $runStart
     endTimeUtc        = $runEnd

@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '2.2.0'
+    ModuleVersion     = '2.3.0'
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
@@ -17,7 +17,8 @@
         'Invoke-RangerWizard',
         'Export-RangerWafConfig',
         'Import-RangerWafConfig',
-        'Get-RangerRemediation'
+        'Get-RangerRemediation',
+        'Publish-RangerRun'
     )
     CmdletsToExport   = @()
     VariablesToExport = @()
@@ -57,6 +58,26 @@
                 'Az.ConnectedMachine'
             )
             ReleaseNotes = @'
+## v2.3.0 — Cloud Publishing
+
+Push Ranger run packages to Azure Blob and stream telemetry to Log Analytics
+Workspace after every run — with no code changes required if the cluster is
+already Arc-enrolled and the runner has Storage Blob Data Contributor.
+
+### Added
+- **Azure Blob publisher (#244)** — `Publish-RangerRun` uploads the run package
+  (manifest, evidence, package-index, log, reports, powerbi) to Azure Blob with
+  SHA-256 idempotency. Auth chain: Managed Identity → Entra RBAC → SAS from Key Vault.
+  `Invoke-AzureLocalRanger -PublishToStorage` triggers automatically post-run.
+- **Catalog + latest-pointer blobs (#245)** — after each publish, writes
+  `_catalog/{cluster}/latest.json` and merges `_catalog/_index.json` so
+  downstream consumers find the latest run without listing.
+- **Log Analytics Workspace sink (#247)** — `Invoke-AzureLocalRanger -PublishToLogAnalytics`
+  posts `RangerRun_CL` (scores, counts, AHB, cloud-publish status) and
+  `RangerFinding_CL` (one row per failing WAF rule) to a DCE/DCR pair via
+  the Logs Ingestion API.
+- **Cloud Publishing guide (#246)** — `docs/operator/cloud-publishing.md` with
+  step-by-step RBAC setup, config examples, and troubleshooting.
 ## v2.2.0 — WAF Compliance Guidance
 
 Turn the WAF score from a static grade into an actionable roadmap: every rule

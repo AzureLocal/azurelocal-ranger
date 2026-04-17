@@ -1,8 +1,12 @@
 # Project Status
 
-## Current Release Track — v2.2.0
+## Current Release Track — v2.3.0
 
-AzureLocalRanger v2.2.0 — WAF Compliance Guidance — is the current release. It turns the WAF score from a static grade into an actionable roadmap: every rule now carries a structured `remediation` block (rationale, steps, sample PowerShell, effort, impact, dependencies, docs URL — #236); a new Compliance Roadmap bucket ranks failing rules into Now / Next / Later tiers by `priorityScore = (weight × severity × impact) / effort` (#241); a Gap-to-Goal projection emits a greedy fix plan showing the projected score after closing the top N findings (#242); a per-pillar Compliance Checklist section ships a sign-able handoff artefact with one subsection per WAF pillar (#238); and a new public `Get-RangerRemediation` command emits copy-pasteable `.ps1` / markdown / checklist remediation scripts, substituting `$ClusterName` / `$ResourceGroup` / `$SubscriptionId` / `$Region` / `$NodeName` from the manifest with `-Commit` for live cmdlets (#243). v2.1.0 — Preflight Hardening — remains the previous release.
+AzureLocalRanger v2.3.0 — Cloud Publishing — pushes Ranger run packages to Azure Blob Storage and streams distilled telemetry to Log Analytics Workspace after every run, with no code changes required if the runner has Storage Blob Data Contributor. Key additions: `Publish-RangerRun` command with Managed Identity / Entra RBAC / Key-Vault SAS auth chain and SHA-256 idempotency (#244); `_catalog/{cluster}/latest.json` + `_catalog/_index.json` catalog blobs updated per run (#245); cloud publishing guide + samples (#246); `RangerRun_CL` and `RangerFinding_CL` rows posted to a DCE/DCR pair via the Logs Ingestion API (#247). v2.2.0 — WAF Compliance Guidance — remains the previous release.
+
+## Previous Release — v2.2.0 — WAF Compliance Guidance
+
+AzureLocalRanger v2.2.0 — WAF Compliance Guidance — is the previous release. It turns the WAF score from a static grade into an actionable roadmap: every rule now carries a structured `remediation` block (rationale, steps, sample PowerShell, effort, impact, dependencies, docs URL — #236); a new Compliance Roadmap bucket ranks failing rules into Now / Next / Later tiers by `priorityScore = (weight × severity × impact) / effort` (#241); a Gap-to-Goal projection emits a greedy fix plan showing the projected score after closing the top N findings (#242); a per-pillar Compliance Checklist section ships a sign-able handoff artefact with one subsection per WAF pillar (#238); and a new public `Get-RangerRemediation` command emits copy-pasteable `.ps1` / markdown / checklist remediation scripts, substituting `$ClusterName` / `$ResourceGroup` / `$SubscriptionId` / `$Region` / `$NodeName` from the manifest with `-Commit` for live cmdlets (#243). v2.1.0 — Preflight Hardening — remains the previous release.
 
 ## Previous Release — v2.1.0 — Preflight Hardening
 

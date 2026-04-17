@@ -200,7 +200,13 @@ function Invoke-AzureLocalRanger {
         [switch]$SkipPreCheck,
 
         # v2.0.0 (#231): module auto-install/update runs by default; pass to opt out in air-gapped envs.
-        [switch]$SkipModuleUpdate
+        [switch]$SkipModuleUpdate,
+
+        # v2.3.0 (#244): publish the produced package to Azure Blob per output.remoteStorage.
+        [switch]$PublishToStorage,
+
+        # v2.3.0 (#247): post distilled run + findings records to Log Analytics per output.logAnalytics.
+        [switch]$PublishToLogAnalytics
     )
 
     # #211: -Wizard dispatches to Invoke-RangerWizard, which already handles
@@ -223,6 +229,10 @@ function Invoke-AzureLocalRanger {
         return
     }
     $script:RangerCollectionInProgress = $true
+
+    # v2.3.0 (#244/#247): surface publisher flags into the runtime via script scope.
+    $script:RangerPublishToStorage       = [bool]$PublishToStorage
+    $script:RangerPublishToLogAnalytics  = [bool]$PublishToLogAnalytics
 
     # v2.0.0 (#231): module auto-install/update validation. Runs by default; skip
     # with -SkipModuleUpdate in air-gapped environments. Failures do not abort.
@@ -728,6 +738,134 @@ function Get-RangerRemediation {
         Commit       = [bool]$Commit
         Warnings     = @($warnings)
     }
+}
+
+function Publish-RangerRun {
+    <#
+    .SYNOPSIS
+        v2.3.0 (#244): publish an already-written Ranger package to Azure Blob storage and
+        update the per-cluster catalog + account-level index blob.
+
+    .DESCRIPTION
+        One-shot publisher for a Ranger run package that is already on disk. Use this for
+        manual / scheduled pushes against an existing package without re-running collection.
+
+        Writes the package to
+        `<container>/<pathTemplate>/...` using the configured `output.remoteStorage` block,
+        then updates `_catalog/<cluster>/latest.json` and merges `_catalog/_index.json` so
+        downstream consumers can answer "latest run per cluster" and "all clusters in this
+        account" with a single blob read.
+
+    .PARAMETER PackagePath
+        Directory containing `audit-manifest.json` plus the rest of the Ranger package.
+
+    .PARAMETER ConfigPath
+        Optional Ranger config file whose `output.remoteStorage` block drives the publish.
+        When omitted, the individual override parameters are required.
+
+    .PARAMETER StorageAccount
+        Override for `output.remoteStorage.storageAccount`.
+
+    .PARAMETER Container
+        Override for `output.remoteStorage.container`.
+
+    .PARAMETER PathTemplate
+        Override for `output.remoteStorage.pathTemplate`. Default is
+        `{cluster}/{yyyy-MM-dd}/{runId}`.
+
+    .PARAMETER Include
+        Artifact categories to upload. Any of: `manifest`, `evidence`, `packageIndex`,
+        `runLog`, `reports`, `powerbi`, or `full` (all).
+
+    .PARAMETER AuthMethod
+        `default` | `managedIdentity` | `entraRbac` | `sasFromKeyVault`. When `default`, the
+        chain is Managed Identity → Entra RBAC → SAS-from-Key-Vault.
+
+    .PARAMETER SasRef
+        `keyvault://<vault>/<secret>` reference resolved via the v1.4.0 Key Vault resolver.
+        Only used when `AuthMethod=sasFromKeyVault`.
+
+    .PARAMETER Offline
+        Do not call Azure. Simulates upload URIs and returns the computed plan. Used by the
+        Pester suite and fixture-mode walkthroughs.
+
+    .EXAMPLE
+        Publish-RangerRun -PackagePath .\run-20260417 -ConfigPath .\ranger.yml
+
+    .EXAMPLE
+        Publish-RangerRun -PackagePath .\run-20260417 -StorageAccount stircompliance -Container ranger-runs -Include full
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)] [string]$PackagePath,
+        [string]$ConfigPath,
+        [string]$StorageAccount,
+        [string]$Container,
+        [string]$PathTemplate,
+        [string[]]$Include,
+        [ValidateSet('default','managedIdentity','entraRbac','sasFromKeyVault')]
+        [string]$AuthMethod,
+        [string]$SasRef,
+        [switch]$Offline
+    )
+
+    $resolvedPackage = Resolve-RangerPath -Path $PackagePath
+    if (-not (Test-Path -Path $resolvedPackage -PathType Container)) {
+        throw "Ranger package not found: $resolvedPackage"
+    }
+    $manifestPath = Join-Path $resolvedPackage 'audit-manifest.json'
+    if (-not (Test-Path -Path $manifestPath -PathType Leaf)) {
+        throw "audit-manifest.json not found in package: $resolvedPackage"
+    }
+    $manifestRaw = Get-Content -Path $manifestPath -Raw | ConvertFrom-Json -AsHashtable -Depth 100
+    $manifest    = ConvertTo-RangerHashtable -InputObject $manifestRaw
+
+    # Build a remote-storage config block from parameters and/or the referenced config file.
+    $rs = @{}
+    if ($ConfigPath) {
+        $cfgPath = Resolve-RangerPath -Path $ConfigPath
+        if (Test-Path -Path $cfgPath -PathType Leaf) {
+            $cfgRaw = if ($cfgPath -like '*.yml' -or $cfgPath -like '*.yaml') {
+                if (Get-Command -Name ConvertFrom-Yaml -ErrorAction SilentlyContinue) { Get-Content -Path $cfgPath -Raw | ConvertFrom-Yaml } else { $null }
+            } else {
+                Get-Content -Path $cfgPath -Raw | ConvertFrom-Json -AsHashtable -Depth 20
+            }
+            if ($cfgRaw -and $cfgRaw.output -and $cfgRaw.output.remoteStorage) {
+                foreach ($k in $cfgRaw.output.remoteStorage.Keys) { $rs[[string]$k] = $cfgRaw.output.remoteStorage[$k] }
+            }
+        }
+    }
+    if ($StorageAccount) { $rs.storageAccount = $StorageAccount }
+    if ($Container)      { $rs.container      = $Container }
+    if ($PathTemplate)   { $rs.pathTemplate   = $PathTemplate }
+    if ($Include)        { $rs.include        = $Include }
+    if ($AuthMethod)     { $rs.authMethod     = $AuthMethod }
+    if ($SasRef)         { $rs.sasRef         = $SasRef }
+    if (-not $rs.type) { $rs.type = 'azureBlob' }
+
+    # Normalize via the resolver (fills defaults).
+    $resolved = Resolve-RangerRemoteStorageConfig -Config @{ output = @{ remoteStorage = $rs } }
+    if (-not $resolved) {
+        throw "No valid remote-storage configuration provided. Supply -ConfigPath or -StorageAccount + -Container."
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$resolved.storageAccount)) {
+        throw "output.remoteStorage.storageAccount is required."
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$resolved.container)) {
+        throw "output.remoteStorage.container is required."
+    }
+
+    $resolvedHash = @{}
+    foreach ($k in $resolved.Keys) { $resolvedHash[[string]$k] = $resolved[$k] }
+
+    $result = Invoke-RangerBlobPublish -Manifest $manifest -PackagePath $resolvedPackage -RemoteStorageConfig $resolvedHash -Offline:$Offline
+
+    # Write cloudPublish back to the manifest on disk so subsequent runs / LAW sinks see the result.
+    $manifest.run = $manifest.run ?? [ordered]@{}
+    $manifest.run.cloudPublish = $result
+    ($manifest | ConvertTo-Json -Depth 100) | Set-Content -Path $manifestPath -Encoding UTF8
+
+    return $result
 }
 
 function Test-AzureLocalRangerPrerequisites {

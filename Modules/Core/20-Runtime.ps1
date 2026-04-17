@@ -839,6 +839,51 @@ function Invoke-RangerDiscoveryRuntime {
             $manifest.artifacts += @(New-RangerArtifactRecord -Type 'run-log' -RelativePath ([System.IO.Path]::GetRelativePath($packageRoot, $logPath)) -Status generated -Audience 'all')
         }
 
+        # v2.3.0 (#244 / #245): optional cloud publishing after the package is finalised.
+        if ($script:RangerPublishToStorage -and (Get-Command -Name Resolve-RangerRemoteStorageConfig -ErrorAction SilentlyContinue)) {
+            try {
+                $rs = Resolve-RangerRemoteStorageConfig -Config $config
+                if ($rs) {
+                    $rsHash = @{}
+                    foreach ($k in $rs.Keys) { $rsHash[[string]$k] = $rs[$k] }
+                    $cloud = Invoke-RangerBlobPublish -Manifest $manifest -PackagePath $packageRoot -RemoteStorageConfig $rsHash
+                    $manifest.run.cloudPublish = $cloud
+                    if ($cloud.status -ne 'ok' -and [bool]$rs.failRunOnPublishError) {
+                        throw "Cloud publish failed: $(@($cloud.errors) -join '; ')"
+                    }
+                    if ($cloud.status -ne 'ok') {
+                        Write-RangerLog -Level warn -Message "Cloud publish status: $($cloud.status). See manifest.run.cloudPublish for detail."
+                    }
+                }
+            } catch {
+                Write-RangerLog -Level warn -Message "Cloud publish warning: $($_.Exception.Message)"
+                $manifest.run.cloudPublish = [ordered]@{ status = 'failed'; errors = @($_.Exception.Message) }
+                if ($rs -and [bool]$rs.failRunOnPublishError) { throw }
+            }
+            Save-RangerManifest -Manifest $manifest -Path $manifestPath
+        }
+
+        # v2.3.0 (#247): optional Log Analytics publish after cloud publish so the LAW row
+        # can include the blob URIs.
+        if ($script:RangerPublishToLogAnalytics -and (Get-Command -Name Resolve-RangerLogAnalyticsConfig -ErrorAction SilentlyContinue)) {
+            try {
+                $la = Resolve-RangerLogAnalyticsConfig -Config $config
+                if ($la) {
+                    $laHash = @{}
+                    foreach ($k in $la.Keys) { $laHash[[string]$k] = $la[$k] }
+                    $laResult = Invoke-RangerLogAnalyticsPublish -Manifest $manifest -LogAnalyticsConfig $laHash -CloudPublish $manifest.run.cloudPublish
+                    $manifest.run.logAnalytics = $laResult
+                    if ($laResult.status -notin @('ok','ok-offline') -and [bool]$la.failRunOnPublishError) {
+                        throw "Log Analytics publish failed: $(@($laResult.errors) -join '; ')"
+                    }
+                }
+            } catch {
+                Write-RangerLog -Level warn -Message "Log Analytics publish warning: $($_.Exception.Message)"
+                $manifest.run.logAnalytics = [ordered]@{ status = 'failed'; errors = @($_.Exception.Message) }
+            }
+            Save-RangerManifest -Manifest $manifest -Path $manifestPath
+        }
+
         $runStatus = New-RangerRunStatus -Unattended ([bool]$Unattended) -Status 'success' -Manifest $manifest -ManifestPath $manifestPath -LogPath $logPath -DriftStatus $(if ($driftReport) { $driftReport.status } else { 'not-requested' })
         $runStatusPath = Write-RangerJsonArtifact -PackageRoot $packageRoot -RelativePath 'run-status.json' -Content $runStatus
         $manifest.artifacts += @(New-RangerArtifactRecord -Type 'run-status' -RelativePath ([System.IO.Path]::GetRelativePath($packageRoot, $runStatusPath)) -Status generated -Audience 'all')

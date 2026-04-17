@@ -1,6 +1,6 @@
 {
   "run": {
-    "toolVersion": "2.1.0",
+    "toolVersion": "2.3.0",
     "schemaVersion": "1.2.0-draft",
     "startTimeUtc": "2026-04-06T12:00:00Z",
     "endTimeUtc": "2026-04-06T12:08:32Z",
@@ -1423,12 +1423,12 @@
             {
               "subject": "CN=azl-iic-n01.iic.local",
               "thumbprint": "AAABBB001",
-              "notAfter": "2026-06-15T22:06:27Z"
+              "notAfter": "2026-06-15T23:04:28Z"
             },
             {
               "subject": "CN=azlocal-iic-01.iic.local",
               "thumbprint": "AAABBB002",
-              "notAfter": "2028-04-15T22:06:27Z"
+              "notAfter": "2028-04-15T23:04:28Z"
             }
           ]
         },
@@ -1437,7 +1437,7 @@
           "items": {
             "subject": "CN=azl-iic-n02.iic.local",
             "thumbprint": "AAABBB101",
-            "notAfter": "2028-04-15T22:06:27Z"
+            "notAfter": "2028-04-15T23:04:28Z"
           }
         },
         {
@@ -1445,7 +1445,7 @@
           "items": {
             "subject": "CN=azl-iic-n03.iic.local",
             "thumbprint": "AAABBB201",
-            "notAfter": "2028-04-15T22:06:27Z"
+            "notAfter": "2028-04-15T23:04:28Z"
           }
         }
       ],
