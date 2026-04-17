@@ -2,6 +2,17 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
+## v2.6.2 — TRAILHEAD Bug Fixes (P7 Regression)
+
+- **Config validator accepts pptx and json-evidence (#262)** — `Test-RangerConfiguration` now includes `pptx` and `json-evidence` in the supported output format list. Both formats were added in v2.5.0 but were missing from the whitelist, causing config validation to reject any config that referenced them.
+- **New-AzureLocalRangerConfig YAML indentation fix (#263)** — `credentials.azure.method` and `behavior.promptForMissingRequired` in the generated YAML template now have correct indentation, preventing parse errors when the template is used as-is.
+
+## v2.6.1 — TRAILHEAD Bug Fixes (P3 Live Validation)
+
+- **Topology collector returns 0 nodes on partial WinRM failure (#259)** — `Invoke-RangerRemoteCommand` now executes each cluster node individually rather than batching all targets in one `Invoke-Command` call. A single-node Kerberos/Negotiate error (0x80090304) no longer aborts collection from healthy nodes.
+- **licenseProfiles/default 404 causes transcript noise (#260)** — `Get-AzResource` for optional Arc license profiles now uses `-ErrorAction SilentlyContinue` so missing profiles are returned as `not-found` without being promoted to terminating errors.
+- **Search-AzGraph 'Argument types do not match' (#261)** — `Get-RangerArmResourcesByGraph` now explicitly casts subscription and management-group arrays to `[string[]]`, fixing a type mismatch when subscription IDs originate from YAML parsing.
+
 ## v2.5.0 Highlights — Extended Platform Coverage
 
 - **Capacity headroom (#128)** — `manifest.domains.capacityAnalysis` with per-node + cluster totals (vCPU/memory/storage/pool) and Healthy/Warning/Critical status per dimension.

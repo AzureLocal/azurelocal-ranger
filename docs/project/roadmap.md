@@ -28,6 +28,21 @@ Enterprise integrations, specialized hardware protocols, and advanced topology c
 
 **Shipped** — most recent first.
 
+## Shipped — v2.6.2 — TRAILHEAD Bug Fixes P7 (2026-04-17)
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Config validator accepts pptx and json-evidence | `Test-RangerConfiguration` now includes `pptx` and `json-evidence` in the supported format whitelist | [#262](https://github.com/AzureLocal/azurelocal-ranger/issues/262) |
+| YAML config template indentation fix | `New-AzureLocalRangerConfig` YAML template now has correct indentation for `credentials.azure.method` and `behavior.promptForMissingRequired` | [#263](https://github.com/AzureLocal/azurelocal-ranger/issues/263) |
+
+## Shipped — v2.6.1 — TRAILHEAD Bug Fixes P3 (2026-04-17)
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Topology collector 0-node fix | `Invoke-RangerRemoteCommand` now executes per-node; a single WinRM failure (0x80090304) no longer aborts collection from healthy nodes | [#259](https://github.com/AzureLocal/azurelocal-ranger/issues/259) |
+| licenseProfiles/default 404 silenced | `Get-AzResource` for optional Arc license profiles uses `-ErrorAction SilentlyContinue`; missing profiles return `not-found` without transcript noise | [#260](https://github.com/AzureLocal/azurelocal-ranger/issues/260) |
+| Search-AzGraph type mismatch fix | `Get-RangerArmResourcesByGraph` casts subscription and management-group arrays to `[string[]]` to fix YAML-parsed subscription ID type errors | [#261](https://github.com/AzureLocal/azurelocal-ranger/issues/261) |
+
 ## Shipped — v2.5.0 — Extended Platform Coverage (2026-04-17)
 
 Workload/cost intelligence, multi-cluster orchestration, and presentation-ready output.
