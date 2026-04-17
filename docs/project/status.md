@@ -1,6 +1,10 @@
 # Project Status
 
-## Current Release Track — v2.3.0
+## Current Release Track — v2.5.0
+
+AzureLocalRanger v2.5.0 — Extended Platform Coverage — closes the long-standing operator backlog with workload/cost intelligence, multi-cluster orchestration, and presentation-ready output. Key additions: capacity headroom analyzer with per-node + cluster totals and Healthy/Warning/Critical status (#128); idle / underutilized VM detection with rightsizing proposals (#125); storage efficiency analysis surfacing dedup and thin-provisioning coverage (#126); SQL / Windows Server license inventory for compliance reporting (#127); `Invoke-AzureLocalRangerEstate` multi-cluster rollup with per-cluster + estate-level summary (#129); PowerPoint `.pptx` output format built directly via `System.IO.Packaging` with no Office dependency (#80); and `Import-RangerManualEvidence` for merging hand-collected evidence into the audit manifest with provenance labels (#32). v2.3.0 — Cloud Publishing — remains the previous release.
+
+## Previous Release — v2.3.0 — Cloud Publishing
 
 AzureLocalRanger v2.3.0 — Cloud Publishing — pushes Ranger run packages to Azure Blob Storage and streams distilled telemetry to Log Analytics Workspace after every run, with no code changes required if the runner has Storage Blob Data Contributor. Key additions: `Publish-RangerRun` command with Managed Identity / Entra RBAC / Key-Vault SAS auth chain and SHA-256 idempotency (#244); `_catalog/{cluster}/latest.json` + `_catalog/_index.json` catalog blobs updated per run (#245); cloud publishing guide + samples (#246); `RangerRun_CL` and `RangerFinding_CL` rows posted to a DCE/DCR pair via the Logs Ingestion API (#247). v2.2.0 — WAF Compliance Guidance — remains the previous release.
 

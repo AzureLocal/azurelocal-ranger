@@ -40,6 +40,20 @@ function Invoke-RangerOutputGeneration {
         }
     }
 
+    # v2.5.0 (#80): PowerPoint deck output.
+    if ('pptx' -in $normalizedFormats -and (Get-Command -Name 'New-RangerPptxDeck' -ErrorAction SilentlyContinue)) {
+        try {
+            $reportsRoot = Join-Path -Path $PackageRoot -ChildPath 'reports'
+            New-Item -ItemType Directory -Path $reportsRoot -Force | Out-Null
+            $prefix = Get-RangerArtifactPrefix -Manifest $Manifest
+            $pptxPath = Join-Path $reportsRoot ("$prefix-executive.pptx")
+            $null = New-RangerPptxDeck -Manifest $Manifest -OutputPath $pptxPath
+            [void]$artifacts.Add((New-RangerArtifactRecord -Type 'pptx' -RelativePath ([System.IO.Path]::GetRelativePath($PackageRoot, $pptxPath)) -Status generated -Audience 'management'))
+        } catch {
+            Write-RangerLog -Level warn -Message "PPTX export failed: $($_.Exception.Message)"
+        }
+    }
+
     # v1.6.0 (#210): Power BI CSV + star-schema bundle.
     if ('powerbi' -in $normalizedFormats) {
         $pbiRoot = Join-Path -Path $PackageRoot -ChildPath 'powerbi'

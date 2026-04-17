@@ -2,6 +2,16 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
+## v2.5.0 Highlights — Extended Platform Coverage
+
+- **Capacity headroom (#128)** — `manifest.domains.capacityAnalysis` with per-node + cluster totals (vCPU/memory/storage/pool) and Healthy/Warning/Critical status per dimension.
+- **Idle / underutilized VM detection (#125)** — `vmUtilization` domain classifies VMs from `vm.utilization` sidecar data (avg/peak CPU, avg memory) and emits rightsizing proposals (proposed vCPU, proposed memory) with aggregated potential freed-resource savings.
+- **Storage efficiency (#126)** — `storageEfficiency` domain exposes dedup state, dedup ratio, saved GiB, thin-provisioning coverage, and a `wasteClass` tag (`over-provisioned`, `dedup-candidate`, `none`).
+- **SQL / Windows Server license inventory (#127)** — `licenseInventory` domain lists guest-detected SQL instances (edition, version, core count, license model, AHB eligibility) and Windows Server instances with aggregated core totals.
+- **Multi-cluster estate rollup (#129)** — `Invoke-AzureLocalRangerEstate` runs Ranger against every target in an estate config and emits `estate-rollup.json`, `estate-summary.html`, and `powerbi/estate-clusters.csv`.
+- **PowerPoint output (#80)** — new `pptx` output format builds a 7-slide executive overview OOXML .pptx via `System.IO.Packaging`. No Office dependency.
+- **Import-RangerManualEvidence (#32)** — merge hand-collected evidence (network inventory, firewall exports) into an existing manifest with provenance. `manifest.run.manualImports` tracks source, domain, and evidence file path.
+
 ## v2.3.0 Highlights — Cloud Publishing
 
 - **Azure Blob publisher (#244)** — `Publish-RangerRun` uploads the run package (manifest, evidence, package-index, log, reports, powerbi) to a named storage account. Auth chain: Managed Identity → Entra RBAC → SAS from Key Vault. SHA-256 idempotency skips unchanged blobs. `Invoke-AzureLocalRanger -PublishToStorage` triggers automatically post-run.

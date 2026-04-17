@@ -8,6 +8,25 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [2.5.0] — 2026-04-17
+
+Extended Platform Coverage — workload/cost intelligence, multi-cluster
+orchestration, and presentation-ready output.
+
+### Added
+
+- **Capacity headroom analysis (#128)** — `manifest.domains.capacityAnalysis` domain. Per-node + cluster totals for vCPU allocation, memory allocation, storage used, and pool allocated. Healthy / Warning / Critical status per dimension from configurable thresholds (default warn 80%, fail 90%).
+- **Idle / underutilized VM detection (#125)** — `manifest.domains.vmUtilization` domain. Classifies each VM as idle / underutilized / healthy / stopped / no-counters from `vm.utilization` sidecar data (avg/peak CPU %, avg memory %). Emits rightsizing proposals (`proposedVcpu`, `proposedMemoryMb`) and aggregated potential-freed-resource savings.
+- **Storage efficiency analysis (#126)** — `manifest.domains.storageEfficiency` domain. Per-volume dedup state, dedup mode, dedup ratio, saved GiB, thin-provisioning coverage. Emits a `wasteClass` tag (`over-provisioned`, `dedup-candidate`, `none`) and aggregate logical-vs-physical GiB.
+- **SQL / Windows Server license inventory (#127)** — `manifest.domains.licenseInventory` domain. Enumerates guest-detected SQL instances (edition, version, core count, license model, AHB eligibility) and Windows Server instances with core totals, ready for compliance reporting.
+- **Multi-cluster estate rollup (#129)** — `Invoke-AzureLocalRangerEstate` runs Ranger against every target in an estate config. Emits per-cluster packages plus `estate-rollup.json`, `estate-summary.html`, and `powerbi/estate-clusters.csv` with WAF score / AHB / capacity posture per cluster.
+- **PowerPoint output (#80)** — new `pptx` output format. Builds a 7-slide executive overview OOXML `.pptx` via `System.IO.Packaging`. No Office or third-party-module dependency.
+- **Import-RangerManualEvidence (#32)** — merges hand-collected evidence (network inventory, firewall exports, externally governed data) into an existing audit-manifest.json with provenance labels. `manifest.run.manualImports` records source, domain, and evidence file path.
+
+### Changed
+
+- Runtime pipeline runs v2.5.0 analyzers after all collectors complete and before schema validation so the new domains are subject to the same verification as collected data.
+
 ## [2.3.0] — 2026-04-17
 
 Cloud Publishing — push Ranger run packages to Azure Blob Storage and stream

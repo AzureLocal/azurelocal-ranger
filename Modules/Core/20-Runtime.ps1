@@ -764,6 +764,16 @@ function Invoke-RangerDiscoveryRuntime {
             throw "Ranger: collection completed but returned no node data. Verify WinRM connectivity to '$clusterTarget' and that the credentials have read access to root/MSCluster."
         }
 
+        # v2.5.0: capacity / VM utilization / storage efficiency / license inventory analyzers
+        # run after all collectors so they can reason across the complete manifest.
+        if (Get-Command -Name 'Invoke-RangerV25Analyzers' -ErrorAction SilentlyContinue) {
+            try {
+                $null = Invoke-RangerV25Analyzers -Manifest $manifest
+            } catch {
+                Write-RangerLog -Level warn -Message "v2.5.0 analyzer pass failed: $($_.Exception.Message)"
+            }
+        }
+
         $manifestValidation = Test-RangerManifestSchema -Manifest $manifest -SelectedCollectors $selectedCollectors
         $manifest.run.schemaValidation = [ordered]@{
             isValid  = $manifestValidation.IsValid

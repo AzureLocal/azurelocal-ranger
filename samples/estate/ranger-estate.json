@@ -1,0 +1,25 @@
+{
+  "$schema": "https://azurelocal.cloud/azurelocal-ranger/schemas/estate.v1.json",
+  "estate": {
+    "name": "contoso-azure-local-estate",
+    "description": "Four Azure Local clusters across two regions.",
+    "targets": [
+      {
+        "clusterName": "azlocal-iic-01",
+        "configPath": "./configs/iic-01.json"
+      },
+      {
+        "clusterName": "azlocal-iic-02",
+        "configPath": "./configs/iic-02.json"
+      },
+      {
+        "clusterName": "azlocal-hq-01",
+        "configPath": "./configs/hq-01.json"
+      },
+      {
+        "clusterName": "azlocal-hq-02",
+        "configPath": "./configs/hq-02.json"
+      }
+    ]
+  }
+}

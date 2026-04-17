@@ -6,6 +6,7 @@ $moduleFolders = @(
     (Join-Path $moduleRoot 'Modules\Private'),
     (Join-Path $moduleRoot 'Modules\Core'),
     (Join-Path $moduleRoot 'Modules\Collectors'),
+    (Join-Path $moduleRoot 'Modules\Analyzers'),
     (Join-Path $moduleRoot 'Modules\Outputs\Reports'),
     (Join-Path $moduleRoot 'Modules\Outputs\Templates'),
     (Join-Path $moduleRoot 'Modules\Outputs\Diagrams'),
@@ -34,5 +35,8 @@ Export-ModuleMember -Function @(
     # v2.2.0 (#243): copy-pasteable remediation script generator.
     'Get-RangerRemediation',
     # v2.3.0 (#244): cloud-publishing entrypoints.
-    'Publish-RangerRun'
+    'Publish-RangerRun',
+    # v2.5.0 (#129 / #32): estate orchestration and manual evidence import.
+    'Invoke-AzureLocalRangerEstate',
+    'Import-RangerManualEvidence'
 )

@@ -119,7 +119,7 @@ $runEnd            = '2026-04-06T12:08:32Z'
 # BUILD: run block
 # =============================================================================
 $run = [ordered]@{
-    toolVersion       = '2.3.0'
+    toolVersion       = '2.5.0'
     schemaVersion     = '1.2.0-draft'
     startTimeUtc      = $runStart
     endTimeUtc        = $runEnd
@@ -478,9 +478,9 @@ $storage = [ordered]@{
     virtualDisks  = @($virtualDisks)
     volumes       = @(
         [ordered]@{ driveLetter = 'C'; fileSystemLabel = 'OS'; sizeGB = 128; freeSpaceGB = 62 }
-        [ordered]@{ driveLetter = $null; fileSystemLabel = $iic.CsvNames[0]; sizeGB = 2000; freeSpaceGB = 1480 }
-        [ordered]@{ driveLetter = $null; fileSystemLabel = $iic.CsvNames[1]; sizeGB = 2000; freeSpaceGB = 1620 }
-        [ordered]@{ driveLetter = $null; fileSystemLabel = $iic.CsvNames[2]; sizeGB = 2000; freeSpaceGB = 1710 }
+        [ordered]@{ driveLetter = $null; fileSystemLabel = $iic.CsvNames[0]; sizeGB = 2000; freeSpaceGB = 1480; efficiency = [ordered]@{ dedupEnabled = $true;  dedupMode = 'HyperV'; dedupRatio = 1.8; savedGiB = 220; thinProvisioned = $true } }
+        [ordered]@{ driveLetter = $null; fileSystemLabel = $iic.CsvNames[1]; sizeGB = 2000; freeSpaceGB = 1620; efficiency = [ordered]@{ dedupEnabled = $false; dedupMode = '';       dedupRatio = $null; savedGiB = 0;   thinProvisioned = $true } }
+        [ordered]@{ driveLetter = $null; fileSystemLabel = $iic.CsvNames[2]; sizeGB = 2000; freeSpaceGB = 1710; efficiency = [ordered]@{ dedupEnabled = $true;  dedupMode = 'HyperV'; dedupRatio = 1.4; savedGiB = 80;  thinProvisioned = $false } }
     )
     csvs          = @($csvObjects)
     qos           = @()
@@ -668,6 +668,39 @@ $vmInventory = @(
 
 $vmPlacement = $vmInventory | ForEach-Object {
     [ordered]@{ vm = $_.name; hostNode = $_.hostNode; state = $_.state }
+}
+
+# v2.5.0: utilization counters + guestSoftware inventory for capacity / rightsizing / license analyzers.
+$utilizationByName = @{
+    'avd-iic-sh01' = [ordered]@{ avgCpuPct = 42; peakCpuPct = 78; avgMemoryPct = 61 }
+    'avd-iic-sh02' = [ordered]@{ avgCpuPct = 38; peakCpuPct = 74; avgMemoryPct = 58 }
+    'avd-iic-sh03' = [ordered]@{ avgCpuPct = 2;  peakCpuPct = 4;  avgMemoryPct = 11 }  # idle
+    'arc-iic-vm01' = [ordered]@{ avgCpuPct = 15; peakCpuPct = 22; avgMemoryPct = 22 }  # underutilized
+    'arc-iic-vm02' = [ordered]@{ avgCpuPct = 55; peakCpuPct = 81; avgMemoryPct = 68 }
+}
+$guestSoftwareByName = @{
+    'avd-iic-sh01' = [ordered]@{
+        windowsServer = [ordered]@{ edition = 'Datacenter'; version = '2022'; licenseModel = 'PerCore'; ahbEligible = $true }
+    }
+    'avd-iic-sh02' = [ordered]@{
+        windowsServer = [ordered]@{ edition = 'Datacenter'; version = '2022'; licenseModel = 'PerCore'; ahbEligible = $true }
+    }
+    'arc-iic-vm01' = [ordered]@{
+        windowsServer = [ordered]@{ edition = 'Standard'; version = '2019'; licenseModel = 'PerCore'; ahbEligible = $false }
+        sqlServer = @(
+            [ordered]@{ instanceName = 'MSSQLSERVER'; edition = 'Enterprise'; version = '2022'; assignedCoreCount = 4; licenseModel = 'PerCore'; ahbEligible = $true }
+        )
+    }
+    'arc-iic-vm02' = [ordered]@{
+        windowsServer = [ordered]@{ edition = 'Datacenter'; version = '2022'; licenseModel = 'PerCore'; ahbEligible = $true }
+        sqlServer = @(
+            [ordered]@{ instanceName = 'MSSQLSERVER'; edition = 'Standard'; version = '2022'; assignedCoreCount = 2; licenseModel = 'PerCore'; ahbEligible = $false }
+        )
+    }
+}
+foreach ($vm in $vmInventory) {
+    if ($utilizationByName.ContainsKey($vm.name)) { $vm['utilization'] = $utilizationByName[$vm.name] }
+    if ($guestSoftwareByName.ContainsKey($vm.name)) { $vm['guestSoftware'] = $guestSoftwareByName[$vm.name] }
 }
 
 $virtualMachines = [ordered]@{

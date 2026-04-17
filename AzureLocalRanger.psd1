@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '2.3.0'
+    ModuleVersion     = '2.5.0'
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
@@ -18,7 +18,9 @@
         'Export-RangerWafConfig',
         'Import-RangerWafConfig',
         'Get-RangerRemediation',
-        'Publish-RangerRun'
+        'Publish-RangerRun',
+        'Invoke-AzureLocalRangerEstate',
+        'Import-RangerManualEvidence'
     )
     CmdletsToExport   = @()
     VariablesToExport = @()
@@ -58,6 +60,35 @@
                 'Az.ConnectedMachine'
             )
             ReleaseNotes = @'
+## v2.5.0 — Extended Platform Coverage
+
+Workload/cost intelligence, multi-cluster orchestration, and executive-ready
+presentation output.
+
+### Added
+- **Capacity headroom (#128)** — `capacityAnalysis` domain: per-node + cluster
+  vCPU/memory/storage/pool allocation with Healthy/Warning/Critical status.
+- **Idle / underutilized VM detection (#125)** — `vmUtilization` domain.
+  Classifies VMs from `vm.utilization` sidecar data and emits rightsizing
+  proposals plus potential freed-resource savings.
+- **Storage efficiency (#126)** — `storageEfficiency` domain: per-volume dedup
+  state, dedup ratio, saved GiB, thin-provisioning coverage, and a `wasteClass`
+  tag for dedup candidates and over-provisioned volumes.
+- **SQL / Windows Server license inventory (#127)** — `licenseInventory` domain
+  enumerates guest SQL instances (edition, version, core count, license model,
+  AHB eligibility) and Windows Server instances with totals.
+- **Multi-cluster estate rollup (#129)** — `Invoke-AzureLocalRangerEstate` runs
+  Ranger across an estate config and emits `estate-rollup.json`,
+  `estate-summary.html`, and `powerbi/estate-clusters.csv`.
+- **PowerPoint output (#80)** — `pptx` output format builds an OOXML .pptx
+  via `System.IO.Packaging`. No Office dependency.
+- **Manual evidence import (#32)** — `Import-RangerManualEvidence` merges
+  hand-collected evidence into an existing manifest with provenance labels.
+
+### Changed
+- Runtime pipeline runs v2.5.0 analyzers after collectors and before schema
+  validation so new domains are subject to the same checks.
+
 ## v2.3.0 — Cloud Publishing
 
 Push Ranger run packages to Azure Blob and stream telemetry to Log Analytics
@@ -170,32 +201,7 @@ credential problems surface up-front instead of mid-run.
 
 ## v1.6.0 — Platform Intelligence
 
-### Added — Auth & Discovery
-- **Auto-discover resource group (#196)** — subscription-wide ARM search by cluster name when resourceGroup is absent.
-- **Auto-discover cluster FQDN (#197)** — pulled from Azure Arc; fallback to TrustedHosts + DNS on-prem chain.
-- **Multi-method Azure auth (#200)** — service-principal-cert (thumbprint / PFX), tenant-matching context reuse, sovereign-cloud environment.
-- **Save-AzContext handoff (#201)** — Export/Import-RangerAzureContext helpers for background runspaces.
-- **Resource Graph single-query (#205)** — Search-AzGraph fast path for Arc machine discovery; Get-AzResource fallback.
-
-### Added — Connectivity
-- **WinRM TrustedHosts + DNS fallback (#203)** — on-prem FQDN resolution when Arc is unavailable.
-- **Cross-RG node fallback (#204)** — Arc machines query with subscription-wide fallback; warning per cross-RG node.
-
-### Added — Commands & UX
-- **Invoke-AzureLocalRanger -Wizard (#211)** — inline wizard parameter; prompt text surfaces wizard as recommended alternative.
-- **Test-RangerPermissions (#202)** — dedicated RBAC + provider registration audit; console/JSON/Markdown output.
-- **-SkipPreCheck (#212)** — pre-run permission audit runs by default; opt-out flag and behavior.skipPreCheck config.
-- **File-based progress IPC (#213)** — Write/Read/Remove-RangerProgressState for background runspace progress.
-
-### Added — Resilience
-- **Graceful degradation (#206)** — ARM error classifier + skipped-resources tracker; manifest.run.skippedResources; behavior.failOnPartialDiscovery gate.
-
-### Added — Output
-- **Headless-browser PDF (#207)** — msedge --headless=new --print-to-pdf renders the HTML report; plain-text fallback when no browser.
-- **DOCX OOXML tables (#208)** — section.type='table'/'kv'/'sign-off' render as real Word tables.
-- **XLSX formula-injection safety (#209)** — cells beginning with =, +, -, @ are apostrophe-prefixed.
-- **Power BI export (#210)** — new `powerbi` format; nodes/volumes/storage-pools/health-checks/network-adapters CSVs + _relationships.json star-schema + _metadata.json.
-- **Graduated WAF scoring (#214)** — threshold bands with partial point awards; named aggregate calculations; {value} message substitution.
+Auto-discovery of RG/FQDN, multi-method Azure auth, graceful degradation, PDF / DOCX tables / XLSX / Power BI exports, graduated WAF scoring. Full v1.6.0 and earlier release notes: https://github.com/AzureLocal/azurelocal-ranger/blob/main/CHANGELOG.md
 
 Full history: https://github.com/AzureLocal/azurelocal-ranger/blob/main/CHANGELOG.md
 '@

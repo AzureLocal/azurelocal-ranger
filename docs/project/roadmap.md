@@ -12,27 +12,6 @@ Ranger supports two outcomes through one discovery engine:
 
 **Upcoming** — what's next, in ship order. Each milestone link has the full issue backlog; tables below surface the highlights.
 
-## v2.5.0 — Extended Platform Coverage
-
-Extended hardware and protocol coverage, deep workload analysis, and long-horizon output formats. Milestone: [#4](https://github.com/AzureLocal/azurelocal-ranger/milestone/4).
-
-### Workload & Cost Analysis
-
-| Item | Detail | Issue |
-| --- | --- | --- |
-| Idle and underutilized VM detection (#125) | Surface VMs with low CPU/memory utilization and rightsizing recommendations | [#125](https://github.com/AzureLocal/azurelocal-ranger/issues/125) |
-| Storage efficiency analysis (#126) | Deduplication ratios, thin-provisioning coverage gaps, and storage waste identification across volumes and pools | [#126](https://github.com/AzureLocal/azurelocal-ranger/issues/126) |
-| SQL Server and Windows Server license inventory (#127) | Edition, core count, and AHB cross-reference per VM for license compliance reporting | [#127](https://github.com/AzureLocal/azurelocal-ranger/issues/127) |
-| Cluster capacity headroom analysis (#128) | Compute, memory, and storage utilization percentages with configurable warning thresholds and trend-based runway | [#128](https://github.com/AzureLocal/azurelocal-ranger/issues/128) |
-
-### Multi-Cluster & Output Formats
-
-| Item | Detail | Issue |
-| --- | --- | --- |
-| Multi-cluster inventory rollup (#129) | Discover multiple Azure Local clusters in one run; produce per-cluster packages plus an estate summary report | [#129](https://github.com/AzureLocal/azurelocal-ranger/issues/129) |
-| PowerPoint presentation output (#80) | Executive environment overview deck generated from the audit manifest | [#80](https://github.com/AzureLocal/azurelocal-ranger/issues/80) |
-| Manual import workflows (#32) | Accept externally gathered data for environments where automated collection is not authorized | [#32](https://github.com/AzureLocal/azurelocal-ranger/issues/32) |
-
 ## v3.0.0 — Enterprise & OEM Integration
 
 Enterprise integrations, specialized hardware protocols, and advanced topology coverage beyond single-cluster HCI deployments. Milestone: [#9](https://github.com/AzureLocal/azurelocal-ranger/milestone/9).
@@ -48,6 +27,20 @@ Enterprise integrations, specialized hardware protocols, and advanced topology c
 ---
 
 **Shipped** — most recent first.
+
+## Shipped — v2.5.0 — Extended Platform Coverage (2026-04-17)
+
+Workload/cost intelligence, multi-cluster orchestration, and presentation-ready output.
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Capacity headroom analysis | `capacityAnalysis` domain with Healthy / Warning / Critical status per dimension | [#128](https://github.com/AzureLocal/azurelocal-ranger/issues/128) |
+| Idle / underutilized VM detection | `vmUtilization` domain with rightsizing proposals and freed-resource savings | [#125](https://github.com/AzureLocal/azurelocal-ranger/issues/125) |
+| Storage efficiency analysis | `storageEfficiency` domain: dedup, thin-provisioning, waste class tagging | [#126](https://github.com/AzureLocal/azurelocal-ranger/issues/126) |
+| SQL / Windows Server license inventory | `licenseInventory` domain for compliance reporting | [#127](https://github.com/AzureLocal/azurelocal-ranger/issues/127) |
+| Multi-cluster estate rollup | `Invoke-AzureLocalRangerEstate` + estate-rollup.json + estate-summary.html | [#129](https://github.com/AzureLocal/azurelocal-ranger/issues/129) |
+| PowerPoint deck output | `pptx` output format built via `System.IO.Packaging` — no Office dependency | [#80](https://github.com/AzureLocal/azurelocal-ranger/issues/80) |
+| Manual evidence import | `Import-RangerManualEvidence` merges hand-collected data with provenance | [#32](https://github.com/AzureLocal/azurelocal-ranger/issues/32) |
 
 ## Shipped — v2.3.0 — Cloud Publishing (2026-04-17)
 

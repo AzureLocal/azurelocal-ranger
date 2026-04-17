@@ -1,6 +1,6 @@
 {
   "run": {
-    "toolVersion": "2.3.0",
+    "toolVersion": "2.5.0",
     "schemaVersion": "1.2.0-draft",
     "startTimeUtc": "2026-04-06T12:00:00Z",
     "endTimeUtc": "2026-04-06T12:08:32Z",
@@ -800,19 +800,40 @@
           "driveLetter": null,
           "fileSystemLabel": "csv-iic-azlocal-01-vmstore-01",
           "sizeGB": 2000,
-          "freeSpaceGB": 1480
+          "freeSpaceGB": 1480,
+          "efficiency": {
+            "dedupEnabled": true,
+            "dedupMode": "HyperV",
+            "dedupRatio": 1.8,
+            "savedGiB": 220,
+            "thinProvisioned": true
+          }
         },
         {
           "driveLetter": null,
           "fileSystemLabel": "csv-iic-azlocal-01-vmstore-02",
           "sizeGB": 2000,
-          "freeSpaceGB": 1620
+          "freeSpaceGB": 1620,
+          "efficiency": {
+            "dedupEnabled": false,
+            "dedupMode": "",
+            "dedupRatio": null,
+            "savedGiB": 0,
+            "thinProvisioned": true
+          }
         },
         {
           "driveLetter": null,
           "fileSystemLabel": "csv-iic-azlocal-01-vmstore-03",
           "sizeGB": 2000,
-          "freeSpaceGB": 1710
+          "freeSpaceGB": 1710,
+          "efficiency": {
+            "dedupEnabled": true,
+            "dedupMode": "HyperV",
+            "dedupRatio": 1.4,
+            "savedGiB": 80,
+            "thinProvisioned": false
+          }
         }
       ],
       "csvs": [
@@ -1216,7 +1237,20 @@
           "replicationMode": null,
           "replicationHealth": null,
           "workloadFamily": "AVD",
-          "vmProvisioningModel": "hyper-v-native"
+          "vmProvisioningModel": "hyper-v-native",
+          "utilization": {
+            "avgCpuPct": 42,
+            "peakCpuPct": 78,
+            "avgMemoryPct": 61
+          },
+          "guestSoftware": {
+            "windowsServer": {
+              "edition": "Datacenter",
+              "version": "2022",
+              "licenseModel": "PerCore",
+              "ahbEligible": true
+            }
+          }
         },
         {
           "name": "avd-iic-sh02",
@@ -1238,7 +1272,20 @@
           "replicationMode": null,
           "replicationHealth": null,
           "workloadFamily": "AVD",
-          "vmProvisioningModel": "hyper-v-native"
+          "vmProvisioningModel": "hyper-v-native",
+          "utilization": {
+            "avgCpuPct": 38,
+            "peakCpuPct": 74,
+            "avgMemoryPct": 58
+          },
+          "guestSoftware": {
+            "windowsServer": {
+              "edition": "Datacenter",
+              "version": "2022",
+              "licenseModel": "PerCore",
+              "ahbEligible": true
+            }
+          }
         },
         {
           "name": "avd-iic-sh03",
@@ -1260,7 +1307,12 @@
           "replicationMode": null,
           "replicationHealth": null,
           "workloadFamily": "AVD",
-          "vmProvisioningModel": "hyper-v-native"
+          "vmProvisioningModel": "hyper-v-native",
+          "utilization": {
+            "avgCpuPct": 2,
+            "peakCpuPct": 4,
+            "avgMemoryPct": 11
+          }
         },
         {
           "name": "arc-iic-vm01",
@@ -1284,7 +1336,30 @@
           "workloadFamily": "Arc VMs",
           "vmProvisioningModel": "arc-vm-resource-bridge",
           "logicalNetwork": "lnet-iic-workload-01",
-          "storagePathRef": "sp-iic-vmstore-01"
+          "storagePathRef": "sp-iic-vmstore-01",
+          "utilization": {
+            "avgCpuPct": 15,
+            "peakCpuPct": 22,
+            "avgMemoryPct": 22
+          },
+          "guestSoftware": {
+            "windowsServer": {
+              "edition": "Standard",
+              "version": "2019",
+              "licenseModel": "PerCore",
+              "ahbEligible": false
+            },
+            "sqlServer": [
+              {
+                "instanceName": "MSSQLSERVER",
+                "edition": "Enterprise",
+                "version": "2022",
+                "assignedCoreCount": 4,
+                "licenseModel": "PerCore",
+                "ahbEligible": true
+              }
+            ]
+          }
         },
         {
           "name": "arc-iic-vm02",
@@ -1308,7 +1383,30 @@
           "workloadFamily": "Arc VMs",
           "vmProvisioningModel": "arc-vm-resource-bridge",
           "logicalNetwork": "lnet-iic-workload-01",
-          "storagePathRef": "sp-iic-vmstore-02"
+          "storagePathRef": "sp-iic-vmstore-02",
+          "utilization": {
+            "avgCpuPct": 55,
+            "peakCpuPct": 81,
+            "avgMemoryPct": 68
+          },
+          "guestSoftware": {
+            "windowsServer": {
+              "edition": "Datacenter",
+              "version": "2022",
+              "licenseModel": "PerCore",
+              "ahbEligible": true
+            },
+            "sqlServer": [
+              {
+                "instanceName": "MSSQLSERVER",
+                "edition": "Standard",
+                "version": "2022",
+                "assignedCoreCount": 2,
+                "licenseModel": "PerCore",
+                "ahbEligible": false
+              }
+            ]
+          }
         }
       ],
       "placement": [
@@ -1423,12 +1521,12 @@
             {
               "subject": "CN=azl-iic-n01.iic.local",
               "thumbprint": "AAABBB001",
-              "notAfter": "2026-06-15T23:04:28Z"
+              "notAfter": "2026-06-16T08:19:55Z"
             },
             {
               "subject": "CN=azlocal-iic-01.iic.local",
               "thumbprint": "AAABBB002",
-              "notAfter": "2028-04-15T23:04:28Z"
+              "notAfter": "2028-04-16T08:19:55Z"
             }
           ]
         },
@@ -1437,7 +1535,7 @@
           "items": {
             "subject": "CN=azl-iic-n02.iic.local",
             "thumbprint": "AAABBB101",
-            "notAfter": "2028-04-15T23:04:28Z"
+            "notAfter": "2028-04-16T08:19:55Z"
           }
         },
         {
@@ -1445,7 +1543,7 @@
           "items": {
             "subject": "CN=azl-iic-n03.iic.local",
             "thumbprint": "AAABBB201",
-            "notAfter": "2028-04-15T23:04:28Z"
+            "notAfter": "2028-04-16T08:19:55Z"
           }
         }
       ],
@@ -2048,7 +2146,7 @@
           "currency": "USD"
         },
         "pricingReference": {
-          "asOfDate": "2026-04-16",
+          "asOfDate": "2026-04-17",
           "url": "https://azure.microsoft.com/en-us/pricing/details/azure-local/"
         }
       },
