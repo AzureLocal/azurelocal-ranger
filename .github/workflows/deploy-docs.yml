@@ -6,6 +6,11 @@ on:
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
+  # Redeploy when a new GitHub Release is cut so MkDocs Material's version badge
+  # (driven by the GitHub API lookup against repo_url) refreshes to the latest
+  # module version instead of remaining stuck on whatever was latest at last push.
+  release:
+    types: [published]
   workflow_dispatch:
 
 # Serialise all Pages deployments for this repo so push-to-main and release events

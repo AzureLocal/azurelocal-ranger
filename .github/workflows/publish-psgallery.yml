@@ -11,7 +11,10 @@ on:
         default: 'true'
 
 permissions:
-  contents: read
+  # contents: write is required to create the GitHub Release on workflow_dispatch so
+  # the docs site's repo-version badge (MkDocs Material reads the latest release via
+  # the GitHub API) picks up the new module version automatically.
+  contents: write
 
 jobs:
   publish:
@@ -68,6 +71,40 @@ jobs:
             exit 0
           }
           Publish-Module -Path $stagingDir -NuGetApiKey $env:PSGALLERY_API_KEY -Repository PSGallery -Verbose
+
+      - name: Create matching GitHub Release (if missing)
+        # Only runs when we actually published — skips during dry-run or when the
+        # workflow was triggered by a pre-existing `release` event. Keeps the docs
+        # site version badge and the PSGallery version in lockstep.
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false' }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $manifest = Test-ModuleManifest -Path ./AzureLocalRanger.psd1 -ErrorAction Stop
+          $tag = "v$($manifest.Version)"
+          $existing = gh release view $tag --json tagName 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "GitHub Release $tag already exists — skipping create."
+            exit 0
+          }
+
+          # Extract the matching CHANGELOG section as the release body.
+          $changelog = Get-Content ./CHANGELOG.md -Raw
+          $pattern = '(?sm)^## \[' + [regex]::Escape([string]$manifest.Version) + '\].*?(?=^## \[|\z)'
+          $match = [regex]::Match($changelog, $pattern)
+          $body = if ($match.Success) {
+            ($match.Value -split "`n", 2)[1].Trim()
+          } else {
+            "See CHANGELOG.md for details."
+          }
+          $bodyPath = Join-Path $env:RUNNER_TEMP "release-body-$tag.md"
+          $body | Set-Content -Path $bodyPath -Encoding UTF8
+
+          # Derive a human title from the first H2 milestone banner if present.
+          $title = "v$($manifest.Version)"
+          gh release create $tag --target main --title $title --notes-file $bodyPath
+          Write-Host "Created GitHub Release $tag."
 
       - name: Dry-run summary
         if: ${{ github.event.inputs.dry_run == 'true' }}
