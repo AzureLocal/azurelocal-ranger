@@ -28,6 +28,19 @@ function Invoke-RangerOutputGeneration {
         }
     }
 
+    # v1.6.0 (#210): Power BI CSV + star-schema bundle.
+    if ('powerbi' -in $normalizedFormats) {
+        $pbiRoot = Join-Path -Path $PackageRoot -ChildPath 'powerbi'
+        try {
+            Invoke-RangerPowerBiExport -Manifest $Manifest -OutputRoot $pbiRoot | Out-Null
+            foreach ($f in @(Get-ChildItem -Path $pbiRoot -File -ErrorAction SilentlyContinue)) {
+                [void]$artifacts.Add((New-RangerArtifactRecord -Type 'powerbi-bundle' -RelativePath ([System.IO.Path]::GetRelativePath($PackageRoot, $f.FullName)) -Status generated -Audience 'technical'))
+            }
+        } catch {
+            Write-RangerLog -Level warn -Message "Power BI export failed: $($_.Exception.Message)"
+        }
+    }
+
     $readmePath = Write-RangerPackageReadme -Manifest $Manifest -PackageRoot $PackageRoot
     [void]$artifacts.Add((New-RangerArtifactRecord -Type 'package-readme' -RelativePath ([System.IO.Path]::GetRelativePath($PackageRoot, $readmePath)) -Status generated -Audience 'all'))
 
@@ -80,7 +93,19 @@ function Write-RangerReportArtifacts {
 
         if ('pdf' -in $Formats) {
             $pdfPath = Join-Path -Path $reportsRoot -ChildPath ("{0}-{1}.pdf" -f $prefix, (Get-RangerSafeName -Value $tier.Title))
-            Write-RangerPdfReport -Report $content -Path $pdfPath
+            # v1.6.0 (#207): prefer headless Edge / Chrome for a high-fidelity PDF
+            # rendered from the HTML report. Fall back to the plain-text writer
+            # when no browser is available.
+            $renderedViaBrowser = $false
+            if ('html' -in $Formats) {
+                $htmlSrc = Join-Path -Path $reportsRoot -ChildPath ("{0}-{1}.html" -f $prefix, (Get-RangerSafeName -Value $tier.Title))
+                if (Test-Path -Path $htmlSrc -PathType Leaf) {
+                    $renderedViaBrowser = Invoke-RangerHeadlessPdf -HtmlPath $htmlSrc -OutputPath $pdfPath
+                }
+            }
+            if (-not $renderedViaBrowser) {
+                Write-RangerPdfReport -Report $content -Path $pdfPath
+            }
             [void]$artifacts.Add((New-RangerArtifactRecord -Type 'pdf-report' -RelativePath ([System.IO.Path]::GetRelativePath($PackageRoot, $pdfPath)) -Status generated -Audience $tier.Audience))
         }
     }

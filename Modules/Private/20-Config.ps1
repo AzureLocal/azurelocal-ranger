@@ -936,7 +936,7 @@ function Test-RangerConfiguration {
         $errors.Add("Output mode '$($Config.output.mode)' is not supported.")
     }
 
-    $supportedFormats = @('html', 'markdown', 'md', 'svg', 'drawio', 'xml', 'json', 'docx', 'xlsx', 'pdf')
+    $supportedFormats = @('html', 'markdown', 'md', 'svg', 'drawio', 'xml', 'json', 'docx', 'xlsx', 'pdf', 'powerbi')
     foreach ($format in @($Config.output.formats)) {
         if ($format -notin $supportedFormats) {
             $errors.Add("Output format '$format' is not supported.")

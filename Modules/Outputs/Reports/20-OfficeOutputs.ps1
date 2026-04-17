@@ -1,3 +1,303 @@
+function ConvertTo-RangerCsvSafeText {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#210): sanitise a value for CSV output.
+        - Prefix values starting with =/+/-/@ with a space to block formula injection.
+        - Replace embedded newlines / tabs with a single space.
+        - Escape embedded double quotes by doubling them.
+    #>
+    param([AllowNull()]$Value)
+    $text = ConvertTo-RangerOfficeText -Value $Value
+    if ([string]::IsNullOrEmpty($text)) { return '' }
+    if ($text.Length -gt 0 -and $text[0] -in @('=', '+', '-', '@')) { $text = ' ' + $text }
+    $text = $text -replace "[\r\n\t]+", ' '
+    if ($text.Contains(',') -or $text.Contains('"')) {
+        $text = '"' + ($text -replace '"', '""') + '"'
+    }
+    return $text
+}
+
+function Write-RangerCsvFile {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#210): write an array of ordered dictionaries to CSV with
+        formula-injection sanitisation.
+    #>
+    param(
+        [Parameter(Mandatory = $true)] [string]$Path,
+        [Parameter(Mandatory = $true)] [string[]]$Columns,
+        [object[]]$Rows
+    )
+    $lines = New-Object System.Collections.Generic.List[string]
+    $lines.Add(($Columns -join ','))
+    foreach ($row in @($Rows)) {
+        $cells = @($Columns | ForEach-Object {
+            $col = $_
+            $v = if ($row -is [System.Collections.IDictionary] -and $row.Contains($col)) { $row[$col] }
+                 elseif ($row.PSObject -and $row.PSObject.Properties[$col]) { $row.$col }
+                 else { $null }
+            ConvertTo-RangerCsvSafeText -Value $v
+        })
+        $lines.Add($cells -join ',')
+    }
+    [System.IO.File]::WriteAllLines($Path, $lines, [System.Text.UTF8Encoding]::new($false))
+}
+
+function Invoke-RangerPowerBiExport {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#210): export Ranger manifest data as a Power BI CSV + star-schema bundle.
+    .DESCRIPTION
+        Produces one flat CSV per entity type (nodes, volumes, storage-pools,
+        health-checks, network-adapters) plus _relationships.json and
+        _metadata.json. All string values are sanitised to prevent CSV
+        formula injection and embedded-newline issues.
+    #>
+    param(
+        [Parameter(Mandatory = $true)] [System.Collections.IDictionary]$Manifest,
+        [Parameter(Mandatory = $true)] [string]$OutputRoot
+    )
+
+    if (-not (Test-Path -Path $OutputRoot)) {
+        New-Item -ItemType Directory -Path $OutputRoot -Force | Out-Null
+    }
+
+    $summary   = Get-RangerManifestSummary -Manifest $Manifest
+    $clusterId = if ($summary.ClusterName) { [string]$summary.ClusterName } else { 'unknown-cluster' }
+    $runTs     = if ($Manifest.run.endTimeUtc) { [string]$Manifest.run.endTimeUtc } else { (Get-Date).ToUniversalTime().ToString('o') }
+
+    # nodes.csv
+    $nodeRows = @(
+        @($Manifest.domains.clusterNode.nodes) | ForEach-Object {
+            $n = $_
+            $short = if ($n.name) { [string]$n.name } elseif ($n.NodeName) { [string]$n.NodeName } else { '—' }
+            [ordered]@{
+                NodeId        = $short
+                NodeName      = $short
+                NodeFqdn      = if ($n.fqdn) { [string]$n.fqdn } else { '' }
+                ClusterId     = $clusterId
+                Status        = if ($n.state) { [string]$n.state } else { '' }
+                Model         = if ($n.model) { [string]$n.model } else { '' }
+                CpuSockets    = if ($null -ne $n.cpuSocketCount) { [string]$n.cpuSocketCount } else { '' }
+                PhysicalCores = if ($null -ne $n.logicalProcessorCount) { [string]$n.logicalProcessorCount } else { '' }
+                MemoryGiB     = if ($null -ne $n.totalMemoryGiB) { [string][math]::Round([double]$n.totalMemoryGiB, 0) } else { '' }
+                OsVersion     = if ($n.osVersion) { [string]$n.osVersion } elseif ($n.osCaption) { [string]$n.osCaption } else { '' }
+                ArcConnected  = if ($n.arcConnected) { 'True' } else { 'False' }
+                LastUpdated   = $runTs
+            }
+        }
+    )
+    Write-RangerCsvFile -Path (Join-Path $OutputRoot 'nodes.csv') `
+        -Columns @('NodeId','NodeName','NodeFqdn','ClusterId','Status','Model','CpuSockets','PhysicalCores','MemoryGiB','OsVersion','ArcConnected','LastUpdated') `
+        -Rows $nodeRows
+
+    # storage-pools.csv
+    $poolRows = @(
+        @($Manifest.domains.storage.pools) | ForEach-Object {
+            $p = $_
+            [ordered]@{
+                PoolId          = if ($p.friendlyName) { [string]$p.friendlyName } elseif ($p.name) { [string]$p.name } else { '' }
+                PoolName        = if ($p.friendlyName) { [string]$p.friendlyName } elseif ($p.name) { [string]$p.name } else { '' }
+                ClusterId       = $clusterId
+                SizeTiB         = if ($null -ne $p.rawCapacityGiB)    { [string][math]::Round([double]$p.rawCapacityGiB / 1024, 2) } else { '' }
+                AllocatedTiB    = if ($null -ne $p.usedUsableCapacityGiB) { [string][math]::Round([double]$p.usedUsableCapacityGiB / 1024, 2) } else { '' }
+                FreeTiB         = if ($null -ne $p.freeUsableCapacityGiB) { [string][math]::Round([double]$p.freeUsableCapacityGiB / 1024, 2) } else { '' }
+                FaultDomainType = if ($p.faultDomainType) { [string]$p.faultDomainType } else { '' }
+                Health          = if ($p.healthStatus) { [string]$p.healthStatus } else { '' }
+                LastUpdated     = $runTs
+            }
+        }
+    )
+    Write-RangerCsvFile -Path (Join-Path $OutputRoot 'storage-pools.csv') `
+        -Columns @('PoolId','PoolName','ClusterId','SizeTiB','AllocatedTiB','FreeTiB','FaultDomainType','Health','LastUpdated') `
+        -Rows $poolRows
+
+    # volumes.csv
+    $volRows = @(
+        @($Manifest.domains.storage.virtualDisks) | ForEach-Object {
+            $v = $_
+            [ordered]@{
+                VolumeId    = if ($v.friendlyName) { [string]$v.friendlyName } elseif ($v.name) { [string]$v.name } else { '' }
+                VolumeName  = if ($v.friendlyName) { [string]$v.friendlyName } elseif ($v.name) { [string]$v.name } else { '' }
+                PoolId      = if ($v.storagePoolFriendlyName) { [string]$v.storagePoolFriendlyName } elseif ($v.poolName) { [string]$v.poolName } else { '' }
+                SizeTiB     = if ($null -ne $v.sizeGiB) { [string][math]::Round([double]$v.sizeGiB / 1024, 2) } else { '' }
+                UsedTiB     = if ($null -ne $v.usedGiB) { [string][math]::Round([double]$v.usedGiB / 1024, 2) } else { '' }
+                FreePct     = if ($null -ne $v.freePct) { [string]$v.freePct } else { '' }
+                Resiliency  = if ($v.resiliencySetting) { [string]$v.resiliencySetting } else { '' }
+                Health      = if ($v.healthStatus) { [string]$v.healthStatus } else { '' }
+                LastUpdated = $runTs
+            }
+        }
+    )
+    Write-RangerCsvFile -Path (Join-Path $OutputRoot 'volumes.csv') `
+        -Columns @('VolumeId','VolumeName','PoolId','SizeTiB','UsedTiB','FreePct','Resiliency','Health','LastUpdated') `
+        -Rows $volRows
+
+    # health-checks.csv (sourced from findings)
+    $checkRows = @(
+        @($Manifest.findings) | ForEach-Object {
+            $f = $_
+            [ordered]@{
+                CheckId     = if ($f.id) { [string]$f.id } else { [string]$f.title }
+                Domain      = if ($f.domain) { [string]$f.domain } else { '' }
+                CheckName   = if ($f.title) { [string]$f.title } else { '' }
+                Severity    = if ($f.severity) { [string]$f.severity } else { '' }
+                Status      = if ($f.severity -eq 'good') { 'Healthy' } elseif ($f.severity -eq 'critical') { 'Critical' } elseif ($f.severity -eq 'warning') { 'Warning' } else { 'Informational' }
+                NodeId      = if ($f.affectedComponents) { [string](@($f.affectedComponents) -join '; ') } else { '' }
+                Finding     = if ($f.description) { [string]$f.description } else { '' }
+                Remediation = if ($f.recommendation) { [string]$f.recommendation } else { '' }
+                LastUpdated = $runTs
+            }
+        }
+    )
+    Write-RangerCsvFile -Path (Join-Path $OutputRoot 'health-checks.csv') `
+        -Columns @('CheckId','Domain','CheckName','Severity','Status','NodeId','Finding','Remediation','LastUpdated') `
+        -Rows $checkRows
+
+    # network-adapters.csv
+    $adapterRows = @(
+        @($Manifest.domains.networking.adapters) | ForEach-Object {
+            $a = $_
+            [ordered]@{
+                AdapterId     = if ($a.name) { ('{0}::{1}' -f ($a.node ?? ''), $a.name) } else { '' }
+                NodeId        = if ($a.node) { [string]$a.node } else { '' }
+                AdapterName   = if ($a.name) { [string]$a.name } else { '' }
+                LinkSpeedGbps = if ($a.linkSpeedGbps) { [string]$a.linkSpeedGbps } elseif ($a.linkSpeed) { [string]$a.linkSpeed } else { '' }
+                IntentName    = if ($a.intentName) { [string]$a.intentName } else { '' }
+                SubnetMask    = if ($a.subnetMask) { [string]$a.subnetMask } else { '' }
+                IpAddress     = if ($a.ipAddress) { [string]$a.ipAddress } else { '' }
+                VlanId        = if ($a.vlanId) { [string]$a.vlanId } else { '' }
+                LastUpdated   = $runTs
+            }
+        }
+    )
+    Write-RangerCsvFile -Path (Join-Path $OutputRoot 'network-adapters.csv') `
+        -Columns @('AdapterId','NodeId','AdapterName','LinkSpeedGbps','IntentName','SubnetMask','IpAddress','VlanId','LastUpdated') `
+        -Rows $adapterRows
+
+    # _relationships.json (star schema)
+    $relationships = [ordered]@{
+        version = '1.0'
+        tables  = @('nodes','volumes','storage-pools','health-checks','network-adapters')
+        relationships = @(
+            [ordered]@{ from = 'volumes';          fromColumn = 'PoolId';    to = 'storage-pools'; toColumn = 'PoolId' }
+            [ordered]@{ from = 'storage-pools';    fromColumn = 'ClusterId'; to = 'nodes';         toColumn = 'ClusterId' }
+            [ordered]@{ from = 'health-checks';    fromColumn = 'NodeId';    to = 'nodes';         toColumn = 'NodeId' }
+            [ordered]@{ from = 'network-adapters'; fromColumn = 'NodeId';    to = 'nodes';         toColumn = 'NodeId' }
+        )
+    }
+    ($relationships | ConvertTo-Json -Depth 10) | Set-Content -Path (Join-Path $OutputRoot '_relationships.json') -Encoding UTF8
+
+    # _metadata.json
+    $metadata = [ordered]@{
+        runId         = if ($Manifest.run.runId) { [string]$Manifest.run.runId } else { [guid]::NewGuid().ToString() }
+        clusterName   = $clusterId
+        mode          = [string]$Manifest.run.mode
+        rangerVersion = [string]$Manifest.run.toolVersion
+        generatedAt   = $runTs
+    }
+    ($metadata | ConvertTo-Json -Depth 5) | Set-Content -Path (Join-Path $OutputRoot '_metadata.json') -Encoding UTF8
+
+    return $OutputRoot
+}
+
+function Resolve-RangerHeadlessBrowser {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#207): locate a headless-capable browser for PDF generation.
+    .OUTPUTS
+        Hashtable @{ Path; Name; Version } or $null when no browser was found.
+    #>
+    $candidates = @(
+        @{ Name = 'msedge';   Probe = { (Get-Command -Name 'msedge' -ErrorAction SilentlyContinue).Source } }
+        @{ Name = 'msedge';   Probe = { Join-Path $env:ProgramFiles 'Microsoft\Edge\Application\msedge.exe' } }
+        @{ Name = 'msedge';   Probe = { Join-Path ${env:ProgramFiles(x86)} 'Microsoft\Edge\Application\msedge.exe' } }
+        @{ Name = 'chrome';   Probe = { (Get-Command -Name 'chrome' -ErrorAction SilentlyContinue).Source } }
+        @{ Name = 'chrome';   Probe = { Join-Path $env:ProgramFiles 'Google\Chrome\Application\chrome.exe' } }
+        @{ Name = 'chrome';   Probe = { Join-Path ${env:ProgramFiles(x86)} 'Google\Chrome\Application\chrome.exe' } }
+        @{ Name = 'chromium'; Probe = { (Get-Command -Name 'chromium' -ErrorAction SilentlyContinue).Source } }
+    )
+
+    foreach ($c in $candidates) {
+        try {
+            $path = & $c.Probe
+            if ([string]::IsNullOrWhiteSpace($path)) { continue }
+            if (-not (Test-Path -Path $path -PathType Leaf)) { continue }
+
+            $ver = $null
+            try {
+                $verOutput = & $path --version 2>$null
+                if ($verOutput) { $ver = ($verOutput | Select-Object -First 1).ToString().Trim() }
+            } catch { }
+
+            return @{ Path = $path; Name = $c.Name; Version = $ver }
+        } catch { }
+    }
+
+    return $null
+}
+
+function Invoke-RangerHeadlessPdf {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#207): render an HTML file to PDF via headless Edge / Chrome.
+    .DESCRIPTION
+        Invokes the resolved browser with --headless=new --print-to-pdf.
+        Returns $true on success; $false when no browser is available or the
+        output file is missing / zero-byte after rendering.
+    #>
+    param(
+        [Parameter(Mandatory = $true)] [string]$HtmlPath,
+        [Parameter(Mandatory = $true)] [string]$OutputPath,
+        [int]$TimeoutSeconds = 60
+    )
+
+    $browser = Resolve-RangerHeadlessBrowser
+    if (-not $browser) {
+        Write-RangerLog -Level warn -Message 'PDF generation requires Microsoft Edge or Google Chrome. Neither was found. Install Edge (bundled with Windows 11/Server 2022) or add Chrome to PATH.'
+        return $false
+    }
+
+    $fileUri = ([uri]::new($HtmlPath)).AbsoluteUri
+    $argList = @(
+        '--headless=new',
+        '--disable-gpu',
+        '--no-sandbox',
+        "--print-to-pdf=$OutputPath",
+        '--print-to-pdf-no-header',
+        $fileUri
+    )
+
+    try {
+        $proc = Start-Process -FilePath $browser.Path -ArgumentList $argList -NoNewWindow -PassThru -RedirectStandardOutput ([System.IO.Path]::GetTempFileName()) -RedirectStandardError ([System.IO.Path]::GetTempFileName())
+        if (-not $proc.WaitForExit($TimeoutSeconds * 1000)) {
+            try { $proc.Kill() } catch { }
+            Write-RangerLog -Level warn -Message "Headless PDF render timed out after ${TimeoutSeconds}s — output may be incomplete."
+            return $false
+        }
+        if ($proc.ExitCode -ne 0) {
+            Write-RangerLog -Level warn -Message "Headless browser exited with code $($proc.ExitCode) while rendering PDF."
+            return $false
+        }
+    } catch {
+        Write-RangerLog -Level warn -Message "Headless PDF render threw: $($_.Exception.Message)"
+        return $false
+    }
+
+    if (-not (Test-Path -Path $OutputPath -PathType Leaf)) {
+        Write-RangerLog -Level warn -Message "Headless browser completed but PDF output is missing: $OutputPath"
+        return $false
+    }
+    $size = (Get-Item -Path $OutputPath).Length
+    if ($size -lt 512) {
+        Write-RangerLog -Level warn -Message "Headless browser produced a suspiciously small PDF ($size bytes) — treating as failed."
+        return $false
+    }
+
+    Write-RangerLog -Level info -Message "PDF rendered via $($browser.Name) ($($browser.Version)) — $OutputPath ($size bytes)."
+    return $true
+}
+
 function ConvertTo-RangerXmlText {
     param(
         [AllowNull()]
@@ -249,6 +549,63 @@ function New-RangerDocxParagraphXml {
     '<w:p>{0}<w:r><w:t xml:space="preserve">{1}</w:t></w:r></w:p>' -f $styleXml, $escaped
 }
 
+function New-RangerDocxTableXml {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#208): render a tabular OOXML <w:tbl> from headers + rows.
+        Header row is styled bold and repeats on page breaks.
+    #>
+    param(
+        [string[]]$Headers,
+        [object[][]]$Rows,
+        [string]$Caption
+    )
+
+    if ($null -eq $Rows -or @($Rows).Count -eq 0) {
+        return (New-RangerDocxParagraphXml -Text 'No data available.' -Style 'Normal')
+    }
+
+    $tblPr = '<w:tblPr><w:tblStyle w:val="TableGrid"/><w:tblW w:w="0" w:type="auto"/><w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/><w:left w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/><w:right w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/></w:tblBorders></w:tblPr>'
+
+    $headerCells = ($Headers | ForEach-Object {
+        $txt = ConvertTo-RangerXmlText -Value $_
+        "<w:tc><w:tcPr><w:shd w:val='clear' w:color='auto' w:fill='1E3A5F'/></w:tcPr><w:p><w:pPr><w:rPr><w:b/><w:color w:val='FFFFFF'/></w:rPr></w:pPr><w:r><w:rPr><w:b/><w:color w:val='FFFFFF'/></w:rPr><w:t xml:space='preserve'>$txt</w:t></w:r></w:p></w:tc>"
+    }) -join ''
+    $headerRow = "<w:tr><w:trPr><w:tblHeader/></w:trPr>$headerCells</w:tr>"
+
+    $bodyRows = @($Rows | ForEach-Object {
+        $cells = @($_ | ForEach-Object {
+            $txt = ConvertTo-RangerXmlText -Value $_
+            "<w:tc><w:p><w:r><w:t xml:space='preserve'>$txt</w:t></w:r></w:p></w:tc>"
+        }) -join ''
+        "<w:tr>$cells</w:tr>"
+    }) -join ''
+
+    $xml = "<w:tbl>$tblPr$headerRow$bodyRows</w:tbl>"
+    if (-not [string]::IsNullOrWhiteSpace($Caption)) {
+        $cap = ConvertTo-RangerXmlText -Value $Caption
+        $xml += "<w:p><w:pPr><w:rPr><w:i/><w:color w:val='64748B'/></w:rPr></w:pPr><w:r><w:rPr><w:i/><w:color w:val='64748B'/></w:rPr><w:t xml:space='preserve'>$cap</w:t></w:r></w:p>"
+    }
+    return $xml
+}
+
+function New-RangerDocxKvTableXml {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#208): render a two-column key/value table.
+    #>
+    param([object[][]]$Pairs)
+    if ($null -eq $Pairs -or @($Pairs).Count -eq 0) { return '' }
+
+    $tblPr = '<w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders><w:bottom w:val="single" w:sz="2" w:space="0" w:color="F1F5F9"/><w:insideH w:val="single" w:sz="2" w:space="0" w:color="F1F5F9"/></w:tblBorders></w:tblPr>'
+    $rows = @($Pairs | ForEach-Object {
+        $k = ConvertTo-RangerXmlText -Value ([string]$_[0])
+        $v = ConvertTo-RangerXmlText -Value ([string]$_[1])
+        "<w:tr><w:tc><w:tcPr><w:tcW w:w='3600' w:type='dxa'/></w:tcPr><w:p><w:pPr><w:rPr><w:b/><w:color w:val='475569'/></w:rPr></w:pPr><w:r><w:rPr><w:b/><w:color w:val='475569'/></w:rPr><w:t xml:space='preserve'>$k</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t xml:space='preserve'>$v</w:t></w:r></w:p></w:tc></w:tr>"
+    }) -join ''
+    return "<w:tbl>$tblPr$rows</w:tbl>"
+}
+
 function Write-RangerDocxReport {
     param(
         [Parameter(Mandatory = $true)]
@@ -275,8 +632,26 @@ function Write-RangerDocxReport {
 
     foreach ($section in @($Report.Sections)) {
         $paragraphs.Add((New-RangerDocxParagraphXml -Text $section.heading -Style 'Heading1'))
-        foreach ($entry in @($section.body)) {
-            $paragraphs.Add((New-RangerDocxParagraphXml -Text "- $entry" -Style 'ListParagraph'))
+        # v1.6.0 (#208): render section.type='table' and 'kv' as OOXML tables.
+        switch ($section.type) {
+            'table' {
+                $paragraphs.Add((New-RangerDocxTableXml -Headers $section.headers -Rows $section.rows -Caption $section.caption))
+            }
+            'kv' {
+                $paragraphs.Add((New-RangerDocxKvTableXml -Pairs $section.rows))
+            }
+            'sign-off' {
+                $paragraphs.Add((New-RangerDocxTableXml -Headers @('Role','Name','Date','Signature') -Rows @(
+                    ,@('Implementation Engineer','','','')
+                    ,@('Technical Reviewer','','','')
+                    ,@('Customer Representative','','','')
+                )))
+            }
+            default {
+                foreach ($entry in @($section.body)) {
+                    $paragraphs.Add((New-RangerDocxParagraphXml -Text "- $entry" -Style 'ListParagraph'))
+                }
+            }
         }
     }
 
@@ -687,6 +1062,12 @@ function Write-RangerExcelWorkbook {
             for ($columnIndex = 0; $columnIndex -lt $columns.Count; $columnIndex++) {
                 $columnName = $columns[$columnIndex]
                 $value = ConvertTo-RangerOfficeText -Value $(if ($row -is [System.Collections.IDictionary] -and $row.Contains($columnName)) { $row[$columnName] } else { $null })
+                # v1.6.0 (#209): prevent Excel formula injection — cell values
+                # that begin with =, +, -, @ are prefixed with an apostrophe
+                # so Excel treats them as literal text.
+                if ($value -is [string] -and $value.Length -gt 0 -and $value[0] -in @('=', '+', '-', '@')) {
+                    $value = "'" + $value
+                }
                 $cellReference = '{0}{1}' -f (ConvertTo-RangerExcelColumnName -Index ($columnIndex + 1)), ($rowIndex + 2)
                 $cellXml.Add(('<c r="{0}" t="inlineStr"><is><t xml:space="preserve">{1}</t></is></c>' -f $cellReference, (ConvertTo-RangerXmlText -Value $value)))
             }
