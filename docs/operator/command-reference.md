@@ -1,6 +1,6 @@
 # Command Reference
 
-AzureLocalRanger exports eight public commands:
+AzureLocalRanger exports twelve public commands:
 
 - `Invoke-AzureLocalRanger` — main entry point (pass `-Wizard` for the guided first-run)
 - `Invoke-RangerWizard` — standalone wrapper around the wizard, equivalent to `-Wizard`
@@ -9,6 +9,10 @@ AzureLocalRanger exports eight public commands:
 - `Test-AzureLocalRangerPrerequisites` — validate the execution environment
 - `Test-RangerPermissions` — pre-run RBAC / provider-registration audit
 - `Export-RangerWafConfig` / `Import-RangerWafConfig` — v2.0.0 WAF rule config hot-swap
+- `Get-RangerRemediation` — v2.2.0 emit a copy-pasteable remediation script or runbook from a manifest
+- `Publish-RangerRun` — v2.3.0 push a run package to Azure Blob and stream telemetry to Log Analytics
+- `Invoke-AzureLocalRangerEstate` — v2.5.0 run Ranger across a multi-cluster estate config
+- `Import-RangerManualEvidence` — v2.5.0 merge hand-collected evidence into an existing manifest
 
 ## Input Resolution Precedence
 
@@ -143,7 +147,117 @@ Ranger writes `run-status.json` for scheduler monitoring and `manifest\drift-rep
 | --- | --- | --- | --- |
 | `-ManifestPath` | `string` | Yes | Path to an existing `audit-manifest.json` |
 | `-OutputPath` | `string` | No | Destination folder; defaults to the manifest folder |
-| `-Formats` | `string[]` | No | Any of `html`, `markdown`, `docx`, `xlsx`, `pdf`, `svg`, `drawio` |
+| `-Formats` | `string[]` | No | Any of `html`, `markdown`, `docx`, `xlsx`, `pdf`, `svg`, `drawio`, `pptx`, `powerbi`, `json-evidence` |
+
+## Get-RangerRemediation
+
+v2.2.0 (#243). Reads an existing manifest, evaluates WAF rules, and emits a copy-pasteable remediation script or markdown runbook. Does not require cluster or Azure connectivity — operates entirely from the saved manifest.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `-ManifestPath` | `string` | Yes | Path to an existing `audit-manifest.json` |
+| `-FindingId` | `string[]` | No | One or more WAF rule IDs to include; omit for all failing rules |
+| `-OutputPath` | `string` | No | Destination file; defaults to `ranger-remediation-<timestamp>.<ext>` in the current directory |
+| `-Format` | `string` | No | `ps1` (default), `md`, or `checklist` |
+| `-Commit` | `switch` | No | Emit live cmdlets instead of dry-run previews |
+| `-IncludeDependencies` | `switch` | No | Expand prerequisite rules ahead of their dependents |
+
+```powershell
+# Markdown runbook for all failing rules
+Get-RangerRemediation -ManifestPath .\audit-manifest.json -Format md
+
+# Dry-run PowerShell script for a specific rule
+Get-RangerRemediation -ManifestPath .\audit-manifest.json -FindingId SEC-001,OPS-003
+
+# Live script with dependency expansion
+Get-RangerRemediation -ManifestPath .\audit-manifest.json -Commit -IncludeDependencies
+```
+
+## Publish-RangerRun
+
+v2.3.0 (#244). Push an already-written Ranger run package to Azure Blob Storage and update the per-cluster catalog and account-level index blob. Optionally streams `RangerRun_CL` and `RangerFinding_CL` telemetry to a Log Analytics Workspace via DCE/DCR. See [Cloud Publishing](cloud-publishing.md) for full setup.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `-PackagePath` | `string` | Yes | Root folder of the Ranger run package to publish |
+| `-StorageAccount` | `string` | Yes | Azure Storage account name |
+| `-Container` | `string` | No | Blob container name; default `ranger-runs` |
+| `-LogAnalyticsWorkspaceId` | `string` | No | Workspace ID for Log Analytics telemetry |
+| `-DcrImmutableId` | `string` | No | DCR immutable ID for Log Analytics ingestion |
+| `-DceEndpoint` | `string` | No | Data Collection Endpoint URL |
+| `-Offline` | `switch` | No | Skip upload; validate and report only |
+
+```powershell
+# Publish the most recent run
+Publish-RangerRun -PackagePath C:\AzureLocalRanger\tplabs-current-state-20260417T044502Z -StorageAccount saranger01
+```
+
+## Invoke-AzureLocalRangerEstate
+
+v2.5.0 (#129). Run Ranger across every cluster in an estate config file and emit a cross-cluster rollup. Outputs `estate-rollup.json`, `estate-summary.html`, and `powerbi/estate-clusters.csv` to the configured root path.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `-ConfigPath` | `string` | One of `ConfigPath` / `ConfigObject` | Path to an estate config YAML or JSON file |
+| `-ConfigObject` | `hashtable` | One of `ConfigPath` / `ConfigObject` | In-memory estate config |
+| `-OutputPath` | `string` | No | Override `output.rootPath` from the estate config |
+| `-ClusterCredential` | `PSCredential` | No | Shared cluster WinRM credential applied to all clusters |
+| `-DomainCredential` | `PSCredential` | No | Shared domain credential |
+| `-Unattended` | `switch` | No | Suppress interactive prompts |
+
+```powershell
+# Run estate rollup
+Invoke-AzureLocalRangerEstate -ConfigPath C:\ranger\estate.yml
+
+# Unattended with shared credential
+$cred = Get-Credential
+Invoke-AzureLocalRangerEstate -ConfigPath C:\ranger\estate.yml -ClusterCredential $cred -Unattended
+```
+
+Estate config structure:
+
+```yaml
+estate:
+  name: contoso-production
+  clusters:
+    - name: tplabs-clus01
+      configPath: C:\ranger\tplabs-clus01.yml
+    - name: tplabs-clus02
+      configPath: C:\ranger\tplabs-clus02.yml
+output:
+  rootPath: C:\AzureLocalRanger\estate
+```
+
+## Import-RangerManualEvidence
+
+v2.5.0 (#32). Merge hand-collected evidence — network device configs, firewall exports, paper inventories — into an existing `audit-manifest.json` with provenance labels. The evidence is recorded under `manifest.domains.<domain>.manualImport` and tracked in `manifest.run.manualImports`.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `-ManifestPath` | `string` | Yes | Path to an existing `audit-manifest.json` to enrich |
+| `-EvidencePath` | `string` | Yes | Path to a JSON file with `domain` (string) and `data` (object/array) keys |
+| `-Source` | `string` | Yes | Label describing the data origin (e.g. `manual-network-inventory`) |
+| `-OutputPath` | `string` | No | Optional alternate output path; defaults to overwriting the source manifest |
+
+Evidence file format:
+
+```json
+{
+  "domain": "networkDeviceEvidence",
+  "provenance": { "collectedBy": "ops-team", "collectedAt": "2026-04-17T00:00:00Z" },
+  "data": {
+    "switches": [ { "name": "tor-sw-01", "model": "Dell S5248F-ON" } ],
+    "firewalls": [ { "name": "fw-edge-01", "platform": "FortiGate" } ]
+  }
+}
+```
+
+```powershell
+Import-RangerManualEvidence `
+  -ManifestPath .\audit-manifest.json `
+  -EvidencePath .\network-inventory.json `
+  -Source 'manual-network-inventory'
+```
 
 ## Test-AzureLocalRangerPrerequisites
 

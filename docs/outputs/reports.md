@@ -20,12 +20,21 @@ Every report tier should include:
 
 ## Supported Formats
 
-Ranger renders narrative reports from the cached manifest in these formats:
+Ranger renders from the cached manifest in these formats. Pass the format names to `-OutputFormats` (Invoke-AzureLocalRanger) or `-Formats` (Export-AzureLocalRangerReport).
 
-- `html`
-- `markdown`
-- `docx`
-- `pdf`
+| Format | Output | Notes |
+| --- | --- | --- |
+| `html` | HTML narrative report (all tiers) | Default |
+| `markdown` | Markdown narrative report | Default |
+| `json` | Raw manifest export | Full manifest JSON |
+| `json-evidence` | Raw resource-only inventory JSON | Minimal `_metadata` envelope; no scoring or run metadata (v2.0.0) |
+| `svg` | SVG vector diagrams | Default |
+| `drawio` | draw.io XML diagrams | |
+| `docx` | Word document narrative report | |
+| `xlsx` | Excel workbook (inventory + findings tabs) | |
+| `pdf` | PDF rendered from HTML | Requires headless Edge or Chrome |
+| `pptx` | PowerPoint executive presentation | 7-slide deck via `System.IO.Packaging`; no Office dependency (v2.5.0) |
+| `powerbi` | Power BI CSV star-schema exports | Writes a `powerbi/` folder with per-domain CSVs and `_relationships.json` (v2.0.0) |
 
 The report pipeline is render-only. It does not reconnect to WinRM, Azure, or Redfish when generating alternate formats.
 

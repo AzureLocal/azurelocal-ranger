@@ -12,27 +12,45 @@ Every run creates a new folder under `output.rootPath` (default: `C:\AzureLocalR
 C:\AzureLocalRanger\
   tplabs-prod-01-current-state-20260416T044502Z\
     manifest\
-      audit-manifest.json        ← raw discovery data — source of truth
+      audit-manifest.json              ← raw discovery data — source of truth
+      <runId>-evidence.json            ← if json-evidence in formats (v2.0.0)
     reports\
       executive-summary.html
       executive-summary.md
+      executive-summary.pptx           ← if pptx in formats (v2.5.0)
       management-summary.html
       management-summary.md
       technical-deep-dive.html
       technical-deep-dive.md
-      inventory-workbook.xlsx    ← if xlsx in formats
-      technical-deep-dive.docx   ← if docx in formats
-      technical-deep-dive.pdf    ← if pdf in formats
+      inventory-workbook.xlsx          ← if xlsx in formats
+      technical-deep-dive.docx         ← if docx in formats
+      technical-deep-dive.pdf          ← if pdf in formats
     diagrams\
       cluster-topology.svg
       storage-layout.svg
       network-topology.svg
       vm-placement.svg
       ... (up to 18 diagrams)
-    drift-report.json            ← only when -BaselineManifestPath used
-    package-index.json           ← machine-readable manifest of all output files
-    run-status.json              ← only in -Unattended mode
-    ranger.log                   ← full run log with timing and errors
+    powerbi\                           ← if powerbi in formats (v2.0.0)
+      nodes.csv
+      volumes.csv
+      storage-pools.csv
+      network-adapters.csv
+      health-checks.csv
+      waf-findings.csv
+      waf-roadmap.csv
+      waf-checklist.csv
+      capacity-analysis.csv            ← v2.5.0
+      vm-utilization.csv               ← v2.5.0
+      storage-efficiency.csv           ← v2.5.0
+      license-inventory.csv            ← v2.5.0
+      estate-clusters.csv              ← estate runs only (v2.5.0)
+      _relationships.json
+      _metadata.json
+    drift-report.json                  ← only when -BaselineManifestPath used
+    package-index.json                 ← machine-readable manifest of all output files
+    run-status.json                    ← only in -Unattended mode
+    ranger.log                         ← full run log with timing and errors
 ```
 
 The folder name format is `<environment-name>-<mode>-<timestamp>` in UTC ISO 8601:

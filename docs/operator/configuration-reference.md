@@ -164,6 +164,16 @@ Valid domain names:
 | `azure-integration` | `azure` | Arc, policy, monitoring, backup, ASR, AKS |
 | `hardware` | `oem` | Redfish, firmware, disks, memory, GPUs, BMC posture |
 | `management-performance` | `management`, `performance` | WAC, agents, counters, event digest |
+| `waf-assessment` | — | WAF rule scoring, pillar results, roadmap, advisor recommendations |
+
+The following domains are computed by v2.5.0 analyzers after collection and do not require separate configuration — they are always included when the underlying collector data is available:
+
+| Analyzer domain | Source data | Output |
+| --- | --- | --- |
+| `capacityAnalysis` | cluster + storage | Per-node + cluster vCPU/memory/storage/pool headroom with Healthy/Warning/Critical status |
+| `vmUtilization` | virtualMachines | Idle/underutilized VM classification with rightsizing proposals and freed-resource savings |
+| `storageEfficiency` | storage-networking | Per-volume dedup state, dedup ratio, saved GiB, thin-provisioning coverage, waste class tag |
+| `licenseInventory` | azure-integration + virtualMachines | Guest SQL instances (edition, version, cores, license model, AHB eligibility) and Windows Server instances |
 
 ```yaml
 domains:
@@ -201,11 +211,14 @@ Valid format values:
 | `html` | HTML report (all tiers) |
 | `markdown` | Markdown report |
 | `json` | Raw manifest export |
+| `json-evidence` | Raw resource-only inventory JSON with `_metadata` envelope; no scoring or run metadata (v2.0.0) |
 | `svg` | SVG diagrams |
 | `drawio` | draw.io XML diagrams |
 | `docx` | Word document |
 | `xlsx` | Excel workbook (inventory + findings) |
 | `pdf` | PDF (rendered from HTML) |
+| `pptx` | PowerPoint executive presentation built via `System.IO.Packaging`; no Office dependency (v2.5.0) |
+| `powerbi` | Power BI CSV star-schema exports under a `powerbi/` folder (v2.0.0) |
 
 ```yaml
 output:
