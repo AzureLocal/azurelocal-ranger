@@ -1086,7 +1086,13 @@ function Test-AzureLocalRangerPrerequisites {
     }
     Write-Host ''
 
+    $overallPass = $failRequired.Count -eq 0
     [ordered]@{
+        Overall            = if ($overallPass) { 'PASS' } else { 'FAIL' }
+        OverallStatus      = if ($overallPass) { 'PASS' } else { 'FAIL' }
+        PassCount          = $passCount
+        WarnCount          = $warnOptional.Count
+        FailCount          = $failRequired.Count
         Validation         = $validation
         SelectedCollectors = @($selectedCollectors | ForEach-Object { $_.Id })
         Checks             = $checks
