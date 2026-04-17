@@ -1521,12 +1521,12 @@
             {
               "subject": "CN=azl-iic-n01.iic.local",
               "thumbprint": "AAABBB001",
-              "notAfter": "2026-06-16T08:19:55Z"
+              "notAfter": "2026-06-16T15:24:44Z"
             },
             {
               "subject": "CN=azlocal-iic-01.iic.local",
               "thumbprint": "AAABBB002",
-              "notAfter": "2028-04-16T08:19:55Z"
+              "notAfter": "2028-04-16T15:24:44Z"
             }
           ]
         },
@@ -1535,7 +1535,7 @@
           "items": {
             "subject": "CN=azl-iic-n02.iic.local",
             "thumbprint": "AAABBB101",
-            "notAfter": "2028-04-16T08:19:55Z"
+            "notAfter": "2028-04-16T15:24:44Z"
           }
         },
         {
@@ -1543,7 +1543,7 @@
           "items": {
             "subject": "CN=azl-iic-n03.iic.local",
             "thumbprint": "AAABBB201",
-            "notAfter": "2028-04-16T08:19:55Z"
+            "notAfter": "2028-04-16T15:24:44Z"
           }
         }
       ],

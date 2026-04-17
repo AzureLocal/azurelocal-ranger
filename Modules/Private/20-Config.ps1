@@ -126,7 +126,7 @@ targets:
 
 credentials:
   azure:
-        method: existing-context              # Options: existing-context | device-code | service-principal | managed-identity | azure-cli
+    method: existing-context              # Options: existing-context | device-code | service-principal | managed-identity | azure-cli
     useAzureCliFallback: true             # Fall back to az cli token if Connect-AzAccount context is missing
   cluster:
     username: 'CONTOSO\ranger-read'       # [REQUIRED] Account with WinRM / WS-Man read access to cluster nodes
@@ -158,7 +158,7 @@ output:
 
 behavior:
   promptForMissingCredentials: true       # Prompt interactively when a credential cannot be resolved
-    promptForMissingRequired: true          # Prompt interactively for missing required structural values
+  promptForMissingRequired: true          # Prompt interactively for missing required structural values
   skipUnavailableOptionalDomains: true    # Skip optional collectors (BMC, switches) if unreachable
   failOnSchemaViolation: true             # Abort if config fails schema validation
   logLevel: info                          # Options: debug | info | warning | error
@@ -936,7 +936,7 @@ function Test-RangerConfiguration {
         $errors.Add("Output mode '$($Config.output.mode)' is not supported.")
     }
 
-    $supportedFormats = @('html', 'markdown', 'md', 'svg', 'drawio', 'xml', 'json', 'docx', 'xlsx', 'pdf', 'powerbi')
+    $supportedFormats = @('html', 'markdown', 'md', 'svg', 'drawio', 'xml', 'json', 'docx', 'xlsx', 'pdf', 'powerbi', 'pptx', 'json-evidence')
     foreach ($format in @($Config.output.formats)) {
         if ($format -notin $supportedFormats) {
             $errors.Add("Output format '$format' is not supported.")

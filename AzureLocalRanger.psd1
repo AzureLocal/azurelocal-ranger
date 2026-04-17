@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '2.6.1'
+    ModuleVersion     = '2.6.2'
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
@@ -60,6 +60,20 @@
                 'Az.ConnectedMachine'
             )
             ReleaseNotes = @'
+## v2.6.2 — TRAILHEAD Bug Fixes (P7 Regression)
+
+Bug-fix release addressing two issues found during TRAILHEAD P7 regression testing.
+
+### Fixed
+- **Config validator rejects pptx and json-evidence formats (#262)** —
+  `Test-RangerConfiguration` now includes `pptx` and `json-evidence` in the
+  `$supportedFormats` whitelist. These formats were added in v2.5.0 but omitted
+  from validation, causing any config referencing them to be rejected.
+- **New-AzureLocalRangerConfig YAML template has misindented fields (#263)** —
+  `credentials.azure.method` and `behavior.promptForMissingRequired` in the
+  generated YAML config template now have correct indentation, preventing YAML
+  parse errors when the template is used as-is.
+
 ## v2.6.1 — TRAILHEAD Bug Fixes (P3 Live Validation)
 
 Bug-fix release addressing failures discovered during TRAILHEAD live validation
