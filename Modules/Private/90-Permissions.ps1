@@ -211,6 +211,96 @@ function Invoke-RangerPermissionAudit {
                 -Remediation 'Grant Azure Connected Machine Resource Reader on the subscription or target resource group.'
         }
 
+        # v2.1.0 (#235) — Per-resource-type ARM probes for the v2.0.0 collector surfaces.
+        # On a scoped Reader role the cluster + Arc checks above can pass while these
+        # ARM types still 403. Cheaper to surface the gap up-front than to discover it
+        # mid-run and populate manifest.run.skippedResources.
+        $v2ArmSurfaces = @(
+            @{ Id = 'logicalNetworks';       Type = 'Microsoft.AzureStackHCI/logicalNetworks';        Label = 'Logical networks (#216)' }
+            @{ Id = 'storageContainers';     Type = 'Microsoft.AzureStackHCI/storageContainers';      Label = 'Storage paths (#217)' }
+            @{ Id = 'customLocations';       Type = 'Microsoft.ExtendedLocation/customLocations';     Label = 'Custom locations (#218)' }
+            @{ Id = 'resourceBridges';       Type = 'Microsoft.ResourceConnector/appliances';          Label = 'Arc Resource Bridge (#219)' }
+            @{ Id = 'arcGateways';           Type = 'Microsoft.HybridCompute/gateways';                Label = 'Arc Gateway (#220)' }
+            @{ Id = 'marketplaceImages';     Type = 'Microsoft.AzureStackHCI/marketplaceGalleryImages';Label = 'Marketplace images (#221)' }
+            @{ Id = 'galleryImages';         Type = 'Microsoft.AzureStackHCI/galleryImages';          Label = 'Custom gallery images (#221)' }
+        )
+        $armSurfaceResults = New-Object System.Collections.Generic.List[pscustomobject]
+        $armDeniedLabels   = New-Object System.Collections.Generic.List[string]
+        foreach ($surface in $v2ArmSurfaces) {
+            try {
+                $surfaceArgs = @{ ResourceType = $surface.Type; ErrorAction = 'Stop' }
+                if (-not [string]::IsNullOrWhiteSpace($resourceGroup)) { $surfaceArgs['ResourceGroupName'] = $resourceGroup }
+                $null = @(Get-AzResource @surfaceArgs | Select-Object -First 1)
+                $armSurfaceResults.Add([pscustomobject]@{
+                    Id     = $surface.Id
+                    Type   = $surface.Type
+                    Status = 'Pass'
+                    Label  = $surface.Label
+                })
+            }
+            catch {
+                $category = Get-RangerArmErrorCategory -ErrorRecord $_
+                $isAuth   = $category.Category -eq 'Authorization'
+                $armSurfaceResults.Add([pscustomobject]@{
+                    Id      = $surface.Id
+                    Type    = $surface.Type
+                    Status  = if ($isAuth) { 'Denied' } else { 'Unknown' }
+                    Label   = $surface.Label
+                    Message = $_.Exception.Message
+                })
+                if ($isAuth) { [void]$armDeniedLabels.Add($surface.Label) }
+            }
+        }
+
+        if ($armDeniedLabels.Count -eq 0) {
+            Add-RangerPermCheck -Name 'v2.0.0 ARM surfaces' -Status 'Pass' `
+                -Message "Read access confirmed on all $($v2ArmSurfaces.Count) v2.0.0 resource types." -Remediation $null
+        }
+        elseif ($armDeniedLabels.Count -eq $v2ArmSurfaces.Count) {
+            Add-RangerPermCheck -Name 'v2.0.0 ARM surfaces' -Status 'Fail' `
+                -Message "All $($v2ArmSurfaces.Count) v2.0.0 resource types returned 403 on read — caller has no Arc-data-plane read." `
+                -Remediation 'Grant Reader (or Azure Stack HCI Reader + Azure Connected Machine Resource Reader) at subscription scope so Arc data-plane types are readable.'
+        }
+        else {
+            Add-RangerPermCheck -Name 'v2.0.0 ARM surfaces' -Status 'Warn' `
+                -Message "$($armDeniedLabels.Count) of $($v2ArmSurfaces.Count) v2.0.0 resource types denied read: $($armDeniedLabels -join '; ')" `
+                -Remediation 'Grant Reader on the denied resource types so the corresponding collectors do not silently skip mid-run.'
+        }
+        $script:RangerLastArmSurfaceChecks = @($armSurfaceResults)
+
+        # v2.1.0 (#233) — Azure Advisor read probe. Advisor is advisory (WAF assessment
+        # degrades gracefully), so deny is treated as Warn not Fail.
+        if (-not (Get-Command -Name 'Get-AzAdvisorRecommendation' -ErrorAction SilentlyContinue)) {
+            Add-RangerPermCheck -Name 'Azure Advisor read' -Status 'Skip' `
+                -Message 'Az.Advisor module not installed; WAF Assessment will omit Advisor recommendations.' `
+                -Remediation 'Install-Module Az.Advisor -Scope CurrentUser (optional; only needed for Advisor-backed WAF findings).'
+        }
+        else {
+            try {
+                $null = @(Get-AzAdvisorRecommendation -ErrorAction Stop | Select-Object -First 1)
+                Add-RangerPermCheck -Name 'Azure Advisor read' -Status 'Pass' `
+                    -Message 'Get-AzAdvisorRecommendation succeeded.' -Remediation $null
+            }
+            catch {
+                $msg = [string]$_.Exception.Message
+                if ($msg -match '(?i)not registered') {
+                    Add-RangerPermCheck -Name 'Azure Advisor read' -Status 'Warn' `
+                        -Message 'Microsoft.Advisor resource provider is not registered for this subscription.' `
+                        -Remediation 'Register-AzResourceProvider -ProviderNamespace Microsoft.Advisor (requires Contributor on subscription).'
+                }
+                elseif ((Get-RangerArmErrorCategory -ErrorRecord $_).Category -eq 'Authorization') {
+                    Add-RangerPermCheck -Name 'Azure Advisor read' -Status 'Warn' `
+                        -Message 'Caller lacks Microsoft.Advisor/recommendations/read on the subscription — WAF Assessment Advisor section will be empty.' `
+                        -Remediation 'Grant Reader (or higher) at subscription scope so Get-AzAdvisorRecommendation returns data.'
+                }
+                else {
+                    Add-RangerPermCheck -Name 'Azure Advisor read' -Status 'Warn' `
+                        -Message "Get-AzAdvisorRecommendation failed: $msg" `
+                        -Remediation 'Verify Advisor is enabled on the subscription; re-run with -SkipPreCheck if the error is transient.'
+                }
+            }
+        }
+
         # Check 5 — Required resource provider registrations
         foreach ($providerId in @('Microsoft.AzureStackHCI', 'Microsoft.HybridCompute')) {
             try {

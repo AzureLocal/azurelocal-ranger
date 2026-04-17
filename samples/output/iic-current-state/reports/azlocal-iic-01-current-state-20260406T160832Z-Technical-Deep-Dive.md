@@ -2,7 +2,7 @@
 
 - Cluster: azlocal-iic-01
 - Mode: current-state
-- Ranger Version: 2.0.0
+- Ranger Version: 2.1.0
 - Generated: 04/06/2026 12:08:32
 - Schema validation: passed or warnings only
 
@@ -491,7 +491,7 @@ _Overall WAF score: 67% (19 of 32 rules passing). Evaluated from saved manifest 
 -   Invoke-AzureLocalRanger -ManifestPath <path-to-manifest.json> -OutputPath <output-folder>
 - Manifest schema version: 1.2.0-draft
 - Collection completed: 04/06/2026 12:08:32
-- Ranger version: 2.0.0
+- Ranger version: 2.1.0
 
 ## Recommendations
 

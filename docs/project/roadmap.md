@@ -8,6 +8,16 @@ Ranger supports two outcomes through one discovery engine:
 - **Current-state** — recurring operational snapshot of a live Azure Local deployment
 - **As-built** — formal documentation package for customer or operational handoff
 
+## Shipped — v2.1.0 — Preflight Hardening (2026-04-16)
+
+Close the three auth / preflight gaps identified during the v2.0.0 post-release review. Every failure that would have surfaced mid-run now surfaces in the pre-run audit.
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Per-resource-type ARM probe | `Invoke-RangerPermissionAudit` now probes the seven v2.0.0 collector surfaces (logicalNetworks, storageContainers, customLocations, appliances, gateways, marketplace + gallery images). All pass → Pass; some 403 → Warn; all 403 → Fail | [#235](https://github.com/AzureLocal/azurelocal-ranger/issues/235) |
+| Deep WinRM CIM probe | New `Invoke-RangerCimDepthProbe` issues a representative `Get-CimInstance` against `root/MSCluster`, `root/virtualization/v2`, and `root/Microsoft/Windows/Storage`. Recorded in `manifest.run.remoteExecution.cimDepth`. Non-blocking warning on deny | [#234](https://github.com/AzureLocal/azurelocal-ranger/issues/234) |
+| Azure Advisor read probe | Pre-check calls `Get-AzAdvisorRecommendation`; 403 downgrades to `Partial` with actionable remediation. Missing `Az.Advisor` is a Skip with an install hint | [#233](https://github.com/AzureLocal/azurelocal-ranger/issues/233) |
+
 ## Shipped — v2.0.0 — Extended Collectors & WAF Intelligence (2026-04-16)
 
 Collector breadth, cost intelligence, and scoring rigour. Adds seven Arc-surface collectors, Azure Hybrid Benefit cost analysis, weighted WAF scoring, and a hot-swap WAF config pipeline.

@@ -2,6 +2,12 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
+## v2.1.0 Highlights — Preflight Hardening
+
+- **Per-resource-type ARM probe (#235)** — pre-run audit now probes each v2.0.0 collector surface (logicalNetworks, storageContainers, customLocations, appliances, gateways, marketplace + gallery images). Scoped Reader roles that would have 403'd mid-run now Fail in the pre-check with named surfaces.
+- **Deep WinRM CIM probe (#234)** — `Invoke-RangerCimDepthProbe` issues a representative `Get-CimInstance` against `root/MSCluster`, `root/virtualization/v2`, and `root/Microsoft/Windows/Storage` so WMI / DCOM rights problems surface before collectors run. Result recorded in `manifest.run.remoteExecution.cimDepth`.
+- **Azure Advisor read probe (#233)** — `Get-AzAdvisorRecommendation` is exercised during the pre-check; 403 downgrades readiness to `Partial` with an actionable finding naming the missing `Microsoft.Advisor/recommendations/read` permission.
+
 ## v2.0.0 Highlights — Extended Collectors & WAF Intelligence
 
 - **Seven new Arc-surface collectors (#215-#221)** — per-node Arc extensions, logical networks + subnets, storage paths, custom locations, Arc Resource Bridge, Arc Gateway, marketplace + custom images. Each surfaces a new HTML/Markdown/DOCX section and XLSX tab, plus a Power BI CSV.

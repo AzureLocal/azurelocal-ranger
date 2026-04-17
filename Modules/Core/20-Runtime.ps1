@@ -623,6 +623,41 @@ function Invoke-RangerDiscoveryRuntime {
             foreach ($rr in @($remoteExecution.Results)) {
                 Write-RangerLog -Level info -Message "Remote authorization preflight: '$($rr.Target)' reached '$($rr.RemoteComputerName)' as '$($rr.RemoteIdentity)' via $($remoteExecution.SelectedSource) credential '$($remoteExecution.UserName)'"
             }
+
+            # v2.1.0 (#234) — Deep CIM probe. The preflight above proves WinRM logon
+            # works; the probe below proves the account can actually read the CIM
+            # namespaces the collectors use. Non-blocking by default; failure is
+            # surfaced as a warning and recorded in manifest.run.remoteExecution.cimDepth
+            # so operators can decide to fix before re-running.
+            $skipCimDepth = $skipPreCheck -or $isFixtureMode
+            if (-not $skipCimDepth -and (Get-Command -Name 'Invoke-RangerCimDepthProbe' -ErrorAction SilentlyContinue)) {
+                $cimTargets = @($preflightTargets | Where-Object { $_ })
+                $cimResult  = Invoke-RangerCimDepthProbe -Targets $cimTargets -Credential $credentialMap.cluster -TimeoutSeconds ([math]::Max(5, [int]$timeoutSec))
+                $manifest.run.remoteExecution.cimDepth = $cimResult
+                switch ($cimResult.status) {
+                    'sufficient' {
+                        Write-RangerLog -Level info -Message "CIM depth probe: sufficient ($($cimResult.summary.ok)/$($cimResult.summary.total) namespaces readable on $($cimResult.target))."
+                    }
+                    'partial' {
+                        $deniedList = (@($cimResult.probes | Where-Object { $_.status -ne 'ok' } | ForEach-Object { $_.label })) -join '; '
+                        Write-RangerLog -Level warn -Message "CIM depth probe: partial — $($cimResult.summary.ok)/$($cimResult.summary.total) readable on $($cimResult.target). Denied: $deniedList. Collectors that touch those namespaces may emit warnings."
+                    }
+                    'denied' {
+                        $detail = 'Every representative CIM query (root/MSCluster, root/virtualization/v2, root/Microsoft/Windows/Storage) returned Access Denied or Invalid Namespace. Collectors depending on these namespaces will fail; fix WMI / DCOM rights or the account scope before re-running.'
+                        Write-RangerLog -Level warn -Message "CIM depth probe: denied on $($cimResult.target). $detail"
+                        $manifest.findings += @(
+                            New-RangerFinding -Severity warning `
+                                -Title 'CIM depth probe failed — cluster / Hyper-V / storage queries will fail' `
+                                -Description $detail `
+                                -CurrentState "Target: $($cimResult.target); 0/$($cimResult.summary.total) CIM namespaces readable" `
+                                -Recommendation 'Grant the cluster credential Distributed COM + WMI access on each cluster node (or use a domain admin), or reconfigure behavior.transport to arc Run Command.'
+                        )
+                    }
+                    'skipped' {
+                        Write-RangerLog -Level debug -Message "CIM depth probe skipped: $($cimResult.reason)"
+                    }
+                }
+            }
         }
 
         # Issue #30 — Build connectivity matrix after WinRM preflight so we know which

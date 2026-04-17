@@ -8,6 +8,23 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-04-16
+
+Preflight Hardening — closes three auth gaps identified during the v2.0.0
+post-release review. Every failure that would have surfaced mid-run now
+surfaces in the pre-run audit.
+
+### Added
+
+- **Per-resource-type ARM probe (#235)** — `Invoke-RangerPermissionAudit` now issues a `Get-AzResource` against each v2.0.0 collector surface (`Microsoft.AzureStackHCI/logicalNetworks`, `Microsoft.AzureStackHCI/storageContainers`, `Microsoft.ExtendedLocation/customLocations`, `Microsoft.ResourceConnector/appliances`, `Microsoft.HybridCompute/gateways`, `Microsoft.AzureStackHCI/marketplaceGalleryImages`, `Microsoft.AzureStackHCI/galleryImages`). Per-surface result is recorded on `$script:RangerLastArmSurfaceChecks`. All surfaces Pass → audit `v2.0.0 ARM surfaces` check is Pass. Some Deny → Warn with the denied surface names. All Deny → Fail with actionable remediation.
+- **Deep WinRM CIM probe (#234)** — new `Invoke-RangerCimDepthProbe` in `Modules/Private/72-CimDepthProbe.ps1`. Runs after the shallow WinRM preflight and issues a representative `Get-CimInstance` against `root/MSCluster` (`MSCluster_Cluster`), `root/virtualization/v2` (`Msvm_VirtualSystemManagementService`), and `root/Microsoft/Windows/Storage` (`MSFT_StoragePool`). Result captured in `manifest.run.remoteExecution.cimDepth` with per-namespace status (`ok`, `denied`, `missing-namespace`, `error`). `denied` overall raises a warning finding; `partial` logs the denied namespace list; `sufficient` is quiet. Non-blocking — warns rather than throws so operators with arc-only transport can still run.
+- **Azure Advisor read probe (#233)** — `Invoke-RangerPermissionAudit` calls `Get-AzAdvisorRecommendation`. Success → Pass. 403 → Warn with "WAF Assessment Advisor section will be empty" messaging and explicit `Microsoft.Advisor/recommendations/read` permission naming. Provider not registered → Warn with `Register-AzResourceProvider -ProviderNamespace Microsoft.Advisor` remediation. `Az.Advisor` module missing → Skip with an optional-install hint. Never blocks the run because Advisor is advisory.
+
+### Changed
+
+- Overall readiness semantics unchanged from v1.6.0 — `Insufficient` throws, `Partial` warns and continues, `Full` is quiet.
+- New checks are all skipped in fixture mode (same `isFixtureMode` gate that already guards the v1.6.0 pre-check).
+
 ## [2.0.0] — 2026-04-16
 
 ### Added — Collectors

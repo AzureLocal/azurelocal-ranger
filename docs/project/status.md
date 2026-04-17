@@ -1,8 +1,12 @@
 # Project Status
 
-## Current Release Track — v2.0.0
+## Current Release Track — v2.1.0
 
-AzureLocalRanger v2.0.0 — Extended Collectors & WAF Intelligence — is the current release. It lands seven new Arc-surface collectors (per-node extensions, logical networks + subnets, storage paths, custom locations, Arc Resource Bridge, Arc Gateway, marketplace + custom images), Azure Hybrid Benefit cost and savings analysis with dated pricing footer, VM distribution balance via coefficient-of-variation, Arc agent + OS version grouping with drift detection, weighted WAF scoring (rule weight 1–3 + warning-as-half-weight + score thresholds), hot-swap WAF config via `Export-RangerWafConfig` / `Import-RangerWafConfig`, a `json-evidence` raw-inventory output format, concurrent-collection and empty-data reliability guards, automatic required-module install/update on startup, portrait/landscape PDF switching, and conditional status-cell coloring across all tables. v1.6.0 — Platform Intelligence — remains the previous release.
+AzureLocalRanger v2.1.0 — Preflight Hardening — is the current release. It closes the three auth / preflight gaps identified against v2.0.0 so RBAC and credential problems surface up-front instead of mid-run: per-resource-type ARM probe for the v2.0.0 collector surfaces (#235), deep WinRM CIM probe against `root/MSCluster` / `root/virtualization/v2` / `root/Microsoft/Windows/Storage` via a new `Invoke-RangerCimDepthProbe` helper (#234), and an Azure Advisor read probe that downgrades to `Partial` on 403 with explicit `Microsoft.Advisor/recommendations/read` remediation (#233). All three probes are skipped in fixture mode. v2.0.0 — Extended Collectors & WAF Intelligence — remains the previous release.
+
+## Previous Release — v2.0.0 — Extended Collectors & WAF Intelligence
+
+AzureLocalRanger v2.0.0 — Extended Collectors & WAF Intelligence — lands seven new Arc-surface collectors (per-node extensions, logical networks + subnets, storage paths, custom locations, Arc Resource Bridge, Arc Gateway, marketplace + custom images), Azure Hybrid Benefit cost and savings analysis with dated pricing footer, VM distribution balance via coefficient-of-variation, Arc agent + OS version grouping with drift detection, weighted WAF scoring (rule weight 1–3 + warning-as-half-weight + score thresholds), hot-swap WAF config via `Export-RangerWafConfig` / `Import-RangerWafConfig`, a `json-evidence` raw-inventory output format, concurrent-collection and empty-data reliability guards, automatic required-module install/update on startup, portrait/landscape PDF switching, and conditional status-cell coloring across all tables.
 
 ## Previous Release — v1.6.0 — Platform Intelligence
 
@@ -34,14 +38,14 @@ Import-Module AzureLocalRanger
 | Diagram engine quality | ✅ Complete — group containers, per-kind styles, SVG + draw.io (#140) |
 | PDF output | ✅ Complete — cover page, type-aware plain-text sections (#96) |
 | WAF Assessment integration | ✅ Complete — Azure Advisor + manifest rule engine, 23 built-in rules (#94) |
-| Pester test suite | ✅ 104 tests passing (76 baseline + 28 v2.0.0) |
+| Pester test suite | ✅ 112 tests passing (76 baseline + 28 v2.0.0 + 8 v2.1.0) |
 | Field validation (TRAILHEAD) | ✅ v1.4.2 gate closed — all 7 collectors, 76/76 Pester, 33-file output, WAF rule engine confirmed. v1.5.0 is a doc-quality stabilisation on the same engine |
 | As-built document redesign | ✅ Complete — Installation and Configuration Record with per-node/network/storage/Azure/identity/validation/deviations records (#193) |
 | Mode differentiation (as-built vs current-state) | ✅ Complete — distinct tier titles, classification banners, subtitles, mode-specific section suppression (#194) |
 | HTML report visual quality | ✅ Complete — inline architecture diagrams, fixed-layout tables, severity callouts, print CSS, sign-off signature lines (#192) |
 | Report output (HTML/Markdown/JSON/DOCX/XLSX/PDF) | ✅ Complete |
 | Diagram output (SVG/draw.io) | ✅ Complete |
-| PSGallery release | ✅ `1.6.0` on PSGallery; `2.0.0` ready for publish |
+| PSGallery release | ✅ `2.0.0` on PSGallery; `2.1.0` ready for publish |
 | Azure auto-discovery (RG + FQDN) | ✅ Complete — Arc-first with TrustedHosts / DNS on-prem fallback (#196, #197, #203) |
 | Multi-method Azure auth chain | ✅ Complete — SPN cert, SPN secret, MI, device-code, existing-context with tenant-match reuse, sovereign-cloud env (#200) |
 | Pre-run permission audit | ✅ Complete — `Test-RangerPermissions`, default-on with `-SkipPreCheck` opt-out (#202, #212) |
