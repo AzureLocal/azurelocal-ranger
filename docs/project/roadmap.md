@@ -12,9 +12,51 @@ Ranger supports two outcomes through one discovery engine:
 
 **Upcoming** — what's next, in ship order. Each milestone link has the full issue backlog; tables below surface the highlights.
 
+## v2.6.4 — Cloud Publishing UX
+
+Opt-in auto-provisioning of Azure resources when publishing, plus first-run friction fixes. Milestone: [#29](https://github.com/AzureLocal/azurelocal-ranger/milestone/29).
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Auto-provision storage account + container + RBAC | `output.remoteStorage.ensureExists` block and `-EnsureExists` parameter so first-time publishers don't have to pre-create SA, container, and role assignment manually | [#289](https://github.com/AzureLocal/azurelocal-ranger/issues/289) |
+
+## v2.7.0 — Documentation and Reporting Overhaul
+
+Two parallel tracks: deep, comprehensive public-facing documentation with production-quality draw.io diagrams, and a full revisit of every output format for executive-grade quality. Milestone: [#25](https://github.com/AzureLocal/azurelocal-ranger/milestone/25).
+
+### Documentation
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| End-to-end operator workflow guides | Network-gear import, drift, cloud publishing, estate, WAF remediation — raw input to verified outcome | [#267](https://github.com/AzureLocal/azurelocal-ranger/issues/267) |
+| Manifest schema reference | Every field in `audit-manifest.json` documented with a machine-readable JSON Schema | [#266](https://github.com/AzureLocal/azurelocal-ranger/issues/266) |
+| Configuration reference deep-dive | Every `ranger.yml` key, decision trees, 5 annotated sample configs | [#265](https://github.com/AzureLocal/azurelocal-ranger/issues/265) |
+| Production-quality draw.io diagrams | 9 architecture/data-flow/auth/output-pipeline diagrams with consistent shape library, layers, legends | [#270](https://github.com/AzureLocal/azurelocal-ranger/issues/270) |
+| Per-collector operator reference | One page per collector + analyzer — permissions, output, failure modes | [#269](https://github.com/AzureLocal/azurelocal-ranger/issues/269) |
+| WAF rule engine reference | Calculations, thresholds, priority scoring, authoring custom rules, full rule catalog | [#268](https://github.com/AzureLocal/azurelocal-ranger/issues/268) |
+| Troubleshooting playbook | Symptom → diagnosis → fix for 40+ common failure modes, keyed by error text | [#272](https://github.com/AzureLocal/azurelocal-ranger/issues/272) |
+| Public-facing getting-started funnel | Landing, 5-minute quickstart, first 30 minutes, next steps with branching paths | [#271](https://github.com/AzureLocal/azurelocal-ranger/issues/271) |
+
+### Output overhaul
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| HTML reports | Executive-grade visual design, interactive navigation, theming, accessibility | [#281](https://github.com/AzureLocal/azurelocal-ranger/issues/281) |
+| Markdown reports | GitHub-flavored fidelity, Mermaid diagrams, MkDocs integration, cross-links | [#274](https://github.com/AzureLocal/azurelocal-ranger/issues/274) |
+| DOCX | Professional Word deliverable — cover page, TOC, styles, embedded diagrams | [#273](https://github.com/AzureLocal/azurelocal-ranger/issues/273) |
+| PDF | Print-ready with paginated headers, tagged accessibility, consistent rendering | [#277](https://github.com/AzureLocal/azurelocal-ranger/issues/277) |
+| XLSX workbook | Analyst-grade with cover sheet, pivot-ready named tables, conditional formatting, dashboard tab | [#278](https://github.com/AzureLocal/azurelocal-ranger/issues/278) |
+| SVG diagrams | Proper layout algorithms, consistent styling, legends, light/dark theming | [#280](https://github.com/AzureLocal/azurelocal-ranger/issues/280) |
+| drawio XML | Production-quality source files, named shape library, layers, grid-aligned | [#284](https://github.com/AzureLocal/azurelocal-ranger/issues/284) |
+| PPTX deck | Boardroom-ready slide master, consistent charts, speaker notes, theme variants | [#282](https://github.com/AzureLocal/azurelocal-ranger/issues/282) |
+| Power BI star schema | Published `.pbit` template, documented DAX measures, sample dashboards, estate variant | [#283](https://github.com/AzureLocal/azurelocal-ranger/issues/283) |
+| json-evidence + raw manifest JSON | Published JSON Schema, versioning, consumer examples (jq / PowerShell / Python / C#) | [#285](https://github.com/AzureLocal/azurelocal-ranger/issues/285) |
+| Estate rollup outputs | Cross-cluster heatmaps, drill-down, trend tracking, estate PPTX + SVG | [#286](https://github.com/AzureLocal/azurelocal-ranger/issues/286) |
+| Remediation runbooks | Change-management-ready, rollback guidance, dependency graph, ServiceNow/Jira formats | [#288](https://github.com/AzureLocal/azurelocal-ranger/issues/288) |
+
 ## v3.0.0 — Enterprise & OEM Integration
 
-Enterprise integrations, specialized hardware protocols, and advanced topology coverage beyond single-cluster HCI deployments. Milestone: [#9](https://github.com/AzureLocal/azurelocal-ranger/milestone/9).
+Enterprise integrations, specialized hardware protocols, advanced topology coverage, and interactive self-contained output tools. Milestone: [#9](https://github.com/AzureLocal/azurelocal-ranger/milestone/9).
 
 | Item | Detail | Issue |
 | --- | --- | --- |
@@ -23,6 +65,7 @@ Enterprise integrations, specialized hardware protocols, and advanced topology c
 | Non-Dell OEM hardware support (#29) | Hardware inventory collectors for HPE iLO, Lenovo XClarity, and DataON via Redfish | [#29](https://github.com/AzureLocal/azurelocal-ranger/issues/29) |
 | Multi-rack Azure Local discovery (#31) | Rack topology, SAN storage, compute rack correlation, northbound connectivity for rack-scale deployments | [#31](https://github.com/AzureLocal/azurelocal-ranger/issues/31) |
 | CMDB and ITSM structured export (#130) | `Export-AzureLocalRangerCmdb` producing ServiceNow, CSV, and JSON CI records from the audit manifest | [#130](https://github.com/AzureLocal/azurelocal-ranger/issues/130) |
+| Interactive self-contained HTML tools | Capacity what-if, VM rightsizing, AHB/license break-even, storage efficiency explorer — JS-driven, offline, no web server | [#264](https://github.com/AzureLocal/azurelocal-ranger/issues/264) |
 
 ---
 
