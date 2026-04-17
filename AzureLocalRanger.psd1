@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '2.6.2'
+    ModuleVersion     = '2.6.3'
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
@@ -60,6 +60,49 @@
                 'Az.ConnectedMachine'
             )
             ReleaseNotes = @'
+## v2.6.3 — First-Run UX
+
+Lowers the required-input floor to **tenantId + subscriptionId**, fills in the
+rest via Azure Arc auto-discovery, and rebuilds the setup wizard with full
+credential-method coverage and a proper YAML serializer.
+
+### Added
+- **Cluster node auto-discovery (#294)** — `Invoke-RangerAzureAutoDiscovery`
+  now populates `targets.cluster.nodes` from Arc cluster `properties.nodes` or
+  a subscription-wide Arc machines query. Short names are promoted to FQDNs
+  using the discovered cluster domain suffix.
+- **Three-field minimum invocation (#296)** — `Invoke-AzureLocalRanger` no
+  longer requires `-ConfigPath` or `-ConfigObject`. Passing
+  `-SubscriptionId -TenantId -ClusterName` on the command line (or any subset,
+  with prompting for the rest in interactive mode) is enough to start a run.
+- **Two-field cluster auto-select (#297)** — new `Select-RangerCluster`
+  enumerates `microsoft.azurestackhci/clusters` in the subscription. Single
+  clusters auto-select; multiples prompt an interactive menu; `-Unattended`
+  and non-interactive hosts fail fast with `RANGER-DISC-002`. No HCI clusters
+  throws `RANGER-DISC-001`; permission failures throw `RANGER-AUTH-001`.
+
+### Changed
+- **Scope-gated device credential prompting (#295)** —
+  `Resolve-RangerCredentialMap` only prompts for BMC / switch / firewall
+  credentials when the relevant collector is in scope AND a matching target
+  list is populated. Explicit credential overrides are still honored even
+  when the target list is empty.
+- **Wizard overhaul (#291)** — `Invoke-RangerWizard` covers all six Azure
+  auth strategies (existing-context, run-time prompt, service-principal with
+  optional KV secret ref, managed-identity, device-code, azure-cli); GUID
+  fields are validated inline and re-prompted; an optional BMC section adds
+  iDRAC endpoints; a review screen prints the assembled YAML before save or
+  run; existing files prompt for overwrite; and save now writes YAML via
+  `ConvertTo-RangerYaml` by default — fixing the bug where `.yml` files
+  contained JSON.
+
+### Fixed
+- **kv-ranger credential leak (#292)** — `Get-RangerDefaultConfig` no longer
+  ships placeholder `keyvault://kv-ranger/*` password references for the
+  `cluster`, `domain`, and `bmc` credential blocks. Missing credentials now
+  fall through to the interactive prompt instead of producing a spurious KV
+  DNS error from a vault the operator never configured.
+
 ## v2.6.2 — TRAILHEAD Bug Fixes (P7 Regression)
 
 Bug-fix release addressing two issues found during TRAILHEAD P7 regression testing.
@@ -151,36 +194,12 @@ Per-resource-type ARM probe, deep WinRM CIM probe (root/MSCluster +
 root/virtualization/v2 + root/Microsoft/Windows/Storage), Azure Advisor read probe.
 
 ## v2.0.0 — Extended Collectors & WAF Intelligence
-
-### Added — Collectors
-- **Arc machine extensions per node (#215)** — AMA / Defender for Servers / Guest Configuration inventory per Arc-enrolled node with provisioning state; XLSX Extensions tab; Power BI `arc-extensions.csv`.
-- **Logical networks + subnets (#216)** — Microsoft.AzureStackHCI/logicalNetworks with subnet, VLAN, IP pool, DHCP detail; cross-reference against host vSwitch; new Logical Networks / Subnets XLSX tabs.
-- **Storage paths (#217)** — Microsoft.AzureStackHCI/storageContainers with CSV cross-reference; StoragePaths XLSX tab + Power BI CSV.
-- **Custom locations (#218)** — Microsoft.ExtendedLocation/customLocations inventory linked to Resource Bridge host resource IDs.
-- **Arc Resource Bridge (#219)** — bridge version / distro / status collection + Arc VM `vmProvisioningModel` classification (hyper-v-native / arc-vm-resource-bridge).
-- **Arc Gateway (#220)** — Microsoft.HybridCompute/gateways with per-node routing detection.
-- **Marketplace + custom images (#221)** — Microsoft.AzureStackHCI/marketplaceGalleryImages + galleryImages with storage-path cross-reference.
-
-### Added — Intelligence
-- **Azure Hybrid Benefit + cost analysis (#222)** — softwareAssuranceProperties-based AHB detection, per-core $10/month cost calculation, potential monthly savings, pricing reference footer. New Cost & Licensing HTML/Markdown/DOCX/PDF section + CostLicensing XLSX tab + cost-licensing Power BI CSV.
-- **VM distribution balance (#223)** — coefficient-of-variation analysis across nodes; warning/fail thresholds; per-node distribution table in management + technical tiers.
-- **Agent version grouping (#224)** — Arc agent + OS version grouped by node with drift detection (latestVersion, maxBehind, status).
-- **Weighted WAF scoring (#225)** — per-rule weight 1-3, warnings award 0.5x weight, graduated threshold bands, score thresholds (Excellent/Good/Fair/Needs Improvement) exposed on the result.
-
-### Added — Commands & UX
-- **Export-RangerWafConfig / Import-RangerWafConfig (#226)** — hot-swap WAF rule config with schema validation, -Validate dry-run, -Default restore.
-- **json-evidence export format (#229)** — raw resource-only JSON payload with minimal `_metadata` envelope, no scoring/run metadata; accepted via `Invoke-AzureLocalRanger -OutputFormats json-evidence` and `Export-AzureLocalRangerReport -Formats json-evidence`.
-- **-SkipModuleUpdate (#231)** — opt-out of automatic Az.* module install/update on startup for air-gapped environments.
-
-### Added — Reliability
-- **Concurrent collection guard (#230)** — second `Invoke-AzureLocalRanger` call in the same session warns and returns rather than racing shared state.
-- **Empty-data safeguard (#230)** — collection with zero nodes throws an actionable error instead of rendering empty tables.
-- **Module auto-install/update on startup (#231)** — required modules (Az.Accounts, Az.Resources, Az.ConnectedMachine, Az.KeyVault) are installed or updated if missing/below minimum version.
-
-### Added — Output
-- **Portrait/landscape page switching (#227)** — `@page landscape-pg` rule applied to wide tables (Arc extensions, logical network subnets).
-- **Conditional status-cell coloring (#227)** — Healthy / Warning / Failed cells are auto-colored in HTML/PDF.
-- **Pricing footer with dated reference (#228)** — every cost section lists the pricing as-of date and official pricing URL.
+Seven new Arc-surface collectors (per-node extensions, logical networks +
+subnets, storage paths, custom locations, Arc Resource Bridge, Arc Gateway,
+marketplace + custom images), Azure Hybrid Benefit cost analysis, VM
+distribution balance, agent version grouping, weighted WAF scoring,
+hot-swap WAF config, `json-evidence` output format, concurrent-collection
+and empty-data guards, and automatic required-module install/update.
 
 ## v1.6.0 — Platform Intelligence
 

@@ -32,17 +32,23 @@ function Get-RangerDefaultConfig {
                 method             = 'existing-context'
                 useAzureCliFallback = $true
             }
+            # Issue #292 — credential blocks intentionally carry no placeholder
+            # passwordRef / username. A placeholder like 'keyvault://kv-ranger/...'
+            # would survive the deep merge when a user config omits these fields
+            # and cause the pre-check to fail against a Key Vault the operator
+            # never configured. Null values fall through to the interactive
+            # prompt (or fail cleanly under -Unattended).
             cluster = [ordered]@{
-                username    = 'CONTOSO\ranger-read'
-                passwordRef = 'keyvault://kv-ranger/cluster-read'
+                username    = $null
+                passwordRef = $null
             }
             domain = [ordered]@{
-                username    = 'CONTOSO\ranger-read'
-                passwordRef = 'keyvault://kv-ranger/domain-read'
+                username    = $null
+                passwordRef = $null
             }
             bmc = [ordered]@{
-                username    = 'root'
-                passwordRef = 'keyvault://kv-ranger/idrac-root'
+                username    = $null
+                passwordRef = $null
             }
         }
         domains = [ordered]@{
@@ -474,8 +480,14 @@ function Import-RangerConfiguration {
         return Normalize-RangerConfiguration -Config (Merge-RangerConfiguration -BaseConfig (Get-RangerDefaultConfig) -OverrideConfig (ConvertTo-RangerHashtable -InputObject $ConfigObject))
     }
 
+    # v2.6.3 (#296): ConfigPath and ConfigObject are no longer hard requirements.
+    # When neither is supplied, we return the built-in defaults so that the
+    # caller's structural overrides (-SubscriptionId / -TenantId / -ClusterName)
+    # plus Arc auto-discovery can populate a runnable config. The prior behavior
+    # — throwing when both were absent — forced every ad-hoc run through a
+    # config file, which is the opposite of the UX goal for the first-run flow.
     if (-not $ConfigPath) {
-        throw 'Either ConfigPath or ConfigObject must be supplied.'
+        return Normalize-RangerConfiguration -Config (Get-RangerDefaultConfig)
     }
 
     $resolvedConfigPath = Resolve-RangerPath -Path $ConfigPath
@@ -539,6 +551,16 @@ function Set-RangerStructuralOverrides {
 
     if ($StructuralOverrides.ContainsKey('ClusterName') -and -not [string]::IsNullOrWhiteSpace($StructuralOverrides['ClusterName'])) {
         $Config.environment.clusterName = $StructuralOverrides['ClusterName']
+    }
+
+    # v2.6.3 (#296): when env.name is still the scaffold placeholder and the
+    # operator has provided a clusterName (either via override or config),
+    # derive env.name from clusterName. This keeps the 3-field invocation
+    # (-SubscriptionId / -TenantId / -ClusterName) from tripping on the
+    # "environment.name is a placeholder" validation error.
+    if ((Test-RangerPlaceholderValue -Value $Config.environment.name -FieldName 'environment.name') -and `
+        -not [string]::IsNullOrWhiteSpace($Config.environment.clusterName)) {
+        $Config.environment.name = [string]$Config.environment.clusterName
     }
 
     # Issue #76: -ShowProgress switch override
@@ -750,8 +772,9 @@ function Invoke-RangerInteractiveInput {
 function Invoke-RangerAzureAutoDiscovery {
     <#
     .SYNOPSIS
-        v1.6.0 (#196/#197): populate missing resourceGroup and cluster FQDN from
-        Azure Arc when subscriptionId + clusterName are present.
+        v1.6.0 (#196/#197) / v2.6.3 (#294, #297): populate missing clusterName,
+        resourceGroup, cluster FQDN, and cluster nodes from Azure Arc when
+        subscriptionId (+/- clusterName) are present.
     .DESCRIPTION
         Runs before interactive prompts and before the headless required-input
         check. Silently returns when Az is unavailable, when credentials are not
@@ -760,16 +783,42 @@ function Invoke-RangerAzureAutoDiscovery {
     #>
     param(
         [Parameter(Mandatory = $true)]
-        [System.Collections.IDictionary]$Config
+        [System.Collections.IDictionary]$Config,
+
+        [switch]$Unattended
     )
+
+    # v2.6.3 (#297): when clusterName is absent but subscriptionId is set,
+    # enumerate HCI clusters in the subscription and select one (auto-pick a
+    # single hit, prompt on multiples, fail fast under -Unattended). Skips
+    # silently when Az isn't available or the caller can't authenticate — the
+    # existing prompt-or-fail path still catches the missing clusterName.
+    if ([string]::IsNullOrWhiteSpace($Config.environment.clusterName)) {
+        $hasSub = -not [string]::IsNullOrWhiteSpace($Config.targets.azure.subscriptionId) -and
+                  $Config.targets.azure.subscriptionId -ne '00000000-0000-0000-0000-000000000000'
+        if ($hasSub) {
+            try {
+                $null = Select-RangerCluster -Config $Config -Unattended:$Unattended
+            } catch {
+                # Re-throw well-coded errors; swallow transient Az failures so
+                # the normal validation path can surface a more specific message.
+                if ($_.Exception.Data -and $_.Exception.Data.Contains('RangerErrorCode')) {
+                    throw
+                }
+                Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: Select-RangerCluster threw — $($_.Exception.Message)"
+            }
+        }
+    }
 
     if ([string]::IsNullOrWhiteSpace($Config.environment.clusterName)) {
         return $false
     }
 
-    $needRg   = [string]::IsNullOrWhiteSpace($Config.targets.azure.resourceGroup)
-    $needFqdn = [string]::IsNullOrWhiteSpace($Config.targets.cluster.fqdn)
-    if (-not $needRg -and -not $needFqdn) {
+    $configNodes = @($Config.targets.cluster.nodes | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+    $needRg    = [string]::IsNullOrWhiteSpace($Config.targets.azure.resourceGroup)
+    $needFqdn  = [string]::IsNullOrWhiteSpace($Config.targets.cluster.fqdn)
+    $needNodes = $configNodes.Count -eq 0
+    if (-not $needRg -and -not $needFqdn -and -not $needNodes) {
         return $false
     }
 
@@ -851,6 +900,69 @@ function Invoke-RangerAzureAutoDiscovery {
                 Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: TrustedHosts/DNS fallback threw — $($_.Exception.Message)"
             }
         }
+    }
+
+    # v2.6.3 (#294): discover cluster nodes when the config didn't supply any.
+    # Priority: Arc cluster properties.nodes[] → Arc machines in cluster RG →
+    # subscription-wide Arc machines search. We intentionally do not fall back
+    # to direct WinRM here — node discovery runs before credentials have been
+    # resolved, so a WinRM path would force a credential prompt just to list
+    # nodes. The per-collector Resolve-RangerNodeInventory still owns the
+    # WinRM fallback when this auto-populated list is empty.
+    if ($needNodes) {
+        $discoveredNodes = @()
+
+        try {
+            if ($arc.Properties -and $arc.Properties.nodes) {
+                $discoveredNodes = @(@($arc.Properties.nodes) | ForEach-Object {
+                    if ($_ -is [string]) { $_ }
+                    elseif ($_ -and $_.name) { [string]$_.name }
+                    else { $null }
+                } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+                if ($discoveredNodes.Count -gt 0) {
+                    Write-RangerLog -Level info -Message "Invoke-RangerAzureAutoDiscovery: Arc HCI cluster surfaced $($discoveredNodes.Count) node(s) in properties.nodes"
+                }
+            }
+        } catch {
+            Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: reading Arc properties.nodes threw — $($_.Exception.Message)"
+        }
+
+        if ($discoveredNodes.Count -eq 0) {
+            try {
+                $arcMachines = Resolve-RangerArcMachinesForCluster -Config $Config -NodeHints @()
+                if ($arcMachines -and $arcMachines.Machines -and @($arcMachines.Machines).Count -gt 0) {
+                    $discoveredNodes = @($arcMachines.Machines | ForEach-Object { [string]$_.Name } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+                    if ($discoveredNodes.Count -gt 0) {
+                        Write-RangerLog -Level info -Message "Invoke-RangerAzureAutoDiscovery: Arc machines query returned $($discoveredNodes.Count) node(s) in cluster resource group"
+                    }
+                }
+            } catch {
+                Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: Arc machines node discovery threw — $($_.Exception.Message)"
+            }
+        }
+
+        if ($discoveredNodes.Count -gt 0) {
+            # Promote short NetBIOS names to FQDNs when the cluster FQDN gives
+            # us a domain suffix to append. Per-collector resolvers already
+            # tolerate short names, but FQDN-first keeps WinRM happy on TLS.
+            $clusterFqdn = [string]$Config.targets.cluster.fqdn
+            $fqdnNodes = @($discoveredNodes | ForEach-Object {
+                $resolved = try { Resolve-RangerNodeFqdn -Name $_ -ClusterFqdn $clusterFqdn } catch { $null }
+                if (-not [string]::IsNullOrWhiteSpace($resolved)) { $resolved } else { $_ }
+            })
+            $Config.targets.cluster.nodes = @($fqdnNodes | Select-Object -Unique)
+            $filled = $true
+        }
+    }
+
+    # v2.6.3 (#296/#297): if env.name is still the scaffold placeholder and
+    # we now know a clusterName (either from the structural override or from
+    # the cluster auto-select above), derive env.name from it so validation
+    # doesn't trip on the placeholder.
+    if ((Test-RangerPlaceholderValue -Value $Config.environment.name -FieldName 'environment.name') -and `
+        -not [string]::IsNullOrWhiteSpace($Config.environment.clusterName)) {
+        $Config.environment.name = [string]$Config.environment.clusterName
+        $filled = $true
     }
 
     return $filled

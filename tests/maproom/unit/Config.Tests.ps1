@@ -337,6 +337,305 @@ behavior:
         } -Parameters @{ TestConfig = $config; TestCredential = $credential }
     }
 
+    It 'wizard config hashtable round-trips through YAML serialization and reloads correctly (issue #291)' {
+        # Regression test for the YAML/JSON mismatch bug — the wizard previously
+        # wrote ConvertTo-Json output to a .yml file. This test verifies the
+        # ConvertTo-RangerYaml round-trip that the rewritten wizard now uses.
+        $tempFile = Join-Path $TestDrive 'wizard-roundtrip.yml'
+
+        InModuleScope AzureLocalRanger {
+            param($Path)
+
+            $config = [ordered]@{
+                environment = [ordered]@{
+                    name        = 'tplabs-wizard'
+                    clusterName = 'tplabs-clus01'
+                    description = 'wizard-generated'
+                }
+                targets = [ordered]@{
+                    cluster = [ordered]@{
+                        fqdn  = 'tplabs-clus01.azrl.mgmt'
+                        nodes = @('tplabs-01-n01.azrl.mgmt', 'tplabs-01-n02.azrl.mgmt')
+                    }
+                    azure = [ordered]@{
+                        subscriptionId = '22222222-2222-2222-2222-222222222222'
+                        resourceGroup  = 'rg-tplabs'
+                        tenantId       = '33333333-3333-3333-3333-333333333333'
+                    }
+                    bmc = [ordered]@{ endpoints = @() }
+                }
+                credentials = [ordered]@{
+                    azure = [ordered]@{ method = 'device-code' }
+                }
+                domains  = [ordered]@{ include = @('storage', 'networking'); exclude = @() }
+                output   = [ordered]@{ mode = 'as-built'; formats = @('html', 'markdown'); rootPath = 'C:\AzureLocalRanger'; showProgress = $true }
+                behavior = [ordered]@{ promptForMissingCredentials = $false; degradationMode = 'graceful'; transport = 'auto' }
+            }
+
+            (ConvertTo-RangerYaml -InputObject $config) -join [Environment]::NewLine |
+                Set-Content -Path $Path -Encoding UTF8
+
+            # Reload and verify round-trip
+            $loaded = Import-RangerConfiguration -ConfigPath $Path
+            $loaded.environment.name                  | Should -Be 'tplabs-wizard'
+            $loaded.environment.clusterName           | Should -Be 'tplabs-clus01'
+            $loaded.targets.cluster.fqdn              | Should -Be 'tplabs-clus01.azrl.mgmt'
+            $loaded.credentials.azure.method          | Should -Be 'device-code'
+            $loaded.output.mode                       | Should -Be 'as-built'
+            @($loaded.domains.include).Count          | Should -Be 2
+            $loaded.domains.include | Should -Contain 'storage'
+            $loaded.domains.include | Should -Contain 'networking'
+        } -Parameters @{ Path = $tempFile }
+    }
+
+    It 'does not prompt for BMC credentials when hardware collector is not in scope (issue #295)' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $config.credentials.cluster  = [ordered]@{ username = 'lcm-user'; password = 'cluster-pass' }
+            $config.credentials.domain   = [ordered]@{ username = 'MGMT\svc'; password = 'dom-pass' }
+            $config.targets.bmc.endpoints = @()
+            $config.domains.include = @('storage', 'networking')
+
+            Mock Get-Credential { throw 'Get-Credential must not be called when BMC is out of scope' }
+
+            $map = Resolve-RangerCredentialMap -Config $config -Overrides @{}
+            $map.bmc      | Should -BeNullOrEmpty
+            $map.switch   | Should -BeNullOrEmpty
+            $map.firewall | Should -BeNullOrEmpty
+            Assert-MockCalled Get-Credential -Times 0 -Exactly
+        }
+    }
+
+    It 'resolves BMC credentials when hardware is in scope and BMC endpoints are configured (issue #295)' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $config.targets.bmc.endpoints = @(
+                [ordered]@{ host = '192.168.214.11'; node = 'n01' }
+            )
+            $config.domains.include = @('hardware')
+            $bmcSecure = ConvertTo-SecureString 'idrac-pass' -AsPlainText -Force
+            $config.credentials.cluster = [ordered]@{ username = 'lcm-user'; password = 'cluster-pass' }
+            $config.credentials.bmc     = [ordered]@{ username = 'idrac_admin'; passwordSecureString = $bmcSecure }
+
+            $map = Resolve-RangerCredentialMap -Config $config -Overrides @{}
+            $map.bmc          | Should -Not -BeNullOrEmpty
+            $map.bmc.UserName | Should -Be 'idrac_admin'
+        }
+    }
+
+    It 'honors an explicit BMC credential override even when no BMC endpoints are configured (issue #295)' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $config.targets.bmc.endpoints = @()
+            $config.credentials.cluster = [ordered]@{ username = 'lcm-user'; password = 'cluster-pass' }
+
+            $secure = ConvertTo-SecureString 'override-pass' -AsPlainText -Force
+            $explicitBmc = [pscredential]::new('explicit-bmc-user', $secure)
+
+            $map = Resolve-RangerCredentialMap -Config $config -Overrides @{ bmc = $explicitBmc }
+            $map.bmc          | Should -Not -BeNullOrEmpty
+            $map.bmc.UserName | Should -Be 'explicit-bmc-user'
+        }
+    }
+
+    It 'auto-selects the only HCI cluster in the subscription (issue #297)' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $config.environment.clusterName          = $null
+            $config.targets.azure.subscriptionId     = '22222222-2222-2222-2222-222222222222'
+            $config.targets.azure.resourceGroup      = $null
+
+            Mock Get-AzResource -ModuleName AzureLocalRanger {
+                @([pscustomobject]@{
+                    Name              = 'only-cluster'
+                    ResourceGroupName = 'rg-only'
+                    Location          = 'eastus'
+                    Type              = 'microsoft.azurestackhci/clusters'
+                    ResourceId        = '/subscriptions/x/resourceGroups/rg-only/providers/microsoft.azurestackhci/clusters/only-cluster'
+                })
+            } -ParameterFilter { $ResourceType -eq 'microsoft.azurestackhci/clusters' }
+
+            $selected = Select-RangerCluster -Config $config
+            $selected | Should -Not -BeNullOrEmpty
+            $selected.Name | Should -Be 'only-cluster'
+            $config.environment.clusterName        | Should -Be 'only-cluster'
+            $config.targets.azure.resourceGroup    | Should -Be 'rg-only'
+        }
+    }
+
+    It 'throws RANGER-DISC-002 when multiple clusters found under -Unattended (issue #297)' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $config.environment.clusterName      = $null
+            $config.targets.azure.subscriptionId = '22222222-2222-2222-2222-222222222222'
+
+            Mock Get-AzResource -ModuleName AzureLocalRanger {
+                @(
+                    [pscustomobject]@{ Name = 'clus-a'; ResourceGroupName = 'rg-a'; Location = 'eastus' },
+                    [pscustomobject]@{ Name = 'clus-b'; ResourceGroupName = 'rg-b'; Location = 'westus2' }
+                )
+            } -ParameterFilter { $ResourceType -eq 'microsoft.azurestackhci/clusters' }
+
+            { Select-RangerCluster -Config $config -Unattended } | Should -Throw '*RANGER-DISC-002*'
+        }
+    }
+
+    It 'throws RANGER-DISC-001 when no clusters found in subscription (issue #297)' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $config.environment.clusterName      = $null
+            $config.targets.azure.subscriptionId = '22222222-2222-2222-2222-222222222222'
+
+            Mock Get-AzResource -ModuleName AzureLocalRanger {
+                @()
+            } -ParameterFilter { $ResourceType -eq 'microsoft.azurestackhci/clusters' }
+
+            { Select-RangerCluster -Config $config } | Should -Throw '*RANGER-DISC-001*'
+        }
+    }
+
+    It 'accepts PreselectedName to bypass the prompt on a multi-cluster subscription (issue #297)' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $config.environment.clusterName      = $null
+            $config.targets.azure.subscriptionId = '22222222-2222-2222-2222-222222222222'
+
+            Mock Get-AzResource -ModuleName AzureLocalRanger {
+                @(
+                    [pscustomobject]@{ Name = 'clus-a'; ResourceGroupName = 'rg-a'; Location = 'eastus' },
+                    [pscustomobject]@{ Name = 'clus-b'; ResourceGroupName = 'rg-b'; Location = 'westus2' }
+                )
+            } -ParameterFilter { $ResourceType -eq 'microsoft.azurestackhci/clusters' }
+
+            $selected = Select-RangerCluster -Config $config -PreselectedName 'clus-b'
+            $selected.Name | Should -Be 'clus-b'
+            $config.environment.clusterName     | Should -Be 'clus-b'
+            $config.targets.azure.resourceGroup | Should -Be 'rg-b'
+        }
+    }
+
+    It 'returns a runnable config when neither ConfigPath nor ConfigObject is supplied (issue #296)' {
+        InModuleScope AzureLocalRanger {
+            $config = Import-RangerConfiguration
+            $config | Should -Not -BeNullOrEmpty
+            $config.Contains('targets') | Should -BeTrue
+            $config.targets.Contains('cluster') | Should -BeTrue
+            $config.targets.Contains('azure')  | Should -BeTrue
+        }
+    }
+
+    It 'derives environment.name from ClusterName override when env.name is still the scaffold placeholder (issue #296)' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $overrides = @{
+                SubscriptionId = '22222222-2222-2222-2222-222222222222'
+                TenantId       = '33333333-3333-3333-3333-333333333333'
+                ClusterName    = 'tplabs-clus01'
+            }
+            $config = Set-RangerStructuralOverrides -Config $config -StructuralOverrides $overrides
+            $config.environment.name        | Should -Be 'tplabs-clus01'
+            $config.environment.clusterName | Should -Be 'tplabs-clus01'
+            $config.targets.azure.subscriptionId | Should -Be '22222222-2222-2222-2222-222222222222'
+            $config.targets.azure.tenantId       | Should -Be '33333333-3333-3333-3333-333333333333'
+        }
+    }
+
+    It 'keeps an explicit EnvironmentName override over the ClusterName fallback (issue #296)' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $overrides = @{
+                ClusterName     = 'tplabs-clus01'
+                EnvironmentName = 'tplabs-preprod'
+            }
+            $config = Set-RangerStructuralOverrides -Config $config -StructuralOverrides $overrides
+            $config.environment.name        | Should -Be 'tplabs-preprod'
+            $config.environment.clusterName | Should -Be 'tplabs-clus01'
+        }
+    }
+
+    It 'auto-discovers cluster nodes from Arc cluster properties.nodes when config leaves them empty (issue #294)' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $config.environment.clusterName            = 'tplabs-clus01'
+            $config.targets.azure.subscriptionId       = '22222222-2222-2222-2222-222222222222'
+            $config.targets.azure.tenantId             = '33333333-3333-3333-3333-333333333333'
+            $config.targets.azure.resourceGroup        = 'rg-tplabs'
+            $config.targets.cluster.fqdn               = 'tplabs-clus01.azrl.mgmt'
+            $config.targets.cluster.nodes              = @()
+
+            Mock Resolve-RangerClusterArcResource -ModuleName AzureLocalRanger {
+                [pscustomobject]@{
+                    Name              = 'tplabs-clus01'
+                    ResourceGroupName = 'rg-tplabs'
+                    Properties        = [pscustomobject]@{
+                        domainName = 'azrl.mgmt'
+                        nodes      = @(
+                            [pscustomobject]@{ name = 'tplabs-01-n01' },
+                            [pscustomobject]@{ name = 'tplabs-01-n02' },
+                            [pscustomobject]@{ name = 'tplabs-01-n03' },
+                            [pscustomobject]@{ name = 'tplabs-01-n04' }
+                        )
+                    }
+                }
+            }
+
+            $result = Invoke-RangerAzureAutoDiscovery -Config $config
+            $result | Should -BeTrue
+
+            @($config.targets.cluster.nodes).Count | Should -Be 4
+            $config.targets.cluster.nodes | Should -Contain 'tplabs-01-n01.azrl.mgmt'
+            $config.targets.cluster.nodes | Should -Contain 'tplabs-01-n04.azrl.mgmt'
+        }
+    }
+
+    It 'falls back to subscription Arc machines when cluster properties do not surface nodes (issue #294)' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $config.environment.clusterName            = 'tplabs-clus01'
+            $config.targets.azure.subscriptionId       = '22222222-2222-2222-2222-222222222222'
+            $config.targets.azure.tenantId             = '33333333-3333-3333-3333-333333333333'
+            $config.targets.azure.resourceGroup        = 'rg-tplabs'
+            $config.targets.cluster.fqdn               = 'tplabs-clus01.azrl.mgmt'
+            $config.targets.cluster.nodes              = @()
+
+            Mock Resolve-RangerClusterArcResource -ModuleName AzureLocalRanger {
+                [pscustomobject]@{
+                    Name              = 'tplabs-clus01'
+                    ResourceGroupName = 'rg-tplabs'
+                    Properties        = [pscustomobject]@{ domainName = 'azrl.mgmt' }
+                }
+            }
+
+            Mock Resolve-RangerArcMachinesForCluster -ModuleName AzureLocalRanger {
+                [ordered]@{
+                    Machines = @(
+                        [pscustomobject]@{ Name = 'tplabs-01-n01' },
+                        [pscustomobject]@{ Name = 'tplabs-01-n02' }
+                    )
+                    CrossRg  = @()
+                }
+            }
+
+            $null = Invoke-RangerAzureAutoDiscovery -Config $config
+            @($config.targets.cluster.nodes).Count | Should -Be 2
+            $config.targets.cluster.nodes | Should -Contain 'tplabs-01-n01.azrl.mgmt'
+        }
+    }
+
+    It 'default config does not carry placeholder keyvault:// credential references (issue #292)' {
+        $config = InModuleScope AzureLocalRanger {
+            Get-RangerDefaultConfig
+        }
+
+        foreach ($name in @('cluster', 'domain', 'bmc')) {
+            $block = $config.credentials[$name]
+            $block | Should -Not -BeNullOrEmpty
+            $block.Contains('passwordRef') | Should -BeTrue
+            $block.passwordRef | Should -BeNullOrEmpty
+            $block.username    | Should -BeNullOrEmpty
+        }
+    }
+
     It 'interactive prompt check returns false inside Pester' {
         # Regression test for the Invoke-RangerWizard interactive gate.
         # Test-RangerInteractivePromptAvailable must return false while Pester is running

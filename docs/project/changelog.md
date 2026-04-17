@@ -2,6 +2,15 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
+## v2.6.3 — First-Run UX
+
+- **Cluster node auto-discovery (#294)** — `Invoke-RangerAzureAutoDiscovery` populates `targets.cluster.nodes` from Arc cluster `properties.nodes` or a subscription Arc machines query; short names are promoted to FQDNs via the discovered domain suffix.
+- **Three-field minimum invocation (#296)** — `Invoke-AzureLocalRanger -SubscriptionId x -TenantId y -ClusterName z` now runs with zero config file; `Import-RangerConfiguration` returns defaults when neither `-ConfigPath` nor `-ConfigObject` is supplied, and `environment.name` derives from `clusterName`.
+- **Two-field cluster auto-select (#297)** — new `Select-RangerCluster` enumerates HCI clusters in the subscription. Single clusters auto-select; multiples prompt an interactive menu; `-Unattended` and non-interactive hosts fail fast with `RANGER-DISC-002`; zero clusters throws `RANGER-DISC-001`; permission failures throw `RANGER-AUTH-001`.
+- **Scope-gated device credential prompting (#295)** — `Resolve-RangerCredentialMap` only prompts for BMC / switch / firewall credentials when the relevant collector is in scope AND a target list is populated. Explicit overrides still honored when the target list is empty.
+- **Wizard overhaul (#291)** — `Invoke-RangerWizard` now covers all six Azure auth methods (existing-context, run-time prompt, service-principal, managed-identity, device-code, azure-cli), validates GUID fields inline, adds an optional BMC section and run-mode toggle, prints a review screen before save/run, prompts for overwrite on existing files, and writes YAML via `ConvertTo-RangerYaml` by default (fixing the prior JSON-in-.yml bug).
+- **kv-ranger credential leak fix (#292)** — `Get-RangerDefaultConfig` no longer ships placeholder `keyvault://kv-ranger/*` password references. Missing credentials fall through to the interactive prompt instead of failing the pre-check against a vault the operator never configured.
+
 ## v2.6.2 — TRAILHEAD Bug Fixes (P7 Regression)
 
 - **Config validator accepts pptx and json-evidence (#262)** — `Test-RangerConfiguration` now includes `pptx` and `json-evidence` in the supported output format list. Both formats were added in v2.5.0 but were missing from the whitelist, causing config validation to reject any config that referenced them.

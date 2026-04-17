@@ -8,6 +8,28 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [2.6.3] — 2026-04-17
+
+First-Run UX — drop the required-input floor to two fields (tenantId +
+subscriptionId), fill in the rest via Azure Arc auto-discovery, and rebuild
+the setup wizard with full credential-method coverage and a proper YAML
+serializer.
+
+### Added
+
+- **Cluster node auto-discovery (#294)** — `Invoke-RangerAzureAutoDiscovery` now also populates `targets.cluster.nodes` when the config leaves them empty. Priority: Arc HCI cluster `properties.nodes[]`, then a subscription-wide Arc machines query scoped to the cluster's resource group. Short names are promoted to FQDNs using the discovered cluster domain suffix. Operators can now run with just `clusterName` (plus subscription/tenant) and get a fully-populated node list before collection starts — no more empty collectors on minimal configs.
+- **Three-field minimum invocation (#296)** — `Invoke-AzureLocalRanger` no longer requires `-ConfigPath` or `-ConfigObject`. Passing `-SubscriptionId -TenantId -ClusterName` on the command line (or any subset, with prompting for the rest in interactive mode) is now enough to start a run. `Import-RangerConfiguration` returns the built-in defaults when neither config input is supplied, and structural overrides + Arc auto-discovery fill in the rest. `environment.name` defaults to `clusterName` when left at the scaffold placeholder, so the 3-field flow passes validation without an explicit `-EnvironmentName`.
+- **Two-field cluster auto-select (#297)** — new `Select-RangerCluster` enumerates `microsoft.azurestackhci/clusters` in the subscription. When a single cluster exists it's auto-selected; when multiple exist and the shell is interactive the operator gets a numbered menu; under `-Unattended` or when no interactive host is available, a multi-cluster subscription throws `RANGER-DISC-002` with clear disambiguation guidance. `RANGER-DISC-001` fires when the subscription contains no HCI clusters, and `RANGER-AUTH-001` fires when the caller lacks the permissions to list them. Called automatically from `Invoke-RangerAzureAutoDiscovery` whenever `clusterName` is absent but `subscriptionId` is set, so `Invoke-AzureLocalRanger -TenantId x -SubscriptionId y` now works end-to-end.
+
+### Changed
+
+- **Scope-gated device credential prompting (#295)** — `Resolve-RangerCredentialMap` no longer triggers the `Get-Credential` prompt chain for `bmc`, `switch`, or `firewall` credentials unless the relevant collector is in scope AND a matching target list is populated. Previously every run surfaced a BMC prompt even when no BMC endpoints were configured. Explicit `-BmcCredential` / switch / firewall credential overrides are still honored even when the target list is empty, so operators can pre-supply credentials for interactive target entry.
+- **Wizard overhaul (#291)** — `Invoke-RangerWizard` has been substantially expanded. Credential strategies now cover all six supported paths (existing-context, run-time prompt, service-principal with optional `keyvault://` secret ref, managed-identity, device-code, azure-cli) instead of the original two. GUID fields (subscription, tenant, service-principal client ID) are validated and re-prompted inline. A new optional BMC section lets operators add iDRAC endpoints (+ username) directly from the wizard. The run-mode choice adds `as-built` alongside `current-state`. Before any save or run, the wizard prints the assembled config as YAML and asks for confirmation. Save now writes YAML (via `ConvertTo-RangerYaml`) by default and JSON only when the path ends in `.json` — fixing the prior bug where `.yml` files contained JSON. Existing files trigger an overwrite confirmation instead of being silently clobbered.
+
+### Fixed
+
+- **kv-ranger credential leak (#292)** — `Get-RangerDefaultConfig` no longer ships placeholder `keyvault://kv-ranger/*` password references for the `cluster`, `domain`, and `bmc` credential blocks. These placeholders survived the deep merge whenever a user config omitted the fields, causing the pre-check to try to resolve secrets against a Key Vault the operator never configured — producing DNS errors that looked like the operator's mistake. The default now carries null `username` and `passwordRef` for all three blocks, so missing credentials fall through to the interactive prompt (or fail cleanly under `-Unattended`).
+
 ## [2.5.0] — 2026-04-17
 
 Extended Platform Coverage — workload/cost intelligence, multi-cluster

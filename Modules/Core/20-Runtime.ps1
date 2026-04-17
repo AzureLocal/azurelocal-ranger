@@ -458,9 +458,12 @@ function Invoke-RangerDiscoveryRuntime {
         $config.behavior.promptForMissingCredentials = $false
     }
 
-    # v1.6.0 (#196/#197): auto-discover missing resourceGroup and cluster FQDN
-    # from Azure Arc before any prompting or validation, headless or interactive.
-    Invoke-RangerAzureAutoDiscovery -Config $config | Out-Null
+    # v1.6.0 (#196/#197) / v2.6.3 (#294/#297): auto-discover missing clusterName,
+    # resourceGroup, cluster FQDN, and nodes from Azure Arc before any prompting
+    # or validation, headless or interactive. Pass -Unattended so the cluster
+    # auto-select path fails fast instead of prompting when multiple clusters
+    # exist under a scheduled/CI invocation.
+    Invoke-RangerAzureAutoDiscovery -Config $config -Unattended:$Unattended | Out-Null
 
     if ($AllowInteractiveInput) {
         $config = Invoke-RangerInteractiveInput -Config $config

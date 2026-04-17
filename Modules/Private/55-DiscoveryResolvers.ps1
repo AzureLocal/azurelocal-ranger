@@ -651,3 +651,135 @@ function Resolve-RangerDomainContext {
     Write-RangerLog -Level warn -Message 'Resolve-RangerDomainContext: could not resolve domain context — assuming workgroup or unavailable'
     return $ctx
 }
+
+function Select-RangerCluster {
+    <#
+    .SYNOPSIS
+        v2.6.3 (#297): enumerate Azure Local (HCI) clusters in the configured
+        subscription and pick one — automatically when exactly one exists,
+        interactively when more than one exists, or via -PreselectedName for
+        tests and scripted flows.
+    .DESCRIPTION
+        Called from Invoke-RangerAzureAutoDiscovery when clusterName is absent
+        but a valid subscriptionId is present. Writes the selected cluster's
+        name and resource group back into the passed-in Config. Returns the
+        selected Arc resource, or $null when no selection could be made.
+    .PARAMETER Config
+        The active Ranger config. Mutated on success.
+    .PARAMETER Unattended
+        When $true, a multi-cluster subscription throws instead of prompting.
+    .PARAMETER PreselectedName
+        Test hook / power-user bypass. When supplied, the cluster with this
+        name is selected without any prompt, as long as it exists in the
+        returned list.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Config,
+
+        [switch]$Unattended,
+
+        [string]$PreselectedName
+    )
+
+    $subscriptionId = [string]$Config.targets.azure.subscriptionId
+    if ([string]::IsNullOrWhiteSpace($subscriptionId) -or
+        $subscriptionId -eq '00000000-0000-0000-0000-000000000000') {
+        Write-RangerLog -Level debug -Message 'Select-RangerCluster: subscriptionId not set — nothing to enumerate.'
+        return $null
+    }
+
+    if (-not (Get-Command -Name Get-AzResource -ErrorAction SilentlyContinue)) {
+        Write-RangerLog -Level debug -Message 'Select-RangerCluster: Az.Resources is not available — cannot enumerate HCI clusters.'
+        return $null
+    }
+
+    $clusters = @()
+    try {
+        $clusters = @(Get-AzResource -ResourceType 'microsoft.azurestackhci/clusters' -ErrorAction Stop)
+    } catch {
+        $ex = [System.Management.Automation.RuntimeException]::new(
+            "RANGER-AUTH-001: Unable to list Azure Local clusters in subscription '$subscriptionId'. " +
+            "Confirm the caller has at least Reader on the subscription and is signed in to the correct tenant. " +
+            "Provider detail: $($_.Exception.Message)"
+        )
+        $ex.Data['RangerErrorCode'] = 'RANGER-AUTH-001'
+        throw $ex
+    }
+
+    if ($clusters.Count -eq 0) {
+        $ex = [System.Management.Automation.RuntimeException]::new(
+            "RANGER-DISC-001: No Azure Local clusters found in subscription '$subscriptionId'. " +
+            "Verify the subscription ID and that your account has Reader access to the Arc-enabled HCI resources."
+        )
+        $ex.Data['RangerErrorCode'] = 'RANGER-DISC-001'
+        throw $ex
+    }
+
+    $selected = $null
+
+    if (-not [string]::IsNullOrWhiteSpace($PreselectedName)) {
+        $selected = $clusters | Where-Object { $_.Name -ieq $PreselectedName } | Select-Object -First 1
+        if (-not $selected) {
+            $names = ($clusters | ForEach-Object { $_.Name }) -join ', '
+            throw "Select-RangerCluster: pre-selected cluster '$PreselectedName' not found. Available: $names"
+        }
+    }
+    elseif ($clusters.Count -eq 1) {
+        $selected = $clusters[0]
+        Write-RangerLog -Level info -Message "Select-RangerCluster: auto-selected single cluster '$($selected.Name)' (rg=$($selected.ResourceGroupName))"
+    }
+    else {
+        if ($Unattended) {
+            $names = ($clusters | ForEach-Object { $_.Name }) -join ', '
+            $ex = [System.Management.Automation.RuntimeException]::new(
+                "RANGER-DISC-002: Multiple Azure Local clusters found in subscription '$subscriptionId' [$names] " +
+                "and -Unattended is set. Supply -ClusterName or -ResourceGroup to disambiguate."
+            )
+            $ex.Data['RangerErrorCode'] = 'RANGER-DISC-002'
+            throw $ex
+        }
+
+        if (-not (Test-RangerInteractivePromptAvailable)) {
+            $names = ($clusters | ForEach-Object { $_.Name }) -join ', '
+            $ex = [System.Management.Automation.RuntimeException]::new(
+                "RANGER-DISC-002: Multiple Azure Local clusters found in subscription '$subscriptionId' [$names] " +
+                "and this host cannot prompt interactively. Re-run with -ClusterName, or from an interactive shell."
+            )
+            $ex.Data['RangerErrorCode'] = 'RANGER-DISC-002'
+            throw $ex
+        }
+
+        Write-Host ''
+        Write-Host ("Found {0} Azure Local clusters in subscription {1}:" -f $clusters.Count, $subscriptionId) -ForegroundColor Cyan
+        Write-Host ''
+        for ($i = 0; $i -lt $clusters.Count; $i++) {
+            Write-Host ("  [{0}] {1,-24} {2,-28} {3}" -f ($i + 1), $clusters[$i].Name, $clusters[$i].ResourceGroupName, $clusters[$i].Location)
+        }
+        Write-Host ''
+
+        $choice = $null
+        while ($null -eq $choice) {
+            $raw = Read-Host -Prompt ("Select cluster [1-{0}]" -f $clusters.Count)
+            if ([string]::IsNullOrWhiteSpace($raw)) { $raw = '1' }
+            $parsed = 0
+            if ([int]::TryParse($raw, [ref]$parsed) -and $parsed -ge 1 -and $parsed -le $clusters.Count) {
+                $choice = $parsed
+            }
+            else {
+                Write-Host ("Invalid selection. Enter a number between 1 and {0}." -f $clusters.Count) -ForegroundColor Yellow
+            }
+        }
+        $selected = $clusters[$choice - 1]
+        Write-RangerLog -Level info -Message "Select-RangerCluster: operator selected cluster '$($selected.Name)' (rg=$($selected.ResourceGroupName))"
+    }
+
+    if (-not $selected) {
+        return $null
+    }
+
+    $Config.environment.clusterName       = [string]$selected.Name
+    $Config.targets.azure.resourceGroup   = [string]$selected.ResourceGroupName
+
+    return $selected
+}

@@ -256,12 +256,33 @@ function Resolve-RangerCredentialMap {
 
     $allowPrompt = [bool]$Config.behavior.promptForMissingCredentials
     $overrides = if ($Overrides) { $Overrides } else { @{} }
+
+    # v2.6.3 (#295): only prompt for BMC / switch / firewall credentials when
+    # the relevant collector is in scope AND a target is configured. Previous
+    # behavior always ran the prompt chain for every credential name, which
+    # surfaced Get-Credential dialogs for BMC / device creds on runs where no
+    # BMC / network device work was going to happen anyway.
+    $selectedCollectors = Resolve-RangerSelectedCollectors -Config $Config
+
+    $bmcInScope = ($selectedCollectors | Where-Object { 'bmc' -in @($_.RequiredTargets) }).Count -gt 0 -and `
+                  (@($Config.targets.bmc.endpoints).Count -gt 0)
+    $switchInScope   = @($Config.targets.switches).Count -gt 0
+    $firewallInScope = @($Config.targets.firewalls).Count -gt 0
+
+    # If the caller supplied an explicit credential override, honor it even
+    # when the target list is empty — the operator asked for this credential
+    # by name, presumably because they're about to populate the target list
+    # interactively or they want to validate the credential itself.
+    if ($overrides.bmc)      { $bmcInScope      = $true }
+    if ($overrides.switch)   { $switchInScope   = $true }
+    if ($overrides.firewall) { $firewallInScope = $true }
+
     [ordered]@{
         azure    = Resolve-RangerAzureCredentialSettings -Config $Config
         cluster  = Resolve-RangerCredentialDefinition -Name 'cluster' -CredentialBlock $Config.credentials.cluster -OverrideCredential $overrides.cluster -AllowPrompt $allowPrompt
         domain   = Resolve-RangerCredentialDefinition -Name 'domain' -CredentialBlock $Config.credentials.domain -OverrideCredential $overrides.domain -AllowPrompt $allowPrompt
-        bmc      = Resolve-RangerCredentialDefinition -Name 'bmc' -CredentialBlock $Config.credentials.bmc -OverrideCredential $overrides.bmc -AllowPrompt $allowPrompt
-        firewall = Resolve-RangerCredentialDefinition -Name 'firewall' -CredentialBlock $Config.credentials.firewall -OverrideCredential $overrides.firewall -AllowPrompt $allowPrompt
-        switch   = Resolve-RangerCredentialDefinition -Name 'switch' -CredentialBlock $Config.credentials.switch -OverrideCredential $overrides.switch -AllowPrompt $allowPrompt
+        bmc      = if ($bmcInScope) { Resolve-RangerCredentialDefinition -Name 'bmc' -CredentialBlock $Config.credentials.bmc -OverrideCredential $overrides.bmc -AllowPrompt $allowPrompt } else { $null }
+        firewall = if ($firewallInScope) { Resolve-RangerCredentialDefinition -Name 'firewall' -CredentialBlock $Config.credentials.firewall -OverrideCredential $overrides.firewall -AllowPrompt $allowPrompt } else { $null }
+        switch   = if ($switchInScope) { Resolve-RangerCredentialDefinition -Name 'switch' -CredentialBlock $Config.credentials.switch -OverrideCredential $overrides.switch -AllowPrompt $allowPrompt } else { $null }
     }
 }

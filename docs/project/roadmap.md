@@ -71,6 +71,20 @@ Enterprise integrations, specialized hardware protocols, advanced topology cover
 
 **Shipped** — most recent first.
 
+## Shipped — v2.6.3 — First-Run UX (2026-04-17)
+
+Drops the required-input floor to tenantId + subscriptionId, fills in the rest via Azure Arc auto-discovery, and rebuilds the setup wizard.
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Cluster node auto-discovery | `Invoke-RangerAzureAutoDiscovery` populates `targets.cluster.nodes` from Arc cluster `properties.nodes` or a subscription Arc machines query; short names are promoted to FQDNs via the discovered domain suffix | [#294](https://github.com/AzureLocal/azurelocal-ranger/issues/294) |
+| Three-field minimum invocation | `Invoke-AzureLocalRanger -SubscriptionId x -TenantId y -ClusterName z` now runs with zero config file; defaults + overrides + Arc auto-discovery fill the rest; `environment.name` derives from `clusterName` | [#296](https://github.com/AzureLocal/azurelocal-ranger/issues/296) |
+| Two-field cluster auto-select | New `Select-RangerCluster` enumerates HCI clusters in the subscription; auto-selects singletons, prompts menu on multiples, throws `RANGER-DISC-002` under `-Unattended`, `RANGER-DISC-001` when none, `RANGER-AUTH-001` on permission failure | [#297](https://github.com/AzureLocal/azurelocal-ranger/issues/297) |
+| Scope-gated device credential prompting | `Resolve-RangerCredentialMap` only prompts for BMC / switch / firewall credentials when the relevant collector is in scope AND a target list is populated; explicit overrides still honored | [#295](https://github.com/AzureLocal/azurelocal-ranger/issues/295) |
+| Wizard overhaul | `Invoke-RangerWizard` covers all six Azure auth methods, inline GUID validation, optional BMC section, run-mode toggle, review screen, overwrite guard, and a proper YAML serializer (fixes prior JSON-in-.yml bug) | [#291](https://github.com/AzureLocal/azurelocal-ranger/issues/291) |
+| kv-ranger credential leak fix | `Get-RangerDefaultConfig` no longer ships placeholder `keyvault://kv-ranger/*` password references; missing creds fall through to the prompt instead of failing the pre-check against a vault the operator never configured | [#292](https://github.com/AzureLocal/azurelocal-ranger/issues/292) |
+| tplabs test config matrix | 13 scenario configs + parameter runbook at `demo-repository/config/env/tplabs/ranger/` covering every auth method, transport, mode, scope, and behavior combination | [#293](https://github.com/AzureLocal/azurelocal-ranger/issues/293) |
+
 ## Shipped — v2.6.2 — TRAILHEAD Bug Fixes P7 (2026-04-17)
 
 | Item | Detail | Issue |
