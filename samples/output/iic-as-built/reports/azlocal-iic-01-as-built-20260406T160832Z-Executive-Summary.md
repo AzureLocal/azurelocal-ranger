@@ -2,7 +2,7 @@
 
 - Cluster: azlocal-iic-01
 - Mode: as-built
-- Ranger Version: 1.6.0
+- Ranger Version: 2.0.0
 - Generated: 04/06/2026 12:08:32
 - Schema validation: passed or warnings only
 
@@ -22,13 +22,13 @@
 ## Document Control
 
 **Document Title**: Azure Local As-Built Documentation — azlocal-iic-01
-**Package ID**: azlocal-iic-01-as-built-20260417T003243Z
+**Package ID**: azlocal-iic-01-as-built-20260417T010924Z
 **Report Tier**: executive
 **Revision**: 1.0 (initial handoff)
 **Classification**: CONFIDENTIAL — CUSTOMER DELIVERABLE
-**Prepared By Azure Local Ranger v1.6.0**: 
+**Prepared By Azure Local Ranger v2.0.0**: 
 **Prepared On**: 04/06/2026 12:08:32
-**Schema Version**: 1.1.0-draft
+**Schema Version**: 1.2.0-draft
 **Document Status**: FINAL — AS-BUILT HANDOFF
 
 ## Run Summary
@@ -95,7 +95,7 @@
 - AKS clusters: 1
 - Arc-connected machines: 1
 - Update compliance: No update resources tracked
-- Licensing: Not collected
+- Licensing: IIC Platform Production
 - VMs using Arc IP fallback: Not collected
 
 ## Capacity Summary

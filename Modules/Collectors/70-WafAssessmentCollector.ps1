@@ -202,20 +202,30 @@ function Invoke-RangerWafRuleEvaluation {
             $formatted = if ($numeric -eq [math]::Floor($numeric)) { [string][int]$numeric } else { '{0:N1}' -f $numeric }
             $message  = if ($template) { $template -replace '\{value\}', $formatted } else { "$label ($formatted)" }
 
+            # v2.0.0 (#225): weight applies. Graduated bands already compute awarded/maxPts
+            # fractional credit; weight multiplies both sides so the pillar roll-up mixes
+            # weighted rules correctly.
+            $weight           = if ($null -ne $rule.weight) { [double]$rule.weight } else { 1.0 }
+            $weightedAwarded  = [double]$awarded * $weight
+            $weightedMaxPts   = [double]$maxPts * $weight
+
             [void]$ruleResults.Add([ordered]@{
-                id             = $rule.id
-                pillar         = $rule.pillar
-                title          = $rule.title
-                description    = $rule.description
-                severity       = $rule.severity
-                recommendation = $rule.recommendation
-                calculation    = [string]$rule.calculation
-                resolvedValue  = $numeric
-                awardedPoints  = $awarded
-                maxPoints      = $maxPts
-                pass           = $pass
-                band           = $label
-                message        = $message
+                id               = $rule.id
+                pillar           = $rule.pillar
+                title            = $rule.title
+                description      = $rule.description
+                severity         = $rule.severity
+                recommendation   = $rule.recommendation
+                calculation      = [string]$rule.calculation
+                resolvedValue    = $numeric
+                awardedPoints    = $awarded
+                maxPoints        = $maxPts
+                weight           = $weight
+                weightedAwarded  = $weightedAwarded
+                weightedMaxPoints = $weightedMaxPts
+                pass             = $pass
+                band             = $label
+                message          = $message
             })
             continue
         }
@@ -254,41 +264,66 @@ function Invoke-RangerWafRuleEvaluation {
         }
 
         # Existing pass/fail rules award full points on pass, 0 on fail (#214).
+        # v2.0.0 (#225): warnings now award 0.5 × weight (graduated credit for
+        # informational/warning severity rules that don't have explicit graduated bands).
         $maxPts  = if ($null -ne $rule.maxPoints) { [int]$rule.maxPoints } elseif ($null -ne $rule.points) { [int]$rule.points } else { 1 }
-        $awarded = if ($pass) { $maxPts } else { 0 }
+        $warnSev = [string]$rule.severity -in @('warning', 'informational')
+        $awarded = if ($pass) { $maxPts } elseif ($warnSev -and $null -ne $rawValue) { [double]($maxPts * 0.5) } else { 0 }
+
+        $weight           = if ($null -ne $rule.weight) { [double]$rule.weight } else { 1.0 }
+        $weightedAwarded  = [double]$awarded * $weight
+        $weightedMaxPts   = [double]$maxPts   * $weight
 
         [void]$ruleResults.Add([ordered]@{
-            id             = $rule.id
-            pillar         = $rule.pillar
-            title          = $rule.title
-            description    = $rule.description
-            severity       = $rule.severity
-            recommendation = $rule.recommendation
-            manifestPath   = $rule.manifestPath
-            resolvedValue  = $rawValue
-            awardedPoints  = $awarded
-            maxPoints      = $maxPts
-            pass           = $pass
+            id                = $rule.id
+            pillar            = $rule.pillar
+            title             = $rule.title
+            description       = $rule.description
+            severity          = $rule.severity
+            recommendation    = $rule.recommendation
+            manifestPath      = $rule.manifestPath
+            resolvedValue     = $rawValue
+            awardedPoints     = $awarded
+            maxPoints         = $maxPts
+            weight            = $weight
+            weightedAwarded   = $weightedAwarded
+            weightedMaxPoints = $weightedMaxPts
+            pass              = $pass
         })
     }
 
-    # v1.6.0 (#214): aggregate per-pillar scores using awardedPoints / maxPoints
-    # so graduated-threshold rules contribute fractional credit.
+    # v2.0.0 (#225): aggregate per-pillar scores using weightedAwarded / weightedMaxPoints
+    # so weight-3 rules count 3× a weight-1 rule; warnings automatically count 0.5× via
+    # the fractional awarded points computed above.
     $pillarOrder  = @('Reliability', 'Security', 'Cost Optimization', 'Operational Excellence', 'Performance Efficiency')
     $pillarScores = New-Object System.Collections.ArrayList
+
+    # Resolve v2.0.0 #225 score thresholds from waf-rules.json, with sensible fallbacks.
+    $thresh = [ordered]@{ excellent = 80; good = 60; fair = 40; needsImprovement = 0 }
+    if ($rulesData.scoreThresholds) {
+        foreach ($k in @('excellent','good','fair','needsImprovement')) {
+            if ($null -ne $rulesData.scoreThresholds.$k) { $thresh[$k] = [int]$rulesData.scoreThresholds.$k }
+        }
+    }
+
+    $statusFor = {
+        param([double]$s)
+        if ($s -ge $thresh.excellent)        { return 'Excellent' }
+        elseif ($s -ge $thresh.good)         { return 'Good' }
+        elseif ($s -ge $thresh.fair)         { return 'Fair' }
+        else                                  { return 'Needs Improvement' }
+    }
+
     foreach ($pillar in $pillarOrder) {
         $pillarRules = @($ruleResults | Where-Object { $_.pillar -eq $pillar })
         $total       = $pillarRules.Count
         $passing     = @($pillarRules | Where-Object { $_.pass -eq $true }).Count
-        $awarded     = [double](($pillarRules | Measure-Object -Property awardedPoints -Sum).Sum)
-        $maxPts      = [double](($pillarRules | Measure-Object -Property maxPoints     -Sum).Sum)
-        $score       = if ($maxPts -gt 0) { [int][math]::Round($awarded / $maxPts * 100) } else { 0 }
-        $status      = switch ($score) {
-            { $_ -ge 90 } { 'Excellent' }
-            { $_ -ge 75 } { 'Good' }
-            { $_ -ge 50 } { 'Needs Attention' }
-            default        { 'At Risk' }
-        }
+        # Hashtables don't expose keys as object properties for Measure-Object, so sum manually.
+        $awarded = 0.0
+        $maxPts  = 0.0
+        foreach ($rr in $pillarRules) { $awarded += [double]$rr.weightedAwarded; $maxPts += [double]$rr.weightedMaxPoints }
+        $score   = if ($maxPts -gt 0) { [int][math]::Round($awarded / $maxPts * 100) } else { 0 }
+        $status      = & $statusFor $score
         $topFinding = @($pillarRules | Where-Object { $_.pass -eq $false } | Sort-Object {
             switch ($_.severity) { 'critical' { 0 } 'warning' { 1 } default { 2 } }
         } | Select-Object -First 1)
@@ -301,29 +336,30 @@ function Invoke-RangerWafRuleEvaluation {
             status       = $status
             topFinding   = if ($topFinding.Count -gt 0) { $topFinding[0].title } else { '-' }
             topSeverity  = if ($topFinding.Count -gt 0) { $topFinding[0].severity } else { '-' }
+            weightedAwarded = [math]::Round($awarded, 2)
+            weightedMax     = [math]::Round($maxPts, 2)
         })
     }
 
     $allRules     = @($ruleResults)
     $allPass      = @($allRules | Where-Object { $_.pass -eq $true }).Count
-    $totalAwarded = [double](($allRules | Measure-Object -Property awardedPoints -Sum).Sum)
-    $totalMax     = [double](($allRules | Measure-Object -Property maxPoints     -Sum).Sum)
+    $totalAwarded = 0.0
+    $totalMax     = 0.0
+    foreach ($rr in $allRules) { $totalAwarded += [double]$rr.weightedAwarded; $totalMax += [double]$rr.weightedMaxPoints }
     $overall      = if ($totalMax -gt 0) { [int][math]::Round($totalAwarded / $totalMax * 100) } else { 0 }
 
     return [ordered]@{
         pillarScores    = @($pillarScores)
         ruleResults     = @($ruleResults)
+        scoreThresholds = $thresh
         summary         = [ordered]@{
-            totalRules    = $allRules.Count
-            passingRules  = $allPass
-            failingRules  = $allRules.Count - $allPass
-            overallScore  = $overall
-            status        = switch ($overall) {
-                { $_ -ge 90 } { 'Excellent' }
-                { $_ -ge 75 } { 'Good' }
-                { $_ -ge 50 } { 'Needs Attention' }
-                default        { 'At Risk' }
-            }
+            totalRules       = $allRules.Count
+            passingRules     = $allPass
+            failingRules     = $allRules.Count - $allPass
+            overallScore     = $overall
+            weightedAwarded  = [math]::Round($totalAwarded, 2)
+            weightedMax      = [math]::Round($totalMax, 2)
+            status           = & $statusFor $overall
         }
     }
 }

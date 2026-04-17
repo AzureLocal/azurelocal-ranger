@@ -1,0 +1,4 @@
+NodeId,ClusterId,PhysicalCores,AhbEnabled,MonthlyCostUsd,MonthlySavingUsd,LastUpdated
+azl-iic-n01,azlocal-iic-01,32,True,320,320,04/06/2026 12:08:32
+azl-iic-n02,azlocal-iic-01,32,True,320,320,04/06/2026 12:08:32
+azl-iic-n03,azlocal-iic-01,32,True,320,320,04/06/2026 12:08:32

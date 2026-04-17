@@ -119,8 +119,8 @@ $runEnd            = '2026-04-06T12:08:32Z'
 # BUILD: run block
 # =============================================================================
 $run = [ordered]@{
-    toolVersion       = '1.6.0'
-    schemaVersion     = '1.1.0-draft'
+    toolVersion       = '2.0.0'
+    schemaVersion     = '1.2.0-draft'
     startTimeUtc      = $runStart
     endTimeUtc        = $runEnd
     mode              = $Mode
@@ -180,6 +180,8 @@ $collectors = [ordered]@{
 # =============================================================================
 # BUILD: domains.clusterNode
 # =============================================================================
+# v2.0.0 (#224): node.arcAgentVersion surfaces version drift; node.osSku is the Arc-reported
+# SKU string used by the OS version grouping.
 $nodes = @(
     [ordered]@{
         name                  = $iic.NodeNames[0]
@@ -187,6 +189,7 @@ $nodes = @(
         state                 = 'Up'
         uptimeHours           = 312.5
         osCaption             = 'Microsoft Azure Stack HCI'
+        osSku                 = 'Azure Stack HCI, version 23H2'
         osVersion             = '10.0.25398.1189'
         manufacturer          = $iic.HardwareMfr
         model                 = $iic.HardwareModel
@@ -195,6 +198,7 @@ $nodes = @(
         partOfDomain          = $true
         domain                = $iic.Domain
         biosVersion           = '2.10.0.0'
+        arcAgentVersion       = '1.39.02750.1478'
     }
     [ordered]@{
         name                  = $iic.NodeNames[1]
@@ -202,6 +206,7 @@ $nodes = @(
         state                 = 'Up'
         uptimeHours           = 311.8
         osCaption             = 'Microsoft Azure Stack HCI'
+        osSku                 = 'Azure Stack HCI, version 23H2'
         osVersion             = '10.0.25398.1189'
         manufacturer          = $iic.HardwareMfr
         model                 = $iic.HardwareModel
@@ -210,6 +215,7 @@ $nodes = @(
         partOfDomain          = $true
         domain                = $iic.Domain
         biosVersion           = '2.10.0.0'
+        arcAgentVersion       = '1.39.02750.1478'
     }
     [ordered]@{
         name                  = $iic.NodeNames[2]
@@ -217,6 +223,7 @@ $nodes = @(
         state                 = 'Up'
         uptimeHours           = 310.2
         osCaption             = 'Microsoft Azure Stack HCI'
+        osSku                 = 'Azure Stack HCI, version 23H2'
         osVersion             = '10.0.25398.1189'
         manufacturer          = $iic.HardwareMfr
         model                 = $iic.HardwareModel
@@ -225,6 +232,7 @@ $nodes = @(
         partOfDomain          = $true
         domain                = $iic.Domain
         biosVersion           = '2.10.0.0'
+        arcAgentVersion       = '1.38.02620.1234'
     }
 )
 
@@ -318,6 +326,20 @@ $clusterNode = [ordered]@{
         totalLogicalCpu     = 192
         domainJoinedNodes   = 3
         localIdentityNodes  = 0
+        # v2.0.0 (#224): Arc agent version + OS version groupings surface drift directly.
+        arcAgentVersionGroups = @(
+            [ordered]@{ version = '1.39.02750.1478'; nodeCount = 2; nodeNames = @($iic.NodeNames[0], $iic.NodeNames[1]) }
+            [ordered]@{ version = '1.38.02620.1234'; nodeCount = 1; nodeNames = @($iic.NodeNames[2]) }
+        )
+        osVersionGroups = @(
+            [ordered]@{ osSku = 'Azure Stack HCI, version 23H2'; version = '10.0.25398.1189'; nodeCount = 3; nodeNames = $iic.NodeNames }
+        )
+        agentVersionDrift = [ordered]@{
+            uniqueVersions = 2
+            latestVersion  = '1.39.02750.1478'
+            maxBehind      = 1
+            status         = 'warning'
+        }
     }
     faultDomainSummary = [ordered]@{
         count     = 1
@@ -423,6 +445,23 @@ $csvObjects = $iic.CsvNames | ForEach-Object {
     }
 }
 
+# v2.0.0 (#217): Azure Local storage paths (Microsoft.AzureStackHCI/storageContainers)
+# define where Arc VM disks are stored on the cluster.
+$storagePaths = @(
+    foreach ($i in 0..2) {
+        [ordered]@{
+            name              = "sp-iic-vmstore-$(($i + 1).ToString('00'))"
+            resourceGroup     = $iic.ResourceGroup
+            location          = 'eastus'
+            path              = "C:\ClusterStorage\$($iic.CsvNames[$i])\ArcVmDisks"
+            availableSizeGB   = @(1480, 1620, 1710)[$i]
+            fileSystemType    = 'CSVFS_ReFS'
+            provisioningState = 'Succeeded'
+            parentCluster     = $iic.ClusterName
+        }
+    }
+)
+
 $storage = [ordered]@{
     pools         = @(
         [ordered]@{
@@ -447,6 +486,7 @@ $storage = [ordered]@{
     qos           = @()
     sofs          = @()
     replica       = @()
+    storagePaths  = @($storagePaths)
     summary       = [ordered]@{
         poolCount              = 1
         physicalDiskCount      = 24
@@ -457,6 +497,7 @@ $storage = [ordered]@{
         allocatedPoolCapacityGiB = 6144
         diskMediaTypes         = @([ordered]@{ name = 'NVMe'; count = 24 })
         unhealthyDisks         = 0
+        storagePathCount       = 3
     }
 }
 
@@ -481,8 +522,56 @@ $adapters = @(
     }
 )
 
+# v2.0.0 (#216): Azure Local logical networks (Microsoft.AzureStackHCI/logicalNetworks)
+# define the Arc VM fabric — subnets, VLANs, IP pools, DHCP options.
+$logicalNetworks = @(
+    [ordered]@{
+        name              = 'lnet-iic-mgmt-01'
+        resourceGroup     = $iic.ResourceGroup
+        location          = 'eastus'
+        vmSwitchName      = 'ConvergedSwitch'
+        dhcpEnabled       = $false
+        dnsServers        = $iic.DnsServers
+        provisioningState = 'Succeeded'
+        subnets           = @(
+            [ordered]@{
+                name          = 'subnet-management'
+                addressPrefix = $iic.VlanMgmtCidr
+                vlan          = $iic.VlanMgmt
+                ipPoolCount   = 1
+                ipPools       = @(
+                    [ordered]@{ start = '10.0.0.100'; end = '10.0.0.200'; info = 'Reserved for Arc VMs' }
+                )
+                dhcpOptions   = [ordered]@{ dnsServers = $iic.DnsServers }
+            }
+        )
+    }
+    [ordered]@{
+        name              = 'lnet-iic-workload-01'
+        resourceGroup     = $iic.ResourceGroup
+        location          = 'eastus'
+        vmSwitchName      = 'ConvergedSwitch'
+        dhcpEnabled       = $true
+        dnsServers        = $iic.DnsServers
+        provisioningState = 'Succeeded'
+        subnets           = @(
+            [ordered]@{
+                name          = 'subnet-workload'
+                addressPrefix = $iic.VlanWorkloadCidr
+                vlan          = $iic.VlanWorkload
+                ipPoolCount   = 1
+                ipPools       = @(
+                    [ordered]@{ start = '10.0.2.50'; end = '10.0.2.250'; info = 'Workload VMs' }
+                )
+                dhcpOptions   = [ordered]@{ dnsServers = $iic.DnsServers }
+            }
+        )
+    }
+)
+
 $networking = [ordered]@{
     nodes            = @($iic.NodeNames | ForEach-Object { [ordered]@{ node = $_ } })
+    logicalNetworks  = @($logicalNetworks)
     clusterNetworks  = @(
         [ordered]@{ name = 'Management'; address = '10.0.0.0';   subnetMask = '255.255.255.0';   role = 1; state = 'Up' }
         [ordered]@{ name = 'Storage-1';  address = '10.0.1.0';   subnetMask = '255.255.255.0';   role = 2; state = 'Up' }
@@ -518,6 +607,8 @@ $networking = [ordered]@{
         dnsServers            = $iic.DnsServers
         proxyConfiguredNodes  = 0
         sdnControllerCount    = 0
+        logicalNetworkCount   = 2
+        logicalNetworkSubnetCount = 2
     }
 }
 
@@ -525,7 +616,7 @@ $networking = [ordered]@{
 # BUILD: domains.virtualMachines (3 AVD session hosts + 2 Arc VMs)
 # =============================================================================
 $vmInventory = @(
-    # AVD session hosts
+    # AVD session hosts (hyper-v-native provisioning)
     foreach ($i in 0..2) {
         $vmName = $iic.AvdVmNames[$i]
         $hostNode = $iic.NodeNames[$i]
@@ -545,9 +636,10 @@ $vmInventory = @(
             replicationMode    = $null
             replicationHealth  = $null
             workloadFamily     = 'AVD'
+            vmProvisioningModel = 'hyper-v-native'
         }
     }
-    # Arc VMs
+    # Arc VMs (provisioned via Resource Bridge; v2.0.0 #219)
     foreach ($i in 0..1) {
         $vmName = $iic.ArcVmNames[$i]
         $hostNode = $iic.NodeNames[$i]
@@ -567,6 +659,9 @@ $vmInventory = @(
             replicationMode    = $null
             replicationHealth  = $null
             workloadFamily     = 'Arc VMs'
+            vmProvisioningModel = 'arc-vm-resource-bridge'
+            logicalNetwork     = 'lnet-iic-workload-01'
+            storagePathRef     = "sp-iic-vmstore-$(($i + 1).ToString('00'))"
         }
     }
 )
@@ -590,6 +685,20 @@ $virtualMachines = [ordered]@{
         totalAssignedMemoryGb = 80
         byGeneration         = @([ordered]@{ name = '2'; count = 5 })
         byState              = @([ordered]@{ name = 'Running'; count = 5 })
+        # v2.0.0 (#223): VM distribution balance analysis.
+        # Distribution: n01=2, n02=2, n03=1 → mean=1.667, stdDev≈0.471 → CV≈0.283 → warning
+        vmDistribution       = @(
+            [ordered]@{ node = $iic.NodeNames[0]; vmCount = 2 }
+            [ordered]@{ node = $iic.NodeNames[1]; vmCount = 2 }
+            [ordered]@{ node = $iic.NodeNames[2]; vmCount = 1 }
+        )
+        vmDistributionBalanced = $true
+        vmDistributionCv     = 0.283
+        vmDistributionStatus = 'warning'
+        vmProvisioningModelBreakdown = @(
+            [ordered]@{ name = 'hyper-v-native';         count = 3 }
+            [ordered]@{ name = 'arc-vm-resource-bridge'; count = 2 }
+        )
     }
 }
 
@@ -721,6 +830,158 @@ $azureResources = @(
     [ordered]@{ name = $iic.LogAnalytics;         resourceType = 'Microsoft.OperationalInsights/workspaces';        resourceGroupName = $iic.MonitorRG;     location = 'eastus' }
 ) + $arcMachineResources
 
+# v2.0.0 (#215): per-node Arc extensions inventory. AMA present on all nodes ⇒ WAF pass.
+$arcExtensionsByNode = @(
+    foreach ($i in 0..2) {
+        [ordered]@{
+            node        = $iic.NodeNames[$i]
+            extensions  = @(
+                [ordered]@{ name = 'AzureMonitorWindowsAgent'; type = 'AzureMonitorWindowsAgent'; publisher = 'Microsoft.Azure.Monitor';      typeHandlerVersion = '1.22.2.0'; provisioningState = 'Succeeded'; autoUpgradeMinorVersion = $true;  enableAutomaticUpgrade = $true }
+                [ordered]@{ name = 'GuestConfigExtension';      type = 'ConfigurationforWindows';     publisher = 'Microsoft.GuestConfiguration'; typeHandlerVersion = '1.29.78.0'; provisioningState = 'Succeeded'; autoUpgradeMinorVersion = $true;  enableAutomaticUpgrade = $true }
+                [ordered]@{ name = 'MicrosoftDefenderForServers'; type = 'MDE.Windows';                 publisher = 'Microsoft.Azure.AzureDefenderForServers'; typeHandlerVersion = '1.0'; provisioningState = 'Succeeded'; autoUpgradeMinorVersion = $true;  enableAutomaticUpgrade = $true }
+            )
+        }
+    }
+)
+$arcExtensionsDetail = [ordered]@{
+    byNode  = @($arcExtensionsByNode)
+    summary = [ordered]@{
+        nodeCount          = 3
+        totalExtensionCount = (@($arcExtensionsByNode | ForEach-Object { @($_.extensions).Count } | Measure-Object -Sum).Sum)
+        amaNodeCount        = @($arcExtensionsByNode | Where-Object {
+            @($_.extensions | Where-Object { $_.type -match 'AzureMonitor' -and $_.provisioningState -eq 'Succeeded' }).Count -gt 0
+        }).Count
+        amaCoveragePct      = 100.0
+        failedExtensionCount = @($arcExtensionsByNode | ForEach-Object { $_.extensions } | Where-Object { $_.provisioningState -eq 'Failed' }).Count
+    }
+}
+
+# v2.0.0 (#219): Arc Resource Bridge appliance detail with Arc VM instance roll-up.
+$resourceBridgeDetail = @(
+    [ordered]@{
+        name                   = $iic.ResourceBridge
+        resourceGroup          = $iic.ArcRG
+        location               = 'eastus'
+        status                 = 'Connected'
+        version                = '1.5.23'
+        distro                 = 'MOC-K8S'
+        infrastructureProvider = 'HCI'
+        provisioningState      = 'Succeeded'
+    }
+)
+
+# v2.0.0 (#218): Custom locations detail (Arc Resource Bridge-backed).
+$customLocationsDetail = @(
+    [ordered]@{
+        name              = $iic.CustomLocation
+        namespace         = 'azlocal'
+        resourceGroup     = $iic.ArcRG
+        location          = 'eastus'
+        hostResourceId    = "/subscriptions/$($iic.SubscriptionId)/resourceGroups/$($iic.ArcRG)/providers/Microsoft.ResourceConnector/appliances/$($iic.ResourceBridge)"
+        provisioningState = 'Succeeded'
+    }
+)
+
+# v2.0.0 (#220): Arc Gateway appliance + per-node routing status.
+$arcGateways = @(
+    [ordered]@{
+        name              = $iic.ArcGateway
+        resourceGroup     = $iic.ArcRG
+        location          = 'eastus'
+        gatewayEndpoint   = "https://$($iic.ArcGateway).gw.arc.azure.com"
+        provisioningState = 'Succeeded'
+        allowedFeatures   = @('*')
+        allowedResources  = 3
+    }
+)
+$arcGatewayNodeRouting = @(
+    foreach ($i in 0..2) {
+        [ordered]@{
+            node          = $iic.NodeNames[$i]
+            routedThrough = $iic.ArcGateway
+            gatewayUrl    = "https://$($iic.ArcGateway).gw.arc.azure.com"
+            status        = 'routed'
+        }
+    }
+)
+
+# v2.0.0 (#221): Marketplace + custom gallery images with storage-path cross-reference.
+$marketplaceImages = @(
+    [ordered]@{
+        name              = 'img-iic-ws2022-datacenter'
+        imageType         = 'Marketplace'
+        osType            = 'Windows'
+        publisher         = 'MicrosoftWindowsServer'
+        offer             = 'WindowsServer'
+        sku               = '2022-datacenter-azure-edition'
+        version           = '20348.2700.240906'
+        sizeGB            = 127
+        storagePathId     = "/subscriptions/$($iic.SubscriptionId)/resourceGroups/$($iic.ResourceGroup)/providers/Microsoft.AzureStackHCI/storageContainers/sp-iic-vmstore-01"
+        provisioningState = 'Succeeded'
+    }
+)
+$galleryImages = @(
+    [ordered]@{
+        name              = 'img-iic-rhel9-base'
+        imageType         = 'Custom'
+        osType            = 'Linux'
+        sourceImageId     = "/subscriptions/$($iic.SubscriptionId)/resourceGroups/$($iic.ResourceGroup)/providers/Microsoft.AzureStackHCI/galleryImages/rhel9-base"
+        version           = '9.4.1'
+        sizeGB            = 24
+        storagePathId     = "/subscriptions/$($iic.SubscriptionId)/resourceGroups/$($iic.ResourceGroup)/providers/Microsoft.AzureStackHCI/storageContainers/sp-iic-vmstore-02"
+        provisioningState = 'Succeeded'
+    }
+)
+
+# v2.0.0 (#222): Azure Hybrid Benefit cost + licensing analysis.
+# IIC synthetic: AHB enabled at cluster level ⇒ all node cores covered.
+$ahbEnabled         = $true
+$totalCores         = 3 * 32   # 32 physical cores/node × 3 nodes = 96 physical cores
+$coresWithAhb       = if ($ahbEnabled) { $totalCores } else { 0 }
+$coresWithoutAhb    = $totalCores - $coresWithAhb
+$costPerCore        = 10.00
+$currentMonthlyCost = [double]($totalCores * $costPerCore)
+$potentialSavings   = [double]($coresWithoutAhb * $costPerCore)
+$ahbAdoptionPct     = if ($totalCores -gt 0) { [double][math]::Round(($coresWithAhb / $totalCores) * 100, 1) } else { 0 }
+
+$costLicensing = [ordered]@{
+    subscriptionName   = 'IIC Platform Production'
+    cluster            = $iic.ClusterName
+    ahbStatus          = if ($ahbEnabled) { 'Enabled' } else { 'Disabled' }
+    softwareAssurance  = [ordered]@{
+        status         = if ($ahbEnabled) { 'Enabled' } else { 'Disabled' }
+        properties     = [ordered]@{
+            billingModel = 'HybridBenefit'
+            lastUpdated  = '2026-04-06T12:00:00Z'
+        }
+    }
+    perNode            = @(
+        foreach ($i in 0..2) {
+            [ordered]@{
+                node             = $iic.NodeNames[$i]
+                physicalCores    = 32
+                ahbEnabled       = $ahbEnabled
+                monthlyCostUsd   = [double](32 * $costPerCore)
+                monthlySavingUsd = if ($ahbEnabled) { [double](32 * $costPerCore) } else { 0 }
+            }
+        }
+    )
+    summary            = [ordered]@{
+        totalPhysicalCores       = $totalCores
+        coresWithAhb             = $coresWithAhb
+        coresWithoutAhb          = $coresWithoutAhb
+        costPerCoreUsd           = $costPerCore
+        currentMonthlyCostUsd    = $currentMonthlyCost
+        potentialMonthlySavingsUsd = $potentialSavings
+        ahbAdoptionPct           = $ahbAdoptionPct
+        currency                 = 'USD'
+    }
+    pricingReference   = [ordered]@{
+        asOfDate = (Get-Date).ToString('yyyy-MM-dd')
+        url      = 'https://azure.microsoft.com/en-us/pricing/details/azure-local/'
+    }
+}
+
 $azureIntegration = [ordered]@{
     context         = [ordered]@{
         subscriptionId = $iic.SubscriptionId
@@ -758,6 +1019,22 @@ $azureIntegration = [ordered]@{
         [ordered]@{ name = 'AzureMonitorWindowsAgent'; resourceType = 'Microsoft.AzureStackHCI/clusters/extensions' }
         [ordered]@{ name = 'AzureEdgeTelemetryAndDiagnostics'; resourceType = 'Microsoft.AzureStackHCI/clusters/extensions' }
     )
+    # v2.0.0 (#215): per-node Arc extensions collector output. Must stay as a
+    # single hashtable (byNode + summary) — do not wrap in @() or the WAF rule
+    # path resolver sees an array instead of a nested object.
+    arcExtensionsDetail = $arcExtensionsDetail
+    # v2.0.0 (#219): Arc Resource Bridge appliance + provisioning state.
+    resourceBridgeDetail = @($resourceBridgeDetail)
+    # v2.0.0 (#218): Custom locations with host Resource Bridge cross-reference.
+    customLocationsDetail = @($customLocationsDetail)
+    # v2.0.0 (#220): Arc Gateway appliance + per-node routing state.
+    arcGateways     = @($arcGateways)
+    arcGatewayNodeRouting = @($arcGatewayNodeRouting)
+    # v2.0.0 (#221): Marketplace + custom gallery images.
+    marketplaceImages = @($marketplaceImages)
+    galleryImages   = @($galleryImages)
+    # v2.0.0 (#222): AHB + cost/licensing analysis with pricing reference.
+    costLicensing   = $costLicensing
     arcMachines     = @($arcMachineResources)
     siteRecovery    = @()
     resourceSummary = [ordered]@{
@@ -779,6 +1056,12 @@ $azureIntegration = [ordered]@{
         resourceBridgeCount     = 1
         customLocationCount     = 1
         extensionCount          = 2
+        perNodeExtensionCount   = $arcExtensionsDetail.summary.totalExtensionCount
+        arcGatewayCount         = 1
+        marketplaceImageCount   = 1
+        galleryImageCount       = 1
+        logicalNetworkCount     = 2
+        storagePathCount        = 3
     }
     resourceLocations = @([ordered]@{ name = 'eastus'; count = @($azureResources).Count })
     policySummary   = [ordered]@{
@@ -1074,3 +1357,4 @@ Write-Host "     Domain:   $($iic.Domain)" -ForegroundColor Cyan
 Write-Host "     Mode:     $Mode" -ForegroundColor Cyan
 Write-Host "     Findings: $(@($findings | Where-Object { $_.severity -eq 'warning' }).Count) warnings, $(@($findings | Where-Object { $_.severity -eq 'informational' }).Count) informationals" -ForegroundColor Cyan
 Write-Host "     WAF:      $($wafAssessment.summary.totalRecommendations) Advisor recommendations, $($wafAssessment.summary.highImpactCount) high impact" -ForegroundColor Cyan
+Write-Host "     v2.0.0:   $(@($logicalNetworks).Count) logical networks, $(@($storagePaths).Count) storage paths, $(@($arcExtensionsByNode).Count) node ext bundles, AHB=$($costLicensing.ahbStatus)" -ForegroundColor Cyan

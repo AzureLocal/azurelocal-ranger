@@ -1,0 +1,2 @@
+GatewayId,ClusterId,Endpoint,AllowedFeatures,AllowedResources,ProvisioningState,LastUpdated
+arcgw-iic-01,azlocal-iic-01,https://arcgw-iic-01.gw.arc.azure.com,*,3,Succeeded,04/06/2026 12:08:32

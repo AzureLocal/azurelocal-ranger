@@ -1,0 +1,86 @@
+{
+  "version": "1.0",
+  "tables": [
+    "nodes",
+    "volumes",
+    "storage-pools",
+    "health-checks",
+    "network-adapters",
+    "arc-extensions",
+    "logical-networks",
+    "storage-paths",
+    "resource-bridges",
+    "custom-locations",
+    "arc-gateways",
+    "images",
+    "cost-licensing"
+  ],
+  "relationships": [
+    {
+      "from": "volumes",
+      "fromColumn": "PoolId",
+      "to": "storage-pools",
+      "toColumn": "PoolId"
+    },
+    {
+      "from": "storage-pools",
+      "fromColumn": "ClusterId",
+      "to": "nodes",
+      "toColumn": "ClusterId"
+    },
+    {
+      "from": "health-checks",
+      "fromColumn": "NodeId",
+      "to": "nodes",
+      "toColumn": "NodeId"
+    },
+    {
+      "from": "network-adapters",
+      "fromColumn": "NodeId",
+      "to": "nodes",
+      "toColumn": "NodeId"
+    },
+    {
+      "from": "arc-extensions",
+      "fromColumn": "NodeId",
+      "to": "nodes",
+      "toColumn": "NodeId"
+    },
+    {
+      "from": "cost-licensing",
+      "fromColumn": "NodeId",
+      "to": "nodes",
+      "toColumn": "NodeId"
+    },
+    {
+      "from": "storage-paths",
+      "fromColumn": "ClusterId",
+      "to": "nodes",
+      "toColumn": "ClusterId"
+    },
+    {
+      "from": "resource-bridges",
+      "fromColumn": "ClusterId",
+      "to": "nodes",
+      "toColumn": "ClusterId"
+    },
+    {
+      "from": "custom-locations",
+      "fromColumn": "ClusterId",
+      "to": "nodes",
+      "toColumn": "ClusterId"
+    },
+    {
+      "from": "arc-gateways",
+      "fromColumn": "ClusterId",
+      "to": "nodes",
+      "toColumn": "ClusterId"
+    },
+    {
+      "from": "images",
+      "fromColumn": "ClusterId",
+      "to": "nodes",
+      "toColumn": "ClusterId"
+    }
+  ]
+}

@@ -28,6 +28,18 @@ function Invoke-RangerOutputGeneration {
         }
     }
 
+    # v2.0.0 (#229): JSON evidence — raw inventory only, no scoring/run metadata.
+    if ('json-evidence' -in $normalizedFormats -and (Get-Command -Name 'Write-RangerJsonEvidenceExport' -ErrorAction SilentlyContinue)) {
+        try {
+            $jeArtifact = Write-RangerJsonEvidenceExport -Manifest $Manifest -PackageRoot $PackageRoot
+            if ($jeArtifact) {
+                [void]$artifacts.Add((New-RangerArtifactRecord -Type 'json-evidence' -RelativePath $jeArtifact.relativePath -Status generated -Audience 'all'))
+            }
+        } catch {
+            Write-RangerLog -Level warn -Message "JSON evidence export failed: $($_.Exception.Message)"
+        }
+    }
+
     # v1.6.0 (#210): Power BI CSV + star-schema bundle.
     if ('powerbi' -in $normalizedFormats) {
         $pbiRoot = Join-Path -Path $PackageRoot -ChildPath 'powerbi'
@@ -514,6 +526,272 @@ function New-RangerReportPayload {
                 "Third-party agent types: $((@($Manifest.domains.managementTools.summary.thirdPartyTypes) | ForEach-Object { '{0} ({1})' -f $_.name, $_.count }) -join ', ')"
             )
         })
+    }
+
+    # v2.0.0 (#222, #228): Cost & Licensing with AHB + pricing footer (management + technical).
+    if ($Tier -ne 'executive') {
+        $cost = $Manifest.domains.azureIntegration.costLicensing
+        if ($cost -and $cost.summary -and $null -ne $cost.summary.totalPhysicalCores) {
+            $s = $cost.summary
+            $priceDate = if ($cost.pricingReference -and $cost.pricingReference.asOfDate) { [string]$cost.pricingReference.asOfDate } else { (Get-Date).ToString('yyyy-MM-dd') }
+            $priceUrl  = if ($cost.pricingReference -and $cost.pricingReference.url) { [string]$cost.pricingReference.url } else { 'https://azure.microsoft.com/en-us/pricing/details/azure-local/' }
+            $costCurrency = if ($s.currency) { [string]$s.currency } else { 'USD' }
+            [void]$sections.Add([ordered]@{
+                heading = 'Cost & Licensing'
+                body    = @(
+                    "AHB status: $($cost.ahbStatus)",
+                    "Total physical cores: $($s.totalPhysicalCores)  |  AHB-covered: $($s.coresWithAhb)  |  Unenrolled: $($s.coresWithoutAhb)",
+                    "Current monthly cost: $([math]::Round([double]$s.currentMonthlyCostUsd, 2)) $costCurrency @ $([math]::Round([double]$s.costPerCoreUsd, 2))/core/month",
+                    "AHB adoption: $($s.ahbAdoptionPct)%",
+                    "Potential monthly savings (if remaining cores enrolled in AHB): $([math]::Round([double]$s.potentialMonthlySavingsUsd, 2)) $costCurrency",
+                    "Pricing based on Azure Local public pricing ($([math]::Round([double]$s.costPerCoreUsd, 2)) $costCurrency/physical core/month) as of $priceDate.",
+                    "For current rates, see: $priceUrl"
+                )
+                _visualStats = [ordered]@{
+                    bars = @(
+                        [ordered]@{ label = 'AHB adoption'; percent = [int][math]::Round([double]$s.ahbAdoptionPct) }
+                    )
+                }
+            })
+
+            if ($cost.perNode -and @($cost.perNode).Count -gt 0) {
+                $perNodeRows = @($cost.perNode | ForEach-Object {
+                    ,@(
+                        [string]$_.node,
+                        [string]$_.physicalCores,
+                        $(if ($_.ahbEnabled) { 'Yes' } else { 'No' }),
+                        [string][math]::Round([double]$_.monthlyCostUsd, 2),
+                        [string][math]::Round([double]$_.monthlySavingUsd, 2)
+                    )
+                })
+                [void]$sections.Add([ordered]@{
+                    heading = 'Cost & Licensing — Per Node'
+                    type    = 'table'
+                    headers = @('Node', 'Physical Cores', 'AHB Enabled', "Monthly Cost ($costCurrency)", "Monthly Saving ($costCurrency)")
+                    rows    = $perNodeRows
+                    caption = "Pricing as of $priceDate — $priceUrl"
+                })
+            }
+        }
+    }
+
+    # v2.0.0 (#215): Arc Extensions per node (technical-tier deep dive; summary in management).
+    if ($Tier -ne 'executive') {
+        $extDetail = $Manifest.domains.azureIntegration.arcExtensionsDetail
+        if ($extDetail -and $extDetail.byNode) {
+            $extRows = New-Object System.Collections.ArrayList
+            foreach ($nodeBlock in @($extDetail.byNode)) {
+                $nName = [string]$nodeBlock.node
+                foreach ($e in @($nodeBlock.extensions)) {
+                    [void]$extRows.Add(@(
+                        $nName,
+                        [string]($e.name ?? '—'),
+                        [string]($e.type ?? '—'),
+                        [string]($e.publisher ?? '—'),
+                        [string]($e.typeHandlerVersion ?? '—'),
+                        [string]($e.provisioningState ?? '—')
+                    ))
+                }
+            }
+            $caption = if ($extDetail.summary) { "AMA coverage: $($extDetail.summary.amaCoveragePct)% of nodes. Failed extensions: $($extDetail.summary.failedExtensionCount)." } else { $null }
+            [void]$sections.Add([ordered]@{
+                heading = 'Arc Extensions by Node'
+                type    = 'table'
+                headers = @('Node', 'Name', 'Type', 'Publisher', 'Version', 'State')
+                rows    = @($extRows)
+                caption = $caption
+                _layout = 'landscape'
+            })
+        }
+    }
+
+    # v2.0.0 (#216): Logical Networks + subnet detail.
+    if ($Tier -ne 'executive') {
+        $lnets = @($Manifest.domains.networking.logicalNetworks | Where-Object { $_ })
+        if ($lnets.Count -gt 0) {
+            $lnetRows = @($lnets | ForEach-Object {
+                ,@(
+                    [string]$_.name,
+                    [string]($_.vmSwitchName ?? '—'),
+                    $(if ($_.dhcpEnabled) { 'Yes' } else { 'No' }),
+                    [string](@($_.subnets).Count),
+                    [string]($_.provisioningState ?? '—')
+                )
+            })
+            [void]$sections.Add([ordered]@{
+                heading = 'Logical Networks'
+                type    = 'table'
+                headers = @('Name', 'VM Switch', 'DHCP', 'Subnets', 'State')
+                rows    = $lnetRows
+            })
+            # Subnets (flatten)
+            $subnetRows = New-Object System.Collections.ArrayList
+            foreach ($ln in $lnets) {
+                foreach ($sn in @($ln.subnets)) {
+                    [void]$subnetRows.Add(@(
+                        [string]$ln.name,
+                        [string]($sn.name ?? '—'),
+                        [string]($sn.addressPrefix ?? '—'),
+                        [string]($sn.vlan ?? '—'),
+                        [string]($sn.ipPoolCount ?? '0')
+                    ))
+                }
+            }
+            if ($subnetRows.Count -gt 0) {
+                [void]$sections.Add([ordered]@{
+                    heading = 'Logical Network Subnets'
+                    type    = 'table'
+                    headers = @('Network', 'Subnet', 'Address Prefix', 'VLAN', 'IP Pools')
+                    rows    = @($subnetRows)
+                    _layout = 'landscape'
+                })
+            }
+        }
+    }
+
+    # v2.0.0 (#217): Storage paths.
+    if ($Tier -ne 'executive') {
+        $sps = @($Manifest.domains.storage.storagePaths | Where-Object { $_ })
+        if ($sps.Count -gt 0) {
+            $spRows = @($sps | ForEach-Object {
+                ,@(
+                    [string]$_.name,
+                    [string]($_.path ?? '—'),
+                    [string]($_.availableSizeGB ?? '—'),
+                    [string]($_.fileSystemType ?? '—'),
+                    [string]($_.provisioningState ?? '—')
+                )
+            })
+            [void]$sections.Add([ordered]@{
+                heading = 'Storage Paths'
+                type    = 'table'
+                headers = @('Name', 'Path', 'Available (GB)', 'File System', 'State')
+                rows    = $spRows
+            })
+        }
+    }
+
+    # v2.0.0 (#219, #218): Arc Resource Bridge + Custom Locations.
+    if ($Tier -ne 'executive') {
+        $rbs = @($Manifest.domains.azureIntegration.resourceBridgeDetail | Where-Object { $_ })
+        if ($rbs.Count -gt 0) {
+            $rbRows = @($rbs | ForEach-Object {
+                ,@(
+                    [string]$_.name,
+                    [string]($_.status ?? '—'),
+                    [string]($_.version ?? '—'),
+                    [string]($_.distro ?? '—'),
+                    [string]($_.provisioningState ?? '—')
+                )
+            })
+            [void]$sections.Add([ordered]@{
+                heading = 'Arc Resource Bridge'
+                type    = 'table'
+                headers = @('Name', 'Status', 'Version', 'Distro', 'Provisioning')
+                rows    = $rbRows
+            })
+        }
+        $cls = @($Manifest.domains.azureIntegration.customLocationsDetail | Where-Object { $_ })
+        if ($cls.Count -gt 0) {
+            $clRows = @($cls | ForEach-Object {
+                ,@(
+                    [string]$_.name,
+                    [string]($_.namespace ?? '—'),
+                    [string]($_.location ?? '—'),
+                    [string]($_.provisioningState ?? '—')
+                )
+            })
+            [void]$sections.Add([ordered]@{
+                heading = 'Custom Locations'
+                type    = 'table'
+                headers = @('Name', 'Namespace', 'Location', 'State')
+                rows    = $clRows
+            })
+        }
+    }
+
+    # v2.0.0 (#220): Arc Gateways.
+    if ($Tier -ne 'executive') {
+        $gws = @($Manifest.domains.azureIntegration.arcGateways | Where-Object { $_ })
+        if ($gws.Count -gt 0) {
+            $gwRows = @($gws | ForEach-Object {
+                ,@(
+                    [string]$_.name,
+                    [string]($_.gatewayEndpoint ?? '—'),
+                    [string](@($_.allowedFeatures) -join ', '),
+                    [string]($_.provisioningState ?? '—')
+                )
+            })
+            [void]$sections.Add([ordered]@{
+                heading = 'Arc Gateways'
+                type    = 'table'
+                headers = @('Name', 'Endpoint', 'Allowed Features', 'State')
+                rows    = $gwRows
+            })
+        }
+    }
+
+    # v2.0.0 (#221): Marketplace + Custom Gallery Images.
+    if ($Tier -ne 'executive') {
+        $mis = @(@($Manifest.domains.azureIntegration.marketplaceImages) + @($Manifest.domains.azureIntegration.galleryImages) | Where-Object { $_ })
+        if ($mis.Count -gt 0) {
+            $miRows = @($mis | ForEach-Object {
+                ,@(
+                    [string]$_.name,
+                    [string]($_.imageType ?? '—'),
+                    [string]($_.osType ?? '—'),
+                    [string]($_.version ?? '—'),
+                    [string]($_.sizeGB ?? '—'),
+                    [string]($_.provisioningState ?? '—')
+                )
+            })
+            [void]$sections.Add([ordered]@{
+                heading = 'Marketplace & Custom Images'
+                type    = 'table'
+                headers = @('Name', 'Type', 'OS', 'Version', 'Size (GB)', 'State')
+                rows    = $miRows
+            })
+        }
+    }
+
+    # v2.0.0 (#224): Arc agent version grouping.
+    if ($Tier -ne 'executive') {
+        $avGroups = @($Manifest.domains.clusterNode.nodeSummary.arcAgentVersionGroups | Where-Object { $_ })
+        if ($avGroups.Count -gt 0) {
+            $avRows = @($avGroups | ForEach-Object {
+                ,@(
+                    [string]$_.version,
+                    [string]$_.nodeCount,
+                    (@($_.nodeNames) -join ', ')
+                )
+            })
+            $drift = $Manifest.domains.clusterNode.nodeSummary.agentVersionDrift
+            $avCaption = if ($drift) { "Drift status: $($drift.status). Latest: $($drift.latestVersion). Max behind: $($drift.maxBehind)." } else { $null }
+            [void]$sections.Add([ordered]@{
+                heading = 'Arc Agent Versions'
+                type    = 'table'
+                headers = @('Version', 'Node Count', 'Nodes')
+                rows    = $avRows
+                caption = $avCaption
+            })
+        }
+    }
+
+    # v2.0.0 (#223): VM distribution balance.
+    if ($Tier -ne 'executive') {
+        $vmSummary = $Manifest.domains.virtualMachines.summary
+        $dist = @($vmSummary.vmDistribution | Where-Object { $_ })
+        if ($dist.Count -gt 0) {
+            $distRows = @($dist | ForEach-Object { ,@([string]$_.node, [string]$_.vmCount) })
+            $distCaption = "Balance: $(if ($vmSummary.vmDistributionBalanced) { 'balanced' } else { 'imbalanced' })  |  CV: $([math]::Round([double]$vmSummary.vmDistributionCv, 3))  |  Status: $($vmSummary.vmDistributionStatus)"
+            [void]$sections.Add([ordered]@{
+                heading = 'VM Distribution by Node'
+                type    = 'table'
+                headers = @('Node', 'VM Count')
+                rows    = $distRows
+                caption = $distCaption
+            })
+        }
     }
 
     # WAF Assessment scorecard — management + technical (#94). Suppressed in as-built mode,
@@ -1050,6 +1328,26 @@ function ConvertTo-RangerTableRowArray {
     return ,@($out.ToArray())
 }
 
+function Get-RangerStatusBadgeClass {
+    <#
+    .SYNOPSIS
+        v2.0.0 (#227): map a status/severity string to a badge CSS class.
+    .DESCRIPTION
+        Returns 'badge-healthy' | 'badge-warning' | 'badge-critical' | 'badge-unknown'
+        or '' when the value is not a known status token. Used by the HTML table
+        renderer to color status cells automatically.
+    #>
+    param([string]$Value)
+    if ([string]::IsNullOrWhiteSpace($Value)) { return '' }
+    switch -Regex ($Value) {
+        '^(Healthy|Succeeded|Connected|Running|Up|Enabled|Yes|Online|pass|OK)$'                { return 'status-Healthy' }
+        '^(Warning|Updating|Degraded|Partial|warning)$'                                         { return 'status-Warning' }
+        '^(Failed|Critical|Disconnected|Error|Down|Disabled|No|fail|NotReady)$'                 { return 'status-Failed' }
+        '^(Unknown|N/A|—|Not\s*collected)$'                                                      { return 'badge-unknown' }
+        default                                                                                   { return '' }
+    }
+}
+
 function New-RangerHtmlTable {
     [OutputType([string])]
     param(
@@ -1065,7 +1363,15 @@ function New-RangerHtmlTable {
     $captionHtml = if ($Caption) { "<caption>$([System.Net.WebUtility]::HtmlEncode($Caption))</caption>" } else { '' }
     $headerHtml  = ($Headers | ForEach-Object { "<th>$([System.Net.WebUtility]::HtmlEncode([string]$_))</th>" }) -join ''
     $rowsHtml    = ($arrayRows | ForEach-Object {
-        $cells = (@($_) | ForEach-Object { "<td>$([System.Net.WebUtility]::HtmlEncode([string]$_))</td>" }) -join ''
+        $cells = (@($_) | ForEach-Object {
+            $v = [string]$_
+            $cls = Get-RangerStatusBadgeClass -Value $v
+            if ($cls) {
+                "<td class='$cls'>$([System.Net.WebUtility]::HtmlEncode($v))</td>"
+            } else {
+                "<td>$([System.Net.WebUtility]::HtmlEncode($v))</td>"
+            }
+        }) -join ''
         "<tr>$cells</tr>"
     }) -join [Environment]::NewLine
     "<div class='table-wrapper'><table class='data-table'>$captionHtml<thead><tr>$headerHtml</tr></thead><tbody>$rowsHtml</tbody></table></div>"
@@ -1174,8 +1480,11 @@ function ConvertTo-RangerHtmlReport {
                     "<ul>$items</ul>"
                 }
             }
+            # v2.0.0 (#227): wide sections (arc extensions, subnet detail) set _layout='landscape'
+            # so the PDF renderer switches page orientation via CSS @page rules.
+            $sectionClass = if ($section._layout -eq 'landscape') { ' class="page-landscape"' } else { '' }
             @"
-<section>
+<section$sectionClass>
   <h2>$([System.Net.WebUtility]::HtmlEncode($section.heading))</h2>
   $sectionBody
 </section>
@@ -1370,7 +1679,40 @@ function ConvertTo-RangerHtmlReport {
             .data-table { font-size: 0.78em; }
             .collector-grid { grid-template-columns: repeat(2, 1fr); }
             a { color: inherit; text-decoration: none; }
+
+            /* v2.0.0 (#227): portrait default, landscape for wide sections */
+            @page              { size: A4 portrait;  margin: 15mm; }
+            @page landscape-pg { size: A4 landscape; margin: 12mm; }
+            .page-landscape    { page: landscape-pg; page-break-before: always; }
         }
+
+        /* v2.0.0 (#227): conditional status badge classes — used in status/severity columns. */
+        .badge            { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.78em; font-weight: 600; line-height: 1.4; }
+        .badge-healthy    { background: #dcfce7; color: #166534; }
+        .badge-warning    { background: #fef3c7; color: #92400e; }
+        .badge-critical   { background: #fee2e2; color: #991b1b; }
+        .badge-unknown    { background: #e2e8f0; color: #334155; }
+        /* Shading inside cells when .status-cell applied */
+        .data-table td.status-Healthy,
+        .data-table td.status-Succeeded,
+        .data-table td.status-Connected,
+        .data-table td.status-Running,
+        .data-table td.status-Up,
+        .data-table td.status-Enabled,
+        .data-table td.status-Yes { background: #dcfce7 !important; color: #166534; font-weight: 600; }
+        .data-table td.status-Warning,
+        .data-table td.status-Updating,
+        .data-table td.status-Degraded,
+        .data-table td.status-Partial,
+        .data-table td.status-warning { background: #fef3c7 !important; color: #92400e; font-weight: 600; }
+        .data-table td.status-Failed,
+        .data-table td.status-Critical,
+        .data-table td.status-Disconnected,
+        .data-table td.status-Error,
+        .data-table td.status-Down,
+        .data-table td.status-Disabled,
+        .data-table td.status-No,
+        .data-table td.status-fail { background: #fee2e2 !important; color: #991b1b; font-weight: 600; }
   </style>
 </head>
 <body class="$bodyClass">

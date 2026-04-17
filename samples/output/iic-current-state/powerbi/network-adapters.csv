@@ -1,0 +1,13 @@
+AdapterId,NodeId,AdapterName,LinkSpeedGbps,IntentName,SubnetMask,IpAddress,VlanId,LastUpdated
+azl-iic-n01::NIC1,azl-iic-n01,NIC1,,,,10.0.0.11,2203,04/06/2026 12:08:32
+azl-iic-n01::NIC2,azl-iic-n01,NIC2,,,,,2203,04/06/2026 12:08:32
+azl-iic-n01::NIC3,azl-iic-n01,NIC3,,,,,2204,04/06/2026 12:08:32
+azl-iic-n01::NIC4,azl-iic-n01,NIC4,,,,,2205,04/06/2026 12:08:32
+azl-iic-n02::NIC1,azl-iic-n02,NIC1,,,,10.0.0.12,2203,04/06/2026 12:08:32
+azl-iic-n02::NIC2,azl-iic-n02,NIC2,,,,,2203,04/06/2026 12:08:32
+azl-iic-n02::NIC3,azl-iic-n02,NIC3,,,,,2204,04/06/2026 12:08:32
+azl-iic-n02::NIC4,azl-iic-n02,NIC4,,,,,2205,04/06/2026 12:08:32
+azl-iic-n03::NIC1,azl-iic-n03,NIC1,,,,10.0.0.13,2203,04/06/2026 12:08:32
+azl-iic-n03::NIC2,azl-iic-n03,NIC2,,,,,2203,04/06/2026 12:08:32
+azl-iic-n03::NIC3,azl-iic-n03,NIC3,,,,,2204,04/06/2026 12:08:32
+azl-iic-n03::NIC4,azl-iic-n03,NIC4,,,,,2205,04/06/2026 12:08:32

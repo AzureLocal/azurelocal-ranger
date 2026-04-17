@@ -197,7 +197,10 @@ function Invoke-AzureLocalRanger {
         [switch]$SkipRun,
 
         # v1.6.0 (#212): pre-run permission audit runs by default; pass to opt out.
-        [switch]$SkipPreCheck
+        [switch]$SkipPreCheck,
+
+        # v2.0.0 (#231): module auto-install/update runs by default; pass to opt out in air-gapped envs.
+        [switch]$SkipModuleUpdate
     )
 
     # #211: -Wizard dispatches to Invoke-RangerWizard, which already handles
@@ -209,6 +212,23 @@ function Invoke-AzureLocalRanger {
         if ($PSBoundParameters.ContainsKey('OutputConfigPath')) { $wizardArgs['OutputConfigPath'] = $OutputConfigPath }
         if ($SkipRun) { $wizardArgs['SkipRun'] = $true }
         return Invoke-RangerWizard @wizardArgs
+    }
+
+    # v2.0.0 (#230): concurrent collection guard. A second invocation in the same
+    # PowerShell session while a prior run is still executing can corrupt shared
+    # script: state (log path, retry details, Write-Warning proxy, WinRM probe
+    # cache). Warn and return rather than race.
+    if ($script:RangerCollectionInProgress) {
+        Write-Warning 'Invoke-AzureLocalRanger: a collection is already in progress for this session. Wait for it to complete before starting another.'
+        return
+    }
+    $script:RangerCollectionInProgress = $true
+
+    # v2.0.0 (#231): module auto-install/update validation. Runs by default; skip
+    # with -SkipModuleUpdate in air-gapped environments. Failures do not abort.
+    if (-not $SkipModuleUpdate -and (Get-Command -Name 'Invoke-RangerModuleValidation' -ErrorAction SilentlyContinue)) {
+        try { Invoke-RangerModuleValidation }
+        catch { Write-Warning "Module validation warning: $($_.Exception.Message)" }
     }
 
     $credentialOverrides = @{
@@ -235,7 +255,13 @@ function Invoke-AzureLocalRanger {
     if ($PSBoundParameters.ContainsKey('AzureMethod'))       { $structuralOverrides['AzureMethod']       = $AzureMethod }
     if ($PSBoundParameters.ContainsKey('SkipPreCheck'))      { $structuralOverrides['SkipPreCheck']      = [bool]$SkipPreCheck }
 
-    Invoke-RangerDiscoveryRuntime -ConfigPath $ConfigPath -ConfigObject $ConfigObject -OutputPath $OutputPath -CredentialOverrides $credentialOverrides -IncludeDomains $IncludeDomain -ExcludeDomains $ExcludeDomain -NoRender:$NoRender -StructuralOverrides $structuralOverrides -AllowInteractiveInput:(-not $Unattended) -Unattended:$Unattended -BaselineManifestPath $BaselineManifestPath
+    try {
+        Invoke-RangerDiscoveryRuntime -ConfigPath $ConfigPath -ConfigObject $ConfigObject -OutputPath $OutputPath -CredentialOverrides $credentialOverrides -IncludeDomains $IncludeDomain -ExcludeDomains $ExcludeDomain -NoRender:$NoRender -StructuralOverrides $structuralOverrides -AllowInteractiveInput:(-not $Unattended) -Unattended:$Unattended -BaselineManifestPath $BaselineManifestPath
+    }
+    finally {
+        # v2.0.0 (#230): release the concurrent-collection guard even on throw.
+        $script:RangerCollectionInProgress = $false
+    }
 }
 
 function New-AzureLocalRangerConfig {
@@ -344,7 +370,151 @@ function Export-AzureLocalRangerReport {
 
     $manifest = Get-Content -Path $resolvedManifestPath -Raw | ConvertFrom-Json -AsHashtable -Depth 100
     $packageRoot = if ($OutputPath) { Resolve-RangerPath -Path $OutputPath } else { Split-Path -Parent $resolvedManifestPath }
-    Invoke-RangerOutputGeneration -Manifest (ConvertTo-RangerHashtable -InputObject $manifest) -PackageRoot $packageRoot -Formats $Formats -Mode $manifest['run']['mode']
+
+    # v2.0.0 (#229): json-evidence is a lightweight inventory-only export — no
+    # scoring, no run metadata. Handled here so it does not require a render pass.
+    $jsonEvidenceRequested = @($Formats) -contains 'json-evidence'
+    $otherFormats = @($Formats | Where-Object { $_ -ne 'json-evidence' })
+    $rendered = $null
+    if ($otherFormats.Count -gt 0) {
+        $rendered = Invoke-RangerOutputGeneration -Manifest (ConvertTo-RangerHashtable -InputObject $manifest) -PackageRoot $packageRoot -Formats $otherFormats -Mode $manifest['run']['mode']
+    }
+    if ($jsonEvidenceRequested -and (Get-Command -Name 'Write-RangerJsonEvidenceExport' -ErrorAction SilentlyContinue)) {
+        $null = Write-RangerJsonEvidenceExport -Manifest (ConvertTo-RangerHashtable -InputObject $manifest) -PackageRoot $packageRoot
+    }
+
+    return $rendered
+}
+
+function Export-RangerWafConfig {
+    <#
+    .SYNOPSIS
+        v2.0.0 (#226): export the active WAF rule configuration to a file.
+    .DESCRIPTION
+        Writes the shipped config/waf-rules.json to the specified path so
+        operators can edit rule weights, thresholds, or add custom rules,
+        then re-import with Import-RangerWafConfig.
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$OutputPath = (Join-Path (Get-Location) 'waf-rules.json')
+    )
+
+    $moduleBase = (Get-Module AzureLocalRanger -ErrorAction SilentlyContinue).ModuleBase
+    if (-not $moduleBase) { throw 'AzureLocalRanger module is not loaded.' }
+    $source = Join-Path $moduleBase 'config/waf-rules.json'
+    if (-not (Test-Path -Path $source -PathType Leaf)) {
+        throw "Shipped WAF rules config not found: $source"
+    }
+
+    Copy-Item -Path $source -Destination $OutputPath -Force
+    Write-Host "[ranger] Exported WAF config to $OutputPath" -ForegroundColor Green
+    Get-Item -Path $OutputPath
+}
+
+function Import-RangerWafConfig {
+    <#
+    .SYNOPSIS
+        v2.0.0 (#226): replace the active WAF rule configuration.
+    .DESCRIPTION
+        Validates and copies a user-supplied waf-rules.json over the shipped
+        config. With -Validate, schema-checks without writing. With -Default,
+        restores the module's baseline config from a git-tracked backup.
+        With -ReRun, re-evaluates WAF against a provided manifest and returns
+        the updated result object so the caller can regenerate reports.
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$Path,
+        [switch]$Validate,
+        [switch]$Default,
+        [switch]$ReRun,
+        [string]$ManifestPath
+    )
+
+    $moduleBase = (Get-Module AzureLocalRanger -ErrorAction SilentlyContinue).ModuleBase
+    if (-not $moduleBase) { throw 'AzureLocalRanger module is not loaded.' }
+    $activePath = Join-Path $moduleBase 'config/waf-rules.json'
+    $backupPath = Join-Path $moduleBase 'config/waf-rules.default.json'
+
+    if ($Default) {
+        if (-not (Test-Path -Path $backupPath -PathType Leaf)) {
+            throw "Default backup not available at $backupPath. Reinstall AzureLocalRanger to restore defaults."
+        }
+        Copy-Item -Path $backupPath -Destination $activePath -Force
+        Write-Host "[ranger] Restored shipped WAF config from $backupPath" -ForegroundColor Green
+        return Get-Item -Path $activePath
+    }
+
+    if (-not $Path) { throw 'Provide -Path to a waf-rules.json replacement, or use -Default to restore shipped defaults.' }
+    $resolved = Resolve-RangerPath -Path $Path
+    if (-not (Test-Path -Path $resolved -PathType Leaf)) {
+        throw "WAF config file not found: $resolved"
+    }
+
+    # Schema check: valid JSON + required top-level keys + each rule has id/pillar/title.
+    $parsed = $null
+    try { $parsed = Get-Content -Path $resolved -Raw | ConvertFrom-Json -ErrorAction Stop }
+    catch { throw "Invalid JSON in $resolved — $($_.Exception.Message)" }
+
+    foreach ($key in @('version', 'pillars', 'rules')) {
+        if (-not $parsed.PSObject.Properties[$key]) {
+            throw "WAF config missing required top-level key '$key'."
+        }
+    }
+    $ruleErrors = New-Object System.Collections.ArrayList
+    foreach ($r in @($parsed.rules)) {
+        foreach ($key in @('id','pillar','title')) {
+            if ([string]::IsNullOrWhiteSpace([string]$r.$key)) {
+                [void]$ruleErrors.Add("Rule is missing '$key' (id=$($r.id))")
+            }
+        }
+    }
+    if ($ruleErrors.Count -gt 0) {
+        throw "WAF config schema violations:`n  - $($ruleErrors -join "`n  - ")"
+    }
+
+    if ($Validate) {
+        Write-Host "[ranger] $resolved validated ($(@($parsed.rules).Count) rules) — not applied (dry-run)." -ForegroundColor Yellow
+        if ($ReRun -and $ManifestPath) {
+            return Invoke-RangerWafRerun -ManifestPath $ManifestPath -WafRulesPath $resolved
+        }
+        return [pscustomobject]@{ validated = $true; ruleCount = @($parsed.rules).Count; path = $resolved }
+    }
+
+    # Keep a one-shot backup of whatever is currently active (not the default backup).
+    $rollback = Join-Path $moduleBase 'config/waf-rules.rollback.json'
+    Copy-Item -Path $activePath -Destination $rollback -Force
+    Copy-Item -Path $resolved   -Destination $activePath -Force
+    Write-Host "[ranger] Imported WAF config from $resolved (rollback: $rollback)." -ForegroundColor Green
+
+    if ($ReRun -and $ManifestPath) {
+        return Invoke-RangerWafRerun -ManifestPath $ManifestPath
+    }
+    return Get-Item -Path $activePath
+}
+
+function Invoke-RangerWafRerun {
+    <#
+    .SYNOPSIS
+        v2.0.0 (#226): re-evaluate WAF rules against an existing manifest.
+    .DESCRIPTION
+        Loads the manifest, runs Invoke-RangerWafRuleEvaluation, and returns
+        the fresh pillarScores/ruleResults object. Caller can then regenerate
+        reports with Export-AzureLocalRangerReport.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$ManifestPath,
+        [string]$WafRulesPath
+    )
+
+    $resolved = Resolve-RangerPath -Path $ManifestPath
+    if (-not (Test-Path -Path $resolved -PathType Leaf)) { throw "Manifest not found: $resolved" }
+
+    $manifest = Get-Content -Path $resolved -Raw | ConvertFrom-Json -AsHashtable -Depth 100
+    $wafResult = Invoke-RangerWafRuleEvaluation -Manifest (ConvertTo-RangerHashtable -InputObject $manifest)
+    return $wafResult
 }
 
 function Test-AzureLocalRangerPrerequisites {

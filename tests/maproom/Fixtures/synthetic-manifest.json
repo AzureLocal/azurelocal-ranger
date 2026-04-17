@@ -1,7 +1,7 @@
 {
   "run": {
-    "toolVersion": "1.6.0",
-    "schemaVersion": "1.1.0-draft",
+    "toolVersion": "2.0.0",
+    "schemaVersion": "1.2.0-draft",
     "startTimeUtc": "2026-04-06T12:00:00Z",
     "endTimeUtc": "2026-04-06T12:08:32Z",
     "mode": "as-built",
@@ -104,6 +104,7 @@
           "state": "Up",
           "uptimeHours": 312.5,
           "osCaption": "Microsoft Azure Stack HCI",
+          "osSku": "Azure Stack HCI, version 23H2",
           "osVersion": "10.0.25398.1189",
           "manufacturer": "Dell Inc.",
           "model": "PowerEdge R760",
@@ -111,7 +112,8 @@
           "logicalProcessorCount": 64,
           "partOfDomain": true,
           "domain": "iic.local",
-          "biosVersion": "2.10.0.0"
+          "biosVersion": "2.10.0.0",
+          "arcAgentVersion": "1.39.02750.1478"
         },
         {
           "name": "azl-iic-n02",
@@ -119,6 +121,7 @@
           "state": "Up",
           "uptimeHours": 311.8,
           "osCaption": "Microsoft Azure Stack HCI",
+          "osSku": "Azure Stack HCI, version 23H2",
           "osVersion": "10.0.25398.1189",
           "manufacturer": "Dell Inc.",
           "model": "PowerEdge R760",
@@ -126,7 +129,8 @@
           "logicalProcessorCount": 64,
           "partOfDomain": true,
           "domain": "iic.local",
-          "biosVersion": "2.10.0.0"
+          "biosVersion": "2.10.0.0",
+          "arcAgentVersion": "1.39.02750.1478"
         },
         {
           "name": "azl-iic-n03",
@@ -134,6 +138,7 @@
           "state": "Up",
           "uptimeHours": 310.2,
           "osCaption": "Microsoft Azure Stack HCI",
+          "osSku": "Azure Stack HCI, version 23H2",
           "osVersion": "10.0.25398.1189",
           "manufacturer": "Dell Inc.",
           "model": "PowerEdge R760",
@@ -141,7 +146,8 @@
           "logicalProcessorCount": 64,
           "partOfDomain": true,
           "domain": "iic.local",
-          "biosVersion": "2.10.0.0"
+          "biosVersion": "2.10.0.0",
+          "arcAgentVersion": "1.38.02620.1234"
         }
       ],
       "quorum": {
@@ -316,7 +322,42 @@
         "totalMemoryGiB": 1536,
         "totalLogicalCpu": 192,
         "domainJoinedNodes": 3,
-        "localIdentityNodes": 0
+        "localIdentityNodes": 0,
+        "arcAgentVersionGroups": [
+          {
+            "version": "1.39.02750.1478",
+            "nodeCount": 2,
+            "nodeNames": [
+              "azl-iic-n01",
+              "azl-iic-n02"
+            ]
+          },
+          {
+            "version": "1.38.02620.1234",
+            "nodeCount": 1,
+            "nodeNames": [
+              "azl-iic-n03"
+            ]
+          }
+        ],
+        "osVersionGroups": [
+          {
+            "osSku": "Azure Stack HCI, version 23H2",
+            "version": "10.0.25398.1189",
+            "nodeCount": 3,
+            "nodeNames": [
+              "azl-iic-n01",
+              "azl-iic-n02",
+              "azl-iic-n03"
+            ]
+          }
+        ],
+        "agentVersionDrift": {
+          "uniqueVersions": 2,
+          "latestVersion": "1.39.02750.1478",
+          "maxBehind": 1,
+          "status": "warning"
+        }
       },
       "faultDomainSummary": {
         "count": 1,
@@ -797,6 +838,38 @@
       "qos": [],
       "sofs": [],
       "replica": [],
+      "storagePaths": [
+        {
+          "name": "sp-iic-vmstore-01",
+          "resourceGroup": "rg-iic-compute-01",
+          "location": "eastus",
+          "path": "C:\\ClusterStorage\\csv-iic-azlocal-01-vmstore-01\\ArcVmDisks",
+          "availableSizeGB": 1480,
+          "fileSystemType": "CSVFS_ReFS",
+          "provisioningState": "Succeeded",
+          "parentCluster": "azlocal-iic-01"
+        },
+        {
+          "name": "sp-iic-vmstore-02",
+          "resourceGroup": "rg-iic-compute-01",
+          "location": "eastus",
+          "path": "C:\\ClusterStorage\\csv-iic-azlocal-01-vmstore-02\\ArcVmDisks",
+          "availableSizeGB": 1620,
+          "fileSystemType": "CSVFS_ReFS",
+          "provisioningState": "Succeeded",
+          "parentCluster": "azlocal-iic-01"
+        },
+        {
+          "name": "sp-iic-vmstore-03",
+          "resourceGroup": "rg-iic-compute-01",
+          "location": "eastus",
+          "path": "C:\\ClusterStorage\\csv-iic-azlocal-01-vmstore-03\\ArcVmDisks",
+          "availableSizeGB": 1710,
+          "fileSystemType": "CSVFS_ReFS",
+          "provisioningState": "Succeeded",
+          "parentCluster": "azlocal-iic-01"
+        }
+      ],
       "summary": {
         "poolCount": 1,
         "physicalDiskCount": 24,
@@ -811,7 +884,8 @@
             "count": 24
           }
         ],
-        "unhealthyDisks": 0
+        "unhealthyDisks": 0,
+        "storagePathCount": 3
       }
     },
     "networking": {
@@ -824,6 +898,74 @@
         },
         {
           "node": "azl-iic-n03"
+        }
+      ],
+      "logicalNetworks": [
+        {
+          "name": "lnet-iic-mgmt-01",
+          "resourceGroup": "rg-iic-compute-01",
+          "location": "eastus",
+          "vmSwitchName": "ConvergedSwitch",
+          "dhcpEnabled": false,
+          "dnsServers": [
+            "192.168.10.10",
+            "192.168.10.11"
+          ],
+          "provisioningState": "Succeeded",
+          "subnets": [
+            {
+              "name": "subnet-management",
+              "addressPrefix": "10.0.0.0/24",
+              "vlan": 2203,
+              "ipPoolCount": 1,
+              "ipPools": [
+                {
+                  "start": "10.0.0.100",
+                  "end": "10.0.0.200",
+                  "info": "Reserved for Arc VMs"
+                }
+              ],
+              "dhcpOptions": {
+                "dnsServers": [
+                  "192.168.10.10",
+                  "192.168.10.11"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "lnet-iic-workload-01",
+          "resourceGroup": "rg-iic-compute-01",
+          "location": "eastus",
+          "vmSwitchName": "ConvergedSwitch",
+          "dhcpEnabled": true,
+          "dnsServers": [
+            "192.168.10.10",
+            "192.168.10.11"
+          ],
+          "provisioningState": "Succeeded",
+          "subnets": [
+            {
+              "name": "subnet-workload",
+              "addressPrefix": "10.0.2.0/24",
+              "vlan": 2205,
+              "ipPoolCount": 1,
+              "ipPools": [
+                {
+                  "start": "10.0.2.50",
+                  "end": "10.0.2.250",
+                  "info": "Workload VMs"
+                }
+              ],
+              "dhcpOptions": {
+                "dnsServers": [
+                  "192.168.10.10",
+                  "192.168.10.11"
+                ]
+              }
+            }
+          ]
         }
       ],
       "clusterNetworks": [
@@ -1047,7 +1189,9 @@
           "192.168.10.11"
         ],
         "proxyConfiguredNodes": 0,
-        "sdnControllerCount": 0
+        "sdnControllerCount": 0,
+        "logicalNetworkCount": 2,
+        "logicalNetworkSubnetCount": 2
       }
     },
     "virtualMachines": {
@@ -1071,7 +1215,8 @@
           ],
           "replicationMode": null,
           "replicationHealth": null,
-          "workloadFamily": "AVD"
+          "workloadFamily": "AVD",
+          "vmProvisioningModel": "hyper-v-native"
         },
         {
           "name": "avd-iic-sh02",
@@ -1092,7 +1237,8 @@
           ],
           "replicationMode": null,
           "replicationHealth": null,
-          "workloadFamily": "AVD"
+          "workloadFamily": "AVD",
+          "vmProvisioningModel": "hyper-v-native"
         },
         {
           "name": "avd-iic-sh03",
@@ -1113,7 +1259,8 @@
           ],
           "replicationMode": null,
           "replicationHealth": null,
-          "workloadFamily": "AVD"
+          "workloadFamily": "AVD",
+          "vmProvisioningModel": "hyper-v-native"
         },
         {
           "name": "arc-iic-vm01",
@@ -1134,7 +1281,10 @@
           ],
           "replicationMode": null,
           "replicationHealth": null,
-          "workloadFamily": "Arc VMs"
+          "workloadFamily": "Arc VMs",
+          "vmProvisioningModel": "arc-vm-resource-bridge",
+          "logicalNetwork": "lnet-iic-workload-01",
+          "storagePathRef": "sp-iic-vmstore-01"
         },
         {
           "name": "arc-iic-vm02",
@@ -1155,7 +1305,10 @@
           ],
           "replicationMode": null,
           "replicationHealth": null,
-          "workloadFamily": "Arc VMs"
+          "workloadFamily": "Arc VMs",
+          "vmProvisioningModel": "arc-vm-resource-bridge",
+          "logicalNetwork": "lnet-iic-workload-01",
+          "storagePathRef": "sp-iic-vmstore-02"
         }
       ],
       "placement": [
@@ -1212,6 +1365,33 @@
             "name": "Running",
             "count": 5
           }
+        ],
+        "vmDistribution": [
+          {
+            "node": "azl-iic-n01",
+            "vmCount": 2
+          },
+          {
+            "node": "azl-iic-n02",
+            "vmCount": 2
+          },
+          {
+            "node": "azl-iic-n03",
+            "vmCount": 1
+          }
+        ],
+        "vmDistributionBalanced": true,
+        "vmDistributionCv": 0.283,
+        "vmDistributionStatus": "warning",
+        "vmProvisioningModelBreakdown": [
+          {
+            "name": "hyper-v-native",
+            "count": 3
+          },
+          {
+            "name": "arc-vm-resource-bridge",
+            "count": 2
+          }
         ]
       }
     },
@@ -1243,12 +1423,12 @@
             {
               "subject": "CN=azl-iic-n01.iic.local",
               "thumbprint": "AAABBB001",
-              "notAfter": "2026-06-15T20:12:37Z"
+              "notAfter": "2026-06-15T21:00:18Z"
             },
             {
               "subject": "CN=azlocal-iic-01.iic.local",
               "thumbprint": "AAABBB002",
-              "notAfter": "2028-04-15T20:12:37Z"
+              "notAfter": "2028-04-15T21:00:18Z"
             }
           ]
         },
@@ -1257,7 +1437,7 @@
           "items": {
             "subject": "CN=azl-iic-n02.iic.local",
             "thumbprint": "AAABBB101",
-            "notAfter": "2028-04-15T20:12:37Z"
+            "notAfter": "2028-04-15T21:00:18Z"
           }
         },
         {
@@ -1265,7 +1445,7 @@
           "items": {
             "subject": "CN=azl-iic-n03.iic.local",
             "thumbprint": "AAABBB201",
-            "notAfter": "2028-04-15T20:12:37Z"
+            "notAfter": "2028-04-15T21:00:18Z"
           }
         }
       ],
@@ -1635,6 +1815,243 @@
           "resourceType": "Microsoft.AzureStackHCI/clusters/extensions"
         }
       ],
+      "arcExtensionsDetail": {
+        "byNode": [
+          {
+            "node": "azl-iic-n01",
+            "extensions": [
+              {
+                "name": "AzureMonitorWindowsAgent",
+                "type": "AzureMonitorWindowsAgent",
+                "publisher": "Microsoft.Azure.Monitor",
+                "typeHandlerVersion": "1.22.2.0",
+                "provisioningState": "Succeeded",
+                "autoUpgradeMinorVersion": true,
+                "enableAutomaticUpgrade": true
+              },
+              {
+                "name": "GuestConfigExtension",
+                "type": "ConfigurationforWindows",
+                "publisher": "Microsoft.GuestConfiguration",
+                "typeHandlerVersion": "1.29.78.0",
+                "provisioningState": "Succeeded",
+                "autoUpgradeMinorVersion": true,
+                "enableAutomaticUpgrade": true
+              },
+              {
+                "name": "MicrosoftDefenderForServers",
+                "type": "MDE.Windows",
+                "publisher": "Microsoft.Azure.AzureDefenderForServers",
+                "typeHandlerVersion": "1.0",
+                "provisioningState": "Succeeded",
+                "autoUpgradeMinorVersion": true,
+                "enableAutomaticUpgrade": true
+              }
+            ]
+          },
+          {
+            "node": "azl-iic-n02",
+            "extensions": [
+              {
+                "name": "AzureMonitorWindowsAgent",
+                "type": "AzureMonitorWindowsAgent",
+                "publisher": "Microsoft.Azure.Monitor",
+                "typeHandlerVersion": "1.22.2.0",
+                "provisioningState": "Succeeded",
+                "autoUpgradeMinorVersion": true,
+                "enableAutomaticUpgrade": true
+              },
+              {
+                "name": "GuestConfigExtension",
+                "type": "ConfigurationforWindows",
+                "publisher": "Microsoft.GuestConfiguration",
+                "typeHandlerVersion": "1.29.78.0",
+                "provisioningState": "Succeeded",
+                "autoUpgradeMinorVersion": true,
+                "enableAutomaticUpgrade": true
+              },
+              {
+                "name": "MicrosoftDefenderForServers",
+                "type": "MDE.Windows",
+                "publisher": "Microsoft.Azure.AzureDefenderForServers",
+                "typeHandlerVersion": "1.0",
+                "provisioningState": "Succeeded",
+                "autoUpgradeMinorVersion": true,
+                "enableAutomaticUpgrade": true
+              }
+            ]
+          },
+          {
+            "node": "azl-iic-n03",
+            "extensions": [
+              {
+                "name": "AzureMonitorWindowsAgent",
+                "type": "AzureMonitorWindowsAgent",
+                "publisher": "Microsoft.Azure.Monitor",
+                "typeHandlerVersion": "1.22.2.0",
+                "provisioningState": "Succeeded",
+                "autoUpgradeMinorVersion": true,
+                "enableAutomaticUpgrade": true
+              },
+              {
+                "name": "GuestConfigExtension",
+                "type": "ConfigurationforWindows",
+                "publisher": "Microsoft.GuestConfiguration",
+                "typeHandlerVersion": "1.29.78.0",
+                "provisioningState": "Succeeded",
+                "autoUpgradeMinorVersion": true,
+                "enableAutomaticUpgrade": true
+              },
+              {
+                "name": "MicrosoftDefenderForServers",
+                "type": "MDE.Windows",
+                "publisher": "Microsoft.Azure.AzureDefenderForServers",
+                "typeHandlerVersion": "1.0",
+                "provisioningState": "Succeeded",
+                "autoUpgradeMinorVersion": true,
+                "enableAutomaticUpgrade": true
+              }
+            ]
+          }
+        ],
+        "summary": {
+          "nodeCount": 3,
+          "totalExtensionCount": 9.0,
+          "amaNodeCount": 3,
+          "amaCoveragePct": 100.0,
+          "failedExtensionCount": 0
+        }
+      },
+      "resourceBridgeDetail": [
+        {
+          "name": "rb-iic-azlocal-01",
+          "resourceGroup": "rg-iic-arc-01",
+          "location": "eastus",
+          "status": "Connected",
+          "version": "1.5.23",
+          "distro": "MOC-K8S",
+          "infrastructureProvider": "HCI",
+          "provisioningState": "Succeeded"
+        }
+      ],
+      "customLocationsDetail": [
+        {
+          "name": "cl-iic-azlocal-01",
+          "namespace": "azlocal",
+          "resourceGroup": "rg-iic-arc-01",
+          "location": "eastus",
+          "hostResourceId": "/subscriptions/33333333-3333-3333-3333-333333333333/resourceGroups/rg-iic-arc-01/providers/Microsoft.ResourceConnector/appliances/rb-iic-azlocal-01",
+          "provisioningState": "Succeeded"
+        }
+      ],
+      "arcGateways": [
+        {
+          "name": "arcgw-iic-01",
+          "resourceGroup": "rg-iic-arc-01",
+          "location": "eastus",
+          "gatewayEndpoint": "https://arcgw-iic-01.gw.arc.azure.com",
+          "provisioningState": "Succeeded",
+          "allowedFeatures": [
+            "*"
+          ],
+          "allowedResources": 3
+        }
+      ],
+      "arcGatewayNodeRouting": [
+        {
+          "node": "azl-iic-n01",
+          "routedThrough": "arcgw-iic-01",
+          "gatewayUrl": "https://arcgw-iic-01.gw.arc.azure.com",
+          "status": "routed"
+        },
+        {
+          "node": "azl-iic-n02",
+          "routedThrough": "arcgw-iic-01",
+          "gatewayUrl": "https://arcgw-iic-01.gw.arc.azure.com",
+          "status": "routed"
+        },
+        {
+          "node": "azl-iic-n03",
+          "routedThrough": "arcgw-iic-01",
+          "gatewayUrl": "https://arcgw-iic-01.gw.arc.azure.com",
+          "status": "routed"
+        }
+      ],
+      "marketplaceImages": [
+        {
+          "name": "img-iic-ws2022-datacenter",
+          "imageType": "Marketplace",
+          "osType": "Windows",
+          "publisher": "MicrosoftWindowsServer",
+          "offer": "WindowsServer",
+          "sku": "2022-datacenter-azure-edition",
+          "version": "20348.2700.240906",
+          "sizeGB": 127,
+          "storagePathId": "/subscriptions/33333333-3333-3333-3333-333333333333/resourceGroups/rg-iic-compute-01/providers/Microsoft.AzureStackHCI/storageContainers/sp-iic-vmstore-01",
+          "provisioningState": "Succeeded"
+        }
+      ],
+      "galleryImages": [
+        {
+          "name": "img-iic-rhel9-base",
+          "imageType": "Custom",
+          "osType": "Linux",
+          "sourceImageId": "/subscriptions/33333333-3333-3333-3333-333333333333/resourceGroups/rg-iic-compute-01/providers/Microsoft.AzureStackHCI/galleryImages/rhel9-base",
+          "version": "9.4.1",
+          "sizeGB": 24,
+          "storagePathId": "/subscriptions/33333333-3333-3333-3333-333333333333/resourceGroups/rg-iic-compute-01/providers/Microsoft.AzureStackHCI/storageContainers/sp-iic-vmstore-02",
+          "provisioningState": "Succeeded"
+        }
+      ],
+      "costLicensing": {
+        "subscriptionName": "IIC Platform Production",
+        "cluster": "azlocal-iic-01",
+        "ahbStatus": "Enabled",
+        "softwareAssurance": {
+          "status": "Enabled",
+          "properties": {
+            "billingModel": "HybridBenefit",
+            "lastUpdated": "2026-04-06T12:00:00Z"
+          }
+        },
+        "perNode": [
+          {
+            "node": "azl-iic-n01",
+            "physicalCores": 32,
+            "ahbEnabled": true,
+            "monthlyCostUsd": 320.0,
+            "monthlySavingUsd": 320.0
+          },
+          {
+            "node": "azl-iic-n02",
+            "physicalCores": 32,
+            "ahbEnabled": true,
+            "monthlyCostUsd": 320.0,
+            "monthlySavingUsd": 320.0
+          },
+          {
+            "node": "azl-iic-n03",
+            "physicalCores": 32,
+            "ahbEnabled": true,
+            "monthlyCostUsd": 320.0,
+            "monthlySavingUsd": 320.0
+          }
+        ],
+        "summary": {
+          "totalPhysicalCores": 96,
+          "coresWithAhb": 96,
+          "coresWithoutAhb": 0,
+          "costPerCoreUsd": 10.0,
+          "currentMonthlyCostUsd": 960.0,
+          "potentialMonthlySavingsUsd": 0.0,
+          "ahbAdoptionPct": 100.0,
+          "currency": "USD"
+        },
+        "pricingReference": {
+          "asOfDate": "2026-04-16",
+          "url": "https://azure.microsoft.com/en-us/pricing/details/azure-local/"
+        }
+      },
       "arcMachines": [
         {
           "name": "azl-iic-n01",
@@ -1700,7 +2117,13 @@
         "updateResources": 1,
         "resourceBridgeCount": 1,
         "customLocationCount": 1,
-        "extensionCount": 2
+        "extensionCount": 2,
+        "perNodeExtensionCount": 9.0,
+        "arcGatewayCount": 1,
+        "marketplaceImageCount": 1,
+        "galleryImageCount": 1,
+        "logicalNetworkCount": 2,
+        "storagePathCount": 3
       },
       "resourceLocations": [
         {

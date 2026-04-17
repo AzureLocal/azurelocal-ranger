@@ -1,0 +1,2 @@
+BridgeId,ClusterId,Status,Version,Distro,Provider,Location,ProvisioningState,LastUpdated
+rb-iic-azlocal-01,azlocal-iic-01,Connected,1.5.23,MOC-K8S,HCI,eastus,Succeeded,04/06/2026 12:08:32

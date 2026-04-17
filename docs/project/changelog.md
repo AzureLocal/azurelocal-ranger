@@ -2,6 +2,19 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
+## v2.0.0 Highlights — Extended Collectors & WAF Intelligence
+
+- **Seven new Arc-surface collectors (#215-#221)** — per-node Arc extensions, logical networks + subnets, storage paths, custom locations, Arc Resource Bridge, Arc Gateway, marketplace + custom images. Each surfaces a new HTML/Markdown/DOCX section and XLSX tab, plus a Power BI CSV.
+- **AHB cost + savings analysis (#222, #228)** — cluster-level `softwareAssuranceStatus` drives a per-core $10/month calculation, AHB adoption %, potential monthly savings, and a dated pricing footer referencing the official Azure Local pricing page.
+- **VM distribution balance (#223)** — coefficient-of-variation analysis across nodes with warning/fail thresholds.
+- **Agent + OS version grouping (#224)** — nodes grouped by Arc agent and OS version with drift status (latest, maxBehind).
+- **Weighted WAF scoring (#225)** — rule `weight` field 1-3, warning severity counts as 0.5x weight, graduated threshold bands, Excellent/Good/Fair/Needs Improvement thresholds.
+- **`Export-RangerWafConfig` / `Import-RangerWafConfig` (#226)** — download the active WAF config, edit it locally, and re-import with `-Validate` dry-run or `-Default` restore.
+- **`json-evidence` output format (#229)** — raw resource-only JSON payload with `_metadata` envelope; excludes scoring and run metadata.
+- **Concurrent + empty-data guards (#230)** — second invocation in the same session warns and returns; zero-node manifest throws an actionable error instead of empty reports.
+- **Module auto-install on startup (#231)** — required Az.* modules installed or updated via `Install-Module` / `Update-Module`; `-SkipModuleUpdate` opt-out.
+- **Portrait/landscape PDF + status coloring (#227)** — `@page landscape-pg` for wide tables (Arc extensions, subnets); HTML status cells auto-colored.
+
 ## v1.6.0 Highlights — Platform Intelligence
 
 - **Auto-discovery (#196, #197, #203)** — resource group and cluster FQDN resolved from Azure Arc, then from on-prem TrustedHosts / DNS. Removes required prompts when credentials are present.

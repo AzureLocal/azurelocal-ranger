@@ -26,5 +26,8 @@ Export-ModuleMember -Function @(
     'Export-AzureLocalRangerReport',
     'Test-AzureLocalRangerPrerequisites',
     'Test-RangerPermissions',
-    'Invoke-RangerWizard'
+    'Invoke-RangerWizard',
+    # v2.0.0 (#226): WAF rule config hot-swap helpers.
+    'Export-RangerWafConfig',
+    'Import-RangerWafConfig'
 )

@@ -8,6 +8,47 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-04-16
+
+### Added — Collectors
+
+- **Arc machine extensions per node (#215)** — per-node inventory of Arc extensions (AMA, Defender for Servers, Guest Configuration) with `typeHandlerVersion`, `provisioningState`, `autoUpgradeMinorVersion`, `enableAutomaticUpgrade`. Surfaced as a dedicated `Arc Extensions by Node` HTML/Markdown/DOCX table (landscape-oriented in PDF), an `Extensions` XLSX tab, and an `arc-extensions.csv` Power BI table. `domains.azureIntegration.arcExtensionsDetail` is a hashtable with `byNode` + `summary.amaCoveragePct`.
+- **Logical networks + subnet detail collector (#216)** — `Microsoft.AzureStackHCI/logicalNetworks` with per-subnet `addressPrefix`, `vlan`, `ipPools`, `dhcpOptions`, `vmSwitchName` cross-reference, and `dnsServers`. New `Logical Networks` + `Logical Network Subnets` sections; `LogicalNetworks` + `Subnets` XLSX tabs; `logical-networks.csv` Power BI CSV.
+- **Storage paths collector (#217)** — `Microsoft.AzureStackHCI/storageContainers` inventory with CSV cross-reference. New `Storage Paths` section; `StoragePaths` XLSX tab; `storage-paths.csv` Power BI CSV.
+- **Custom locations collector (#218)** — `Microsoft.ExtendedLocation/customLocations` linked to Resource Bridge `hostResourceId`.
+- **Arc Resource Bridge collector (#219)** — `Microsoft.ResourceConnector/appliances` with version, distro, infrastructure provider, status. Arc VMs now carry a `vmProvisioningModel` field (`hyper-v-native` | `arc-vm-resource-bridge`).
+- **Arc Gateway collector (#220)** — `Microsoft.HybridCompute/gateways` with per-node routing detection (`arcGatewayNodeRouting`).
+- **Marketplace + custom image collector (#221)** — `Microsoft.AzureStackHCI/marketplaceGalleryImages` and `galleryImages` with storage-path cross-reference and publisher / offer / SKU metadata.
+
+### Added — Intelligence
+
+- **AHB cost/licensing analysis (#222)** — `Invoke-RangerCostLicensingAnalysis` reads `softwareAssuranceProperties.softwareAssuranceStatus` as the cluster-level AHB signal, multiplies physical cores against the public $10/core/month rate, and emits current monthly cost, potential savings, and `ahbAdoptionPct` under `domains.azureIntegration.costLicensing`. New `Cost & Licensing` + `Cost & Licensing — Per Node` HTML/Markdown/DOCX/PDF sections with pricing footer. `CostLicensing` XLSX tab + `cost-licensing.csv` Power BI CSV.
+- **VM distribution balance analysis (#223)** — `Invoke-RangerVmDistributionAnalysis` computes coefficient of variation across nodes. Balanced/warning/fail thresholds at CV < 0.2 / 0.2–0.3 / > 0.3 or any node > 2× mean. Surfaces as per-node table with CV-in-caption status.
+- **Agent version grouping (#224)** — `Invoke-RangerAgentVersionAnalysis` groups nodes by Arc agent + OS version with drift summary (`uniqueVersions`, `latestVersion`, `maxBehind`, `status`). New `Arc Agent Versions` section.
+- **Weighted WAF scoring (#225)** — per-rule `weight` field (1–3); warning severity awards 0.5× weight; graduated threshold bands still work; pillar and overall scores aggregate weighted awarded over weighted max. `scoreThresholds` (Excellent/Good/Fair/Needs Improvement) exposed on the evaluator result. New rules: SEC-007 (AMA coverage graduated), SEC-008 (agent version drift), COST-003 (AHB adoption graduated), REL-007–009 (logical networks, resource bridge, VM distribution), OE-007–009 (storage paths, custom locations, image provenance).
+
+### Added — Commands and UX
+
+- **`Export-RangerWafConfig` / `Import-RangerWafConfig` (#226)** — hot-swap WAF rule config. `-Validate` schema-checks without writing. `-Default` restores the shipped `waf-rules.default.json` backup. `-ReRun -ManifestPath` re-evaluates against an existing manifest.
+- **`json-evidence` output format (#229)** — raw resource-only JSON payload with a minimal `_metadata` envelope; excludes `healthChecks`, `wafResults`, `summary`, `run`. Accepted by `Invoke-AzureLocalRanger -OutputFormats json-evidence` and `Export-AzureLocalRangerReport -Formats json-evidence`. Filename: `<runId>-evidence.json` under `reports/`.
+- **`-SkipModuleUpdate` (#231)** — opt-out of automatic Az.* module install/update on startup for air-gapped environments. Install/update validation is invoked before pre-check.
+
+### Added — Reliability
+
+- **Concurrent collection guard (#230)** — second `Invoke-AzureLocalRanger` call in the same session emits a warning and returns without racing shared `script:` state; flag is released in a `finally` block.
+- **Empty-data safeguard (#230)** — when collection completes with zero nodes, Ranger throws an actionable error naming the cluster target and WinRM / RBAC remediation paths instead of producing empty reports.
+- **Module auto-install/update on startup (#231)** — required modules (`Az.Accounts`, `Az.Resources`, `Az.ConnectedMachine`, `Az.KeyVault`) are installed or updated via `Install-Module`/`Update-Module -Force -Scope CurrentUser` when below minimum version. Optional modules (`Az.StackHCI`, `Az.ResourceGraph`, `ImportExcel`) emit an info hint when missing. Install/update failures log a warning but do not abort the run.
+
+### Added — Output
+
+- **Portrait/landscape page switching (#227)** — `@page landscape-pg` CSS rule applied to sections flagged `_layout='landscape'` (Arc extensions, logical network subnets). Headless Edge/Chrome `--print-to-pdf` honours the rule.
+- **Conditional status-cell coloring (#227)** — HTML data tables apply `status-Healthy` / `status-Warning` / `status-Failed` CSS classes per recognized status token (Healthy/Succeeded/Connected/Running/Up/Enabled/Yes vs Warning/Updating/Degraded vs Failed/Critical/Disconnected).
+- **Pricing footer with dated reference (#228)** — every Cost & Licensing section includes `pricingReference.asOfDate` and the official Azure Local pricing URL.
+
+### Changed
+
+- **Manifest schema bump to `1.2.0-draft`** to reflect the new domain shapes under `azureIntegration.arcExtensionsDetail`, `networking.logicalNetworks`, `storage.storagePaths`, `azureIntegration.costLicensing`, and `virtualMachines.summary.vmDistribution*`.
+
 ## [1.6.0] — 2026-04-16
 
 ### Added — Auth and Discovery

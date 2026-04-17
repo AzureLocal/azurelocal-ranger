@@ -175,15 +175,176 @@ function Invoke-RangerPowerBiExport {
         -Columns @('AdapterId','NodeId','AdapterName','LinkSpeedGbps','IntentName','SubnetMask','IpAddress','VlanId','LastUpdated') `
         -Rows $adapterRows
 
+    # v2.0.0: per-domain CSVs for the new collectors.
+    $extRows = @(
+        foreach ($nodeBlock in @($Manifest.domains.azureIntegration.arcExtensionsDetail.byNode)) {
+            foreach ($e in @($nodeBlock.extensions)) {
+                [ordered]@{
+                    ExtensionId       = ('{0}::{1}' -f ($nodeBlock.node ?? ''), ($e.name ?? ''))
+                    NodeId            = [string]$nodeBlock.node
+                    Name              = [string]($e.name ?? '')
+                    Type              = [string]($e.type ?? '')
+                    Publisher         = [string]($e.publisher ?? '')
+                    Version           = [string]($e.typeHandlerVersion ?? '')
+                    ProvisioningState = [string]($e.provisioningState ?? '')
+                    AutoUpgrade       = if ($e.enableAutomaticUpgrade) { 'True' } else { 'False' }
+                    LastUpdated       = $runTs
+                }
+            }
+        }
+    )
+    if ($extRows.Count -gt 0) {
+        Write-RangerCsvFile -Path (Join-Path $OutputRoot 'arc-extensions.csv') -Columns @('ExtensionId','NodeId','Name','Type','Publisher','Version','ProvisioningState','AutoUpgrade','LastUpdated') -Rows $extRows
+    }
+
+    $lnetRows = @(
+        foreach ($ln in @($Manifest.domains.networking.logicalNetworks)) {
+            foreach ($sn in @($ln.subnets)) {
+                [ordered]@{
+                    SubnetId        = ('{0}::{1}' -f ($ln.name ?? ''), ($sn.name ?? ''))
+                    NetworkId       = [string]$ln.name
+                    NetworkName     = [string]$ln.name
+                    VmSwitch        = [string]($ln.vmSwitchName ?? '')
+                    DhcpEnabled     = if ($ln.dhcpEnabled) { 'True' } else { 'False' }
+                    SubnetName      = [string]($sn.name ?? '')
+                    AddressPrefix   = [string]($sn.addressPrefix ?? '')
+                    VlanId          = [string]($sn.vlan ?? '')
+                    IpPools         = [string](@($sn.ipPools).Count)
+                    ProvisioningState = [string]($ln.provisioningState ?? '')
+                    LastUpdated     = $runTs
+                }
+            }
+        }
+    )
+    if ($lnetRows.Count -gt 0) {
+        Write-RangerCsvFile -Path (Join-Path $OutputRoot 'logical-networks.csv') -Columns @('SubnetId','NetworkId','NetworkName','VmSwitch','DhcpEnabled','SubnetName','AddressPrefix','VlanId','IpPools','ProvisioningState','LastUpdated') -Rows $lnetRows
+    }
+
+    $spRows = @(
+        foreach ($sp in @($Manifest.domains.storage.storagePaths)) {
+            [ordered]@{
+                PathId            = [string]$sp.name
+                ClusterId         = $clusterId
+                Path              = [string]($sp.path ?? '')
+                AvailableGB       = [string]($sp.availableSizeGB ?? '')
+                FileSystem        = [string]($sp.fileSystemType ?? '')
+                ProvisioningState = [string]($sp.provisioningState ?? '')
+                LastUpdated       = $runTs
+            }
+        }
+    )
+    if ($spRows.Count -gt 0) {
+        Write-RangerCsvFile -Path (Join-Path $OutputRoot 'storage-paths.csv') -Columns @('PathId','ClusterId','Path','AvailableGB','FileSystem','ProvisioningState','LastUpdated') -Rows $spRows
+    }
+
+    $rbRows = @(
+        foreach ($rb in @($Manifest.domains.azureIntegration.resourceBridgeDetail)) {
+            [ordered]@{
+                BridgeId    = [string]$rb.name
+                ClusterId   = $clusterId
+                Status      = [string]($rb.status ?? '')
+                Version     = [string]($rb.version ?? '')
+                Distro      = [string]($rb.distro ?? '')
+                Provider    = [string]($rb.infrastructureProvider ?? '')
+                Location    = [string]($rb.location ?? '')
+                ProvisioningState = [string]($rb.provisioningState ?? '')
+                LastUpdated = $runTs
+            }
+        }
+    )
+    if ($rbRows.Count -gt 0) {
+        Write-RangerCsvFile -Path (Join-Path $OutputRoot 'resource-bridges.csv') -Columns @('BridgeId','ClusterId','Status','Version','Distro','Provider','Location','ProvisioningState','LastUpdated') -Rows $rbRows
+    }
+
+    $clRows = @(
+        foreach ($cl in @($Manifest.domains.azureIntegration.customLocationsDetail)) {
+            [ordered]@{
+                CustomLocationId = [string]$cl.name
+                ClusterId        = $clusterId
+                Namespace        = [string]($cl.namespace ?? '')
+                Location         = [string]($cl.location ?? '')
+                ProvisioningState = [string]($cl.provisioningState ?? '')
+                LastUpdated      = $runTs
+            }
+        }
+    )
+    if ($clRows.Count -gt 0) {
+        Write-RangerCsvFile -Path (Join-Path $OutputRoot 'custom-locations.csv') -Columns @('CustomLocationId','ClusterId','Namespace','Location','ProvisioningState','LastUpdated') -Rows $clRows
+    }
+
+    $gwRows = @(
+        foreach ($gw in @($Manifest.domains.azureIntegration.arcGateways)) {
+            [ordered]@{
+                GatewayId         = [string]$gw.name
+                ClusterId         = $clusterId
+                Endpoint          = [string]($gw.gatewayEndpoint ?? '')
+                AllowedFeatures   = [string]((@($gw.allowedFeatures)) -join ';')
+                AllowedResources  = [string]($gw.allowedResources ?? '')
+                ProvisioningState = [string]($gw.provisioningState ?? '')
+                LastUpdated       = $runTs
+            }
+        }
+    )
+    if ($gwRows.Count -gt 0) {
+        Write-RangerCsvFile -Path (Join-Path $OutputRoot 'arc-gateways.csv') -Columns @('GatewayId','ClusterId','Endpoint','AllowedFeatures','AllowedResources','ProvisioningState','LastUpdated') -Rows $gwRows
+    }
+
+    $imgRows = @(
+        foreach ($img in (@($Manifest.domains.azureIntegration.marketplaceImages) + @($Manifest.domains.azureIntegration.galleryImages))) {
+            if ($null -eq $img) { continue }
+            [ordered]@{
+                ImageId           = [string]$img.name
+                ClusterId         = $clusterId
+                Type              = [string]($img.imageType ?? '')
+                OsType            = [string]($img.osType ?? '')
+                Publisher         = [string]($img.publisher ?? '')
+                Offer             = [string]($img.offer ?? '')
+                Sku               = [string]($img.sku ?? '')
+                Version           = [string]($img.version ?? '')
+                SizeGB            = [string]($img.sizeGB ?? '')
+                StoragePathRef    = [string]($img.storagePathId ?? '')
+                ProvisioningState = [string]($img.provisioningState ?? '')
+                LastUpdated       = $runTs
+            }
+        }
+    )
+    if ($imgRows.Count -gt 0) {
+        Write-RangerCsvFile -Path (Join-Path $OutputRoot 'images.csv') -Columns @('ImageId','ClusterId','Type','OsType','Publisher','Offer','Sku','Version','SizeGB','StoragePathRef','ProvisioningState','LastUpdated') -Rows $imgRows
+    }
+
+    $costRows = @(
+        foreach ($n in @($Manifest.domains.azureIntegration.costLicensing.perNode)) {
+            [ordered]@{
+                NodeId           = [string]$n.node
+                ClusterId        = $clusterId
+                PhysicalCores    = [string]$n.physicalCores
+                AhbEnabled       = if ($n.ahbEnabled) { 'True' } else { 'False' }
+                MonthlyCostUsd   = [string][math]::Round([double]$n.monthlyCostUsd, 2)
+                MonthlySavingUsd = [string][math]::Round([double]$n.monthlySavingUsd, 2)
+                LastUpdated      = $runTs
+            }
+        }
+    )
+    if ($costRows.Count -gt 0) {
+        Write-RangerCsvFile -Path (Join-Path $OutputRoot 'cost-licensing.csv') -Columns @('NodeId','ClusterId','PhysicalCores','AhbEnabled','MonthlyCostUsd','MonthlySavingUsd','LastUpdated') -Rows $costRows
+    }
+
     # _relationships.json (star schema)
     $relationships = [ordered]@{
         version = '1.0'
-        tables  = @('nodes','volumes','storage-pools','health-checks','network-adapters')
+        tables  = @('nodes','volumes','storage-pools','health-checks','network-adapters','arc-extensions','logical-networks','storage-paths','resource-bridges','custom-locations','arc-gateways','images','cost-licensing')
         relationships = @(
             [ordered]@{ from = 'volumes';          fromColumn = 'PoolId';    to = 'storage-pools'; toColumn = 'PoolId' }
             [ordered]@{ from = 'storage-pools';    fromColumn = 'ClusterId'; to = 'nodes';         toColumn = 'ClusterId' }
             [ordered]@{ from = 'health-checks';    fromColumn = 'NodeId';    to = 'nodes';         toColumn = 'NodeId' }
             [ordered]@{ from = 'network-adapters'; fromColumn = 'NodeId';    to = 'nodes';         toColumn = 'NodeId' }
+            [ordered]@{ from = 'arc-extensions';   fromColumn = 'NodeId';    to = 'nodes';         toColumn = 'NodeId' }
+            [ordered]@{ from = 'cost-licensing';   fromColumn = 'NodeId';    to = 'nodes';         toColumn = 'NodeId' }
+            [ordered]@{ from = 'storage-paths';    fromColumn = 'ClusterId'; to = 'nodes';         toColumn = 'ClusterId' }
+            [ordered]@{ from = 'resource-bridges'; fromColumn = 'ClusterId'; to = 'nodes';         toColumn = 'ClusterId' }
+            [ordered]@{ from = 'custom-locations'; fromColumn = 'ClusterId'; to = 'nodes';         toColumn = 'ClusterId' }
+            [ordered]@{ from = 'arc-gateways';     fromColumn = 'ClusterId'; to = 'nodes';         toColumn = 'ClusterId' }
+            [ordered]@{ from = 'images';           fromColumn = 'ClusterId'; to = 'nodes';         toColumn = 'ClusterId' }
         )
     }
     ($relationships | ConvertTo-Json -Depth 10) | Set-Content -Path (Join-Path $OutputRoot '_relationships.json') -Encoding UTF8
@@ -1017,7 +1178,120 @@ function Get-RangerExcelSheetDefinitions {
         })
     )
 
-    return @(
+    # v2.0.0: Arc extensions, logical networks, storage paths, resource bridges,
+    # custom locations, arc gateways, images, cost/licensing tabs.
+    $extRows = @(
+        foreach ($nb in @($Manifest.domains.azureIntegration.arcExtensionsDetail.byNode)) {
+            foreach ($e in @($nb.extensions)) {
+                [ordered]@{
+                    Node              = ConvertTo-RangerOfficeText -Value $nb.node
+                    Name              = ConvertTo-RangerOfficeText -Value $e.name
+                    Type              = ConvertTo-RangerOfficeText -Value $e.type
+                    Publisher         = ConvertTo-RangerOfficeText -Value $e.publisher
+                    Version           = ConvertTo-RangerOfficeText -Value $e.typeHandlerVersion
+                    ProvisioningState = ConvertTo-RangerOfficeText -Value $e.provisioningState
+                    AutoUpgrade       = ConvertTo-RangerOfficeText -Value $e.enableAutomaticUpgrade
+                }
+            }
+        }
+    )
+    $lnetRows = @(
+        foreach ($ln in @($Manifest.domains.networking.logicalNetworks)) {
+            [ordered]@{
+                Name              = ConvertTo-RangerOfficeText -Value $ln.name
+                VmSwitch          = ConvertTo-RangerOfficeText -Value $ln.vmSwitchName
+                DhcpEnabled       = ConvertTo-RangerOfficeText -Value $ln.dhcpEnabled
+                SubnetCount       = ConvertTo-RangerOfficeText -Value (@($ln.subnets).Count)
+                ProvisioningState = ConvertTo-RangerOfficeText -Value $ln.provisioningState
+            }
+        }
+    )
+    $subnetRows = @(
+        foreach ($ln in @($Manifest.domains.networking.logicalNetworks)) {
+            foreach ($sn in @($ln.subnets)) {
+                [ordered]@{
+                    Network       = ConvertTo-RangerOfficeText -Value $ln.name
+                    Subnet        = ConvertTo-RangerOfficeText -Value $sn.name
+                    AddressPrefix = ConvertTo-RangerOfficeText -Value $sn.addressPrefix
+                    Vlan          = ConvertTo-RangerOfficeText -Value $sn.vlan
+                    IpPools       = ConvertTo-RangerOfficeText -Value (@($sn.ipPools).Count)
+                }
+            }
+        }
+    )
+    $spRows = @(
+        foreach ($sp in @($Manifest.domains.storage.storagePaths)) {
+            [ordered]@{
+                Name              = ConvertTo-RangerOfficeText -Value $sp.name
+                Path              = ConvertTo-RangerOfficeText -Value $sp.path
+                AvailableGB       = ConvertTo-RangerOfficeText -Value $sp.availableSizeGB
+                FileSystem        = ConvertTo-RangerOfficeText -Value $sp.fileSystemType
+                ProvisioningState = ConvertTo-RangerOfficeText -Value $sp.provisioningState
+            }
+        }
+    )
+    $rbRows = @(
+        foreach ($rb in @($Manifest.domains.azureIntegration.resourceBridgeDetail)) {
+            [ordered]@{
+                Name              = ConvertTo-RangerOfficeText -Value $rb.name
+                Status            = ConvertTo-RangerOfficeText -Value $rb.status
+                Version           = ConvertTo-RangerOfficeText -Value $rb.version
+                Distro            = ConvertTo-RangerOfficeText -Value $rb.distro
+                Provider          = ConvertTo-RangerOfficeText -Value $rb.infrastructureProvider
+                Location          = ConvertTo-RangerOfficeText -Value $rb.location
+                ProvisioningState = ConvertTo-RangerOfficeText -Value $rb.provisioningState
+            }
+        }
+    )
+    $clRows = @(
+        foreach ($cl in @($Manifest.domains.azureIntegration.customLocationsDetail)) {
+            [ordered]@{
+                Name              = ConvertTo-RangerOfficeText -Value $cl.name
+                Namespace         = ConvertTo-RangerOfficeText -Value $cl.namespace
+                Location          = ConvertTo-RangerOfficeText -Value $cl.location
+                ProvisioningState = ConvertTo-RangerOfficeText -Value $cl.provisioningState
+            }
+        }
+    )
+    $gwRows = @(
+        foreach ($gw in @($Manifest.domains.azureIntegration.arcGateways)) {
+            [ordered]@{
+                Name              = ConvertTo-RangerOfficeText -Value $gw.name
+                Endpoint          = ConvertTo-RangerOfficeText -Value $gw.gatewayEndpoint
+                AllowedFeatures   = ConvertTo-RangerOfficeText -Value (@($gw.allowedFeatures) -join '; ')
+                AllowedResources  = ConvertTo-RangerOfficeText -Value $gw.allowedResources
+                ProvisioningState = ConvertTo-RangerOfficeText -Value $gw.provisioningState
+            }
+        }
+    )
+    $imgRows = @(
+        foreach ($img in (@($Manifest.domains.azureIntegration.marketplaceImages) + @($Manifest.domains.azureIntegration.galleryImages))) {
+            if ($null -eq $img) { continue }
+            [ordered]@{
+                Name              = ConvertTo-RangerOfficeText -Value $img.name
+                Type              = ConvertTo-RangerOfficeText -Value $img.imageType
+                OsType            = ConvertTo-RangerOfficeText -Value $img.osType
+                Publisher         = ConvertTo-RangerOfficeText -Value $img.publisher
+                Sku               = ConvertTo-RangerOfficeText -Value $img.sku
+                Version           = ConvertTo-RangerOfficeText -Value $img.version
+                SizeGB            = ConvertTo-RangerOfficeText -Value $img.sizeGB
+                ProvisioningState = ConvertTo-RangerOfficeText -Value $img.provisioningState
+            }
+        }
+    )
+    $costRows = @(
+        foreach ($n in @($Manifest.domains.azureIntegration.costLicensing.perNode)) {
+            [ordered]@{
+                Node             = ConvertTo-RangerOfficeText -Value $n.node
+                PhysicalCores    = ConvertTo-RangerOfficeText -Value $n.physicalCores
+                AhbEnabled       = ConvertTo-RangerOfficeText -Value $n.ahbEnabled
+                MonthlyCostUsd   = ConvertTo-RangerOfficeText -Value ([math]::Round([double]$n.monthlyCostUsd, 2))
+                MonthlySavingUsd = ConvertTo-RangerOfficeText -Value ([math]::Round([double]$n.monthlySavingUsd, 2))
+            }
+        }
+    )
+
+    $baseTabs = @(
         [ordered]@{ Name = 'Overview'; Columns = @('Metric', 'Value'); Rows = $overviewRows }
         [ordered]@{ Name = 'Nodes'; Columns = @('Node', 'State', 'Manufacturer', 'Model', 'Serial', 'CPU', 'MemoryGiB', 'OS'); Rows = $nodeRows }
         [ordered]@{ Name = 'Storage'; Columns = @('Disk', 'MediaType', 'HealthStatus', 'Operational', 'SizeGiB', 'Usage', 'Serial', 'Slot'); Rows = $storageRows }
@@ -1027,6 +1301,18 @@ function Get-RangerExcelSheetDefinitions {
         [ordered]@{ Name = 'Findings'; Columns = @('Severity', 'Title', 'Description', 'CurrentState', 'Recommendation', 'AffectedComponents'); Rows = $findingRows }
         [ordered]@{ Name = 'Collectors'; Columns = @('Collector', 'Status', 'TargetScope', 'DurationMs', 'Evidence'); Rows = $collectorRows }
     )
+    $v2Tabs = @()
+    if ($extRows.Count -gt 0)    { $v2Tabs += [ordered]@{ Name = 'Extensions';       Columns = @('Node','Name','Type','Publisher','Version','ProvisioningState','AutoUpgrade'); Rows = $extRows } }
+    if ($lnetRows.Count -gt 0)   { $v2Tabs += [ordered]@{ Name = 'LogicalNetworks';  Columns = @('Name','VmSwitch','DhcpEnabled','SubnetCount','ProvisioningState');           Rows = $lnetRows } }
+    if ($subnetRows.Count -gt 0) { $v2Tabs += [ordered]@{ Name = 'Subnets';          Columns = @('Network','Subnet','AddressPrefix','Vlan','IpPools');                         Rows = $subnetRows } }
+    if ($spRows.Count -gt 0)     { $v2Tabs += [ordered]@{ Name = 'StoragePaths';     Columns = @('Name','Path','AvailableGB','FileSystem','ProvisioningState');                Rows = $spRows } }
+    if ($rbRows.Count -gt 0)     { $v2Tabs += [ordered]@{ Name = 'ResourceBridges';  Columns = @('Name','Status','Version','Distro','Provider','Location','ProvisioningState');Rows = $rbRows } }
+    if ($clRows.Count -gt 0)     { $v2Tabs += [ordered]@{ Name = 'CustomLocations';  Columns = @('Name','Namespace','Location','ProvisioningState');                           Rows = $clRows } }
+    if ($gwRows.Count -gt 0)     { $v2Tabs += [ordered]@{ Name = 'ArcGateways';      Columns = @('Name','Endpoint','AllowedFeatures','AllowedResources','ProvisioningState'); Rows = $gwRows } }
+    if ($imgRows.Count -gt 0)    { $v2Tabs += [ordered]@{ Name = 'Images';           Columns = @('Name','Type','OsType','Publisher','Sku','Version','SizeGB','ProvisioningState'); Rows = $imgRows } }
+    if ($costRows.Count -gt 0)   { $v2Tabs += [ordered]@{ Name = 'CostLicensing';    Columns = @('Node','PhysicalCores','AhbEnabled','MonthlyCostUsd','MonthlySavingUsd');    Rows = $costRows } }
+
+    return @($baseTabs + $v2Tabs)
 }
 
 function Write-RangerExcelWorkbook {

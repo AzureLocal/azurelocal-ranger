@@ -8,6 +8,53 @@ Ranger supports two outcomes through one discovery engine:
 - **Current-state** — recurring operational snapshot of a live Azure Local deployment
 - **As-built** — formal documentation package for customer or operational handoff
 
+## Shipped — v2.0.0 — Extended Collectors & WAF Intelligence (2026-04-16)
+
+Collector breadth, cost intelligence, and scoring rigour. Adds seven Arc-surface collectors, Azure Hybrid Benefit cost analysis, weighted WAF scoring, and a hot-swap WAF config pipeline.
+
+### Collectors
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Arc machine extensions per node | AMA / Defender / Guest Configuration inventory with provisioning state and auto-upgrade flags | [#215](https://github.com/AzureLocal/azurelocal-ranger/issues/215) |
+| Logical networks + subnet detail | `Microsoft.AzureStackHCI/logicalNetworks` with VLAN, IP pools, DHCP, vSwitch cross-reference | [#216](https://github.com/AzureLocal/azurelocal-ranger/issues/216) |
+| Storage paths (CSV/SMB) | `Microsoft.AzureStackHCI/storageContainers` with CSV mount-point cross-reference | [#217](https://github.com/AzureLocal/azurelocal-ranger/issues/217) |
+| Custom locations | `Microsoft.ExtendedLocation/customLocations` linked to Resource Bridge host | [#218](https://github.com/AzureLocal/azurelocal-ranger/issues/218) |
+| Arc Resource Bridge | `Microsoft.ResourceConnector/appliances` + `vmProvisioningModel` classification for VMs | [#219](https://github.com/AzureLocal/azurelocal-ranger/issues/219) |
+| Arc Gateway | `Microsoft.HybridCompute/gateways` + per-node routing detection | [#220](https://github.com/AzureLocal/azurelocal-ranger/issues/220) |
+| Marketplace + custom images | `marketplaceGalleryImages` + `galleryImages` with storage-path cross-reference | [#221](https://github.com/AzureLocal/azurelocal-ranger/issues/221) |
+
+### Intelligence
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Azure Hybrid Benefit + cost analysis | Cluster-level AHB detection, $10/core/month calculation, per-node breakdown, potential savings, pricing footer | [#222](https://github.com/AzureLocal/azurelocal-ranger/issues/222), [#228](https://github.com/AzureLocal/azurelocal-ranger/issues/228) |
+| VM distribution balance analysis | Coefficient of variation across nodes with warning/fail thresholds | [#223](https://github.com/AzureLocal/azurelocal-ranger/issues/223) |
+| Agent + OS version grouping | Per-version group with drift status (latest / maxBehind) | [#224](https://github.com/AzureLocal/azurelocal-ranger/issues/224) |
+| Weighted WAF scoring | Rule weight 1-3, warning awards 0.5x weight, Excellent/Good/Fair/Needs Improvement thresholds | [#225](https://github.com/AzureLocal/azurelocal-ranger/issues/225) |
+
+### Commands & UX
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| `Export-RangerWafConfig` / `Import-RangerWafConfig` | Hot-swap WAF config with `-Validate` dry-run and `-Default` restore | [#226](https://github.com/AzureLocal/azurelocal-ranger/issues/226) |
+| `json-evidence` output format | Raw inventory export, no scoring / run metadata, `_metadata` envelope | [#229](https://github.com/AzureLocal/azurelocal-ranger/issues/229) |
+| Module auto-install on startup | Az.* required modules installed/updated if below minimum; `-SkipModuleUpdate` opt-out | [#231](https://github.com/AzureLocal/azurelocal-ranger/issues/231) |
+
+### Reliability
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Concurrent collection guard | Second invocation warns and returns instead of racing script: state | [#230](https://github.com/AzureLocal/azurelocal-ranger/issues/230) |
+| Empty-data safeguard | Zero-node manifest throws an actionable error instead of empty reports | [#230](https://github.com/AzureLocal/azurelocal-ranger/issues/230) |
+
+### Output
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Portrait/landscape page switching | `@page landscape-pg` CSS for Arc extensions + subnet detail sections | [#227](https://github.com/AzureLocal/azurelocal-ranger/issues/227) |
+| Conditional status-cell coloring | HTML tables auto-color Healthy / Warning / Failed tokens | [#227](https://github.com/AzureLocal/azurelocal-ranger/issues/227) |
+
 ## Shipped — v1.6.0 — Platform Intelligence (2026-04-16)
 
 Auth, connectivity, discovery, and output-format uplift. Establishes the engine foundations that all subsequent collector and WAF work depends on.

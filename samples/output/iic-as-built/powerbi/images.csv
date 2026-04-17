@@ -1,0 +1,3 @@
+ImageId,ClusterId,Type,OsType,Publisher,Offer,Sku,Version,SizeGB,StoragePathRef,ProvisioningState,LastUpdated
+img-iic-ws2022-datacenter,azlocal-iic-01,Marketplace,Windows,MicrosoftWindowsServer,WindowsServer,2022-datacenter-azure-edition,20348.2700.240906,127,/subscriptions/33333333-3333-3333-3333-333333333333/resourceGroups/rg-iic-compute-01/providers/Microsoft.AzureStackHCI/storageContainers/sp-iic-vmstore-01,Succeeded,04/06/2026 12:08:32
+img-iic-rhel9-base,azlocal-iic-01,Custom,Linux,,,,9.4.1,24,/subscriptions/33333333-3333-3333-3333-333333333333/resourceGroups/rg-iic-compute-01/providers/Microsoft.AzureStackHCI/storageContainers/sp-iic-vmstore-02,Succeeded,04/06/2026 12:08:32

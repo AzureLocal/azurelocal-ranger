@@ -1,0 +1,4 @@
+NodeId,NodeName,NodeFqdn,ClusterId,Status,Model,CpuSockets,PhysicalCores,MemoryGiB,OsVersion,ArcConnected,LastUpdated
+azl-iic-n01,azl-iic-n01,azl-iic-n01.iic.local,azlocal-iic-01,Up,PowerEdge R760,,64,512,10.0.25398.1189,False,04/06/2026 12:08:32
+azl-iic-n02,azl-iic-n02,azl-iic-n02.iic.local,azlocal-iic-01,Up,PowerEdge R760,,64,512,10.0.25398.1189,False,04/06/2026 12:08:32
+azl-iic-n03,azl-iic-n03,azl-iic-n03.iic.local,azlocal-iic-01,Up,PowerEdge R760,,64,512,10.0.25398.1189,False,04/06/2026 12:08:32

@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '1.6.0'
+    ModuleVersion     = '2.0.0'
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
@@ -14,7 +14,9 @@
         'Export-AzureLocalRangerReport',
         'Test-AzureLocalRangerPrerequisites',
         'Test-RangerPermissions',
-        'Invoke-RangerWizard'
+        'Invoke-RangerWizard',
+        'Export-RangerWafConfig',
+        'Import-RangerWafConfig'
     )
     CmdletsToExport   = @()
     VariablesToExport = @()
@@ -54,6 +56,38 @@
                 'Az.ConnectedMachine'
             )
             ReleaseNotes = @'
+## v2.0.0 — Extended Collectors & WAF Intelligence
+
+### Added — Collectors
+- **Arc machine extensions per node (#215)** — AMA / Defender for Servers / Guest Configuration inventory per Arc-enrolled node with provisioning state; XLSX Extensions tab; Power BI `arc-extensions.csv`.
+- **Logical networks + subnets (#216)** — Microsoft.AzureStackHCI/logicalNetworks with subnet, VLAN, IP pool, DHCP detail; cross-reference against host vSwitch; new Logical Networks / Subnets XLSX tabs.
+- **Storage paths (#217)** — Microsoft.AzureStackHCI/storageContainers with CSV cross-reference; StoragePaths XLSX tab + Power BI CSV.
+- **Custom locations (#218)** — Microsoft.ExtendedLocation/customLocations inventory linked to Resource Bridge host resource IDs.
+- **Arc Resource Bridge (#219)** — bridge version / distro / status collection + Arc VM `vmProvisioningModel` classification (hyper-v-native / arc-vm-resource-bridge).
+- **Arc Gateway (#220)** — Microsoft.HybridCompute/gateways with per-node routing detection.
+- **Marketplace + custom images (#221)** — Microsoft.AzureStackHCI/marketplaceGalleryImages + galleryImages with storage-path cross-reference.
+
+### Added — Intelligence
+- **Azure Hybrid Benefit + cost analysis (#222)** — softwareAssuranceProperties-based AHB detection, per-core $10/month cost calculation, potential monthly savings, pricing reference footer. New Cost & Licensing HTML/Markdown/DOCX/PDF section + CostLicensing XLSX tab + cost-licensing Power BI CSV.
+- **VM distribution balance (#223)** — coefficient-of-variation analysis across nodes; warning/fail thresholds; per-node distribution table in management + technical tiers.
+- **Agent version grouping (#224)** — Arc agent + OS version grouped by node with drift detection (latestVersion, maxBehind, status).
+- **Weighted WAF scoring (#225)** — per-rule weight 1-3, warnings award 0.5x weight, graduated threshold bands, score thresholds (Excellent/Good/Fair/Needs Improvement) exposed on the result.
+
+### Added — Commands & UX
+- **Export-RangerWafConfig / Import-RangerWafConfig (#226)** — hot-swap WAF rule config with schema validation, -Validate dry-run, -Default restore.
+- **json-evidence export format (#229)** — raw resource-only JSON payload with minimal `_metadata` envelope, no scoring/run metadata; accepted via `Invoke-AzureLocalRanger -OutputFormats json-evidence` and `Export-AzureLocalRangerReport -Formats json-evidence`.
+- **-SkipModuleUpdate (#231)** — opt-out of automatic Az.* module install/update on startup for air-gapped environments.
+
+### Added — Reliability
+- **Concurrent collection guard (#230)** — second `Invoke-AzureLocalRanger` call in the same session warns and returns rather than racing shared state.
+- **Empty-data safeguard (#230)** — collection with zero nodes throws an actionable error instead of rendering empty tables.
+- **Module auto-install/update on startup (#231)** — required modules (Az.Accounts, Az.Resources, Az.ConnectedMachine, Az.KeyVault) are installed or updated if missing/below minimum version.
+
+### Added — Output
+- **Portrait/landscape page switching (#227)** — `@page landscape-pg` rule applied to wide tables (Arc extensions, logical network subnets).
+- **Conditional status-cell coloring (#227)** — Healthy / Warning / Failed cells are auto-colored in HTML/PDF.
+- **Pricing footer with dated reference (#228)** — every cost section lists the pricing as-of date and official pricing URL.
+
 ## v1.6.0 — Platform Intelligence
 
 ### Added — Auth & Discovery
@@ -82,31 +116,6 @@
 - **XLSX formula-injection safety (#209)** — cells beginning with =, +, -, @ are apostrophe-prefixed.
 - **Power BI export (#210)** — new `powerbi` format; nodes/volumes/storage-pools/health-checks/network-adapters CSVs + _relationships.json star-schema + _metadata.json.
 - **Graduated WAF scoring (#214)** — threshold bands with partial point awards; named aggregate calculations; {value} message substitution.
-
-## v1.5.0 — Document Quality
-
-### Added
-- **As-built document redesign (#193)** — Formal Installation and Configuration Record with
-  per-node configuration, network address allocation, storage configuration, Azure integration,
-  identity and security records, validation record, and known-issues/deviations register.
-  Deployment past-tense framing; minimal-color formal styling.
-- **Mode differentiation (#194)** — as-built uses distinct tier names (Installation and
-  Configuration Record, Technical As-Built), CONFIDENTIAL classification banner, and
-  Post-Deployment subtitle. current-state retains Management Summary, Technical Deep-Dive,
-  Health Status traffic lights, and INTERNAL banner.
-- **HTML report quality (#192)** — Inline architecture diagrams embedded under Architecture
-  Diagrams section. Fixed-layout data tables with constrained column widths. Findings rendered
-  as severity-colored callout boxes. Print CSS for clean browser-to-PDF output. Sign-off table
-  with visible signature lines.
-
-### Fixed
-- **Wizard default formats (#195)** — Default report formats changed from
-  `html,markdown,json,svg` (where `json` was invalid) to `html,markdown,docx,xlsx,pdf,svg`.
-  Label now hints the valid format set.
-- **Key Vault DNS error handling (#198)** — DNS resolution failures against Key Vault emit an
-  actionable error naming likely causes (VPN not connected, wrong KV name, private endpoint
-  unreachable). When `behavior.promptForMissingCredentials: true`, Ranger now falls back to
-  `Get-Credential` rather than aborting the run.
 
 Full history: https://github.com/AzureLocal/azurelocal-ranger/blob/main/CHANGELOG.md
 '@

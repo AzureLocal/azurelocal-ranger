@@ -4,10 +4,10 @@
 << /Type /Catalog /Pages 2 0 R >>
 endobj
 2 0 obj
-<< /Type /Pages /Count 10 /Kids [4 0 R 6 0 R 8 0 R 10 0 R 12 0 R 14 0 R 16 0 R 18 0 R 20 0 R 22 0 R] >>
+<< /Type /Pages /Count 12 /Kids [4 0 R 6 0 R 8 0 R 10 0 R 12 0 R 14 0 R 16 0 R 18 0 R 20 0 R 22 0 R 24 0 R 26 0 R] >>
 endobj
 3 0 obj
-<< /Length 1644 >>
+<< /Length 1634 >>
 stream
 BT
 /F1 10 Tf
@@ -33,7 +33,7 @@ T*
 T*
 (  Mode:             current-state) Tj
 T*
-(  Ranger Version:   1.6.0) Tj
+(  Ranger Version:   2.0.0) Tj
 T*
 (  Generated:        04/06/2026 12:08:32) Tj
 T*
@@ -63,7 +63,7 @@ T*
 T*
 (Mode: current-state) Tj
 T*
-(Ranger Version: 1.6.0) Tj
+(Ranger Version: 2.0.0) Tj
 T*
 (Generated: 04/06/2026 12:08:32) Tj
 T*
@@ -111,22 +111,46 @@ T*
 T*
 (- Management Tool Coverage) Tj
 T*
-(- WAF Assessment ? Scorecard) Tj
+(- Cost & Licensing) Tj
 T*
 ET
 
 endstream
 endobj
 4 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 3 0 R >>
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 3 0 R >>
 endobj
 5 0 obj
-<< /Length 1860 >>
+<< /Length 1786 >>
 stream
 BT
 /F1 10 Tf
 50 780 Td
 14 TL
+(- Cost & Licensing ? Per Node) Tj
+T*
+(- Arc Extensions by Node) Tj
+T*
+(- Logical Networks) Tj
+T*
+(- Logical Network Subnets) Tj
+T*
+(- Storage Paths) Tj
+T*
+(- Arc Resource Bridge) Tj
+T*
+(- Custom Locations) Tj
+T*
+(- Arc Gateways) Tj
+T*
+(- Marketplace & Custom Images) Tj
+T*
+(- Arc Agent Versions) Tj
+T*
+(- VM Distribution by Node) Tj
+T*
+(- WAF Assessment ? Scorecard) Tj
+T*
 (- WAF Assessment ? Findings) Tj
 T*
 (- WAF Assessment ? Azure Advisor Recommendations) Tj
@@ -203,6 +227,20 @@ T*
 T*
 (--------------------) Tj
 T*
+ET
+
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Length 2032 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
 (- VMs discovered: 5) Tj
 T*
 (- Azure resources discovered: 10) Tj
@@ -227,20 +265,6 @@ T*
 T*
 (- Storage architecture: storage-spaces-direct) Tj
 T*
-ET
-
-endstream
-endobj
-6 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 5 0 R >>
-endobj
-7 0 obj
-<< /Length 1960 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
 (- Network architecture: switched) Tj
 T*
 (- Variant markers: connected) Tj
@@ -317,6 +341,20 @@ T*
 T*
 (------------------------) Tj
 T*
+ET
+
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 7 0 R >>
+endobj
+9 0 obj
+<< /Length 2477 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
 (- Nodes not healthy: 0) Tj
 T*
 (- Unhealthy disks: 0) Tj
@@ -341,27 +379,13 @@ T*
 T*
 (- Total nodes: 3) Tj
 T*
-ET
-
-endstream
-endobj
-8 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 7 0 R >>
-endobj
-9 0 obj
-<< /Length 2587 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
 (- AKS clusters: 1) Tj
 T*
 (- Arc-connected machines: 1) Tj
 T*
 (- Update compliance: No update resources tracked) Tj
 T*
-(- Licensing: Not collected) Tj
+(- Licensing: IIC Platform Production) Tj
 T*
 (- VMs using Arc IP fallback: Not collected) Tj
 T*
@@ -431,6 +455,20 @@ T*
 T*
 (avd-iic-sh03  |  Running  |  8  |  16  |  azl-iic-n03  |  2) Tj
 T*
+ET
+
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 9 0 R >>
+endobj
+11 0 obj
+<< /Length 2077 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
 (arc-iic-vm01  |  Running  |  4  |  8  |  azl-iic-n01  |  2) Tj
 T*
 (arc-iic-vm02  |  Running  |  4  |  8  |  azl-iic-n02  |  2) Tj
@@ -455,20 +493,6 @@ T*
 T*
 (- Avg CPU utilization \\(all nodes\\): 38.3%) Tj
 T*
-ET
-
-endstream
-endobj
-10 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 9 0 R >>
-endobj
-11 0 obj
-<< /Length 2229 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
 (- Avg available memory \\(all nodes\\): 176 GiB) Tj
 T*
 ( ) Tj
@@ -545,6 +569,20 @@ T*
 T*
 (- WAC installed nodes:  of 3) Tj
 T*
+ET
+
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 11 0 R >>
+endobj
+13 0 obj
+<< /Length 2944 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
 (- SCVMM agent nodes: ) Tj
 T*
 (- SCOM agent nodes: ) Tj
@@ -552,6 +590,268 @@ T*
 (- Running management services: 4) Tj
 T*
 (- Third-party agent types:  \\(0\\)) Tj
+T*
+( ) Tj
+T*
+(Cost & Licensing) Tj
+T*
+(----------------) Tj
+T*
+(- AHB status: Enabled) Tj
+T*
+(- Total physical cores: 96  |  AHB-covered: 96  |  Unenrolled: 0) Tj
+T*
+(- Current monthly cost: 960 USD @ 10/core/month) Tj
+T*
+(- AHB adoption: 100%) Tj
+T*
+(- Potential monthly savings \\(if remaining cores enrolled in AHB\\): 0 USD) Tj
+T*
+(- Pricing based on Azure Local public pricing \\(10 USD/physical core/month\\) as of 2026-04-16.) Tj
+T*
+(- For current rates, see: https://azure.microsoft.com/en-us/pricing/details/azure-local/) Tj
+T*
+( ) Tj
+T*
+(Cost & Licensing ? Per Node) Tj
+T*
+(---------------------------) Tj
+T*
+(Node  |  Physical Cores  |  AHB Enabled  |  Monthly Cost \\(USD\\)  |  Monthly Saving \\(USD\\)) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(azl-iic-n01  |  32  |  Yes  |  320  |  320) Tj
+T*
+(azl-iic-n02  |  32  |  Yes  |  320  |  320) Tj
+T*
+(azl-iic-n03  |  32  |  Yes  |  320  |  320) Tj
+T*
+( ) Tj
+T*
+(Arc Extensions by Node) Tj
+T*
+(----------------------) Tj
+T*
+(Node  |  Name  |  Type  |  Publisher  |  Version  |  State) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(azl-iic-n01  |  AzureMonitorWindowsAgent  |  AzureMonitorWindowsAgent  |) Tj
+T*
+(Microsoft.Azure.Monitor  |  1.22.2.0  |  Succeeded) Tj
+T*
+(azl-iic-n01  |  GuestConfigExtension  |  ConfigurationforWindows  |) Tj
+T*
+(Microsoft.GuestConfiguration  |  1.29.78.0  |  Succeeded) Tj
+T*
+(azl-iic-n01  |  MicrosoftDefenderForServers  |  MDE.Windows  |) Tj
+T*
+(Microsoft.Azure.AzureDefenderForServers  |  1.0  |  Succeeded) Tj
+T*
+(azl-iic-n02  |  AzureMonitorWindowsAgent  |  AzureMonitorWindowsAgent  |) Tj
+T*
+(Microsoft.Azure.Monitor  |  1.22.2.0  |  Succeeded) Tj
+T*
+(azl-iic-n02  |  GuestConfigExtension  |  ConfigurationforWindows  |) Tj
+T*
+(Microsoft.GuestConfiguration  |  1.29.78.0  |  Succeeded) Tj
+T*
+(azl-iic-n02  |  MicrosoftDefenderForServers  |  MDE.Windows  |) Tj
+T*
+(Microsoft.Azure.AzureDefenderForServers  |  1.0  |  Succeeded) Tj
+T*
+(azl-iic-n03  |  AzureMonitorWindowsAgent  |  AzureMonitorWindowsAgent  |) Tj
+T*
+(Microsoft.Azure.Monitor  |  1.22.2.0  |  Succeeded) Tj
+T*
+(azl-iic-n03  |  GuestConfigExtension  |  ConfigurationforWindows  |) Tj
+T*
+(Microsoft.GuestConfiguration  |  1.29.78.0  |  Succeeded) Tj
+T*
+(azl-iic-n03  |  MicrosoftDefenderForServers  |  MDE.Windows  |) Tj
+T*
+(Microsoft.Azure.AzureDefenderForServers  |  1.0  |  Succeeded) Tj
+T*
+( ) Tj
+T*
+(Logical Networks) Tj
+T*
+(----------------) Tj
+T*
+(Name  |  VM Switch  |  DHCP  |  Subnets  |  State) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+ET
+
+endstream
+endobj
+14 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 13 0 R >>
+endobj
+15 0 obj
+<< /Length 2243 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(lnet-iic-mgmt-01  |  ConvergedSwitch  |  No  |  1  |  Succeeded) Tj
+T*
+(lnet-iic-workload-01  |  ConvergedSwitch  |  Yes  |  1  |  Succeeded) Tj
+T*
+( ) Tj
+T*
+(Logical Network Subnets) Tj
+T*
+(-----------------------) Tj
+T*
+(Network  |  Subnet  |  Address Prefix  |  VLAN  |  IP Pools) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(lnet-iic-mgmt-01  |  subnet-management  |  10.0.0.0/24  |  2203  |  1) Tj
+T*
+(lnet-iic-workload-01  |  subnet-workload  |  10.0.2.0/24  |  2205  |  1) Tj
+T*
+( ) Tj
+T*
+(Storage Paths) Tj
+T*
+(-------------) Tj
+T*
+(Name  |  Path  |  Available \\(GB\\)  |  File System  |  State) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(sp-iic-vmstore-01  |  C:\\\\ClusterStorage\\\\csv-iic-azlocal-01-vmstore-01\\\\ArcVmDisks  |  1480) Tj
+T*
+(|  CSVFS_ReFS  |  Succeeded) Tj
+T*
+(sp-iic-vmstore-02  |  C:\\\\ClusterStorage\\\\csv-iic-azlocal-01-vmstore-02\\\\ArcVmDisks  |  1620) Tj
+T*
+(|  CSVFS_ReFS  |  Succeeded) Tj
+T*
+(sp-iic-vmstore-03  |  C:\\\\ClusterStorage\\\\csv-iic-azlocal-01-vmstore-03\\\\ArcVmDisks  |  1710) Tj
+T*
+(|  CSVFS_ReFS  |  Succeeded) Tj
+T*
+( ) Tj
+T*
+(Arc Resource Bridge) Tj
+T*
+(-------------------) Tj
+T*
+(Name  |  Status  |  Version  |  Distro  |  Provisioning) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(rb-iic-azlocal-01) Tj
+T*
+(Connected) Tj
+T*
+(1.5.23) Tj
+T*
+(MOC-K8S) Tj
+T*
+(Succeeded) Tj
+T*
+( ) Tj
+T*
+(Custom Locations) Tj
+T*
+(----------------) Tj
+T*
+(Name  |  Namespace  |  Location  |  State) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(cl-iic-azlocal-01) Tj
+T*
+(azlocal) Tj
+T*
+(eastus) Tj
+T*
+(Succeeded) Tj
+T*
+( ) Tj
+T*
+(Arc Gateways) Tj
+T*
+(------------) Tj
+T*
+(Name  |  Endpoint  |  Allowed Features  |  State) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(arcgw-iic-01) Tj
+T*
+(https://arcgw-iic-01.gw.arc.azure.com) Tj
+T*
+(*) Tj
+T*
+(Succeeded) Tj
+T*
+( ) Tj
+T*
+(Marketplace & Custom Images) Tj
+T*
+ET
+
+endstream
+endobj
+16 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 15 0 R >>
+endobj
+17 0 obj
+<< /Length 3137 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(---------------------------) Tj
+T*
+(Name  |  Type  |  OS  |  Version  |  Size \\(GB\\)  |  State) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(img-iic-ws2022-datacenter  |  Marketplace  |  Windows  |  20348.2700.240906  |  127  |) Tj
+T*
+(Succeeded) Tj
+T*
+(img-iic-rhel9-base  |  Custom  |  Linux  |  9.4.1  |  24  |  Succeeded) Tj
+T*
+( ) Tj
+T*
+(Arc Agent Versions) Tj
+T*
+(------------------) Tj
+T*
+(Version  |  Node Count  |  Nodes) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(1.39.02750.1478  |  2  |  azl-iic-n01, azl-iic-n02) Tj
+T*
+(1.38.02620.1234  |  1  |  azl-iic-n03) Tj
+T*
+( ) Tj
+T*
+(VM Distribution by Node) Tj
+T*
+(-----------------------) Tj
+T*
+(Node  |  VM Count) Tj
+T*
+(--------------------------------------------------------------------------------) Tj
+T*
+(azl-iic-n01  |  2) Tj
+T*
+(azl-iic-n02  |  2) Tj
+T*
+(azl-iic-n03  |  1) Tj
 T*
 ( ) Tj
 T*
@@ -563,33 +863,17 @@ T*
 T*
 (--------------------------------------------------------------------------------) Tj
 T*
-(Reliability  |  0%  |  At Risk  |  4 / 6  |  Cluster quorum is configured) Tj
+(Reliability  |  88%  |  Excellent  |  8 / 9  |  No unhealthy storage pools) Tj
 T*
-(Security  |  0%  |  At Risk  |  1 / 6  |  Secured-Core is enabled on cluster nodes) Tj
+(Security  |  44%  |  Fair  |  2 / 8  |  Secured-Core is enabled on cluster nodes) Tj
 T*
-(Cost Optimization  |  0%  |  At Risk  |  1 / 2  |  ESU-eligible VMs are enrolled in) Tj
+(Cost Optimization  |  91%  |  Excellent  |  2 / 3  |  ESU-eligible VMs are enrolled in) Tj
 T*
-ET
-
-endstream
-endobj
-12 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 11 0 R >>
-endobj
-13 0 obj
-<< /Length 3915 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
 (Extended Security Updates) Tj
 T*
-(Operational Excellence  |  0%  |  At Risk  |  2 / 6  |  Azure Monitor alert rules are) Tj
+(Operational Excellence  |  50%  |  Fair  |  5 / 9  |  Azure Monitor alert rules are defined) Tj
 T*
-(defined) Tj
-T*
-(Performance Efficiency  |  0%  |  At Risk  |  2 / 3  |  Storage utilization is within safe) Tj
+(Performance Efficiency  |  60%  |  Good  |  2 / 3  |  Storage utilization is within safe) Tj
 T*
 (limits) Tj
 T*
@@ -627,6 +911,20 @@ T*
 T*
 (are defined  |  Create maintenance configurations in Azure Update Manager to schedule) Tj
 T*
+ET
+
+endstream
+endobj
+18 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 17 0 R >>
+endobj
+19 0 obj
+<< /Length 3478 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
 (regular update windows for the cluster nodes.) Tj
 T*
 (OE-005  |  Operational Excellence  |  informational  |  HCI Insights is enabled in Log) Tj
@@ -640,12 +938,6 @@ T*
 (limits  |  Review the Storage Pool Capacity section of this report. Decommission unused VMs) Tj
 T*
 (or volumes, or expand storage capacity to restore headroom.) Tj
-T*
-(REL-004  |  Reliability  |  warning  |  Cluster quorum is configured  |  Verify cluster) Tj
-T*
-(quorum configuration via Get-ClusterQuorum. A witness \\(cloud or disk\\) is strongly) Tj
-T*
-(recommended for even-node clusters.) Tj
 T*
 (REL-005  |  Reliability  |  warning  |  No unhealthy storage pools  |  Review pool health) Tj
 T*
@@ -673,6 +965,12 @@ T*
 T*
 (cluster resources.) Tj
 T*
+(SEC-008  |  Security  |  warning  |  Nodes running matching Arc agent versions  |  Bring) Tj
+T*
+(all nodes onto the same Arc agent version via Update-AzConnectedMachineExtension or Azure) Tj
+T*
+(Local portal.) Tj
+T*
 (SEC-003  |  Security  |  informational  |  WDAC application control policy is present  |) Tj
 T*
 (Deploy a WDAC policy via the Azure Local portal \\(Security > Application control\\). Use) Tj
@@ -683,20 +981,6 @@ T*
 T*
 (WAF Assessment ? Azure Advisor Recommendations) Tj
 T*
-ET
-
-endstream
-endobj
-14 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 13 0 R >>
-endobj
-15 0 obj
-<< /Length 3286 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
 (----------------------------------------------) Tj
 T*
 (Pillar  |  Impact  |  Finding  |  Recommendation) Tj
@@ -741,6 +1025,20 @@ T*
 T*
 (- Update resources: 1) Tj
 T*
+ET
+
+endstream
+endobj
+20 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 19 0 R >>
+endobj
+21 0 obj
+<< /Length 3538 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
 ( ) Tj
 T*
 (Physical Disk Inventory) Tj
@@ -797,20 +1095,6 @@ T*
 T*
 (azl-iic-n03  |  PhysicalDisk 023  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
-ET
-
-endstream
-endobj
-16 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 15 0 R >>
-endobj
-17 0 obj
-<< /Length 2807 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
 (azl-iic-n03  |  PhysicalDisk 024  |  NVMe  |  1789  |  Healthy  |  ?) Tj
 T*
 ( ) Tj
@@ -855,6 +1139,20 @@ T*
 T*
 (- Node manufacturers: Dell Inc. \\(3\\)) Tj
 T*
+ET
+
+endstream
+endobj
+22 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 21 0 R >>
+endobj
+23 0 obj
+<< /Length 2569 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
 (- Storage media types: NVMe \\(24\\)) Tj
 T*
 (- Adapter states: Up \\(12\\)) Tj
@@ -911,20 +1209,6 @@ T*
 T*
 (Certificates  |  Expiring within 90 days  |  1) Tj
 T*
-ET
-
-endstream
-endobj
-18 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 17 0 R >>
-endobj
-19 0 obj
-<< /Length 2886 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
 (Policy  |  Assignments  |  2) Tj
 T*
 (Policy  |  Exemptions  |  ) Tj
@@ -965,11 +1249,25 @@ T*
 T*
 (<output-folder>) Tj
 T*
-(- Manifest schema version: 1.1.0-draft) Tj
+(- Manifest schema version: 1.2.0-draft) Tj
 T*
 (- Collection completed: 04/06/2026 12:08:32) Tj
 T*
-(- Ranger version: 1.6.0) Tj
+ET
+
+endstream
+endobj
+24 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 23 0 R >>
+endobj
+25 0 obj
+<< /Length 2705 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(- Ranger version: 2.0.0) Tj
 T*
 ( ) Tj
 T*
@@ -1025,20 +1323,6 @@ T*
 T*
 (  Recommendation: Update iDRAC firmware via Dell OME or Lifecycle Controller during next) Tj
 T*
-ET
-
-endstream
-endobj
-20 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 19 0 R >>
-endobj
-21 0 obj
-<< /Length 1048 >>
-stream
-BT
-/F1 10 Tf
-50 780 Td
-14 TL
 (maintenance window.) Tj
 T*
 (  Affected components: azl-iic-n01, azl-iic-n02, azl-iic-n03) Tj
@@ -1079,17 +1363,17 @@ ET
 
 endstream
 endobj
-22 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 23 0 R >> >> /Contents 21 0 R >>
+26 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 27 0 R >> >> /Contents 25 0 R >>
 endobj
-23 0 obj
+27 0 obj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
 endobj
 xref
-0 24
+0 28
 0000000000 65535 f 
-0000000017 00000 n `n0000000066 00000 n `n0000000185 00000 n `n0000001881 00000 n `n0000002008 00000 n `n0000003920 00000 n `n0000004047 00000 n `n0000006059 00000 n `n0000006186 00000 n `n0000008825 00000 n `n0000008953 00000 n `n0000011235 00000 n `n0000011364 00000 n `n0000015332 00000 n `n0000015461 00000 n `n0000018800 00000 n `n0000018929 00000 n `n0000021789 00000 n `n0000021918 00000 n `n0000024857 00000 n `n0000024986 00000 n `n0000026087 00000 n `n0000026216 00000 n `ntrailer
-<< /Size 24 /Root 1 0 R >>
+0000000017 00000 n `n0000000066 00000 n `n0000000199 00000 n `n0000001885 00000 n `n0000002012 00000 n `n0000003850 00000 n `n0000003977 00000 n `n0000006061 00000 n `n0000006188 00000 n `n0000008717 00000 n `n0000008845 00000 n `n0000010975 00000 n `n0000011104 00000 n `n0000014101 00000 n `n0000014230 00000 n `n0000016526 00000 n `n0000016655 00000 n `n0000019845 00000 n `n0000019974 00000 n `n0000023505 00000 n `n0000023634 00000 n `n0000027225 00000 n `n0000027354 00000 n `n0000029976 00000 n `n0000030105 00000 n `n0000032863 00000 n `n0000032992 00000 n `ntrailer
+<< /Size 28 /Root 1 0 R >>
 startxref
-26287
+33063
 %%EOF

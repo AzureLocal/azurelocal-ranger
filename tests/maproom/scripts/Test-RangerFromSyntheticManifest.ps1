@@ -86,7 +86,7 @@ Write-Host '[3/3] Rendering reports and diagrams (all formats)...' -ForegroundCo
 $result = Export-AzureLocalRangerReport `
     -ManifestPath $manifestPath `
     -OutputPath   $OutputPath `
-    -Formats      @('html', 'markdown', 'json', 'xlsx', 'pdf', 'svg', 'drawio', 'docx', 'powerbi')
+    -Formats      @('html', 'markdown', 'json', 'xlsx', 'pdf', 'svg', 'drawio', 'docx', 'powerbi', 'json-evidence')
 
 # Summary
 Write-Host ''
@@ -158,6 +158,14 @@ if ($CommitSamples -and $errors.Count -eq 0) {
         $destDiagrams = Join-Path $sampleRootDir 'diagrams'
         New-Item -ItemType Directory -Path $destDiagrams -Force | Out-Null
         Copy-Item (Join-Path $diagramsDir '*') -Destination $destDiagrams -Recurse -Force
+    }
+
+    # v2.0.0: copy Power BI bundle (if produced) — #210
+    $powerbiDir = Join-Path $OutputPath 'powerbi'
+    if (Test-Path $powerbiDir) {
+        $destPowerBi = Join-Path $sampleRootDir 'powerbi'
+        New-Item -ItemType Directory -Path $destPowerBi -Force | Out-Null
+        Copy-Item (Join-Path $powerbiDir '*') -Destination $destPowerBi -Recurse -Force
     }
 
     $sampleFiles = @(Get-ChildItem $sampleRootDir -Recurse -File)

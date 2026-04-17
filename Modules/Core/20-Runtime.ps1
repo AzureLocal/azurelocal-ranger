@@ -713,6 +713,22 @@ function Invoke-RangerDiscoveryRuntime {
             }
         }
 
+        # v2.0.0: post-collection analysis — VM distribution (#223), agent version
+        # grouping (#224), AHB cost/licensing (#222). Helpers are idempotent and
+        # respect values already present in the manifest (e.g. fixture-provided).
+        if (Get-Command -Name 'Invoke-RangerManifestPostAnalysis' -ErrorAction SilentlyContinue) {
+            try { Invoke-RangerManifestPostAnalysis -Manifest $manifest }
+            catch { Write-RangerLog -Level warn -Message "Post-analysis warning: $($_.Exception.Message)" }
+        }
+
+        # v2.0.0 (#230): empty-data safeguard — if collection returned no nodes,
+        # reporting would render empty tables with no actionable error.
+        $nodeCount = @($manifest.domains.clusterNode.nodes).Count
+        if ($nodeCount -eq 0) {
+            $clusterTarget = [string]$config.targets.cluster.fqdn
+            throw "Ranger: collection completed but returned no node data. Verify WinRM connectivity to '$clusterTarget' and that the credentials have read access to root/MSCluster."
+        }
+
         $manifestValidation = Test-RangerManifestSchema -Manifest $manifest -SelectedCollectors $selectedCollectors
         $manifest.run.schemaValidation = [ordered]@{
             isValid  = $manifestValidation.IsValid

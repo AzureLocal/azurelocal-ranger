@@ -1,0 +1,10 @@
+ExtensionId,NodeId,Name,Type,Publisher,Version,ProvisioningState,AutoUpgrade,LastUpdated
+azl-iic-n01::AzureMonitorWindowsAgent,azl-iic-n01,AzureMonitorWindowsAgent,AzureMonitorWindowsAgent,Microsoft.Azure.Monitor,1.22.2.0,Succeeded,True,04/06/2026 12:08:32
+azl-iic-n01::GuestConfigExtension,azl-iic-n01,GuestConfigExtension,ConfigurationforWindows,Microsoft.GuestConfiguration,1.29.78.0,Succeeded,True,04/06/2026 12:08:32
+azl-iic-n01::MicrosoftDefenderForServers,azl-iic-n01,MicrosoftDefenderForServers,MDE.Windows,Microsoft.Azure.AzureDefenderForServers,1.0,Succeeded,True,04/06/2026 12:08:32
+azl-iic-n02::AzureMonitorWindowsAgent,azl-iic-n02,AzureMonitorWindowsAgent,AzureMonitorWindowsAgent,Microsoft.Azure.Monitor,1.22.2.0,Succeeded,True,04/06/2026 12:08:32
+azl-iic-n02::GuestConfigExtension,azl-iic-n02,GuestConfigExtension,ConfigurationforWindows,Microsoft.GuestConfiguration,1.29.78.0,Succeeded,True,04/06/2026 12:08:32
+azl-iic-n02::MicrosoftDefenderForServers,azl-iic-n02,MicrosoftDefenderForServers,MDE.Windows,Microsoft.Azure.AzureDefenderForServers,1.0,Succeeded,True,04/06/2026 12:08:32
+azl-iic-n03::AzureMonitorWindowsAgent,azl-iic-n03,AzureMonitorWindowsAgent,AzureMonitorWindowsAgent,Microsoft.Azure.Monitor,1.22.2.0,Succeeded,True,04/06/2026 12:08:32
+azl-iic-n03::GuestConfigExtension,azl-iic-n03,GuestConfigExtension,ConfigurationforWindows,Microsoft.GuestConfiguration,1.29.78.0,Succeeded,True,04/06/2026 12:08:32
+azl-iic-n03::MicrosoftDefenderForServers,azl-iic-n03,MicrosoftDefenderForServers,MDE.Windows,Microsoft.Azure.AzureDefenderForServers,1.0,Succeeded,True,04/06/2026 12:08:32

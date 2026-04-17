@@ -1,0 +1,3 @@
+SubnetId,NetworkId,NetworkName,VmSwitch,DhcpEnabled,SubnetName,AddressPrefix,VlanId,IpPools,ProvisioningState,LastUpdated
+lnet-iic-mgmt-01::subnet-management,lnet-iic-mgmt-01,lnet-iic-mgmt-01,ConvergedSwitch,False,subnet-management,10.0.0.0/24,2203,1,Succeeded,04/06/2026 12:08:32
+lnet-iic-workload-01::subnet-workload,lnet-iic-workload-01,lnet-iic-workload-01,ConvergedSwitch,True,subnet-workload,10.0.2.0/24,2205,1,Succeeded,04/06/2026 12:08:32

@@ -2,7 +2,7 @@
 
 - Cluster: azlocal-iic-01
 - Mode: as-built
-- Ranger Version: 1.6.0
+- Ranger Version: 2.0.0
 - Generated: 04/06/2026 12:08:32
 - Schema validation: passed or warnings only
 
@@ -27,6 +27,18 @@
 - Coverage Assessment
 - Security Posture Summary
 - Management Tool Coverage
+- Cost & Licensing
+- Cost & Licensing — Per Node
+- Arc Extensions by Node
+- Logical Networks
+- Logical Network Subnets
+- Storage Paths
+- Arc Resource Bridge
+- Custom Locations
+- Arc Gateways
+- Marketplace & Custom Images
+- Arc Agent Versions
+- VM Distribution by Node
 - Installation Register (Bill of Materials)
 - Per-Node Configuration Record
 - Network Address Allocation Record
@@ -40,13 +52,13 @@
 ## Document Control
 
 **Document Title**: Azure Local As-Built Documentation — azlocal-iic-01
-**Package ID**: azlocal-iic-01-as-built-20260417T003245Z
+**Package ID**: azlocal-iic-01-as-built-20260417T010926Z
 **Report Tier**: management
 **Revision**: 1.0 (initial handoff)
 **Classification**: CONFIDENTIAL — CUSTOMER DELIVERABLE
-**Prepared By Azure Local Ranger v1.6.0**: 
+**Prepared By Azure Local Ranger v2.0.0**: 
 **Prepared On**: 04/06/2026 12:08:32
-**Schema Version**: 1.1.0-draft
+**Schema Version**: 1.2.0-draft
 **Document Status**: FINAL — AS-BUILT HANDOFF
 
 ## Run Summary
@@ -131,7 +143,7 @@
 - AKS clusters: 1
 - Arc-connected machines: 1
 - Update compliance: No update resources tracked
-- Licensing: Not collected
+- Licensing: IIC Platform Production
 - VMs using Arc IP fallback: Not collected
 
 ## Capacity Summary
@@ -214,6 +226,118 @@
 - SCOM agent nodes: 
 - Running management services: 4
 - Third-party agent types:  (0)
+
+## Cost & Licensing
+
+- AHB status: Enabled
+- Total physical cores: 96  |  AHB-covered: 96  |  Unenrolled: 0
+- Current monthly cost: 960 USD @ 10/core/month
+- AHB adoption: 100%
+- Potential monthly savings (if remaining cores enrolled in AHB): 0 USD
+- Pricing based on Azure Local public pricing (10 USD/physical core/month) as of 2026-04-16.
+- For current rates, see: https://azure.microsoft.com/en-us/pricing/details/azure-local/
+
+## Cost & Licensing — Per Node
+
+| Node | Physical Cores | AHB Enabled | Monthly Cost (USD) | Monthly Saving (USD) |
+| --- --- --- --- --- |
+| azl-iic-n01 | 32 | Yes | 320 | 320 |
+| azl-iic-n02 | 32 | Yes | 320 | 320 |
+| azl-iic-n03 | 32 | Yes | 320 | 320 |
+
+_Pricing as of 2026-04-16 — https://azure.microsoft.com/en-us/pricing/details/azure-local/_
+
+## Arc Extensions by Node
+
+| Node | Name | Type | Publisher | Version | State |
+| --- --- --- --- --- --- |
+| azl-iic-n01 | AzureMonitorWindowsAgent | AzureMonitorWindowsAgent | Microsoft.Azure.Monitor | 1.22.2.0 | Succeeded |
+| azl-iic-n01 | GuestConfigExtension | ConfigurationforWindows | Microsoft.GuestConfiguration | 1.29.78.0 | Succeeded |
+| azl-iic-n01 | MicrosoftDefenderForServers | MDE.Windows | Microsoft.Azure.AzureDefenderForServers | 1.0 | Succeeded |
+| azl-iic-n02 | AzureMonitorWindowsAgent | AzureMonitorWindowsAgent | Microsoft.Azure.Monitor | 1.22.2.0 | Succeeded |
+| azl-iic-n02 | GuestConfigExtension | ConfigurationforWindows | Microsoft.GuestConfiguration | 1.29.78.0 | Succeeded |
+| azl-iic-n02 | MicrosoftDefenderForServers | MDE.Windows | Microsoft.Azure.AzureDefenderForServers | 1.0 | Succeeded |
+| azl-iic-n03 | AzureMonitorWindowsAgent | AzureMonitorWindowsAgent | Microsoft.Azure.Monitor | 1.22.2.0 | Succeeded |
+| azl-iic-n03 | GuestConfigExtension | ConfigurationforWindows | Microsoft.GuestConfiguration | 1.29.78.0 | Succeeded |
+| azl-iic-n03 | MicrosoftDefenderForServers | MDE.Windows | Microsoft.Azure.AzureDefenderForServers | 1.0 | Succeeded |
+
+_AMA coverage: 100% of nodes. Failed extensions: 0._
+
+## Logical Networks
+
+| Name | VM Switch | DHCP | Subnets | State |
+| --- --- --- --- --- |
+| lnet-iic-mgmt-01 | ConvergedSwitch | No | 1 | Succeeded |
+| lnet-iic-workload-01 | ConvergedSwitch | Yes | 1 | Succeeded |
+
+## Logical Network Subnets
+
+| Network | Subnet | Address Prefix | VLAN | IP Pools |
+| --- --- --- --- --- |
+| lnet-iic-mgmt-01 | subnet-management | 10.0.0.0/24 | 2203 | 1 |
+| lnet-iic-workload-01 | subnet-workload | 10.0.2.0/24 | 2205 | 1 |
+
+## Storage Paths
+
+| Name | Path | Available (GB) | File System | State |
+| --- --- --- --- --- |
+| sp-iic-vmstore-01 | C:\ClusterStorage\csv-iic-azlocal-01-vmstore-01\ArcVmDisks | 1480 | CSVFS_ReFS | Succeeded |
+| sp-iic-vmstore-02 | C:\ClusterStorage\csv-iic-azlocal-01-vmstore-02\ArcVmDisks | 1620 | CSVFS_ReFS | Succeeded |
+| sp-iic-vmstore-03 | C:\ClusterStorage\csv-iic-azlocal-01-vmstore-03\ArcVmDisks | 1710 | CSVFS_ReFS | Succeeded |
+
+## Arc Resource Bridge
+
+| Name | Status | Version | Distro | Provisioning |
+| --- --- --- --- --- |
+| rb-iic-azlocal-01 |
+| Connected |
+| 1.5.23 |
+| MOC-K8S |
+| Succeeded |
+
+## Custom Locations
+
+| Name | Namespace | Location | State |
+| --- --- --- --- |
+| cl-iic-azlocal-01 |
+| azlocal |
+| eastus |
+| Succeeded |
+
+## Arc Gateways
+
+| Name | Endpoint | Allowed Features | State |
+| --- --- --- --- |
+| arcgw-iic-01 |
+| https://arcgw-iic-01.gw.arc.azure.com |
+| * |
+| Succeeded |
+
+## Marketplace & Custom Images
+
+| Name | Type | OS | Version | Size (GB) | State |
+| --- --- --- --- --- --- |
+| img-iic-ws2022-datacenter | Marketplace | Windows | 20348.2700.240906 | 127 | Succeeded |
+| img-iic-rhel9-base | Custom | Linux | 9.4.1 | 24 | Succeeded |
+
+## Arc Agent Versions
+
+| Version | Node Count | Nodes |
+| --- --- --- |
+| 1.39.02750.1478 | 2 | azl-iic-n01, azl-iic-n02 |
+| 1.38.02620.1234 | 1 | azl-iic-n03 |
+
+_Drift status: warning. Latest: 1.39.02750.1478. Max behind: 1._
+
+## VM Distribution by Node
+
+| Node | VM Count |
+| --- --- |
+| azl-iic-n01 | 2 |
+| azl-iic-n02 | 2 |
+| azl-iic-n03 | 1 |
+
+_Balance: balanced  |  CV: 0.283  |  Status: warning_
 
 ## Installation Register (Bill of Materials)
 

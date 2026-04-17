@@ -95,7 +95,40 @@
             .data-table { font-size: 0.78em; }
             .collector-grid { grid-template-columns: repeat(2, 1fr); }
             a { color: inherit; text-decoration: none; }
+
+            /* v2.0.0 (#227): portrait default, landscape for wide sections */
+            @page              { size: A4 portrait;  margin: 15mm; }
+            @page landscape-pg { size: A4 landscape; margin: 12mm; }
+            .page-landscape    { page: landscape-pg; page-break-before: always; }
         }
+
+        /* v2.0.0 (#227): conditional status badge classes — used in status/severity columns. */
+        .badge            { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.78em; font-weight: 600; line-height: 1.4; }
+        .badge-healthy    { background: #dcfce7; color: #166534; }
+        .badge-warning    { background: #fef3c7; color: #92400e; }
+        .badge-critical   { background: #fee2e2; color: #991b1b; }
+        .badge-unknown    { background: #e2e8f0; color: #334155; }
+        /* Shading inside cells when .status-cell applied */
+        .data-table td.status-Healthy,
+        .data-table td.status-Succeeded,
+        .data-table td.status-Connected,
+        .data-table td.status-Running,
+        .data-table td.status-Up,
+        .data-table td.status-Enabled,
+        .data-table td.status-Yes { background: #dcfce7 !important; color: #166534; font-weight: 600; }
+        .data-table td.status-Warning,
+        .data-table td.status-Updating,
+        .data-table td.status-Degraded,
+        .data-table td.status-Partial,
+        .data-table td.status-warning { background: #fef3c7 !important; color: #92400e; font-weight: 600; }
+        .data-table td.status-Failed,
+        .data-table td.status-Critical,
+        .data-table td.status-Disconnected,
+        .data-table td.status-Error,
+        .data-table td.status-Down,
+        .data-table td.status-Disabled,
+        .data-table td.status-No,
+        .data-table td.status-fail { background: #fee2e2 !important; color: #991b1b; font-weight: 600; }
   </style>
 </head>
 <body class="mode-as-built">
@@ -103,7 +136,7 @@
         <header class="report-head">
             <span class="banner banner-as-built">CONFIDENTIAL — CUSTOMER DELIVERABLE</span>
             <h1>Installation and Configuration Record<span class="subtitle">Post-Deployment As-Built Package — azlocal-iic-01</span></h1>
-            <p class="meta">Mode: as-built | Ranger Version: 1.6.0 | Generated: 04/06/2026 12:08:32</p>
+            <p class="meta">Mode: as-built | Ranger Version: 2.0.0 | Generated: 04/06/2026 12:08:32</p>
         </header>
         
         <div class="hero">
@@ -129,6 +162,18 @@
 <li>Coverage Assessment</li>
 <li>Security Posture Summary</li>
 <li>Management Tool Coverage</li>
+<li>Cost &amp; Licensing</li>
+<li>Cost &amp; Licensing — Per Node</li>
+<li>Arc Extensions by Node</li>
+<li>Logical Networks</li>
+<li>Logical Network Subnets</li>
+<li>Storage Paths</li>
+<li>Arc Resource Bridge</li>
+<li>Custom Locations</li>
+<li>Arc Gateways</li>
+<li>Marketplace &amp; Custom Images</li>
+<li>Arc Agent Versions</li>
+<li>VM Distribution by Node</li>
 <li>Installation Register (Bill of Materials)</li>
 <li>Per-Node Configuration Record</li>
 <li>Network Address Allocation Record</li>
@@ -193,13 +238,13 @@
         <section>
   <h2>Document Control</h2>
   <table class='kv-table'><tbody><tr><th scope='row'>Document Title</th><td>Azure Local As-Built Documentation — azlocal-iic-01</td></tr>
-<tr><th scope='row'>Package ID</th><td>azlocal-iic-01-as-built-20260417T003245Z</td></tr>
+<tr><th scope='row'>Package ID</th><td>azlocal-iic-01-as-built-20260417T010926Z</td></tr>
 <tr><th scope='row'>Report Tier</th><td>management</td></tr>
 <tr><th scope='row'>Revision</th><td>1.0 (initial handoff)</td></tr>
 <tr><th scope='row'>Classification</th><td>CONFIDENTIAL — CUSTOMER DELIVERABLE</td></tr>
-<tr><th scope='row'>Prepared By Azure Local Ranger v1.6.0</th><td></td></tr>
+<tr><th scope='row'>Prepared By Azure Local Ranger v2.0.0</th><td></td></tr>
 <tr><th scope='row'>Prepared On</th><td>04/06/2026 12:08:32</td></tr>
-<tr><th scope='row'>Schema Version</th><td>1.1.0-draft</td></tr>
+<tr><th scope='row'>Schema Version</th><td>1.2.0-draft</td></tr>
 <tr><th scope='row'>Document Status</th><td>FINAL — AS-BUILT HANDOFF</td></tr></tbody></table>
 </section>
 <section>
@@ -251,9 +296,9 @@
 </section>
 <section>
   <h2>Node Inventory</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Model</th><th>State</th><th>OS</th><th>OS Version / Build</th><th>Logical CPUs</th><th>RAM (GiB)</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td>PowerEdge R760</td><td>Up</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td><td>64</td><td>512</td></tr>
-<tr><td>azl-iic-n02</td><td>PowerEdge R760</td><td>Up</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td><td>64</td><td>512</td></tr>
-<tr><td>azl-iic-n03</td><td>PowerEdge R760</td><td>Up</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td><td>64</td><td>512</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Node</th><th>Model</th><th>State</th><th>OS</th><th>OS Version / Build</th><th>Logical CPUs</th><th>RAM (GiB)</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td>PowerEdge R760</td><td class='status-Healthy'>Up</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td><td>64</td><td>512</td></tr>
+<tr><td>azl-iic-n02</td><td>PowerEdge R760</td><td class='status-Healthy'>Up</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td><td>64</td><td>512</td></tr>
+<tr><td>azl-iic-n03</td><td>PowerEdge R760</td><td class='status-Healthy'>Up</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td><td>64</td><td>512</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Collector Status</h2>
@@ -282,7 +327,7 @@
 <li>AKS clusters: 1</li>
 <li>Arc-connected machines: 1</li>
 <li>Update compliance: No update resources tracked</li>
-<li>Licensing: Not collected</li>
+<li>Licensing: IIC Platform Production</li>
 <li>VMs using Arc IP fallback: Not collected</li></ul>
 </section>
 <section>
@@ -307,11 +352,11 @@
 </section>
 <section>
   <h2>VM Inventory</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Name</th><th>State</th><th>vCPU</th><th>RAM (GiB)</th><th>Host Node</th><th>Generation</th></tr></thead><tbody><tr><td>avd-iic-sh01</td><td>Running</td><td>8</td><td>16</td><td>azl-iic-n01</td><td>2</td></tr>
-<tr><td>avd-iic-sh02</td><td>Running</td><td>8</td><td>16</td><td>azl-iic-n02</td><td>2</td></tr>
-<tr><td>avd-iic-sh03</td><td>Running</td><td>8</td><td>16</td><td>azl-iic-n03</td><td>2</td></tr>
-<tr><td>arc-iic-vm01</td><td>Running</td><td>4</td><td>8</td><td>azl-iic-n01</td><td>2</td></tr>
-<tr><td>arc-iic-vm02</td><td>Running</td><td>4</td><td>8</td><td>azl-iic-n02</td><td>2</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Name</th><th>State</th><th>vCPU</th><th>RAM (GiB)</th><th>Host Node</th><th>Generation</th></tr></thead><tbody><tr><td>avd-iic-sh01</td><td class='status-Healthy'>Running</td><td>8</td><td>16</td><td>azl-iic-n01</td><td>2</td></tr>
+<tr><td>avd-iic-sh02</td><td class='status-Healthy'>Running</td><td>8</td><td>16</td><td>azl-iic-n02</td><td>2</td></tr>
+<tr><td>avd-iic-sh03</td><td class='status-Healthy'>Running</td><td>8</td><td>16</td><td>azl-iic-n03</td><td>2</td></tr>
+<tr><td>arc-iic-vm01</td><td class='status-Healthy'>Running</td><td>4</td><td>8</td><td>azl-iic-n01</td><td>2</td></tr>
+<tr><td>arc-iic-vm02</td><td class='status-Healthy'>Running</td><td>4</td><td>8</td><td>azl-iic-n02</td><td>2</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>VM Density Metrics</h2>
@@ -326,7 +371,7 @@
 </section>
 <section>
   <h2>Storage Pool Capacity</h2>
-  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Pool</th><th>Raw (GiB)</th><th>Usable (GiB)</th><th>Used (GiB)</th><th>Reserve (GiB)</th><th>Safe Alloc (GiB)</th><th>Posture</th></tr></thead><tbody><tr><td>—</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>—</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Pool</th><th>Raw (GiB)</th><th>Usable (GiB)</th><th>Used (GiB)</th><th>Reserve (GiB)</th><th>Safe Alloc (GiB)</th><th>Posture</th></tr></thead><tbody><tr><td class='badge-unknown'>—</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td class='badge-unknown'>—</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>ESU Enrollment</h2>
@@ -363,6 +408,88 @@
 <li>Third-party agent types:  (0)</li></ul>
 </section>
 <section>
+  <h2>Cost &amp; Licensing</h2>
+  <ul><li>AHB status: Enabled</li>
+<li>Total physical cores: 96  |  AHB-covered: 96  |  Unenrolled: 0</li>
+<li>Current monthly cost: 960 USD @ 10/core/month</li>
+<li>AHB adoption: 100%</li>
+<li>Potential monthly savings (if remaining cores enrolled in AHB): 0 USD</li>
+<li>Pricing based on Azure Local public pricing (10 USD/physical core/month) as of 2026-04-16.</li>
+<li>For current rates, see: https://azure.microsoft.com/en-us/pricing/details/azure-local/</li></ul>
+</section>
+<section>
+  <h2>Cost &amp; Licensing — Per Node</h2>
+  <div class='table-wrapper'><table class='data-table'><caption>Pricing as of 2026-04-16 — https://azure.microsoft.com/en-us/pricing/details/azure-local/</caption><thead><tr><th>Node</th><th>Physical Cores</th><th>AHB Enabled</th><th>Monthly Cost (USD)</th><th>Monthly Saving (USD)</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td>32</td><td class='status-Healthy'>Yes</td><td>320</td><td>320</td></tr>
+<tr><td>azl-iic-n02</td><td>32</td><td class='status-Healthy'>Yes</td><td>320</td><td>320</td></tr>
+<tr><td>azl-iic-n03</td><td>32</td><td class='status-Healthy'>Yes</td><td>320</td><td>320</td></tr></tbody></table></div>
+</section>
+<section class="page-landscape">
+  <h2>Arc Extensions by Node</h2>
+  <div class='table-wrapper'><table class='data-table'><caption>AMA coverage: 100% of nodes. Failed extensions: 0.</caption><thead><tr><th>Node</th><th>Name</th><th>Type</th><th>Publisher</th><th>Version</th><th>State</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td>AzureMonitorWindowsAgent</td><td>AzureMonitorWindowsAgent</td><td>Microsoft.Azure.Monitor</td><td>1.22.2.0</td><td class='status-Healthy'>Succeeded</td></tr>
+<tr><td>azl-iic-n01</td><td>GuestConfigExtension</td><td>ConfigurationforWindows</td><td>Microsoft.GuestConfiguration</td><td>1.29.78.0</td><td class='status-Healthy'>Succeeded</td></tr>
+<tr><td>azl-iic-n01</td><td>MicrosoftDefenderForServers</td><td>MDE.Windows</td><td>Microsoft.Azure.AzureDefenderForServers</td><td>1.0</td><td class='status-Healthy'>Succeeded</td></tr>
+<tr><td>azl-iic-n02</td><td>AzureMonitorWindowsAgent</td><td>AzureMonitorWindowsAgent</td><td>Microsoft.Azure.Monitor</td><td>1.22.2.0</td><td class='status-Healthy'>Succeeded</td></tr>
+<tr><td>azl-iic-n02</td><td>GuestConfigExtension</td><td>ConfigurationforWindows</td><td>Microsoft.GuestConfiguration</td><td>1.29.78.0</td><td class='status-Healthy'>Succeeded</td></tr>
+<tr><td>azl-iic-n02</td><td>MicrosoftDefenderForServers</td><td>MDE.Windows</td><td>Microsoft.Azure.AzureDefenderForServers</td><td>1.0</td><td class='status-Healthy'>Succeeded</td></tr>
+<tr><td>azl-iic-n03</td><td>AzureMonitorWindowsAgent</td><td>AzureMonitorWindowsAgent</td><td>Microsoft.Azure.Monitor</td><td>1.22.2.0</td><td class='status-Healthy'>Succeeded</td></tr>
+<tr><td>azl-iic-n03</td><td>GuestConfigExtension</td><td>ConfigurationforWindows</td><td>Microsoft.GuestConfiguration</td><td>1.29.78.0</td><td class='status-Healthy'>Succeeded</td></tr>
+<tr><td>azl-iic-n03</td><td>MicrosoftDefenderForServers</td><td>MDE.Windows</td><td>Microsoft.Azure.AzureDefenderForServers</td><td>1.0</td><td class='status-Healthy'>Succeeded</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>Logical Networks</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Name</th><th>VM Switch</th><th>DHCP</th><th>Subnets</th><th>State</th></tr></thead><tbody><tr><td>lnet-iic-mgmt-01</td><td>ConvergedSwitch</td><td class='status-Failed'>No</td><td>1</td><td class='status-Healthy'>Succeeded</td></tr>
+<tr><td>lnet-iic-workload-01</td><td>ConvergedSwitch</td><td class='status-Healthy'>Yes</td><td>1</td><td class='status-Healthy'>Succeeded</td></tr></tbody></table></div>
+</section>
+<section class="page-landscape">
+  <h2>Logical Network Subnets</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Network</th><th>Subnet</th><th>Address Prefix</th><th>VLAN</th><th>IP Pools</th></tr></thead><tbody><tr><td>lnet-iic-mgmt-01</td><td>subnet-management</td><td>10.0.0.0/24</td><td>2203</td><td>1</td></tr>
+<tr><td>lnet-iic-workload-01</td><td>subnet-workload</td><td>10.0.2.0/24</td><td>2205</td><td>1</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>Storage Paths</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Name</th><th>Path</th><th>Available (GB)</th><th>File System</th><th>State</th></tr></thead><tbody><tr><td>sp-iic-vmstore-01</td><td>C:\ClusterStorage\csv-iic-azlocal-01-vmstore-01\ArcVmDisks</td><td>1480</td><td>CSVFS_ReFS</td><td class='status-Healthy'>Succeeded</td></tr>
+<tr><td>sp-iic-vmstore-02</td><td>C:\ClusterStorage\csv-iic-azlocal-01-vmstore-02\ArcVmDisks</td><td>1620</td><td>CSVFS_ReFS</td><td class='status-Healthy'>Succeeded</td></tr>
+<tr><td>sp-iic-vmstore-03</td><td>C:\ClusterStorage\csv-iic-azlocal-01-vmstore-03\ArcVmDisks</td><td>1710</td><td>CSVFS_ReFS</td><td class='status-Healthy'>Succeeded</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>Arc Resource Bridge</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Name</th><th>Status</th><th>Version</th><th>Distro</th><th>Provisioning</th></tr></thead><tbody><tr><td>rb-iic-azlocal-01</td></tr>
+<tr><td class='status-Healthy'>Connected</td></tr>
+<tr><td>1.5.23</td></tr>
+<tr><td>MOC-K8S</td></tr>
+<tr><td class='status-Healthy'>Succeeded</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>Custom Locations</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Name</th><th>Namespace</th><th>Location</th><th>State</th></tr></thead><tbody><tr><td>cl-iic-azlocal-01</td></tr>
+<tr><td>azlocal</td></tr>
+<tr><td>eastus</td></tr>
+<tr><td class='status-Healthy'>Succeeded</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>Arc Gateways</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Name</th><th>Endpoint</th><th>Allowed Features</th><th>State</th></tr></thead><tbody><tr><td>arcgw-iic-01</td></tr>
+<tr><td>https://arcgw-iic-01.gw.arc.azure.com</td></tr>
+<tr><td>*</td></tr>
+<tr><td class='status-Healthy'>Succeeded</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>Marketplace &amp; Custom Images</h2>
+  <div class='table-wrapper'><table class='data-table'><thead><tr><th>Name</th><th>Type</th><th>OS</th><th>Version</th><th>Size (GB)</th><th>State</th></tr></thead><tbody><tr><td>img-iic-ws2022-datacenter</td><td>Marketplace</td><td>Windows</td><td>20348.2700.240906</td><td>127</td><td class='status-Healthy'>Succeeded</td></tr>
+<tr><td>img-iic-rhel9-base</td><td>Custom</td><td>Linux</td><td>9.4.1</td><td>24</td><td class='status-Healthy'>Succeeded</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>Arc Agent Versions</h2>
+  <div class='table-wrapper'><table class='data-table'><caption>Drift status: warning. Latest: 1.39.02750.1478. Max behind: 1.</caption><thead><tr><th>Version</th><th>Node Count</th><th>Nodes</th></tr></thead><tbody><tr><td>1.39.02750.1478</td><td>2</td><td>azl-iic-n01, azl-iic-n02</td></tr>
+<tr><td>1.38.02620.1234</td><td>1</td><td>azl-iic-n03</td></tr></tbody></table></div>
+</section>
+<section>
+  <h2>VM Distribution by Node</h2>
+  <div class='table-wrapper'><table class='data-table'><caption>Balance: balanced  |  CV: 0.283  |  Status: warning</caption><thead><tr><th>Node</th><th>VM Count</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td>2</td></tr>
+<tr><td>azl-iic-n02</td><td>2</td></tr>
+<tr><td>azl-iic-n03</td><td>1</td></tr></tbody></table></div>
+</section>
+<section>
   <h2>Installation Register (Bill of Materials)</h2>
   <div class='table-wrapper'><table class='data-table'><caption>Each unit listed above was installed and commissioned as part of this deployment. Serial numbers are recorded as discovered at handoff; missing values indicate the collector could not access the field.</caption><thead><tr><th>Hostname</th><th>FQDN</th><th>Manufacturer</th><th>Model</th><th>Serial</th><th>BIOS at Deployment</th><th>OS Installed</th><th>OS Build</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td>azl-iic-n01.iic.local</td><td>Dell Inc.</td><td>PowerEdge R760</td><td>Not recorded</td><td>2.10.0.0</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td></tr>
 <tr><td>azl-iic-n02</td><td>azl-iic-n02.iic.local</td><td>Dell Inc.</td><td>PowerEdge R760</td><td>Not recorded</td><td>2.10.0.0</td><td>Microsoft Azure Stack HCI</td><td>10.0.25398.1189</td></tr>
@@ -370,20 +497,20 @@
 </section>
 <section>
   <h2>Per-Node Configuration Record</h2>
-  <div class='table-wrapper'><table class='data-table'><caption>Each node was configured with the values above at the time of deployment.</caption><thead><tr><th>Node</th><th>State at Handoff</th><th>Logical CPUs</th><th>Installed Memory</th><th>Domain Joined</th><th>BIOS Version</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td>Up</td><td>64</td><td>512 GiB</td><td>iic.local</td><td>2.10.0.0</td></tr>
-<tr><td>azl-iic-n02</td><td>Up</td><td>64</td><td>512 GiB</td><td>iic.local</td><td>2.10.0.0</td></tr>
-<tr><td>azl-iic-n03</td><td>Up</td><td>64</td><td>512 GiB</td><td>iic.local</td><td>2.10.0.0</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><caption>Each node was configured with the values above at the time of deployment.</caption><thead><tr><th>Node</th><th>State at Handoff</th><th>Logical CPUs</th><th>Installed Memory</th><th>Domain Joined</th><th>BIOS Version</th></tr></thead><tbody><tr><td>azl-iic-n01</td><td class='status-Healthy'>Up</td><td>64</td><td>512 GiB</td><td>iic.local</td><td>2.10.0.0</td></tr>
+<tr><td>azl-iic-n02</td><td class='status-Healthy'>Up</td><td>64</td><td>512 GiB</td><td>iic.local</td><td>2.10.0.0</td></tr>
+<tr><td>azl-iic-n03</td><td class='status-Healthy'>Up</td><td>64</td><td>512 GiB</td><td>iic.local</td><td>2.10.0.0</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Network Address Allocation Record</h2>
-  <div class='table-wrapper'><table class='data-table'><caption>Cluster networks were assigned and configured as recorded above during deployment.</caption><thead><tr><th>Cluster Network</th><th>Role</th><th>Network Address</th><th>Mask</th><th>Metric</th><th>State</th></tr></thead><tbody><tr><td>Management</td><td>Cluster + Client (Management)</td><td>10.0.0.0</td><td>255.255.255.0</td><td>100</td><td>Up</td></tr>
-<tr><td>Storage-1</td><td>Cluster Only (Storage)</td><td>10.0.1.0</td><td>255.255.255.0</td><td>200</td><td>Up</td></tr>
-<tr><td>Storage-2</td><td>Cluster Only (Storage)</td><td>10.0.1.128</td><td>255.255.255.128</td><td>200</td><td>Up</td></tr>
-<tr><td>Workload</td><td>Cluster + Client (Workload)</td><td>10.0.2.0</td><td>255.255.255.0</td><td>300</td><td>Up</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><caption>Cluster networks were assigned and configured as recorded above during deployment.</caption><thead><tr><th>Cluster Network</th><th>Role</th><th>Network Address</th><th>Mask</th><th>Metric</th><th>State</th></tr></thead><tbody><tr><td>Management</td><td>Cluster + Client (Management)</td><td>10.0.0.0</td><td>255.255.255.0</td><td>100</td><td class='status-Healthy'>Up</td></tr>
+<tr><td>Storage-1</td><td>Cluster Only (Storage)</td><td>10.0.1.0</td><td>255.255.255.0</td><td>200</td><td class='status-Healthy'>Up</td></tr>
+<tr><td>Storage-2</td><td>Cluster Only (Storage)</td><td>10.0.1.128</td><td>255.255.255.128</td><td>200</td><td class='status-Healthy'>Up</td></tr>
+<tr><td>Workload</td><td>Cluster + Client (Workload)</td><td>10.0.2.0</td><td>255.255.255.0</td><td>300</td><td class='status-Healthy'>Up</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Storage Configuration Record</h2>
-  <div class='table-wrapper'><table class='data-table'><caption>Storage pools and their capacities were provisioned at deployment as shown. CSV and virtual-disk details are included in the delivery-registers workbook.</caption><thead><tr><th>Storage Pool</th><th>Raw Capacity</th><th>Usable Capacity</th><th>Health at Handoff</th></tr></thead><tbody><tr><td>S2D on azlocal-iic-01</td><td>43068 GiB</td><td>—</td><td>Healthy</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><caption>Storage pools and their capacities were provisioned at deployment as shown. CSV and virtual-disk details are included in the delivery-registers workbook.</caption><thead><tr><th>Storage Pool</th><th>Raw Capacity</th><th>Usable Capacity</th><th>Health at Handoff</th></tr></thead><tbody><tr><td>S2D on azlocal-iic-01</td><td>43068 GiB</td><td class='badge-unknown'>—</td><td class='status-Healthy'>Healthy</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Identity and Security Record</h2>
@@ -420,8 +547,8 @@
 </section>
 <section>
   <h2>Known Issues and Deviations</h2>
-  <div class='table-wrapper'><table class='data-table'><caption>Deviations listed below were documented at handoff. Items are accepted as-built unless explicitly marked for follow-up remediation.</caption><thead><tr><th>Severity</th><th>Item</th><th>Deviation</th><th>Remediation Path</th></tr></thead><tbody><tr><td>WARNING</td><td>One or more node certificates expire within 90 days</td><td>Identity posture data indicates certificate on azl-iic-n01 expires within 90 days.</td><td>Review certificate ownership and renew expiring node certificates before handoff.</td></tr>
-<tr><td>WARNING</td><td>iDRAC firmware below recommended baseline on all nodes</td><td>OEM integration data shows iDRAC firmware at 7.10.30.00. The recommended baseline is 7.20 or later.</td><td>Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window.</td></tr></tbody></table></div>
+  <div class='table-wrapper'><table class='data-table'><caption>Deviations listed below were documented at handoff. Items are accepted as-built unless explicitly marked for follow-up remediation.</caption><thead><tr><th>Severity</th><th>Item</th><th>Deviation</th><th>Remediation Path</th></tr></thead><tbody><tr><td class='status-Warning'>WARNING</td><td>One or more node certificates expire within 90 days</td><td>Identity posture data indicates certificate on azl-iic-n01 expires within 90 days.</td><td>Review certificate ownership and renew expiring node certificates before handoff.</td></tr>
+<tr><td class='status-Warning'>WARNING</td><td>iDRAC firmware below recommended baseline on all nodes</td><td>OEM integration data shows iDRAC firmware at 7.10.30.00. The recommended baseline is 7.20 or later.</td><td>Update iDRAC firmware via Dell OME or Lifecycle Controller during next maintenance window.</td></tr></tbody></table></div>
 </section>
 <section>
   <h2>Acceptance and Sign-Off</h2>
@@ -448,7 +575,7 @@
   <rect width="2080" height="1000" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Azure Arc Integration</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='1052' y='-10' width='240' height='86' rx='12' fill='#ecfeff' stroke='#a5f3fc' stroke-dasharray='4 2' />
@@ -520,7 +647,7 @@
   <rect width="2080" height="900" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Backup, Recovery, and Continuity Map</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='1052' y='-10' width='240' height='86' rx='12' fill='#ecfeff' stroke='#a5f3fc' stroke-dasharray='4 2' />
@@ -552,7 +679,7 @@
   <rect width="2080" height="900" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Disconnected Operations Control Plane Map</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='1312' y='-10' width='240' height='86' rx='12' fill='#f5f3ff' stroke='#ddd6fe' stroke-dasharray='4 2' />
@@ -596,7 +723,7 @@
   <rect width="2080" height="900" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Rack-Aware Fabric Map</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='532' y='-10' width='240' height='86' rx='12' fill='#fffbeb' stroke='#fde68a' stroke-dasharray='4 2' />
@@ -623,7 +750,7 @@
   <rect width="2080" height="900" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Identity and Access Surface Map</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='1572' y='-10' width='240' height='86' rx='12' fill='#fff1f2' stroke='#fecdd3' stroke-dasharray='4 2' />
@@ -660,7 +787,7 @@
   <rect width="2080" height="900" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Identity, Trust, and Secret Flow</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='1052' y='-10' width='240' height='86' rx='12' fill='#ecfeff' stroke='#a5f3fc' stroke-dasharray='4 2' />
@@ -709,7 +836,7 @@
   <rect width="2080" height="1344" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Logical Network Topology</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='532' y='-10' width='240' height='86' rx='12' fill='#fffbeb' stroke='#fde68a' stroke-dasharray='4 2' />
@@ -801,7 +928,7 @@
   <rect width="2080" height="900" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Management Plane and Tooling Map</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='1312' y='-10' width='240' height='86' rx='12' fill='#f5f3ff' stroke='#ddd6fe' stroke-dasharray='4 2' />
@@ -843,7 +970,7 @@
   <rect width="2080" height="900" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Monitoring and Health Heatmap</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='1312' y='-10' width='240' height='86' rx='12' fill='#f5f3ff' stroke='#ddd6fe' stroke-dasharray='4 2' />
@@ -880,7 +1007,7 @@
   <rect width="2080" height="900" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Monitoring, Telemetry, and Alerting Flow</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='1312' y='-10' width='240' height='86' rx='12' fill='#f5f3ff' stroke='#ddd6fe' stroke-dasharray='4 2' />
@@ -926,7 +1053,7 @@
   <rect width="2080" height="900" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">OEM Hardware and Firmware Posture</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='1832' y='-10' width='240' height='86' rx='12' fill='#f8fafc' stroke='#e2e8f0' stroke-dasharray='4 2' />
@@ -975,7 +1102,7 @@
   <rect width="2080" height="900" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Physical Architecture</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='1312' y='-10' width='240' height='86' rx='12' fill='#f5f3ff' stroke='#ddd6fe' stroke-dasharray='4 2' />
@@ -1027,7 +1154,7 @@
   <rect width="2080" height="1172" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Storage Architecture</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='272' y='-10' width='240' height='86' rx='12' fill='#f1f5f9' stroke='#cbd5e1' stroke-dasharray='4 2' />
@@ -1109,7 +1236,7 @@
   <rect width="2080" height="900" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Topology and Deployment Variant Map</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
   <path d='M 244 109 C 132 109 132 195 20 195' fill='none' stroke='#94a3b8' stroke-width='1.5' marker-end='url(#arrow)' />
@@ -1134,7 +1261,7 @@
   <rect width="2080" height="900" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">VM Placement Map</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='792' y='-10' width='240' height='86' rx='12' fill='#fefce8' stroke='#fef08a' stroke-dasharray='4 2' />
@@ -1172,7 +1299,7 @@
   <rect width="2080" height="900" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Workload Family Placement Map</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='792' y='-10' width='240' height='86' rx='12' fill='#fefce8' stroke='#fef08a' stroke-dasharray='4 2' />
@@ -1229,7 +1356,7 @@
   <rect width="2080" height="900" fill="#f8fafc" />
   <rect x="0" y="0" width="2080" height="62" fill="#1e3a5f" />
   <text x="20" y="34" font-family="Segoe UI, Arial" font-size="20" font-weight="700" fill="#ffffff">Workload and Services Map</text>
-  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 1.6.0</text>
+  <text x="20" y="54" font-family="Segoe UI, Arial" font-size="11" fill="#93c5fd">iic-azlocal-01 | 04/06/2026 12:08:32 | Ranger 2.0.0</text>
   <rect x='12' y='-10' width='240' height='86' rx='12' fill='#f0f9ff' stroke='#bae6fd' stroke-dasharray='4 2' />
 <text x='20' y='6' font-family="Segoe UI, Arial" font-size="11" font-weight="600" fill="#64748b">Platform</text>
 <rect x='792' y='-10' width='240' height='86' rx='12' fill='#fefce8' stroke='#fef08a' stroke-dasharray='4 2' />

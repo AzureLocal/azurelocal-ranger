@@ -1,0 +1,4 @@
+PathId,ClusterId,Path,AvailableGB,FileSystem,ProvisioningState,LastUpdated
+sp-iic-vmstore-01,azlocal-iic-01,C:\ClusterStorage\csv-iic-azlocal-01-vmstore-01\ArcVmDisks,1480,CSVFS_ReFS,Succeeded,04/06/2026 12:08:32
+sp-iic-vmstore-02,azlocal-iic-01,C:\ClusterStorage\csv-iic-azlocal-01-vmstore-02\ArcVmDisks,1620,CSVFS_ReFS,Succeeded,04/06/2026 12:08:32
+sp-iic-vmstore-03,azlocal-iic-01,C:\ClusterStorage\csv-iic-azlocal-01-vmstore-03\ArcVmDisks,1710,CSVFS_ReFS,Succeeded,04/06/2026 12:08:32

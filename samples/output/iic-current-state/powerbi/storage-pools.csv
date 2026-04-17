@@ -1,0 +1,2 @@
+PoolId,PoolName,ClusterId,SizeTiB,AllocatedTiB,FreeTiB,FaultDomainType,Health,LastUpdated
+S2D on azlocal-iic-01,S2D on azlocal-iic-01,azlocal-iic-01,,,,,Healthy,04/06/2026 12:08:32
