@@ -60,11 +60,13 @@ Reports are written under `C:\AzureLocalRanger\<environment>-<mode>-<timestamp>\
 
 | Command | Purpose |
 |---|---|
-| `Invoke-AzureLocalRanger` | Run discovery, build the manifest, and render the requested outputs |
-| `Invoke-RangerWizard` | Interactive guided wizard — build a config through prompts and optionally launch a run |
+| `Invoke-AzureLocalRanger` | Main entry point. Runs discovery, builds the manifest, and renders the requested outputs. Pass `-Wizard` for the guided first-run experience |
+| `Invoke-RangerWizard` | Standalone wrapper around the same wizard — kept for script compatibility. New code should prefer `Invoke-AzureLocalRanger -Wizard` |
 | `New-AzureLocalRangerConfig` | Generate an annotated YAML or JSON config scaffold |
 | `Export-AzureLocalRangerReport` | Re-render reports and diagrams from a saved manifest without live access |
 | `Test-AzureLocalRangerPrerequisites` | Validate the execution environment and optionally install missing prerequisites |
+| `Test-RangerPermissions` | Dedicated pre-run RBAC and provider-registration audit (#202) |
+| `Export-RangerWafConfig` / `Import-RangerWafConfig` | v2.0.0 (#226) hot-swap WAF rule config |
 
 ## Output Model
 

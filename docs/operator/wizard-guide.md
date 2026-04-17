@@ -1,6 +1,6 @@
 # Wizard Guide
 
-`Invoke-RangerWizard` is an interactive terminal wizard that builds a Ranger configuration file through prompted questions and optionally launches a run immediately.
+`Invoke-AzureLocalRanger -Wizard` is the interactive terminal wizard that builds a Ranger configuration file through prompted questions and optionally launches a run immediately. (The standalone `Invoke-RangerWizard` command is retained and behaves identically — the `-Wizard` switch on the main command simply dispatches to it.)
 
 It is the fastest way to get a correct configuration without editing YAML by hand.
 
@@ -20,19 +20,19 @@ It is the fastest way to get a correct configuration without editing YAML by han
 ## Starting the Wizard
 
 ```powershell
-Invoke-RangerWizard
+Invoke-AzureLocalRanger -Wizard
 ```
 
 To pre-fill the output path for the saved config file:
 
 ```powershell
-Invoke-RangerWizard -OutputConfigPath C:\ranger\tplabs.yml
+Invoke-AzureLocalRanger -Wizard -OutputConfigPath C:\ranger\tplabs.yml
 ```
 
 To run through all sections and save the config but never launch a run:
 
 ```powershell
-Invoke-RangerWizard -SkipRun
+Invoke-AzureLocalRanger -Wizard -SkipRun
 ```
 
 The wizard requires an interactive PowerShell session. It will throw an error if run from a non-interactive host (Task Scheduler, CI agent, etc.).

@@ -34,7 +34,12 @@ AzureLocalRanger is at **v2.0.0**. Install from PSGallery:
 ```powershell
 Install-Module AzureLocalRanger -Scope CurrentUser -Force
 Import-Module AzureLocalRanger
-Invoke-RangerWizard
+
+# First-time run — pass -Wizard to be walked through a config interactively
+Invoke-AzureLocalRanger -Wizard
+
+# Subsequent runs — point at the saved config (or omit for inline prompts)
+Invoke-AzureLocalRanger -ConfigPath .\ranger.yml
 ```
 
 ## Where To Start

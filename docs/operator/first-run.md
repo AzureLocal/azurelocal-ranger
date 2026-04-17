@@ -71,8 +71,13 @@ If you are running in a disconnected environment or do not have Azure access, Ra
 ## Step 5 — Run the Setup Wizard
 
 ```powershell
-Invoke-RangerWizard
+Invoke-AzureLocalRanger -Wizard
 ```
+
+The `-Wizard` switch is the recommended first-run path — it dispatches to the
+same interactive flow as the standalone `Invoke-RangerWizard` command but keeps
+you in the main command surface so every subsequent run uses the same entry
+point.
 
 The wizard asks six short sections of questions:
 

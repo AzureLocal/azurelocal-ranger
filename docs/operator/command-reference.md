@@ -1,6 +1,14 @@
 # Command Reference
 
-AzureLocalRanger exports five public commands.
+AzureLocalRanger exports eight public commands:
+
+- `Invoke-AzureLocalRanger` — main entry point (pass `-Wizard` for the guided first-run)
+- `Invoke-RangerWizard` — standalone wrapper around the wizard, equivalent to `-Wizard`
+- `New-AzureLocalRangerConfig` — generate an annotated config scaffold
+- `Export-AzureLocalRangerReport` — re-render reports from a saved manifest
+- `Test-AzureLocalRangerPrerequisites` — validate the execution environment
+- `Test-RangerPermissions` — pre-run RBAC / provider-registration audit
+- `Export-RangerWafConfig` / `Import-RangerWafConfig` — v2.0.0 WAF rule config hot-swap
 
 ## Input Resolution Precedence
 
@@ -31,20 +39,27 @@ Parameter  ->  Config file  ->  Interactive prompt  ->  Default  ->  Error
 | `-ResourceGroup` | `string` | No | Override `targets.azure.resourceGroup` |
 | `-ShowProgress` | `switch` | No | Show live per-collector progress bars (requires `PwshSpectreConsole`; suppressed in CI and `-Unattended`) |
 | `-OutputMode` | `string` | No | `current-state` or `as-built`. Overrides `output.mode` |
-| `-OutputFormats` | `string[]` | No | Formats to render: `html`, `markdown`, `docx`, `xlsx`, `pdf`, `svg`, `drawio`. Overrides `output.formats` |
+| `-OutputFormats` | `string[]` | No | Formats to render: `html`, `markdown`, `docx`, `xlsx`, `pdf`, `svg`, `drawio`, `powerbi` (#210), `json-evidence` (#229). Overrides `output.formats` |
 | `-Transport` | `string` | No | `auto`, `winrm`, or `arc`. Overrides `behavior.transport` |
 | `-DegradationMode` | `string` | No | `graceful` or `strict`. Overrides `behavior.degradationMode` |
 | `-RetryCount` | `int` | No | WinRM retry attempts. Overrides `behavior.retryCount` |
 | `-TimeoutSeconds` | `int` | No | WinRM operation timeout in seconds. Overrides `behavior.timeoutSeconds` |
-| `-AzureMethod` | `string` | No | Azure auth method: `existing-context`, `managed-identity`, `device-code`, `service-principal`, `azure-cli`. Overrides `credentials.azure.method` |
+| `-AzureMethod` | `string` | No | Azure auth method: `existing-context`, `managed-identity`, `device-code`, `service-principal`, `service-principal-cert`, `azure-cli`. Overrides `credentials.azure.method` |
 | `-ClusterName` | `string` | No | Display name used in reports. Overrides `environment.clusterName` |
+| `-Wizard` | `switch` | No | v1.6.0 (#211). Dispatch to the interactive wizard (same as `Invoke-RangerWizard`) |
+| `-OutputConfigPath` | `string` | No | With `-Wizard`: pre-fill the save path for the generated config |
+| `-SkipRun` | `switch` | No | With `-Wizard`: save only, do not launch a run |
+| `-SkipPreCheck` | `switch` | No | v1.6.0 (#212). Skip the pre-run RBAC / provider audit |
+| `-SkipModuleUpdate` | `switch` | No | v2.0.0 (#231). Skip the required-module install/update validation on startup (air-gapped environments) |
 
-## Invoke-RangerWizard
+## Invoke-AzureLocalRanger -Wizard (recommended)
 
-Interactively builds a Ranger configuration and optionally launches a run. Requires an interactive host — throws `InvalidOperationException` in non-interactive sessions.
+Since v1.6.0 (#211) the interactive wizard is reachable as an inline switch on
+the main command. This is the recommended first-run path.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
+| `-Wizard` | `switch` | Yes | Dispatch to the interactive wizard |
 | `-OutputConfigPath` | `string` | No | Pre-fill the save path for the generated config file |
 | `-SkipRun` | `switch` | No | Save the config but skip launching a run regardless of wizard choice |
 
@@ -61,14 +76,24 @@ At the end it offers: **[S]** save only, **[R]** run immediately without saving,
 
 ```powershell
 # Launch the wizard
-Invoke-RangerWizard
+Invoke-AzureLocalRanger -Wizard
 
 # Pre-fill the save path
-Invoke-RangerWizard -OutputConfigPath C:\ranger\tplabs.yml
+Invoke-AzureLocalRanger -Wizard -OutputConfigPath C:\ranger\tplabs.yml
 
 # Save only, no run
-Invoke-RangerWizard -SkipRun
+Invoke-AzureLocalRanger -Wizard -SkipRun
 ```
+
+## Invoke-RangerWizard (standalone; equivalent to `-Wizard`)
+
+Kept exported for scripts that already depend on it. Identical behaviour to
+`Invoke-AzureLocalRanger -Wizard` — accepts the same `-OutputConfigPath` and
+`-SkipRun` parameters. New code should prefer the `-Wizard` switch so every
+entry into Ranger starts from the same command.
+
+Requires an interactive host — throws `InvalidOperationException` in
+non-interactive sessions.
 
 ## Scheduled Runs
 

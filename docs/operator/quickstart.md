@@ -17,7 +17,7 @@ Use `-InstallPrerequisites` in an elevated session if you want Ranger to install
 ### Option A — Interactive wizard (recommended for first runs)
 
 ```powershell
-Invoke-RangerWizard
+Invoke-AzureLocalRanger -Wizard
 ```
 
 The wizard walks through cluster addressing, Azure IDs, credentials, output path, and domain scope with prompted questions. At the end it can save a YAML config file, launch a run immediately, or both. No manual editing required.
