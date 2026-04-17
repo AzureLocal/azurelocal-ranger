@@ -201,6 +201,84 @@ function Resolve-RangerClusterArcResource {
     }
 }
 
+function Get-RangerArmResourcesByGraph {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#205): single-query ARM discovery via Azure Resource Graph.
+    .DESCRIPTION
+        Builds a KQL query that returns all requested resource types across
+        the specified scope in one round trip. Much faster than per-type
+        Get-AzResource loops at scale. Falls back to $null when Az.ResourceGraph
+        is unavailable so callers can retry with Get-AzResource.
+    .OUTPUTS
+        Hashtable keyed by lowercase resource type, each value is an array of
+        the matching resources as returned by Search-AzGraph, or $null when
+        the Resource Graph path is unusable.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$ResourceTypes,
+
+        [string]$SubscriptionId,
+        [string]$ResourceGroup,
+        [string[]]$ManagementGroups
+    )
+
+    if (-not (Get-Command -Name 'Search-AzGraph' -ErrorAction SilentlyContinue)) {
+        Write-RangerLog -Level debug -Message 'Get-RangerArmResourcesByGraph: Az.ResourceGraph not installed — caller should fall back to Get-AzResource.'
+        return $null
+    }
+
+    $types = @($ResourceTypes | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { $_.ToLowerInvariant() })
+    if ($types.Count -eq 0) { return @{} }
+
+    $quoted = ($types | ForEach-Object { "'$_'" }) -join ', '
+    $filters = @("type in~ ($quoted)")
+    if (-not [string]::IsNullOrWhiteSpace($ResourceGroup)) {
+        $filters += "resourceGroup =~ '$ResourceGroup'"
+    }
+    $kql = @(
+        'resources',
+        '| where ' + ($filters -join ' and '),
+        '| project id, name, type, location, resourceGroup, subscriptionId, properties, tags'
+    ) -join "`n"
+
+    $queryArgs = @{ Query = $kql; ErrorAction = 'Stop' }
+    if (-not [string]::IsNullOrWhiteSpace($SubscriptionId)) {
+        $queryArgs.Subscription = @($SubscriptionId)
+    }
+    if ($ManagementGroups -and $ManagementGroups.Count -gt 0) {
+        $queryArgs.ManagementGroup = @($ManagementGroups)
+    }
+
+    try {
+        $rows = @(Search-AzGraph @queryArgs)
+    } catch {
+        # Classify and record the skip for partial-discovery tracking (#206).
+        try {
+            $cls = Get-RangerArmErrorCategory -ErrorRecord $_
+            $scope = if ($SubscriptionId) { "subscription/$SubscriptionId" } else { 'tenant' }
+            Add-RangerSkippedResource -Scope 'resource-graph' -Target $scope -Category $cls.Category -Reason "Search-AzGraph: $($cls.Detail)"
+        } catch { }
+        Write-RangerLog -Level debug -Message "Get-RangerArmResourcesByGraph: Search-AzGraph failed ($($_.Exception.Message)) — caller should fall back."
+        return $null
+    }
+
+    $grouped = @{}
+    foreach ($t in $types) { $grouped[$t] = New-Object System.Collections.Generic.List[object] }
+    foreach ($row in $rows) {
+        $key = [string]$row.type
+        if ($key) { $key = $key.ToLowerInvariant() }
+        if (-not $grouped.ContainsKey($key)) { $grouped[$key] = New-Object System.Collections.Generic.List[object] }
+        [void]$grouped[$key].Add($row)
+    }
+
+    # Materialise to arrays for easier downstream consumption.
+    $result = @{}
+    foreach ($k in $grouped.Keys) { $result[$k] = @($grouped[$k]) }
+    return $result
+}
+
 function Resolve-RangerArcMachinesForCluster {
     <#
     .SYNOPSIS
@@ -230,6 +308,38 @@ function Resolve-RangerArcMachinesForCluster {
     }
 
     $hints = @($NodeHints | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { $_.Split('.')[0].ToUpperInvariant() })
+
+    # v1.6.0 (#205): prefer Resource Graph for a single-query fast path.
+    $graph = Get-RangerArmResourcesByGraph -ResourceTypes @('microsoft.hybridcompute/machines') -SubscriptionId $subscriptionId
+    if ($null -ne $graph -and $graph.ContainsKey('microsoft.hybridcompute/machines')) {
+        $merged = New-Object System.Collections.Generic.List[object]
+        foreach ($m in @($graph['microsoft.hybridcompute/machines'])) {
+            if (-not $m -or -not $m.id) { continue }
+            if ($hints.Count -gt 0) {
+                $short = [string]$m.name.Split('.')[0].ToUpperInvariant()
+                if ($short -notin $hints) { continue }
+            }
+            # Normalize a resource-like shape so existing callers keep working.
+            $wrapped = [pscustomobject]@{
+                Name               = [string]$m.name
+                ResourceId         = [string]$m.id
+                ResourceGroupName  = [string]$m.resourceGroup
+                SubscriptionId     = [string]$m.subscriptionId
+                Location           = [string]$m.location
+                Type               = [string]$m.type
+                Properties         = $m.properties
+            }
+            [void]$merged.Add($wrapped)
+            if (-not [string]::IsNullOrWhiteSpace($clusterRg) -and
+                $wrapped.ResourceGroupName -and $wrapped.ResourceGroupName -ne $clusterRg) {
+                $result.CrossRg += $wrapped.Name
+                Write-RangerLog -Level warn -Message ("Resolve-RangerArcMachinesForCluster: node '{0}' found in resource group '{1}' — not in cluster RG '{2}'." -f $wrapped.Name, $wrapped.ResourceGroupName, $clusterRg)
+            }
+        }
+        $result.Machines = @($merged)
+        Write-RangerLog -Level debug -Message "Resolve-RangerArcMachinesForCluster: Resource Graph returned $($merged.Count) machine(s)"
+        return $result
+    }
 
     # Step 1 — RG-scoped query (fast path).
     $rgMachines = @()

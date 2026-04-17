@@ -184,7 +184,7 @@ function Invoke-AzureLocalRanger {
 
         [int]$TimeoutSeconds,
 
-        [ValidateSet('existing-context', 'managed-identity', 'device-code', 'service-principal', 'azure-cli')]
+        [ValidateSet('existing-context', 'managed-identity', 'device-code', 'service-principal', 'service-principal-cert', 'azure-cli')]
         [string]$AzureMethod,
 
         [string]$ClusterName,

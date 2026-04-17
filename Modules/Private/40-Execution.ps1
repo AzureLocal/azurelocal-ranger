@@ -720,53 +720,68 @@ function Invoke-RangerRedfishCollection {
 }
 
 function Connect-RangerAzureContext {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#200): multi-method Azure auth chain with sovereign-cloud and
+        existing-context reuse.
+    .DESCRIPTION
+        Dispatches to the selected method: managed-identity, service-principal
+        (secret), service-principal-cert, device-code, or existing-context.
+        Short-circuits to the existing context when a tenant match is found,
+        avoiding MFA prompts on every run. Forwards Environment (sovereign
+        cloud) and TenantId / Subscription to Connect-AzAccount.
+    #>
     param(
         $AzureCredentialSettings
     )
 
     $settings = if ($AzureCredentialSettings) { ConvertTo-RangerHashtable -InputObject $AzureCredentialSettings } else { [ordered]@{ method = 'existing-context' } }
     $method = if ($settings.method) { [string]$settings.method } else { 'existing-context' }
+    $azureEnvironment = if ($settings.environment) { [string]$settings.environment } else { $null }
 
     if (-not (Test-RangerCommandAvailable -Name 'Get-AzContext')) {
         return $false
     }
 
+    # Short-circuit: if a context exists AND it matches the requested tenant
+    # (when one was specified), reuse it rather than re-authenticating. This
+    # avoids MFA prompts on repeated runs. #200.
     $context = Get-AzContext -ErrorAction SilentlyContinue
     if ($context) {
-        if ($settings.subscriptionId -and $context.Subscription -and $context.Subscription.Id -ne $settings.subscriptionId -and (Test-RangerCommandAvailable -Name 'Set-AzContext')) {
-            try {
-                Set-AzContext -SubscriptionId $settings.subscriptionId -ErrorAction Stop | Out-Null
+        $tenantMatches = $true
+        if ($settings.tenantId -and $context.Tenant -and $context.Tenant.Id) {
+            $tenantMatches = ($context.Tenant.Id -ieq [string]$settings.tenantId)
+        }
+        if ($tenantMatches) {
+            if ($settings.subscriptionId -and $context.Subscription -and $context.Subscription.Id -ne $settings.subscriptionId -and (Test-RangerCommandAvailable -Name 'Set-AzContext')) {
+                try {
+                    Set-AzContext -SubscriptionId $settings.subscriptionId -ErrorAction Stop | Out-Null
+                }
+                catch {
+                    Write-RangerLog -Level warn -Message "Failed to switch Az context to subscription '$($settings.subscriptionId)': $($_.Exception.Message)"
+                }
             }
-            catch {
-                Write-RangerLog -Level warn -Message "Failed to switch Az context to subscription '$($settings.subscriptionId)': $($_.Exception.Message)"
-            }
+            return $true
         }
 
-        return $true
+        Write-RangerLog -Level info -Message "Existing Az context tenant '$($context.Tenant.Id)' does not match requested '$($settings.tenantId)' — re-authenticating via $method."
     }
 
     switch ($method) {
         'managed-identity' {
             $connectParams = @{ Identity = $true; ErrorAction = 'Stop' }
-            if ($settings.clientId) {
-                $connectParams.AccountId = $settings.clientId
-            }
-            if ($settings.subscriptionId) {
-                $connectParams.Subscription = $settings.subscriptionId
-            }
-
+            if ($settings.clientId)        { $connectParams.AccountId    = $settings.clientId }
+            if ($settings.subscriptionId)  { $connectParams.Subscription = $settings.subscriptionId }
+            if ($settings.tenantId)        { $connectParams.Tenant       = $settings.tenantId }
+            if ($azureEnvironment)         { $connectParams.Environment  = $azureEnvironment }
             Connect-AzAccount @connectParams | Out-Null
             return $true
         }
         'device-code' {
             $connectParams = @{ UseDeviceAuthentication = $true; ErrorAction = 'Stop' }
-            if ($settings.tenantId) {
-                $connectParams.Tenant = $settings.tenantId
-            }
-            if ($settings.subscriptionId) {
-                $connectParams.Subscription = $settings.subscriptionId
-            }
-
+            if ($settings.tenantId)        { $connectParams.Tenant       = $settings.tenantId }
+            if ($settings.subscriptionId)  { $connectParams.Subscription = $settings.subscriptionId }
+            if ($azureEnvironment)         { $connectParams.Environment  = $azureEnvironment }
             Connect-AzAccount @connectParams | Out-Null
             return $true
         }
@@ -782,10 +797,43 @@ function Connect-RangerAzureContext {
                 Credential       = $credential
                 ErrorAction      = 'Stop'
             }
-            if ($settings.subscriptionId) {
-                $connectParams.Subscription = $settings.subscriptionId
+            if ($settings.subscriptionId)  { $connectParams.Subscription = $settings.subscriptionId }
+            if ($azureEnvironment)         { $connectParams.Environment  = $azureEnvironment }
+            Connect-AzAccount @connectParams | Out-Null
+            return $true
+        }
+        'service-principal-cert' {
+            # v1.6.0 (#200): SPN + certificate auth. Accept either a certificate
+            # thumbprint from the local store or a path to a PFX/PEM file.
+            if ([string]::IsNullOrWhiteSpace([string]$settings.clientId)) {
+                throw 'Azure service-principal-cert authentication requires credentials.azure.clientId.'
             }
-
+            if ([string]::IsNullOrWhiteSpace([string]$settings.tenantId)) {
+                throw 'Azure service-principal-cert authentication requires a tenantId.'
+            }
+            $connectParams = @{
+                ServicePrincipal  = $true
+                ApplicationId     = [string]$settings.clientId
+                Tenant            = [string]$settings.tenantId
+                ErrorAction       = 'Stop'
+            }
+            if ($settings.certificateThumbprint) {
+                $connectParams.CertificateThumbprint = [string]$settings.certificateThumbprint
+            }
+            elseif ($settings.certificatePath) {
+                if (-not (Test-Path -Path ([string]$settings.certificatePath) -PathType Leaf)) {
+                    throw "Certificate file not found: $($settings.certificatePath)"
+                }
+                $connectParams.CertificatePath = [string]$settings.certificatePath
+                if ($settings.certificatePassword) {
+                    $connectParams.CertificatePassword = $settings.certificatePassword
+                }
+            }
+            else {
+                throw 'Azure service-principal-cert authentication requires certificateThumbprint or certificatePath.'
+            }
+            if ($settings.subscriptionId) { $connectParams.Subscription = $settings.subscriptionId }
+            if ($azureEnvironment)        { $connectParams.Environment  = $azureEnvironment }
             Connect-AzAccount @connectParams | Out-Null
             return $true
         }
@@ -793,6 +841,90 @@ function Connect-RangerAzureContext {
             return $false
         }
     }
+}
+
+function Export-RangerAzureContext {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#201): save the current Az context to a temp file for handoff
+        into a background runspace.
+    .DESCRIPTION
+        Calls Save-AzContext to $env:TEMP\ranger-az-ctx-<guid>.json and returns
+        the file path. Callers pass this path to a runspace; the runspace uses
+        Import-RangerAzureContext as its first action to restore the session.
+    #>
+    [CmdletBinding()]
+    param()
+
+    if (-not (Test-RangerCommandAvailable -Name 'Get-AzContext')) {
+        throw 'Az.Accounts module is not installed. Run Install-Module Az.Accounts -Scope CurrentUser -Force.'
+    }
+    $ctx = Get-AzContext -ErrorAction SilentlyContinue
+    if (-not $ctx -or -not $ctx.Account) {
+        throw 'No Azure context found. Run Connect-AzAccount or use Invoke-AzureLocalRanger -AzureMethod managed-identity.'
+    }
+    if (-not (Test-RangerCommandAvailable -Name 'Save-AzContext')) {
+        throw 'Save-AzContext is not available. Az.Accounts >= 2.7 is required for background runspace context handoff.'
+    }
+
+    $root = if ($env:TEMP) { $env:TEMP } else { [System.IO.Path]::GetTempPath() }
+    $path = Join-Path -Path $root -ChildPath ("ranger-az-ctx-{0}.json" -f [guid]::NewGuid().ToString('N'))
+    try {
+        Save-AzContext -Path $path -Force -ErrorAction Stop | Out-Null
+    } catch {
+        throw "Save-AzContext failed: $($_.Exception.Message)"
+    }
+    Write-RangerLog -Level debug -Message "Export-RangerAzureContext: Az context saved to $path"
+    return $path
+}
+
+function Import-RangerAzureContext {
+    <#
+    .SYNOPSIS
+        v1.6.0 (#201): restore an exported Az context inside a background
+        runspace and delete the temp file.
+    .PARAMETER Path
+        Path produced by Export-RangerAzureContext.
+    .PARAMETER SubscriptionId
+        Optional subscription to Set-AzContext into after import.
+    .PARAMETER KeepFile
+        Do not delete the temp file after import. Off by default.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+
+        [string]$SubscriptionId,
+
+        [switch]$KeepFile
+    )
+
+    if (-not (Test-Path -Path $Path -PathType Leaf)) {
+        throw "Azure context file not found: $Path"
+    }
+    if (-not (Get-Command -Name 'Import-AzContext' -ErrorAction SilentlyContinue)) {
+        throw 'Import-AzContext is not available. Ensure Az.Accounts is installed in this runspace.'
+    }
+
+    try {
+        Import-AzContext -Path $Path -ErrorAction Stop | Out-Null
+    } catch {
+        throw "Import-AzContext failed: $($_.Exception.Message)"
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($SubscriptionId) -and (Get-Command -Name 'Set-AzContext' -ErrorAction SilentlyContinue)) {
+        try {
+            Set-AzContext -SubscriptionId $SubscriptionId -ErrorAction Stop | Out-Null
+        } catch {
+            Write-RangerLog -Level warn -Message "Import-RangerAzureContext: Set-AzContext to '$SubscriptionId' failed — $($_.Exception.Message)"
+        }
+    }
+
+    if (-not $KeepFile) {
+        try { [System.IO.File]::Delete($Path) } catch { }
+    }
+    return $true
 }
 
 function Invoke-RangerAzureQuery {

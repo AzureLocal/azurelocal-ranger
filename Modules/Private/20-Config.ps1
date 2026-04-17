@@ -953,7 +953,7 @@ function Test-RangerConfiguration {
     }
 
     $azureSettings = Resolve-RangerAzureCredentialSettings -Config $Config -SkipSecretResolution
-    $supportedAzureMethods = @('existing-context', 'managed-identity', 'device-code', 'service-principal', 'azure-cli')
+    $supportedAzureMethods = @('existing-context', 'managed-identity', 'device-code', 'service-principal', 'service-principal-cert', 'azure-cli')
     if ($azureSettings.method -notin $supportedAzureMethods) {
         $errors.Add("Azure credential method '$($azureSettings.method)' is not supported.")
     }
