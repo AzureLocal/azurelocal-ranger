@@ -67,11 +67,18 @@ domains:
 
 output:
   mode: current-state                     # current-state | as-built | drift
-  formats:                                # Report formats to generate
-    - html
-    - markdown
-    - json
-    - svg
+  formats:                                # Report formats to generate — remove any you don't want
+    - html                                # HTML narrative report (executive + management + technical)
+    - markdown                            # Markdown narrative report
+    - json                                # Raw manifest export
+    - json-evidence                       # Raw resource-only inventory JSON (v2.0.0)
+    - svg                                 # SVG vector diagrams
+    - drawio                              # draw.io XML diagrams (open in diagrams.net)
+    - docx                                # Word document (no Office required)
+    - xlsx                                # Excel workbook — inventory + findings tabs
+    - pdf                                 # PDF (rendered from HTML via headless Edge/Chrome)
+    - pptx                                # PowerPoint executive deck (v2.5.0, no Office required)
+    - powerbi                             # Power BI CSV star-schema exports under powerbi/
   rootPath: 'C:\AzureLocalRanger'         # Output directory; each run creates a dated sub-folder
   diagramFormat: svg                      # svg | png
   keepRawEvidence: true                   # Keep raw JSON evidence alongside reports
