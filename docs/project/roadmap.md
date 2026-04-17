@@ -12,20 +12,6 @@ Ranger supports two outcomes through one discovery engine:
 
 **Upcoming** — what's next, in ship order. Each milestone link has the full issue backlog; tables below surface the highlights.
 
-## v2.2.0 — WAF Compliance Guidance
-
-Turn the WAF Assessment section from a snapshot of what is broken into an actionable compliance roadmap. Every feature builds on the weighted scoring engine shipped in v2.0.0 (#225). Milestone: [#22](https://github.com/AzureLocal/azurelocal-ranger/milestone/22).
-
-| Item | Detail | Issue |
-| --- | --- | --- |
-| Structured remediation block per rule | Replace the one-line `recommendation` string with `{ rationale, steps[], samplePowerShell, estimatedEffort, estimatedImpact, dependencies[], docsUrl }` so every failing rule becomes a mini-runbook | [#236](https://github.com/AzureLocal/azurelocal-ranger/issues/236) |
-| Prioritized Compliance Roadmap section | Rank failing rules into Now / Next / Later tiers by `priorityScore = weight × severity × impact / effort` and surface as a new report section + Power BI CSV | [#241](https://github.com/AzureLocal/azurelocal-ranger/issues/241) |
-| Gap-to-goal projection | Greedy fix plan that shows "Current 65% — closing these 3 findings raises you to 82%" using the weighted scoring math | [#242](https://github.com/AzureLocal/azurelocal-ranger/issues/242) |
-| Per-pillar compliance checklist section | One subsection per WAF pillar (Reliability / Security / Cost / OpEx / Perf) with signable checkbox column in HTML, Markdown, and DOCX (Word content controls) | [#238](https://github.com/AzureLocal/azurelocal-ranger/issues/238) |
-| `Get-RangerRemediation` command | Emits copy-pasteable `.ps1` / markdown runbook / checklist for one or more findings; dry-run by default, `-Commit` to execute | [#243](https://github.com/AzureLocal/azurelocal-ranger/issues/243) |
-
-Dependency order inside the milestone: **#236 first** (foundation), then **#241 + #238** in parallel (consume the structured block), then **#242 + #243** on top (consume the priority score and remediation scripts).
-
 ## v2.3.0 — Cloud Publishing
 
 Publish Ranger run output to Azure for downstream consumption — web apps, Event Grid pipelines, Fabric, Log Analytics, Sentinel hunts. Unlocks multi-run trending and cross-cluster dashboards without forcing every shop to reinvent the plumbing. Milestone: [#23](https://github.com/AzureLocal/azurelocal-ranger/milestone/23).
@@ -75,6 +61,18 @@ Enterprise integrations, specialized hardware protocols, and advanced topology c
 ---
 
 **Shipped** — most recent first.
+
+## Shipped — v2.2.0 — WAF Compliance Guidance (2026-04-17)
+
+Turn the WAF score from a snapshot of what's broken into an actionable roadmap. Every failing rule now carries a structured remediation block, and the report ranks fixes by priority, projects the post-fix score, and can emit a copy-pasteable runbook.
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Structured remediation per rule | `remediation` block with rationale, steps, sample PowerShell, effort, impact, dependencies, docsUrl on every rule. Reports surface a Next Step column and a full Remediation Detail section. | [#236](https://github.com/AzureLocal/azurelocal-ranger/issues/236) |
+| Prioritized WAF Compliance Roadmap | `priorityScore = (weight × severity × impact) / effort` buckets failing rules into Now / Next / Later tiers. Exported as `powerbi/waf-roadmap.csv`. | [#241](https://github.com/AzureLocal/azurelocal-ranger/issues/241) |
+| Gap-to-Goal projection | Greedy fix plan: "current 67% → projected 82% by closing 3 findings". Honours rule dependencies. Exported as `powerbi/waf-gap-to-goal.csv`. | [#242](https://github.com/AzureLocal/azurelocal-ranger/issues/242) |
+| Per-pillar compliance checklist | One subsection per WAF pillar with status / weight / effort / next step / signed-off column. Exported as `powerbi/waf-checklist.csv`. | [#238](https://github.com/AzureLocal/azurelocal-ranger/issues/238) |
+| `Get-RangerRemediation` command | Emits copy-pasteable `.ps1` (dry-run by default, `-Commit` for live), markdown runbook, or checklist for one or more findings. Substitutes `$ClusterName`/`$ResourceGroup`/`$SubscriptionId`/`$Region`/`$NodeName` from the manifest. | [#243](https://github.com/AzureLocal/azurelocal-ranger/issues/243) |
 
 ## Shipped — v2.1.0 — Preflight Hardening (2026-04-16)
 

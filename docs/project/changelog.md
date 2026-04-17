@@ -2,6 +2,14 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
+## v2.2.0 Highlights — WAF Compliance Guidance
+
+- **Structured remediation block per WAF rule (#236)** — every rule in `config/waf-rules.json` now carries a `remediation` block with `rationale`, `steps`, `samplePowerShell`, `estimatedEffort` (S/M/L), `estimatedImpact` (low/medium/high), `dependencies`, and `docsUrl`. Reports surface a new Next Step column in the Findings table and a full Remediation Detail section.
+- **Prioritized WAF Compliance Roadmap (#241)** — `Invoke-RangerWafRuleEvaluation` now returns a `roadmap` array bucketing failing rules into Now / Next / Later tiers by `priorityScore = (weight × severity × impact) / effort`. Power BI export: `powerbi/waf-roadmap.csv`.
+- **Gap-to-Goal projection (#242)** — greedy fix plan showing "current 67% → projected 82% by closing 3 findings". Honours rule dependencies so prerequisites fix first. Power BI export: `powerbi/waf-gap-to-goal.csv`.
+- **Per-pillar compliance checklist section (#238)** — one subsection per WAF pillar with every rule, status, weight, effort, next step, and a signed-off column for handoff / sprint use. Power BI export: `powerbi/waf-checklist.csv`.
+- **`Get-RangerRemediation` command (#243)** — new public command emits a copy-pasteable remediation script from an existing manifest. `-Format ps1|md|checklist`, `-Commit` for live cmdlets (dry-run by default), `-IncludeDependencies` to expand prerequisites. Substitutes `$ClusterName` / `$ResourceGroup` / `$SubscriptionId` / `$Region` / `$NodeName` from the manifest.
+
 ## v2.1.0 Highlights — Preflight Hardening
 
 - **Per-resource-type ARM probe (#235)** — pre-run audit now probes each v2.0.0 collector surface (logicalNetworks, storageContainers, customLocations, appliances, gateways, marketplace + gallery images). Scoped Reader roles that would have 403'd mid-run now Fail in the pre-check with named surfaces.

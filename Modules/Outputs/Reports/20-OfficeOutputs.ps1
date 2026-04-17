@@ -329,10 +329,78 @@ function Invoke-RangerPowerBiExport {
         Write-RangerCsvFile -Path (Join-Path $OutputRoot 'cost-licensing.csv') -Columns @('NodeId','ClusterId','PhysicalCores','AhbEnabled','MonthlyCostUsd','MonthlySavingUsd','LastUpdated') -Rows $costRows
     }
 
+    # v2.2.0: WAF compliance CSVs — checklist, roadmap, gap-to-goal (#238/#241/#242).
+    if (Get-Command -Name Invoke-RangerWafRuleEvaluation -ErrorAction SilentlyContinue) {
+        try {
+            $wafEval = Invoke-RangerWafRuleEvaluation -Manifest $Manifest
+        } catch { $wafEval = $null }
+
+        if ($wafEval) {
+            $checklistRows = @(@($wafEval.ruleResults) | ForEach-Object {
+                $rr = $_
+                $nextStep = if (-not $rr.pass -and $rr.remediation -and @($rr.remediation.steps).Count -gt 0) { [string]@($rr.remediation.steps)[0] } elseif (-not $rr.pass) { [string]$rr.recommendation } else { '' }
+                [ordered]@{
+                    RuleId      = [string]$rr.id
+                    Pillar      = [string]$rr.pillar
+                    Status      = if ($rr.pass) { 'Pass' } else { 'Fail' }
+                    Weight      = [string]$rr.weight
+                    Effort      = if ($rr.estimatedEffort) { [string]$rr.estimatedEffort } else { '' }
+                    NextStep    = $nextStep
+                    Severity    = [string]$rr.severity
+                    ClusterId   = $clusterId
+                    LastUpdated = $runTs
+                }
+            })
+            if ($checklistRows.Count -gt 0) {
+                Write-RangerCsvFile -Path (Join-Path $OutputRoot 'waf-checklist.csv') -Columns @('RuleId','Pillar','Status','Weight','Effort','NextStep','Severity','ClusterId','LastUpdated') -Rows $checklistRows
+            }
+
+            $roadmapRows = @(@($wafEval.roadmap) | ForEach-Object {
+                [ordered]@{
+                    Bucket        = [string]$_.bucket
+                    RuleId        = [string]$_.id
+                    Pillar        = [string]$_.pillar
+                    Severity      = [string]$_.severity
+                    Weight        = [string]$_.weight
+                    Effort        = [string]$_.effort
+                    Impact        = [string]$_.impact
+                    PriorityScore = [string]$_.priorityScore
+                    FirstStep     = [string]$_.firstStep
+                    ClusterId     = $clusterId
+                    LastUpdated   = $runTs
+                }
+            })
+            if ($roadmapRows.Count -gt 0) {
+                Write-RangerCsvFile -Path (Join-Path $OutputRoot 'waf-roadmap.csv') -Columns @('Bucket','RuleId','Pillar','Severity','Weight','Effort','Impact','PriorityScore','FirstStep','ClusterId','LastUpdated') -Rows $roadmapRows
+            }
+
+            if ($wafEval.gapToGoal -and @($wafEval.gapToGoal.fixPlan).Count -gt 0) {
+                $gtgRows = @(
+                    foreach ($p in @($wafEval.gapToGoal.fixPlan)) {
+                        [ordered]@{
+                            ClusterId       = $clusterId
+                            RuleId          = [string]$p.ruleId
+                            DeltaScore      = [string]$p.deltaScore
+                            CumulativeScore = [string]$p.cumulativeScore
+                            Effort          = [string]$p.effort
+                            CurrentScore    = [string]$wafEval.gapToGoal.currentScore
+                            ProjectedScore  = [string]$wafEval.gapToGoal.projectedScore
+                            TargetThreshold = [string]$wafEval.gapToGoal.targetThreshold
+                            LastUpdated     = $runTs
+                        }
+                    }
+                )
+                if ($gtgRows.Count -gt 0) {
+                    Write-RangerCsvFile -Path (Join-Path $OutputRoot 'waf-gap-to-goal.csv') -Columns @('ClusterId','RuleId','DeltaScore','CumulativeScore','Effort','CurrentScore','ProjectedScore','TargetThreshold','LastUpdated') -Rows $gtgRows
+                }
+            }
+        }
+    }
+
     # _relationships.json (star schema)
     $relationships = [ordered]@{
         version = '1.0'
-        tables  = @('nodes','volumes','storage-pools','health-checks','network-adapters','arc-extensions','logical-networks','storage-paths','resource-bridges','custom-locations','arc-gateways','images','cost-licensing')
+        tables  = @('nodes','volumes','storage-pools','health-checks','network-adapters','arc-extensions','logical-networks','storage-paths','resource-bridges','custom-locations','arc-gateways','images','cost-licensing','waf-checklist','waf-roadmap','waf-gap-to-goal')
         relationships = @(
             [ordered]@{ from = 'volumes';          fromColumn = 'PoolId';    to = 'storage-pools'; toColumn = 'PoolId' }
             [ordered]@{ from = 'storage-pools';    fromColumn = 'ClusterId'; to = 'nodes';         toColumn = 'ClusterId' }
@@ -345,6 +413,9 @@ function Invoke-RangerPowerBiExport {
             [ordered]@{ from = 'custom-locations'; fromColumn = 'ClusterId'; to = 'nodes';         toColumn = 'ClusterId' }
             [ordered]@{ from = 'arc-gateways';     fromColumn = 'ClusterId'; to = 'nodes';         toColumn = 'ClusterId' }
             [ordered]@{ from = 'images';           fromColumn = 'ClusterId'; to = 'nodes';         toColumn = 'ClusterId' }
+            [ordered]@{ from = 'waf-checklist';    fromColumn = 'ClusterId'; to = 'nodes';         toColumn = 'ClusterId' }
+            [ordered]@{ from = 'waf-roadmap';      fromColumn = 'ClusterId'; to = 'nodes';         toColumn = 'ClusterId' }
+            [ordered]@{ from = 'waf-gap-to-goal';  fromColumn = 'ClusterId'; to = 'nodes';         toColumn = 'ClusterId' }
         )
     }
     ($relationships | ConvertTo-Json -Depth 10) | Set-Content -Path (Join-Path $OutputRoot '_relationships.json') -Encoding UTF8

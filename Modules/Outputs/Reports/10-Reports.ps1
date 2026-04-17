@@ -817,23 +817,117 @@ function New-RangerReportPayload {
             })
         }
 
-        # WAF failing rules detail — technical only
-        if ($Tier -eq 'technical') {
-            $wafFailingRows = @($wafEval.ruleResults | Where-Object { $_.pass -eq $false } | Sort-Object { $_.pillar }, { switch ($_.severity) { 'warning' { 0 } 'informational' { 1 } default { 2 } } } | ForEach-Object {
+        # v2.2.0 (#242): Gap-to-Goal projection panel — management + technical, current-state only.
+        if ($wafEval.gapToGoal -and @($wafEval.gapToGoal.fixPlan).Count -gt 0) {
+            $g = $wafEval.gapToGoal
+            $planLines = @($g.fixPlan | ForEach-Object { "  {0,-10} -> +{1,-4}  (cum {2}%)   effort: {3}" -f $_.ruleId, $_.deltaScore, $_.cumulativeScore, $_.effort })
+            [void]$sections.Add([ordered]@{
+                heading = 'WAF Gap to Goal'
+                body    = @(
+                    "Current WAF posture:  $($g.currentScore)% ($($g.currentStatus))",
+                    "Projected posture:    $($g.projectedScore)% ($($g.projectedStatus)) — by fixing $(@($g.fixPlan).Count) findings",
+                    '',
+                    'Fix plan (greedy, by score impact per effort):'
+                ) + $planLines
+            })
+        } elseif ($wafEval.gapToGoal -and $wafEval.gapToGoal.message) {
+            [void]$sections.Add([ordered]@{
+                heading = 'WAF Gap to Goal'
+                body    = @($wafEval.gapToGoal.message)
+            })
+        }
+
+        # v2.2.0 (#241): Compliance Roadmap — Now/Next/Later bucketing, technical tier only.
+        if ($Tier -eq 'technical' -and @($wafEval.roadmap).Count -gt 0) {
+            $roadmapRows = @($wafEval.roadmap | ForEach-Object {
                 @(
+                    [string]$_.bucket,
                     [string]$_.id,
                     [string]$_.pillar,
                     [string]$_.severity,
-                    [string]$_.title,
-                    [string]$_.recommendation
+                    [string]$_.weight,
+                    [string]$_.effort,
+                    [string]$_.impact,
+                    [string]$_.priorityScore,
+                    [string]$_.firstStep
+                )
+            })
+            [void]$sections.Add([ordered]@{
+                heading = 'WAF Compliance Roadmap'
+                type    = 'table'
+                headers = @('Bucket', 'Rule', 'Pillar', 'Severity', 'Weight', 'Effort', 'Impact', 'Priority', 'First Step')
+                rows    = $roadmapRows
+                caption = 'Failing rules ranked by priorityScore = (weight * severity * impact) / effort. Start with Now-bucket items for highest score gain per hour of work.'
+            })
+        }
+
+        # WAF failing rules detail — technical only. v2.2.0 (#236): Next Step column + remediation detail.
+        if ($Tier -eq 'technical') {
+            $wafFailingRows = @($wafEval.ruleResults | Where-Object { $_.pass -eq $false } | Sort-Object { $_.pillar }, { switch ($_.severity) { 'warning' { 0 } 'informational' { 1 } default { 2 } } } | ForEach-Object {
+                $rr = $_
+                $nextStep = if ($rr.remediation -and @($rr.remediation.steps).Count -gt 0) { [string]@($rr.remediation.steps)[0] } else { [string]$rr.recommendation }
+                @(
+                    [string]$rr.id,
+                    [string]$rr.pillar,
+                    [string]$rr.severity,
+                    [string]$rr.title,
+                    $nextStep
                 )
             })
             if ($wafFailingRows.Count -gt 0) {
                 [void]$sections.Add([ordered]@{
                     heading = 'WAF Assessment — Findings'
                     type    = 'table'
-                    headers = @('Rule', 'Pillar', 'Severity', 'Finding', 'Recommendation')
+                    headers = @('Rule', 'Pillar', 'Severity', 'Finding', 'Next Step')
                     rows    = $wafFailingRows
+                    caption = 'Full remediation detail (rationale, steps, sample PowerShell, docs) is in the Remediation Detail section.'
+                })
+
+                # v2.2.0 (#236): structured Remediation Detail section — one subsection per failing rule.
+                $remediationItems = @($wafEval.ruleResults | Where-Object { $_.pass -eq $false -and $_.remediation } | Sort-Object { -[double]$_.priorityScore })
+                if ($remediationItems.Count -gt 0) {
+                    $remedBody = New-Object System.Collections.ArrayList
+                    foreach ($rr in $remediationItems) {
+                        $rem = $rr.remediation
+                        [void]$remedBody.Add("--- $($rr.id): $($rr.title)  (effort: $($rr.estimatedEffort), impact: $($rr.estimatedImpact), priority: $($rr.priorityScore)) ---")
+                        if ($rem.rationale)     { [void]$remedBody.Add("Rationale: $($rem.rationale)") }
+                        if (@($rem.steps).Count -gt 0) {
+                            [void]$remedBody.Add('Steps:')
+                            $stepIdx = 1
+                            foreach ($s in @($rem.steps)) { [void]$remedBody.Add("  $stepIdx. $s"); $stepIdx++ }
+                        }
+                        if ($rem.samplePowerShell) {
+                            [void]$remedBody.Add('Sample PowerShell:')
+                            foreach ($line in ([string]$rem.samplePowerShell -split "`n")) { [void]$remedBody.Add("    $line") }
+                        }
+                        if (@($rem.dependencies).Count -gt 0) { [void]$remedBody.Add("Dependencies: $((@($rem.dependencies)) -join ', ')") }
+                        if ($rem.docsUrl)       { [void]$remedBody.Add("Docs: $($rem.docsUrl)") }
+                        [void]$remedBody.Add('')
+                    }
+                    [void]$sections.Add([ordered]@{
+                        heading = 'WAF Remediation Detail'
+                        body    = @($remedBody)
+                    })
+                }
+            }
+
+            # v2.2.0 (#238): Per-pillar WAF Compliance Checklist — one subsection per pillar.
+            foreach ($pillar in @('Reliability','Security','Cost Optimization','Operational Excellence','Performance Efficiency')) {
+                $pillarRules = @($wafEval.ruleResults | Where-Object { $_.pillar -eq $pillar })
+                if ($pillarRules.Count -eq 0) { continue }
+                $passing = @($pillarRules | Where-Object { $_.pass -eq $true }).Count
+                $checklistRows = @($pillarRules | ForEach-Object {
+                    $rr = $_
+                    $status = if ($rr.pass) { 'Pass' } else { 'Fail' }
+                    $nextStep = if (-not $rr.pass -and $rr.remediation -and @($rr.remediation.steps).Count -gt 0) { [string]@($rr.remediation.steps)[0] } elseif (-not $rr.pass) { [string]$rr.recommendation } else { '—' }
+                    $effort = if (-not $rr.pass) { [string]$rr.estimatedEffort } else { '—' }
+                    @([string]$rr.id, [string]$rr.title, $status, [string]$rr.weight, $effort, $nextStep, '[ ]')
+                })
+                [void]$sections.Add([ordered]@{
+                    heading = "WAF Compliance Checklist — $pillar ($passing / $($pillarRules.Count) passing)"
+                    type    = 'table'
+                    headers = @('Rule', 'Title', 'Status', 'Weight', 'Effort', 'Next Step', 'Signed Off')
+                    rows    = $checklistRows
                 })
             }
         }

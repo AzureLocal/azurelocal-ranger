@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '2.1.0'
+    ModuleVersion     = '2.2.0'
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
@@ -16,7 +16,8 @@
         'Test-RangerPermissions',
         'Invoke-RangerWizard',
         'Export-RangerWafConfig',
-        'Import-RangerWafConfig'
+        'Import-RangerWafConfig',
+        'Get-RangerRemediation'
     )
     CmdletsToExport   = @()
     VariablesToExport = @()
@@ -56,6 +57,39 @@
                 'Az.ConnectedMachine'
             )
             ReleaseNotes = @'
+## v2.2.0 — WAF Compliance Guidance
+
+Turn the WAF score from a static grade into an actionable roadmap: every rule
+now carries a structured remediation block, and the report ranks fixes by
+priority, projects your post-fix score, and can emit a copy-pasteable script.
+
+### Added
+- **Structured remediation block per WAF rule (#236)** — every rule in
+  `config/waf-rules.json` now carries `remediation.{rationale, steps,
+  samplePowerShell, estimatedEffort, estimatedImpact, dependencies, docsUrl}`.
+  Reports surface a new "Next Step" column in Findings and a full Remediation
+  Detail section per failing rule.
+- **WAF Compliance Roadmap (#241)** — failing rules are bucketed into
+  Now/Next/Later tiers by `priorityScore = (weight * severity * impact) / effort`.
+  Rendered as a ranked table in the technical tier; exported as
+  `powerbi/waf-roadmap.csv`.
+- **Gap-to-Goal projection (#242)** — greedy fix-plan: *"Current 67%. Closing
+  these 3 findings raises you to 82% (Excellent)."* Honours rule dependencies
+  so prerequisites fix first. Exported as `powerbi/waf-gap-to-goal.csv`.
+- **Per-pillar WAF Compliance Checklist (#238)** — one subsection per pillar
+  with every rule, status, weight, effort, next step, and a Signed Off column
+  for handoff / sprint artefact use. Exported as `powerbi/waf-checklist.csv`.
+- **Get-RangerRemediation (#243)** — new public command emits a copy-pasteable
+  remediation script from an existing manifest. Supports `-Format ps1|md|checklist`,
+  `-Commit` for live cmdlets (dry-run by default), `-IncludeDependencies` to
+  expand prerequisites, `-FindingId` to target specific rules.
+
+### Changed
+- `config/waf-rules.json` schema version bumped to `2.2.0` with a new
+  `prioritization` block defining severity / impact / effort factors.
+- Invoke-RangerWafRuleEvaluation now returns `roadmap` and `gapToGoal`
+  alongside the existing `pillarScores` / `ruleResults`.
+
 ## v2.1.0 — Preflight Hardening
 
 Close the three auth/preflight gaps identified against v2.0.0 so RBAC and

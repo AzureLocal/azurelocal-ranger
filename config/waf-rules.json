@@ -1,6 +1,6 @@
 {
-  "version": "2.0.0",
-  "description": "Azure Well-Architected Framework rules evaluated against the Ranger audit manifest. Rules do not require re-collection — they evaluate from a saved manifest. Add or edit rules here without modifying module code. v2.0.0 introduces weighted scoring (#225) and rules covering Arc extensions, logical networks, storage paths, resource bridges, images, and cost/licensing.",
+  "version": "2.2.0",
+  "description": "Azure Well-Architected Framework rules evaluated against the Ranger audit manifest. Rules do not require re-collection — they evaluate from a saved manifest. v2.2.0 (#236) adds structured `remediation` blocks per rule (rationale, steps, sample PowerShell, effort, impact, docsUrl) to support the WAF Compliance Roadmap (#241), Gap-to-Goal projection (#242), per-pillar checklist (#238), and Get-RangerRemediation (#243).",
   "pillars": ["Reliability", "Security", "Cost Optimization", "Operational Excellence", "Performance Efficiency"],
   "scoreThresholds": {
     "excellent": 80,
@@ -13,6 +13,14 @@
     "defaultWeight": 1,
     "warningFactor": 0.5
   },
+  "prioritization": {
+    "description": "v2.2.0 (#241): priorityScore = (weight * severityMultiplier * impactFactor) / effortFactor. Used by WAF Compliance Roadmap to bucket failing rules into Now/Next/Later tiers.",
+    "severityMultipliers": { "critical": 3, "warning": 2, "informational": 1 },
+    "impactFactors":       { "high": 3, "medium": 2, "low": 1 },
+    "effortFactors":       { "S": 1, "M": 2, "L": 4 },
+    "defaultEffort": "M",
+    "defaultImpact": "medium"
+  },
   "rules": [
     {
       "id": "REL-001",
@@ -24,7 +32,21 @@
       "check": "equals",
       "expected": 0,
       "severity": "warning",
-      "recommendation": "Investigate unhealthy cluster nodes via Get-ClusterNode and resolve faults before declaring the environment production-ready."
+      "recommendation": "Investigate unhealthy cluster nodes via Get-ClusterNode and resolve faults before declaring the environment production-ready.",
+      "remediation": {
+        "rationale": "A cluster in Down or Paused state cannot host workloads reliably. Unhealthy nodes degrade quorum and resiliency, and may drop VMs during the next failure event.",
+        "steps": [
+          "Run Get-ClusterNode on any healthy node to confirm which node(s) report Down/Paused",
+          "Check the event log on the unhealthy node: Get-WinEvent -LogName System -MaxEvents 200",
+          "Resolve hardware faults (power, network, storage) or patch state, then resume the node: Resume-ClusterNode -Name <NodeName>",
+          "Re-run Ranger to verify healthSummary.unhealthy == 0"
+        ],
+        "samplePowerShell": "Get-ClusterNode -Cluster $ClusterName | Where-Object State -ne 'Up'\n# For each unhealthy node:\n# Resume-ClusterNode -Cluster $ClusterName -Name <NodeName>",
+        "estimatedEffort": "M",
+        "estimatedImpact": "high",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/manage/maintain-servers"
+      }
     },
     {
       "id": "REL-002",
@@ -36,7 +58,22 @@
       "check": "equals",
       "expected": 0,
       "severity": "warning",
-      "recommendation": "Review disk health via Get-PhysicalDisk. Replace failed or warning-state disks and verify storage pool repair completes before handoff."
+      "recommendation": "Review disk health via Get-PhysicalDisk. Replace failed or warning-state disks and verify storage pool repair completes before handoff.",
+      "remediation": {
+        "rationale": "S2D tolerates N-1 disk failures per fault domain; an unhealthy disk consumes that tolerance. A second failure before repair completes can cause data loss.",
+        "steps": [
+          "List unhealthy disks: Get-PhysicalDisk | Where-Object HealthStatus -ne 'Healthy'",
+          "Check SMART/operational status for each: Get-PhysicalDisk -UniqueId <id> | Select-Object *",
+          "Retire the failed disk: Set-PhysicalDisk -UniqueId <id> -Usage Retired",
+          "Physically replace, then add the new disk: Get-PhysicalDisk -CanPool $true | Add-PhysicalDisk -StoragePool <poolName>",
+          "Monitor repair: Get-StorageJob | Where-Object Name -like 'Repair*'"
+        ],
+        "samplePowerShell": "Get-PhysicalDisk -CimSession $ClusterName | Where-Object HealthStatus -ne 'Healthy' | Format-Table FriendlyName, SerialNumber, HealthStatus, OperationalStatus",
+        "estimatedEffort": "L",
+        "estimatedImpact": "high",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/manage/physical-disks"
+      }
     },
     {
       "id": "REL-003",
@@ -48,7 +85,21 @@
       "check": "countGreaterThan",
       "threshold": 0,
       "severity": "informational",
-      "recommendation": "Configure fault domains using New-ClusterFaultDomain to ensure VMs are distributed across physical racks or chassis."
+      "recommendation": "Configure fault domains using New-ClusterFaultDomain to ensure VMs are distributed across physical racks or chassis.",
+      "remediation": {
+        "rationale": "Without explicit fault domains, Failover Cluster places VMs and storage copies without awareness of racks/chassis. A rack PDU failure can take down correlated copies.",
+        "steps": [
+          "Document the physical layout: site -> rack -> chassis -> node",
+          "Create fault domains top-down: New-ClusterFaultDomain -Type Site -Name Primary",
+          "Add rack and chassis levels as needed, then assign nodes: Set-ClusterFaultDomain -Name Node01 -Parent Rack01",
+          "Verify: Get-ClusterFaultDomain"
+        ],
+        "samplePowerShell": "New-ClusterFaultDomain -Cluster $ClusterName -Type Site -Name 'Primary'\nNew-ClusterFaultDomain -Cluster $ClusterName -Type Rack -Name 'Rack01' -Parent 'Primary'",
+        "estimatedEffort": "M",
+        "estimatedImpact": "medium",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/concepts/fault-tolerance"
+      }
     },
     {
       "id": "REL-004",
@@ -59,7 +110,21 @@
       "manifestPath": "domains.clusterNode.quorum.quorumType",
       "check": "notNull",
       "severity": "warning",
-      "recommendation": "Verify cluster quorum configuration via Get-ClusterQuorum. A witness (cloud or disk) is strongly recommended for even-node clusters."
+      "recommendation": "Verify cluster quorum configuration via Get-ClusterQuorum. A witness (cloud or disk) is strongly recommended for even-node clusters.",
+      "remediation": {
+        "rationale": "Quorum determines how many nodes must agree for the cluster to remain online. An even-node cluster with no witness can split-brain or go offline on a single failure.",
+        "steps": [
+          "Inspect current quorum: Get-ClusterQuorum",
+          "For 2-4 node clusters, configure a Cloud Witness backed by a storage account: Set-ClusterQuorum -CloudWitness -AccountName <name> -AccessKey <key>",
+          "Verify the witness is Online in Failover Cluster Manager",
+          "Document the witness configuration in the environment runbook"
+        ],
+        "samplePowerShell": "$storageAccount = 'clusterwitness$(Get-Random)'\nNew-AzStorageAccount -ResourceGroupName $ResourceGroup -Name $storageAccount -Location eastus -SkuName Standard_LRS\n$key = (Get-AzStorageAccountKey -ResourceGroupName $ResourceGroup -Name $storageAccount)[0].Value\nSet-ClusterQuorum -Cluster $ClusterName -CloudWitness -AccountName $storageAccount -AccessKey $key",
+        "estimatedEffort": "S",
+        "estimatedImpact": "high",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/manage/witness"
+      }
     },
     {
       "id": "REL-005",
@@ -71,7 +136,21 @@
       "check": "equals",
       "expected": 0,
       "severity": "warning",
-      "recommendation": "Review pool health via Get-StoragePool. Trigger repair jobs and monitor until pools return to Healthy state."
+      "recommendation": "Review pool health via Get-StoragePool. Trigger repair jobs and monitor until pools return to Healthy state.",
+      "remediation": {
+        "rationale": "A degraded pool has lost a copy of some data slabs. Workloads stay online but a second failure in the same fault domain will cause data loss.",
+        "steps": [
+          "List pool health: Get-StoragePool | Select-Object FriendlyName, HealthStatus, OperationalStatus",
+          "Inspect active repair jobs: Get-StorageJob",
+          "If no repair is running, trigger one: Repair-VirtualDisk -FriendlyName <vdName>",
+          "Address the root cause disk failure (see REL-002) in parallel"
+        ],
+        "samplePowerShell": "Get-StoragePool -CimSession $ClusterName | Where-Object HealthStatus -ne 'Healthy' | ForEach-Object {\n    $_ | Get-VirtualDisk | Repair-VirtualDisk\n}\nGet-StorageJob -CimSession $ClusterName",
+        "estimatedEffort": "L",
+        "estimatedImpact": "high",
+        "dependencies": ["REL-002"],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/manage/storage-pools"
+      }
     },
     {
       "id": "REL-006",
@@ -83,7 +162,22 @@
       "check": "countGreaterThan",
       "threshold": 0,
       "severity": "warning",
-      "recommendation": "Configure Azure Backup for VMs via Azure Site Recovery or Azure Backup vaults, then confirm items appear in the resource group."
+      "recommendation": "Configure Azure Backup for VMs via Azure Site Recovery or Azure Backup vaults, then confirm items appear in the resource group.",
+      "remediation": {
+        "rationale": "Ransomware, accidental deletion, and site loss are not mitigated by S2D resiliency alone. Backup provides the last line of defence and satisfies most regulatory controls.",
+        "steps": [
+          "Create a Recovery Services vault in Azure in the same region as the Arc VMs",
+          "Enable Azure Backup for Azure Local Arc VMs (preview/GA — check current docs)",
+          "Configure backup policies: daily RPO, 30-day short retention, monthly for 12 months",
+          "Run a test restore after first successful backup",
+          "Verify: az backup item list --resource-group $ResourceGroup --vault-name $vault"
+        ],
+        "samplePowerShell": "New-AzRecoveryServicesVault -ResourceGroupName $ResourceGroup -Name 'rsv-$ClusterName' -Location $Region",
+        "estimatedEffort": "L",
+        "estimatedImpact": "high",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/manage/back-up-virtual-machines"
+      }
     },
     {
       "id": "REL-007",
@@ -95,7 +189,21 @@
       "check": "greaterThan",
       "threshold": 0,
       "severity": "informational",
-      "recommendation": "Create at least one logical network with subnet definitions via the Azure Local portal (Networking > Logical networks) or via Arc Resource Bridge."
+      "recommendation": "Create at least one logical network with subnet definitions via the Azure Local portal (Networking > Logical networks) or via Arc Resource Bridge.",
+      "remediation": {
+        "rationale": "Arc VMs require a Microsoft.AzureStackHCI/logicalNetworks resource to bind to. Without one, every VM provisioning attempt fails at network assignment.",
+        "steps": [
+          "In the Azure portal, open the Azure Local cluster resource",
+          "Navigate to Networking > Logical networks > Create",
+          "Supply VLAN ID, subnet CIDR, IP pool start/end, DNS and gateway",
+          "Verify the resource appears under the cluster's custom location"
+        ],
+        "samplePowerShell": "New-AzStackHciLogicalNetwork -Name 'ln-prod-01' -ResourceGroupName $ResourceGroup -Location $Region -CustomLocationId $customLocationId -VmSwitchName 'ConvergedSwitch' -VlanId 100",
+        "estimatedEffort": "M",
+        "estimatedImpact": "medium",
+        "dependencies": ["REL-008"],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/manage/create-logical-networks"
+      }
     },
     {
       "id": "REL-008",
@@ -107,7 +215,22 @@
       "check": "greaterThan",
       "threshold": 0,
       "severity": "informational",
-      "recommendation": "Deploy Arc Resource Bridge via Azure Local portal (Arc services > Resource Bridge) and confirm it reports Connected."
+      "recommendation": "Deploy Arc Resource Bridge via Azure Local portal (Arc services > Resource Bridge) and confirm it reports Connected.",
+      "remediation": {
+        "rationale": "Arc Resource Bridge projects Azure APIs (logicalNetworks, customLocations, virtualMachineInstances) onto the cluster. Without it, Arc VMs cannot be provisioned or managed from Azure.",
+        "steps": [
+          "Ensure outbound HTTPS to required Azure endpoints is permitted (see docs for the allow-list)",
+          "In the Azure Local portal, run the Arc services deployment wizard",
+          "Provide subscription, resource group, region, and Custom Location name",
+          "Wait 30-60 minutes for deployment to complete",
+          "Confirm ConnectedClusters and appliances resource shows 'Running'/'Connected'"
+        ],
+        "samplePowerShell": "# Resource Bridge deployment is driven from the Azure Local portal;\n# verify post-deploy state:\nGet-AzResource -ResourceGroupName $ResourceGroup -ResourceType 'Microsoft.ResourceConnector/appliances'",
+        "estimatedEffort": "L",
+        "estimatedImpact": "high",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/manage/arc-resource-bridge-maintenance"
+      }
     },
     {
       "id": "REL-009",
@@ -118,7 +241,21 @@
       "manifestPath": "domains.virtualMachines.summary.vmDistributionBalanced",
       "check": "boolTrue",
       "severity": "warning",
-      "recommendation": "Rebalance VMs across nodes using Live Migration. Consider enabling Cluster Balancer (CauClusterAware) to automate placement."
+      "recommendation": "Rebalance VMs across nodes using Live Migration. Consider enabling Cluster Balancer (CauClusterAware) to automate placement.",
+      "remediation": {
+        "rationale": "Uneven VM density concentrates failure impact and memory/CPU contention on hot nodes. A balanced cluster tolerates node loss with less performance cliff.",
+        "steps": [
+          "Identify hot and cold nodes from the VM Distribution section of this report",
+          "Live-migrate VMs from hot to cold: Move-ClusterVirtualMachineRole -Name <vm> -Node <targetNode>",
+          "Consider Failover Cluster's built-in balancer: (Get-Cluster).AutoBalancerMode = 2 (Always)",
+          "Re-run Ranger to confirm CV < 0.3"
+        ],
+        "samplePowerShell": "(Get-Cluster -Name $ClusterName).AutoBalancerMode = 2\n(Get-Cluster -Name $ClusterName).AutoBalancerLevel = 1",
+        "estimatedEffort": "S",
+        "estimatedImpact": "medium",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/windows-server/failover-clustering/cluster-auto-balancer"
+      }
     },
     {
       "id": "SEC-001",
@@ -130,7 +267,21 @@
       "check": "greaterThan",
       "threshold": 0,
       "severity": "warning",
-      "recommendation": "Enable Secured-Core on all cluster nodes via the Azure Local portal or PowerShell. Verify UEFI Secure Boot and TPM 2.0 are active on each node."
+      "recommendation": "Enable Secured-Core on all cluster nodes via the Azure Local portal or PowerShell. Verify UEFI Secure Boot and TPM 2.0 are active on each node.",
+      "remediation": {
+        "rationale": "Secured-Core anchors HVCI, DRTM, and Credential Guard in hardware. Without it, credential-theft and rootkit defences lack their hardware root-of-trust.",
+        "steps": [
+          "Confirm UEFI Secure Boot and TPM 2.0 are enabled in BIOS/iDRAC/iLO on every node",
+          "In the Azure Local portal, open the cluster resource -> Security -> Secured-Core",
+          "Enable and wait ~5 minutes per node for configuration to apply",
+          "Re-run Ranger to confirm securedCoreNodes == nodeCount"
+        ],
+        "samplePowerShell": "# Secured-Core is enabled via the Azure portal or OEM firmware tooling.\n# Verify current state per node:\nInvoke-Command -ComputerName $NodeName -ScriptBlock { Get-CimInstance Win32_DeviceGuard }",
+        "estimatedEffort": "M",
+        "estimatedImpact": "high",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/windows-server/security/secured-core-server"
+      }
     },
     {
       "id": "SEC-002",
@@ -141,7 +292,21 @@
       "manifestPath": "domains.identitySecurity.security.bitlockerEnabled",
       "check": "boolTrue",
       "severity": "warning",
-      "recommendation": "Enable BitLocker on Cluster Shared Volumes using Enable-AzureStackHCIBitLocker or via the Azure Local portal."
+      "recommendation": "Enable BitLocker on Cluster Shared Volumes using Enable-AzureStackHCIBitLocker or via the Azure Local portal.",
+      "remediation": {
+        "rationale": "Encryption at rest is a baseline control for most regulated workloads. Disks pulled from a decommissioned node are otherwise readable.",
+        "steps": [
+          "Confirm TPM 2.0 is enabled on every node (prerequisite for BitLocker)",
+          "Enable via the Azure Local portal: cluster -> Security -> Data protection -> Enable encryption",
+          "Store recovery keys in Active Directory or Azure Key Vault",
+          "Verify per-volume: manage-bde -status"
+        ],
+        "samplePowerShell": "Enable-AzureStackHCIBitLocker -ClusterName $ClusterName\n# Verify:\nInvoke-Command -ComputerName (Get-ClusterNode -Cluster $ClusterName).Name -ScriptBlock { Get-BitLockerVolume }",
+        "estimatedEffort": "M",
+        "estimatedImpact": "high",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/manage/manage-bitlocker"
+      }
     },
     {
       "id": "SEC-003",
@@ -152,7 +317,21 @@
       "manifestPath": "domains.identitySecurity.security.wdacPolicy",
       "check": "notNull",
       "severity": "informational",
-      "recommendation": "Deploy a WDAC policy via the Azure Local portal (Security > Application control). Use Microsoft's recommended block list as a baseline."
+      "recommendation": "Deploy a WDAC policy via the Azure Local portal (Security > Application control). Use Microsoft's recommended block list as a baseline.",
+      "remediation": {
+        "rationale": "WDAC blocks unsigned and unauthorised binaries at kernel load time. The default Microsoft recommended block list stops most commodity LOLBin abuse.",
+        "steps": [
+          "Deploy the Microsoft recommended WDAC block policy in audit mode first",
+          "Review the 3001 event log on each node for 7 days to find legitimate blocked apps",
+          "Switch the policy to enforced mode after adding allow rules for legitimate tools",
+          "Maintain a signed policy supplier process for ongoing updates"
+        ],
+        "samplePowerShell": "# Download and deploy the Microsoft recommended block list:\n# https://learn.microsoft.com/en-us/windows/security/application-security/application-control/windows-defender-application-control/design/microsoft-recommended-block-rules",
+        "estimatedEffort": "L",
+        "estimatedImpact": "medium",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/manage/manage-wdac"
+      }
     },
     {
       "id": "SEC-004",
@@ -164,7 +343,21 @@
       "check": "equals",
       "expected": 0,
       "severity": "warning",
-      "recommendation": "Review certificates approaching expiry using the identitySecurity manifest domain. Renew or rotate certificates before expiry to prevent service disruption."
+      "recommendation": "Review certificates approaching expiry using the identitySecurity manifest domain. Renew or rotate certificates before expiry to prevent service disruption.",
+      "remediation": {
+        "rationale": "Expired Arc/cluster certificates silently break Azure connectivity, monitoring pipelines, and management plane access. Renewal requires lead time — don't leave it to the last week.",
+        "steps": [
+          "From the Identity & Security report section, list the expiring certificates with subject and thumbprint",
+          "For cluster-internal certs, run the Azure Local certificate rotation: Start-AzStackHciCertificateRotation (if applicable)",
+          "For Arc agent certs, rotate with: azcmagent reconnect",
+          "Document the renewal date and calendar the next rotation"
+        ],
+        "samplePowerShell": "# Inspect expiring certificates on each node:\nInvoke-Command -ComputerName (Get-ClusterNode -Cluster $ClusterName).Name -ScriptBlock {\n    Get-ChildItem Cert:\\LocalMachine -Recurse | Where-Object { $_.NotAfter -lt (Get-Date).AddDays(90) }\n}",
+        "estimatedEffort": "M",
+        "estimatedImpact": "high",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-arc/servers/manage-vm-extensions"
+      }
     },
     {
       "id": "SEC-005",
@@ -175,7 +368,21 @@
       "manifestPath": "domains.identitySecurity.defenderForCloud.enabled",
       "check": "boolTrue",
       "severity": "warning",
-      "recommendation": "Enable Microsoft Defender for Cloud via the Azure portal for the subscription hosting the Azure Local cluster resources."
+      "recommendation": "Enable Microsoft Defender for Cloud via the Azure portal for the subscription hosting the Azure Local cluster resources.",
+      "remediation": {
+        "rationale": "Defender for Cloud + Defender for Servers provides the threat detection, vulnerability assessment, and file integrity monitoring baseline that most Azure Local workloads require for regulatory compliance.",
+        "steps": [
+          "Enable Defender for Cloud on the subscription hosting the cluster resource",
+          "Enable the Defender for Servers Plan 2 for Arc-connected machines",
+          "Confirm the security policy assignment applies to the cluster RG",
+          "Wait 24 hours for initial vulnerability scans to complete"
+        ],
+        "samplePowerShell": "Set-AzSecurityPricing -Name 'VirtualMachines' -PricingTier 'Standard' -SubPlan 'P2'",
+        "estimatedEffort": "S",
+        "estimatedImpact": "high",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-servers-introduction"
+      }
     },
     {
       "id": "SEC-006",
@@ -187,7 +394,21 @@
       "check": "greaterThan",
       "threshold": 0,
       "severity": "informational",
-      "recommendation": "Assign appropriate Azure Policy initiatives (e.g. Azure Security Benchmark, CIS Azure Local) to the subscription or resource group."
+      "recommendation": "Assign appropriate Azure Policy initiatives (e.g. Azure Security Benchmark, CIS Azure Local) to the subscription or resource group.",
+      "remediation": {
+        "rationale": "Policy assignments provide drift detection and preventive guardrails. Without any assignments, nothing flags a resource that drifts from baseline.",
+        "steps": [
+          "Navigate to Azure Portal -> Policy -> Definitions",
+          "Assign the Azure Security Benchmark initiative to the subscription",
+          "Assign the Azure Local Specific initiative (or equivalent) to the cluster RG",
+          "Review the compliance summary after 24 hours and remediate any non-compliant resources"
+        ],
+        "samplePowerShell": "$init = Get-AzPolicySetDefinition -Name '1f3afdf9-d0c9-4c3d-847f-89da613e70a8'  # Azure Security Benchmark\nNew-AzPolicyAssignment -Name 'asb-cluster' -Scope \"/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup\" -PolicySetDefinition $init",
+        "estimatedEffort": "S",
+        "estimatedImpact": "medium",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+      }
     },
     {
       "id": "SEC-007",
@@ -206,7 +427,21 @@
       "warningMessage": "AMA installed on {value}% of nodes — some nodes missing.",
       "failMessage": "AMA not detected on any node ({value}%).",
       "severity": "warning",
-      "recommendation": "Deploy Azure Monitor Agent to every Arc-connected node via Azure Local portal (Monitoring > Insights) or Arc extension management."
+      "recommendation": "Deploy Azure Monitor Agent to every Arc-connected node via Azure Local portal (Monitoring > Insights) or Arc extension management.",
+      "remediation": {
+        "rationale": "AMA is the single agent path for HCI Insights, security event ingestion, and Defender for Servers. Coverage gaps create blind spots for incident response.",
+        "steps": [
+          "Identify nodes missing AMA from the Arc Extensions section of this report",
+          "Install AMA via Arc extension: Set-AzConnectedMachineExtension -Name AzureMonitorWindowsAgent -ExtensionType AzureMonitorWindowsAgent -Publisher Microsoft.Azure.Monitor -MachineName $node -ResourceGroupName $rg -Location $region",
+          "Associate the machines with a DCR (see OE-001)",
+          "Confirm extension provisioningState == Succeeded for every node"
+        ],
+        "samplePowerShell": "$nodes = (Get-ClusterNode -Cluster $ClusterName).Name\nforeach ($node in $nodes) {\n    Set-AzConnectedMachineExtension -Name 'AzureMonitorWindowsAgent' -ExtensionType 'AzureMonitorWindowsAgent' -Publisher 'Microsoft.Azure.Monitor' -MachineName $node -ResourceGroupName $ResourceGroup -Location $Region\n}",
+        "estimatedEffort": "M",
+        "estimatedImpact": "high",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-overview"
+      }
     },
     {
       "id": "SEC-008",
@@ -218,7 +453,20 @@
       "check": "lessThanOrEqual",
       "threshold": 1,
       "severity": "warning",
-      "recommendation": "Bring all nodes onto the same Arc agent version via Update-AzConnectedMachineExtension or Azure Local portal."
+      "recommendation": "Bring all nodes onto the same Arc agent version via Update-AzConnectedMachineExtension or Azure Local portal.",
+      "remediation": {
+        "rationale": "Mixed agent versions across nodes cause inconsistent extension behaviour and complicate root-cause analysis. Fixing drift is usually a five-minute bulk update.",
+        "steps": [
+          "List the current agent version on each node from the Cluster Nodes section of this report",
+          "Update the out-of-date nodes: azcmagent upgrade (per node) or automate via Arc extension updates",
+          "Re-run Ranger to confirm agentVersionDrift.uniqueVersions == 1"
+        ],
+        "samplePowerShell": "Invoke-Command -ComputerName (Get-ClusterNode -Cluster $ClusterName).Name -ScriptBlock { azcmagent show | Select-String 'Version' }",
+        "estimatedEffort": "S",
+        "estimatedImpact": "low",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-arc/servers/manage-agent"
+      }
     },
     {
       "id": "COST-001",
@@ -230,7 +478,21 @@
       "check": "equals",
       "expected": 0,
       "severity": "informational",
-      "recommendation": "Enroll eligible Arc-connected VMs in Extended Security Updates via the Azure portal (Arc > Extended Security Updates). No licensing cost applies for Arc-enrolled VMs on Azure Local."
+      "recommendation": "Enroll eligible Arc-connected VMs in Extended Security Updates via the Azure portal (Arc > Extended Security Updates). No licensing cost applies for Arc-enrolled VMs on Azure Local.",
+      "remediation": {
+        "rationale": "ESU enrolment is free for Arc-connected VMs running on Azure Local. Unenrolled eligible VMs drift off security support with no financial reason.",
+        "steps": [
+          "Identify eligible-but-not-enrolled VMs from the Cost & Licensing section",
+          "In the Azure portal, open Arc > Extended Security Updates > Create ESU license",
+          "Link the license to the Arc-connected machines via keyProfile",
+          "Confirm each VM shows ESU status Entitled"
+        ],
+        "samplePowerShell": "# ESU management is portal-driven; inspect current state via Az.Resources:\nGet-AzResource -ResourceType 'Microsoft.HybridCompute/licenses'",
+        "estimatedEffort": "S",
+        "estimatedImpact": "medium",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/windows-server/get-started/extended-security-updates-deploy"
+      }
     },
     {
       "id": "COST-002",
@@ -241,7 +503,19 @@
       "manifestPath": "domains.azureIntegration.context.subscriptionId",
       "check": "notNull",
       "severity": "informational",
-      "recommendation": "Ensure the Ranger config includes a valid subscriptionId and resourceGroup matching the Azure Local registration to enable full cost and policy assessment."
+      "recommendation": "Ensure the Ranger config includes a valid subscriptionId and resourceGroup matching the Azure Local registration to enable full cost and policy assessment.",
+      "remediation": {
+        "rationale": "Without subscriptionId set in config, Ranger cannot fetch Advisor recommendations, policy assignments, cost data, or Arc extension state. Scoring blind-spots follow.",
+        "steps": [
+          "Edit the Ranger configuration (config/config.json or -ConfigPath) and set targets.azure.subscriptionId and targets.azure.resourceGroup",
+          "Re-run Invoke-AzureLocalRanger with the updated config"
+        ],
+        "samplePowerShell": "(Get-Content -Path ./config/config.json | ConvertFrom-Json) |\n    Set-Member -MemberType NoteProperty -Name subscriptionId -Value $SubscriptionId -Force",
+        "estimatedEffort": "S",
+        "estimatedImpact": "medium",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/"
+      }
     },
     {
       "id": "COST-003",
@@ -260,7 +534,21 @@
       "warningMessage": "AHB adoption at {value}% — additional cores eligible but not enrolled.",
       "failMessage": "AHB adoption only {value}% — significant unleveraged licensing savings.",
       "severity": "warning",
-      "recommendation": "Enroll qualifying Software Assurance Windows Server licenses into Azure Hybrid Benefit for Azure Local via the cluster resource in the Azure portal."
+      "recommendation": "Enroll qualifying Software Assurance Windows Server licenses into Azure Hybrid Benefit for Azure Local via the cluster resource in the Azure portal.",
+      "remediation": {
+        "rationale": "AHB applies qualifying on-prem Windows Server licenses against Azure Local per-core billing. Every unenrolled core is direct monthly spend with zero compensating control.",
+        "steps": [
+          "Confirm qualifying Windows Server Datacenter licenses with Software Assurance are available",
+          "In the Azure portal, open the Azure Local cluster resource -> Configuration -> Software Assurance",
+          "Enable Azure Hybrid Benefit and declare the qualifying cores",
+          "Verify the resource property softwareAssuranceProperties.softwareAssuranceIntent == 'Enable'"
+        ],
+        "samplePowerShell": "$cluster = Get-AzResource -ResourceId \"/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.AzureStackHCI/clusters/$ClusterName\"\n$cluster.Properties.softwareAssuranceProperties = @{ softwareAssuranceIntent = 'Enable' }\nSet-AzResource -ResourceId $cluster.ResourceId -Properties $cluster.Properties -Force",
+        "estimatedEffort": "S",
+        "estimatedImpact": "high",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/concepts/azure-hybrid-benefit"
+      }
     },
     {
       "id": "OE-001",
@@ -272,7 +560,22 @@
       "check": "greaterThan",
       "threshold": 0,
       "severity": "warning",
-      "recommendation": "Create Data Collection Rules in the Azure portal targeting the cluster's Arc-connected machines. Associate rules with the Log Analytics workspace used for HCI Insights."
+      "recommendation": "Create Data Collection Rules in the Azure portal targeting the cluster's Arc-connected machines. Associate rules with the Log Analytics workspace used for HCI Insights.",
+      "remediation": {
+        "rationale": "Without a DCR, AMA-collected events and metrics have no destination. Monitoring dashboards and alerts silently stay empty.",
+        "steps": [
+          "In the Azure portal, open Monitor -> Data Collection Rules -> Create",
+          "Select the platform type Windows and add the cluster's Arc machines as resources",
+          "Add data sources: Windows Event Logs (System, Application, Security), Performance Counters",
+          "Set the destination as the Log Analytics workspace used by HCI Insights",
+          "Associate the DCR with the Arc machines via a DCR Association"
+        ],
+        "samplePowerShell": "# Create a minimal DCR for Windows Event logs:\nNew-AzDataCollectionRule -ResourceGroupName $ResourceGroup -Location $Region -RuleName 'dcr-azlocal' -DataFlow @{ Streams = @('Microsoft-Event'); Destinations = @($workspaceName) }",
+        "estimatedEffort": "M",
+        "estimatedImpact": "high",
+        "dependencies": ["SEC-007"],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/data-collection-rule-overview"
+      }
     },
     {
       "id": "OE-002",
@@ -284,7 +587,21 @@
       "check": "greaterThan",
       "threshold": 0,
       "severity": "warning",
-      "recommendation": "Define metric and log-based alert rules for key Azure Local health signals: cluster health faults, storage capacity threshold, node CPU and memory pressure."
+      "recommendation": "Define metric and log-based alert rules for key Azure Local health signals: cluster health faults, storage capacity threshold, node CPU and memory pressure.",
+      "remediation": {
+        "rationale": "Alerts are the difference between proactive ops and incident reports via user complaints. Baseline alerts cover the 90% of cluster faults that predict downtime.",
+        "steps": [
+          "Create log-based alerts in Log Analytics for cluster health events (FaultDomain, HealthFault)",
+          "Create metric-based alerts for node CPU > 85% for 15 minutes, memory < 10% free, storage utilisation > 80%",
+          "Route alerts to an Action Group (email/Teams/PagerDuty)",
+          "Test each alert with a synthetic condition before declaring ops-ready"
+        ],
+        "samplePowerShell": "New-AzMetricAlertRuleV2 -Name 'cluster-cpu-high' -ResourceGroupName $ResourceGroup -TargetResourceId $clusterId -WindowSize 0:15 -Frequency 0:05 -Severity 2 -Condition ... -ActionGroup $actionGroup",
+        "estimatedEffort": "M",
+        "estimatedImpact": "high",
+        "dependencies": ["OE-001"],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+      }
     },
     {
       "id": "OE-003",
@@ -296,7 +613,21 @@
       "check": "greaterThan",
       "threshold": 0,
       "severity": "informational",
-      "recommendation": "Create maintenance configurations in Azure Update Manager to schedule regular update windows for the cluster nodes."
+      "recommendation": "Create maintenance configurations in Azure Update Manager to schedule regular update windows for the cluster nodes.",
+      "remediation": {
+        "rationale": "Without a maintenance configuration, update cadence is tribal knowledge. Update Manager provides auditable, scheduled patching aligned with change windows.",
+        "steps": [
+          "Create a maintenance configuration in Azure Portal -> Update Manager -> Maintenance configurations",
+          "Set scope to the cluster's RG with recurrence (e.g. 2nd Tuesday 22:00-02:00)",
+          "Assign the configuration to the Arc-connected machines",
+          "Review compliance weekly"
+        ],
+        "samplePowerShell": "New-AzMaintenanceConfiguration -ResourceGroupName $ResourceGroup -Name 'mc-azlocal' -Location $Region -MaintenanceScope 'InGuestPatch' -Visibility 'Custom'",
+        "estimatedEffort": "S",
+        "estimatedImpact": "medium",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/update-manager/maintenance-configurations"
+      }
     },
     {
       "id": "OE-004",
@@ -308,7 +639,18 @@
       "check": "greaterThan",
       "threshold": 0,
       "severity": "warning",
-      "recommendation": "Deploy Azure Monitor Agent to all cluster nodes via the Azure Local portal (Monitoring > Insights) or via Arc extension management."
+      "recommendation": "Deploy Azure Monitor Agent to all cluster nodes via the Azure Local portal (Monitoring > Insights) or via Arc extension management.",
+      "remediation": {
+        "rationale": "AMA is the prerequisite agent for every Azure Monitor scenario on Azure Local. Missing AMA means no HCI Insights, no DCR-fed logs, no Defender for Servers telemetry.",
+        "steps": [
+          "See SEC-007 — same remediation applies to all monitoring scenarios"
+        ],
+        "samplePowerShell": "$nodes = (Get-ClusterNode -Cluster $ClusterName).Name\nforeach ($node in $nodes) {\n    Set-AzConnectedMachineExtension -Name 'AzureMonitorWindowsAgent' -ExtensionType 'AzureMonitorWindowsAgent' -Publisher 'Microsoft.Azure.Monitor' -MachineName $node -ResourceGroupName $ResourceGroup -Location $Region\n}",
+        "estimatedEffort": "M",
+        "estimatedImpact": "high",
+        "dependencies": ["SEC-007"],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-overview"
+      }
     },
     {
       "id": "OE-005",
@@ -319,7 +661,21 @@
       "manifestPath": "domains.monitoring.hciInsights.enabled",
       "check": "boolTrue",
       "severity": "informational",
-      "recommendation": "Enable HCI Insights from the Azure Local cluster resource in the Azure portal under Monitoring > Insights."
+      "recommendation": "Enable HCI Insights from the Azure Local cluster resource in the Azure portal under Monitoring > Insights.",
+      "remediation": {
+        "rationale": "HCI Insights is the primary portal dashboard for cluster health, VM telemetry, and trend analysis. Without it, operators rely on cmdlet scraping or third-party tooling.",
+        "steps": [
+          "Navigate to the Azure Local cluster resource in Azure Portal",
+          "Open Monitoring -> Insights -> Configure",
+          "Select the Log Analytics workspace (same workspace used for DCRs in OE-001)",
+          "Wait ~15 minutes for the initial data population"
+        ],
+        "samplePowerShell": "# HCI Insights enablement is portal-driven.\n# Verify the workspace association:\nGet-AzOperationalInsightsWorkspace -ResourceGroupName $ResourceGroup",
+        "estimatedEffort": "S",
+        "estimatedImpact": "medium",
+        "dependencies": ["OE-001"],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/manage/monitor-cluster"
+      }
     },
     {
       "id": "OE-006",
@@ -330,7 +686,21 @@
       "manifestPath": "run.schemaValidation.isValid",
       "check": "boolTrue",
       "severity": "warning",
-      "recommendation": "Review manifest schema validation warnings in run.schemaValidation. Re-run collection if the issue persists or file a bug at github.com/AzureLocal/azurelocal-ranger/issues."
+      "recommendation": "Review manifest schema validation warnings in run.schemaValidation. Re-run collection if the issue persists or file a bug at github.com/AzureLocal/azurelocal-ranger/issues.",
+      "remediation": {
+        "rationale": "Schema validation failure means collected data may not flow through downstream analysis correctly. It often indicates a collector error or partial data.",
+        "steps": [
+          "Review the run.schemaValidation object in the manifest for specific validation messages",
+          "Check the run.log for collector errors or warnings",
+          "Re-run Invoke-AzureLocalRanger with -Verbose to diagnose",
+          "If the issue persists, file a bug report with the manifest validation messages"
+        ],
+        "samplePowerShell": "(Get-Content -Path ./ranger-manifest.json | ConvertFrom-Json).run.schemaValidation | Format-List",
+        "estimatedEffort": "S",
+        "estimatedImpact": "low",
+        "dependencies": [],
+        "docsUrl": "https://github.com/AzureLocal/azurelocal-ranger/issues"
+      }
     },
     {
       "id": "OE-007",
@@ -342,7 +712,20 @@
       "check": "greaterThan",
       "threshold": 0,
       "severity": "informational",
-      "recommendation": "Create at least one storage path in the Azure Local portal (Storage > Storage paths) pointing at a Cluster Shared Volume."
+      "recommendation": "Create at least one storage path in the Azure Local portal (Storage > Storage paths) pointing at a Cluster Shared Volume.",
+      "remediation": {
+        "rationale": "Storage paths project a CSV path as an Arc-managed resource so Arc VMs can use it for virtual disk storage. No storage path = no Arc VM provisioning.",
+        "steps": [
+          "In the Azure Local portal, open the cluster resource -> Storage > Storage paths -> Create",
+          "Select a Cluster Shared Volume and supply a name",
+          "Verify the resource appears as Microsoft.AzureStackHCI/storageContainers"
+        ],
+        "samplePowerShell": "New-AzStackHciStorageContainer -Name 'sc-prod' -ResourceGroupName $ResourceGroup -Location $Region -CustomLocationId $customLocationId -Path 'C:\\ClusterStorage\\Volume01'",
+        "estimatedEffort": "S",
+        "estimatedImpact": "medium",
+        "dependencies": ["REL-008"],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/manage/create-storage-path"
+      }
     },
     {
       "id": "OE-008",
@@ -354,7 +737,21 @@
       "check": "greaterThan",
       "threshold": 0,
       "severity": "informational",
-      "recommendation": "Create a custom location linked to the Arc Resource Bridge via Azure Local portal (Arc services > Custom locations)."
+      "recommendation": "Create a custom location linked to the Arc Resource Bridge via Azure Local portal (Arc services > Custom locations).",
+      "remediation": {
+        "rationale": "Custom Locations are the resource targeting mechanism for Arc services (Arc VM, AKS Arc, Arc-enabled SQL MI). Without one, Arc workloads have nowhere to deploy.",
+        "steps": [
+          "Deploy Arc Resource Bridge first (REL-008)",
+          "In Azure Portal -> Custom locations -> Create, select the appliance and target RG",
+          "Enable the resource providers (Microsoft.AzureStackHCI) for the custom location",
+          "Verify the resource appears as Microsoft.ExtendedLocation/customLocations"
+        ],
+        "samplePowerShell": "# Created during Arc Resource Bridge deployment; verify state:\nGet-AzResource -ResourceType 'Microsoft.ExtendedLocation/customLocations'",
+        "estimatedEffort": "S",
+        "estimatedImpact": "medium",
+        "dependencies": ["REL-008"],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-arc/platform/conceptual-custom-locations"
+      }
     },
     {
       "id": "OE-009",
@@ -366,7 +763,21 @@
       "check": "greaterThan",
       "threshold": 0,
       "severity": "informational",
-      "recommendation": "Deploy Arc VMs from the Azure Local marketplace or a managed compute gallery rather than custom-uploaded VHDs."
+      "recommendation": "Deploy Arc VMs from the Azure Local marketplace or a managed compute gallery rather than custom-uploaded VHDs.",
+      "remediation": {
+        "rationale": "Tracked images give you provenance, patch level, and publisher signatures. Custom VHDs become long-lived snowflakes that no-one remembers how to rebuild.",
+        "steps": [
+          "In the Azure Local portal, open the cluster -> Images -> Add image from marketplace",
+          "Pick a supported Windows Server or Linux SKU and download",
+          "Standardise new Arc VM deployments on the marketplace image",
+          "Plan a remediation window to rebuild existing VMs from tracked images"
+        ],
+        "samplePowerShell": "# Browse marketplace images:\nGet-AzVMImageOffer -Location $Region -PublisherName 'microsoftwindowsserver'",
+        "estimatedEffort": "L",
+        "estimatedImpact": "medium",
+        "dependencies": ["REL-008"],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/manage/virtual-machine-image-azure-marketplace"
+      }
     },
     {
       "id": "PERF-001",
@@ -378,7 +789,21 @@
       "check": "equals",
       "expected": 0,
       "severity": "warning",
-      "recommendation": "Review per-node CPU utilization in the performance domain. Consider migrating high-density VMs or adding nodes to increase headroom."
+      "recommendation": "Review per-node CPU utilization in the performance domain. Consider migrating high-density VMs or adding nodes to increase headroom.",
+      "remediation": {
+        "rationale": "Sustained CPU > 85% leaves no headroom for VM restart storms after a node fails. A cluster that runs hot already is one failure from a performance collapse.",
+        "steps": [
+          "Identify hot nodes from the Performance section of this report",
+          "Live-migrate a subset of VMs to cooler nodes: Move-ClusterVirtualMachineRole",
+          "Review top consumers via per-VM CPU metrics; rightsize or decommission",
+          "Plan for node addition if sustained utilisation remains > 70% after rebalancing"
+        ],
+        "samplePowerShell": "Invoke-Command -ComputerName $NodeName -ScriptBlock {\n    Get-VM | Sort-Object CPUUsage -Descending | Select-Object -First 10 Name, State, CPUUsage, MemoryDemand\n}",
+        "estimatedEffort": "M",
+        "estimatedImpact": "medium",
+        "dependencies": ["REL-009"],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/manage/manage-cluster-performance"
+      }
     },
     {
       "id": "PERF-002",
@@ -390,7 +815,21 @@
       "check": "lessThan",
       "threshold": 80,
       "severity": "warning",
-      "recommendation": "Review the Storage Pool Capacity section of this report. Decommission unused VMs or volumes, or expand storage capacity to restore headroom."
+      "recommendation": "Review the Storage Pool Capacity section of this report. Decommission unused VMs or volumes, or expand storage capacity to restore headroom.",
+      "remediation": {
+        "rationale": "S2D reserves ~10% for rebuild capacity. Above 80% usable the pool cannot self-heal from a disk failure without manual intervention — a ticking clock.",
+        "steps": [
+          "Identify stale or oversized volumes from the Storage section of this report",
+          "Decommission unused VMs: Remove-VM (+ delete associated VHDs)",
+          "Shrink over-provisioned dynamic VHDs: Optimize-VHD -Mode Full",
+          "If still > 80%, plan storage expansion: add disks to nodes or add nodes"
+        ],
+        "samplePowerShell": "Get-Volume -CimSession $ClusterName | Where-Object DriveType -eq 'Fixed' | ForEach-Object {\n    [PSCustomObject]@{ Name = $_.FileSystemLabel; UsedPct = [int](($_.Size - $_.SizeRemaining) / $_.Size * 100) }\n}",
+        "estimatedEffort": "L",
+        "estimatedImpact": "high",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/concepts/storage-capacity"
+      }
     },
     {
       "id": "PERF-003",
@@ -402,7 +841,20 @@
       "check": "greaterThan",
       "threshold": 0,
       "severity": "informational",
-      "recommendation": "Verify that required management services (Health Service, MDAG, Arc agent) are running on all cluster nodes."
+      "recommendation": "Verify that required management services (Health Service, MDAG, Arc agent) are running on all cluster nodes.",
+      "remediation": {
+        "rationale": "Key services (Health Service, WMI, Arc agent) underpin all management surfaces. If they are stopped, reports will be empty and Azure portal operations will fail.",
+        "steps": [
+          "On each node, check service state: Get-Service -Name HealthService, ClusSvc, himds",
+          "Start any stopped services and set startup type to Automatic",
+          "Investigate root cause if services keep stopping (event log, cluster events)"
+        ],
+        "samplePowerShell": "Invoke-Command -ComputerName (Get-ClusterNode -Cluster $ClusterName).Name -ScriptBlock {\n    Get-Service -Name HealthService, ClusSvc, himds | Select-Object MachineName, Name, Status, StartType\n}",
+        "estimatedEffort": "S",
+        "estimatedImpact": "high",
+        "dependencies": [],
+        "docsUrl": "https://learn.microsoft.com/en-us/azure/azure-local/manage/manage-services"
+      }
     }
   ],
   "calculations": {

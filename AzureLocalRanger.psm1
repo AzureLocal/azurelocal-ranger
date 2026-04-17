@@ -29,5 +29,7 @@ Export-ModuleMember -Function @(
     'Invoke-RangerWizard',
     # v2.0.0 (#226): WAF rule config hot-swap helpers.
     'Export-RangerWafConfig',
-    'Import-RangerWafConfig'
+    'Import-RangerWafConfig',
+    # v2.2.0 (#243): copy-pasteable remediation script generator.
+    'Get-RangerRemediation'
 )

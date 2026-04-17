@@ -517,6 +517,219 @@ function Invoke-RangerWafRerun {
     return $wafResult
 }
 
+function Get-RangerRemediation {
+    <#
+    .SYNOPSIS
+        v2.2.0 (#243): emit a copy-pasteable remediation script for failing WAF findings.
+    .DESCRIPTION
+        Reads an existing Ranger audit-manifest, evaluates WAF rules, and writes a
+        PowerShell script (or markdown runbook / checklist) that a cluster operator
+        can execute to close the failing findings. Defaults to dry-run — every action
+        is prefixed with a Write-Host preview. Pass -Commit to emit live cmdlets.
+
+    .PARAMETER ManifestPath
+        Path to a Ranger audit-manifest.json. Remediation detail is read from the
+        rule evaluation results derived from that manifest.
+
+    .PARAMETER FindingId
+        One or more WAF rule IDs to generate remediation for. When omitted, all
+        failing rules are included.
+
+    .PARAMETER OutputPath
+        Destination file. Defaults to `.\ranger-remediation-<timestamp>.<ext>` in
+        the current directory, where <ext> is chosen from -Format.
+
+    .PARAMETER Format
+        `ps1` (default), `md`, or `checklist`.
+
+    .PARAMETER Commit
+        When set, emits live cmdlets instead of dry-run previews. Still writes to
+        disk — the operator reviews and runs the script themselves.
+
+    .PARAMETER IncludeDependencies
+        When set, includes any rules listed in remediation.dependencies as earlier
+        blocks in the script. Prerequisites fix first.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)] [string]$ManifestPath,
+        [string[]]$FindingId,
+        [string]$OutputPath,
+        [ValidateSet('ps1','md','checklist')] [string]$Format = 'ps1',
+        [switch]$Commit,
+        [switch]$IncludeDependencies
+    )
+
+    $resolved = Resolve-RangerPath -Path $ManifestPath
+    if (-not (Test-Path -Path $resolved -PathType Leaf)) { throw "Manifest not found: $resolved" }
+    $manifestRaw = Get-Content -Path $resolved -Raw | ConvertFrom-Json -AsHashtable -Depth 100
+    $manifest    = ConvertTo-RangerHashtable -InputObject $manifestRaw
+    $wafResult   = Invoke-RangerWafRuleEvaluation -Manifest $manifest
+
+    $allRules = @($wafResult.ruleResults)
+    $failing  = @($allRules | Where-Object { $_.pass -eq $false })
+    $targets  = if ($FindingId -and $FindingId.Count -gt 0) {
+        $knownIds = @($allRules | ForEach-Object { [string]$_.id })
+        foreach ($fid in $FindingId) {
+            if ($fid -notin $knownIds) {
+                throw "RuleNotFoundException: rule '$fid' not defined. Known rules: $($knownIds -join ', ')"
+            }
+        }
+        @($allRules | Where-Object { [string]$_.id -in $FindingId })
+    } else {
+        $failing
+    }
+
+    # Dependency expansion — add prerequisites ahead of their dependents.
+    if ($IncludeDependencies) {
+        $expanded = New-Object System.Collections.Generic.List[object]
+        $seen = New-Object System.Collections.Generic.HashSet[string]
+        $visit = {
+            param($rr)
+            if ($seen.Contains([string]$rr.id)) { return }
+            if ($rr.remediation -and $rr.remediation.dependencies) {
+                foreach ($depId in @($rr.remediation.dependencies)) {
+                    $dep = $allRules | Where-Object { [string]$_.id -eq [string]$depId } | Select-Object -First 1
+                    if ($dep -and -not $dep.pass) { & $visit $dep }
+                }
+            }
+            [void]$seen.Add([string]$rr.id)
+            $expanded.Add($rr)
+        }
+        foreach ($t in $targets) { & $visit $t }
+        $targets = @($expanded)
+    } else {
+        # Order by priorityScore descending.
+        $targets = @($targets | Sort-Object -Property @{ Expression = { -[double]$_.priorityScore } }, @{ Expression = { [string]$_.id } })
+    }
+
+    # Manifest substitutions for $ClusterName / $ResourceGroup / $NodeName / $SubscriptionId / $Region.
+    $substitutions = [ordered]@{
+        ClusterName    = [string]($manifest.run.clusterName ?? $manifest.topology.clusterName ?? $manifest.domains.clusterNode.clusterName ?? '')
+        ResourceGroup  = [string]($manifest.domains.azureIntegration.context.resourceGroup ?? '')
+        SubscriptionId = [string]($manifest.domains.azureIntegration.context.subscriptionId ?? '')
+        Region         = [string]($manifest.domains.azureIntegration.context.location ?? 'eastus')
+        NodeName       = [string](@($manifest.domains.clusterNode.nodes) | ForEach-Object { if ($_.name) { $_.name } elseif ($_.NodeName) { $_.NodeName } } | Select-Object -First 1)
+    }
+    $applySubs = {
+        param([string]$s)
+        if ([string]::IsNullOrWhiteSpace($s)) { return $s }
+        foreach ($k in $substitutions.Keys) {
+            $v = [string]$substitutions[$k]
+            if (-not [string]::IsNullOrWhiteSpace($v)) {
+                $s = $s -replace ('\$' + $k + '\b'), $v
+            }
+        }
+        return $s
+    }
+
+    $timestamp = (Get-Date).ToString('yyyyMMddHHmmss')
+    if (-not $OutputPath) {
+        $ext = switch ($Format) { 'md' { 'md' } 'checklist' { 'md' } default { 'ps1' } }
+        $OutputPath = Join-Path -Path (Get-Location).Path -ChildPath "ranger-remediation-$timestamp.$ext"
+    }
+
+    $warnings = New-Object System.Collections.ArrayList
+    $writer = [System.Text.StringBuilder]::new()
+
+    switch ($Format) {
+        'checklist' {
+            [void]$writer.AppendLine("# Ranger Remediation Checklist — generated $timestamp")
+            [void]$writer.AppendLine("# Cluster: $($substitutions.ClusterName)  |  findings: $($targets.Count)")
+            [void]$writer.AppendLine('')
+            foreach ($rr in $targets) {
+                [void]$writer.AppendLine("## $($rr.id) — $($rr.title)")
+                if ($rr.remediation -and @($rr.remediation.steps).Count -gt 0) {
+                    foreach ($s in @($rr.remediation.steps)) { [void]$writer.AppendLine("- [ ] $(& $applySubs $s)") }
+                } else {
+                    [void]$writer.AppendLine("- [ ] $($rr.recommendation)")
+                }
+                [void]$writer.AppendLine('')
+            }
+        }
+        'md' {
+            [void]$writer.AppendLine("# Ranger Remediation Runbook")
+            [void]$writer.AppendLine("Generated: $timestamp")
+            [void]$writer.AppendLine("Cluster: $($substitutions.ClusterName)")
+            [void]$writer.AppendLine("Findings: $($targets.Count)")
+            [void]$writer.AppendLine('')
+            foreach ($rr in $targets) {
+                [void]$writer.AppendLine("## $($rr.id) — $($rr.title)")
+                if ($rr.remediation) {
+                    $rem = $rr.remediation
+                    if ($rem.rationale) { [void]$writer.AppendLine("**Rationale:** $($rem.rationale)"); [void]$writer.AppendLine('') }
+                    [void]$writer.AppendLine("- **Effort:** $($rr.estimatedEffort)   |   **Impact:** $($rr.estimatedImpact)   |   **Priority:** $($rr.priorityScore)")
+                    [void]$writer.AppendLine('')
+                    if (@($rem.steps).Count -gt 0) {
+                        [void]$writer.AppendLine('### Steps')
+                        $idx = 1; foreach ($s in @($rem.steps)) { [void]$writer.AppendLine("$idx. $(& $applySubs $s)"); $idx++ }
+                        [void]$writer.AppendLine('')
+                    }
+                    if ($rem.samplePowerShell) {
+                        [void]$writer.AppendLine('### Sample PowerShell')
+                        [void]$writer.AppendLine('```powershell')
+                        [void]$writer.AppendLine((& $applySubs ([string]$rem.samplePowerShell)))
+                        [void]$writer.AppendLine('```')
+                        [void]$writer.AppendLine('')
+                    }
+                    if ($rem.docsUrl) { [void]$writer.AppendLine("Docs: <$($rem.docsUrl)>"); [void]$writer.AppendLine('') }
+                } else {
+                    [void]$writer.AppendLine($rr.recommendation)
+                    [void]$writer.AppendLine('')
+                }
+            }
+        }
+        default {
+            # ps1
+            [void]$writer.AppendLine("<# Ranger Remediation Script — generated $timestamp")
+            [void]$writer.AppendLine("   Cluster:        $($substitutions.ClusterName)")
+            [void]$writer.AppendLine("   Findings fixed: $(@($targets | ForEach-Object { $_.id }) -join ', ')")
+            [void]$writer.AppendLine("   Mode:           $(if ($Commit) { 'COMMIT — cmdlets will execute' } else { 'dry-run (re-run with -Commit to execute)' })")
+            [void]$writer.AppendLine('#>')
+            [void]$writer.AppendLine('')
+            [void]$writer.AppendLine("`$ClusterName    = '$($substitutions.ClusterName)'")
+            [void]$writer.AppendLine("`$ResourceGroup  = '$($substitutions.ResourceGroup)'")
+            [void]$writer.AppendLine("`$SubscriptionId = '$($substitutions.SubscriptionId)'")
+            [void]$writer.AppendLine("`$Region         = '$($substitutions.Region)'")
+            [void]$writer.AppendLine('')
+            foreach ($rr in $targets) {
+                $rem = $rr.remediation
+                $header = "# --- $($rr.id): $($rr.title)"
+                if ($rem) { $header += " (effort: $($rr.estimatedEffort), impact: $($rr.estimatedImpact)) ---" } else { $header += ' ---' }
+                [void]$writer.AppendLine($header)
+                if ($rem -and $rem.docsUrl) { [void]$writer.AppendLine("# Reference: $($rem.docsUrl)") }
+                if ($rem -and $rem.samplePowerShell) {
+                    $sample = (& $applySubs ([string]$rem.samplePowerShell))
+                    if ($Commit) {
+                        [void]$writer.AppendLine($sample)
+                    } else {
+                        $singleLine = $sample -replace "`r?`n", ' ; '
+                        $escaped = $singleLine -replace "'", "''"
+                        [void]$writer.AppendLine("Write-Host '[DRY-RUN] $escaped' -ForegroundColor Yellow")
+                        foreach ($line in ($sample -split "`n")) { [void]$writer.AppendLine("# $line") }
+                    }
+                } else {
+                    [void]$warnings.Add("Rule $($rr.id) has no samplePowerShell; skipped ($(if ($Commit) { 'commit' } else { 'dry-run' }))")
+                    [void]$writer.AppendLine("# (no samplePowerShell for this rule — see steps in markdown runbook or docs)")
+                }
+                [void]$writer.AppendLine('')
+            }
+        }
+    }
+
+    Set-Content -Path $OutputPath -Value $writer.ToString() -Encoding UTF8
+
+    foreach ($w in $warnings) { Write-Warning $w }
+
+    return [pscustomobject]@{
+        OutputPath   = $OutputPath
+        Format       = $Format
+        Findings     = @($targets | ForEach-Object { [string]$_.id })
+        Commit       = [bool]$Commit
+        Warnings     = @($warnings)
+    }
+}
+
 function Test-AzureLocalRangerPrerequisites {
     <#
     .SYNOPSIS

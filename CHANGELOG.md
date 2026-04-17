@@ -8,6 +8,25 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-04-17
+
+WAF Compliance Guidance — turn the WAF score into an actionable roadmap with
+priority-ranked fix order, projected post-fix score, and a copy-pasteable
+remediation script.
+
+### Added
+
+- **Structured remediation block per WAF rule (#236)** — every rule in `config/waf-rules.json` now carries `remediation.{rationale, steps, samplePowerShell, estimatedEffort, estimatedImpact, dependencies, docsUrl}`. Reports surface a new "Next Step" column in the Findings table and a full Remediation Detail section per failing rule. Schema version bumped to `2.2.0` with a new `prioritization` block defining severity, impact, and effort factors.
+- **WAF Compliance Roadmap (#241)** — `Invoke-RangerWafRuleEvaluation` now returns a `roadmap` array bucketing failing rules into Now/Next/Later tiers by `priorityScore = (weight * severityMultiplier * impactFactor) / effortFactor`. Rendered as a ranked table in the technical tier; exported as `powerbi/waf-roadmap.csv`.
+- **Gap-to-Goal projection (#242)** — `gapToGoal` result block with a greedy fix plan: *"Current 67%. Closing these 3 findings raises you to 82% (Excellent)."* Honours rule dependencies so prerequisites fix first. Exported as `powerbi/waf-gap-to-goal.csv`. Truncated at 5 entries or when the projected score crosses the next threshold.
+- **Per-pillar WAF Compliance Checklist (#238)** — one subsection per pillar with every rule, status, weight, effort, next step, and a Signed Off column for handoff / sprint artefact use. Exported as `powerbi/waf-checklist.csv`.
+- **`Get-RangerRemediation` (#243)** — new public command emits a copy-pasteable remediation script from an existing manifest. `-Format ps1|md|checklist`, `-Commit` for live cmdlets (dry-run by default), `-IncludeDependencies` to expand prerequisites, `-FindingId` to target specific rules. Substitutes `$ClusterName`, `$ResourceGroup`, `$SubscriptionId`, `$Region`, `$NodeName` from the manifest.
+
+### Changed
+
+- `Invoke-RangerWafRuleEvaluation` now returns `roadmap` and `gapToGoal` alongside the existing `pillarScores` and `ruleResults`.
+- Every rule result carries `estimatedEffort`, `estimatedImpact`, and `priorityScore` for downstream consumers.
+
 ## [2.1.0] — 2026-04-16
 
 Preflight Hardening — closes three auth gaps identified during the v2.0.0

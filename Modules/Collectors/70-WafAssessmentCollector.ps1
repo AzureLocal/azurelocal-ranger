@@ -216,6 +216,7 @@ function Invoke-RangerWafRuleEvaluation {
                 description      = $rule.description
                 severity         = $rule.severity
                 recommendation   = $rule.recommendation
+                remediation      = if ($null -ne $rule.remediation) { ConvertTo-RangerHashtable -InputObject $rule.remediation } else { $null }
                 calculation      = [string]$rule.calculation
                 resolvedValue    = $numeric
                 awardedPoints    = $awarded
@@ -281,6 +282,7 @@ function Invoke-RangerWafRuleEvaluation {
             description       = $rule.description
             severity          = $rule.severity
             recommendation    = $rule.recommendation
+            remediation       = if ($null -ne $rule.remediation) { ConvertTo-RangerHashtable -InputObject $rule.remediation } else { $null }
             manifestPath      = $rule.manifestPath
             resolvedValue     = $rawValue
             awardedPoints     = $awarded
@@ -348,10 +350,70 @@ function Invoke-RangerWafRuleEvaluation {
     foreach ($rr in $allRules) { $totalAwarded += [double]$rr.weightedAwarded; $totalMax += [double]$rr.weightedMaxPoints }
     $overall      = if ($totalMax -gt 0) { [int][math]::Round($totalAwarded / $totalMax * 100) } else { 0 }
 
+    # v2.2.0 (#241): compute priorityScore per rule and bucket failing rules into
+    # Now/Next/Later tiers. priorityScore = (weight * severityMult * impactFactor) / effortFactor.
+    $priority = $rulesData.prioritization
+    $sevMap  = @{ critical = 3; warning = 2; informational = 1 }
+    $impMap  = @{ high = 3; medium = 2; low = 1 }
+    $effMap  = @{ S = 1; M = 2; L = 4 }
+    $defEff  = 'M'
+    $defImp  = 'medium'
+    if ($priority) {
+        if ($priority.severityMultipliers) { foreach ($k in @('critical','warning','informational')) { if ($null -ne $priority.severityMultipliers.$k) { $sevMap[$k] = [int]$priority.severityMultipliers.$k } } }
+        if ($priority.impactFactors)       { foreach ($k in @('high','medium','low'))               { if ($null -ne $priority.impactFactors.$k)       { $impMap[$k] = [int]$priority.impactFactors.$k } } }
+        if ($priority.effortFactors)       { foreach ($k in @('S','M','L'))                          { if ($null -ne $priority.effortFactors.$k)       { $effMap[$k] = [int]$priority.effortFactors.$k } } }
+        if (-not [string]::IsNullOrWhiteSpace([string]$priority.defaultEffort)) { $defEff = [string]$priority.defaultEffort }
+        if (-not [string]::IsNullOrWhiteSpace([string]$priority.defaultImpact)) { $defImp = [string]$priority.defaultImpact }
+    }
+
+    foreach ($rr in $allRules) {
+        $effort = if ($rr.remediation -and -not [string]::IsNullOrWhiteSpace([string]$rr.remediation.estimatedEffort)) { [string]$rr.remediation.estimatedEffort } else { $defEff }
+        $impact = if ($rr.remediation -and -not [string]::IsNullOrWhiteSpace([string]$rr.remediation.estimatedImpact)) { [string]$rr.remediation.estimatedImpact } else { $defImp }
+        $sev    = [string]$rr.severity
+        $sevMul = if ($sevMap.ContainsKey($sev)) { $sevMap[$sev] } else { 1 }
+        $impFac = if ($impMap.ContainsKey($impact)) { $impMap[$impact] } else { 2 }
+        $effFac = if ($effMap.ContainsKey($effort)) { $effMap[$effort] } else { 2 }
+        $w      = if ($null -ne $rr.weight) { [double]$rr.weight } else { 1.0 }
+        $score  = if ($effFac -gt 0) { [math]::Round(($w * $sevMul * $impFac) / $effFac, 2) } else { 0 }
+        $rr['estimatedEffort'] = $effort
+        $rr['estimatedImpact'] = $impact
+        $rr['priorityScore']   = [double]$score
+    }
+
+    # Bucket failing rules by priorityScore: top third Now, middle Next, rest Later.
+    $failing = @($allRules | Where-Object { $_.pass -eq $false } | Sort-Object -Property @{ Expression = { -[double]$_.priorityScore } }, @{ Expression = { [string]$_.id } })
+    $roadmap = New-Object System.Collections.ArrayList
+    if ($failing.Count -gt 0) {
+        $perTier = [math]::Max(1, [int][math]::Ceiling($failing.Count / 3.0))
+        for ($i = 0; $i -lt $failing.Count; $i++) {
+            $tier = if ($i -lt $perTier) { 'Now' } elseif ($i -lt ($perTier * 2)) { 'Next' } else { 'Later' }
+            $rr = $failing[$i]
+            $firstStep = if ($rr.remediation -and @($rr.remediation.steps).Count -gt 0) { [string]@($rr.remediation.steps)[0] } else { [string]$rr.recommendation }
+            [void]$roadmap.Add([ordered]@{
+                bucket        = $tier
+                id            = [string]$rr.id
+                pillar        = [string]$rr.pillar
+                severity      = [string]$rr.severity
+                weight        = [double]$rr.weight
+                effort        = [string]$rr.estimatedEffort
+                impact        = [string]$rr.estimatedImpact
+                priorityScore = [double]$rr.priorityScore
+                title         = [string]$rr.title
+                firstStep     = $firstStep
+            })
+        }
+    }
+
+    # v2.2.0 (#242): greedy gap-to-goal projection — simulate closing failing rules in
+    # order of deltaScore/effortFactor until we cross the next threshold (Good or Excellent).
+    $gapToGoal = Invoke-RangerWafGapToGoal -RuleResults $allRules -TotalAwarded $totalAwarded -TotalMax $totalMax -Thresholds $thresh -EffortMap $effMap
+
     return [ordered]@{
         pillarScores    = @($pillarScores)
         ruleResults     = @($ruleResults)
         scoreThresholds = $thresh
+        roadmap         = @($roadmap)
+        gapToGoal       = $gapToGoal
         summary         = [ordered]@{
             totalRules       = $allRules.Count
             passingRules     = $allPass
@@ -361,6 +423,111 @@ function Invoke-RangerWafRuleEvaluation {
             weightedMax      = [math]::Round($totalMax, 2)
             status           = & $statusFor $overall
         }
+    }
+}
+
+function Invoke-RangerWafGapToGoal {
+    <#
+    .SYNOPSIS
+        v2.2.0 (#242): greedy fix-plan projection — "fix these N rules to reach <threshold>%".
+    .DESCRIPTION
+        Simulates closing failing rules in order of `deltaScore / effortFactor` descending,
+        stopping when the projected overall score crosses the next threshold (Good 60% or
+        Excellent 80%) or after `MaxPlanEntries` (default 5). Honours rule dependencies —
+        a dependent rule cannot be closed before its prerequisites.
+    #>
+    param(
+        [Parameter(Mandatory = $true)] $RuleResults,
+        [Parameter(Mandatory = $true)] [double]$TotalAwarded,
+        [Parameter(Mandatory = $true)] [double]$TotalMax,
+        [Parameter(Mandatory = $true)] $Thresholds,
+        [Parameter(Mandatory = $true)] $EffortMap,
+        [int]$MaxPlanEntries = 5
+    )
+
+    if ($TotalMax -le 0) { return $null }
+    $current = [int][math]::Round($TotalAwarded / $TotalMax * 100)
+    $statusFor = {
+        param([double]$s)
+        if ($s -ge $Thresholds.excellent) { 'Excellent' }
+        elseif ($s -ge $Thresholds.good)  { 'Good' }
+        elseif ($s -ge $Thresholds.fair)  { 'Fair' }
+        else                               { 'Needs Improvement' }
+    }
+    $currentStatus = & $statusFor $current
+    $failing = @($RuleResults | Where-Object { $_.pass -eq $false })
+    if ($failing.Count -eq 0) {
+        return [ordered]@{
+            currentScore    = $current
+            currentStatus   = $currentStatus
+            projectedScore  = $current
+            projectedStatus = $currentStatus
+            targetThreshold = $null
+            fixPlan         = @()
+            message         = 'No failing rules — already at target posture.'
+        }
+    }
+
+    $target = if ($current -lt $Thresholds.good) { 'good' } elseif ($current -lt $Thresholds.excellent) { 'excellent' } else { 'excellent' }
+    $targetScore = if ($target -eq 'good') { [int]$Thresholds.good } else { [int]$Thresholds.excellent }
+
+    # Annotate each failing rule with projected delta.
+    $candidates = New-Object System.Collections.ArrayList
+    foreach ($rr in $failing) {
+        $effort = if ($rr.estimatedEffort) { [string]$rr.estimatedEffort } else { 'M' }
+        $effFac = if ($EffortMap.ContainsKey($effort)) { [int]$EffortMap[$effort] } else { 2 }
+        $remaining = [double]$rr.weightedMaxPoints - [double]$rr.weightedAwarded
+        if ($remaining -le 0) { continue }
+        $deltaScore = [math]::Round(($remaining / $TotalMax) * 100, 2)
+        $efficiency = if ($effFac -gt 0) { [math]::Round($deltaScore / $effFac, 3) } else { 0 }
+        $deps = @()
+        if ($rr.remediation -and $rr.remediation.dependencies) { $deps = @($rr.remediation.dependencies | ForEach-Object { [string]$_ }) }
+        [void]$candidates.Add([ordered]@{
+            id         = [string]$rr.id
+            effort     = $effort
+            effFac     = $effFac
+            remaining  = [double]$remaining
+            deltaScore = [double]$deltaScore
+            efficiency = [double]$efficiency
+            deps       = $deps
+        })
+    }
+
+    # Greedy selection honouring dependencies.
+    $plan    = New-Object System.Collections.ArrayList
+    $closed  = New-Object System.Collections.Generic.HashSet[string]
+    $passing = New-Object System.Collections.Generic.HashSet[string]
+    foreach ($rr in $RuleResults) { if ($rr.pass -eq $true) { [void]$passing.Add([string]$rr.id) } }
+
+    $projAwarded = $TotalAwarded
+    for ($i = 0; $i -lt $MaxPlanEntries; $i++) {
+        $available = @($candidates | Where-Object {
+            -not $closed.Contains($_.id) -and (@($_.deps | Where-Object { $_ -and -not $passing.Contains($_) -and -not $closed.Contains($_) }).Count -eq 0)
+        })
+        if ($available.Count -eq 0) { break }
+        $pick = $available | Sort-Object -Property @{ Expression = { -[double]$_.efficiency } }, @{ Expression = { [string]$_.id } } | Select-Object -First 1
+        $projAwarded += [double]$pick.remaining
+        $cum = [int][math]::Round($projAwarded / $TotalMax * 100)
+        [void]$closed.Add([string]$pick.id)
+        [void]$plan.Add([ordered]@{
+            ruleId          = [string]$pick.id
+            deltaScore      = [double]$pick.deltaScore
+            cumulativeScore = [int]$cum
+            effort          = [string]$pick.effort
+        })
+        if ($cum -ge $targetScore) { break }
+    }
+
+    $projected = [int][math]::Round($projAwarded / $TotalMax * 100)
+    $projectedStatus = & $statusFor $projected
+
+    return [ordered]@{
+        currentScore    = $current
+        currentStatus   = $currentStatus
+        projectedScore  = $projected
+        projectedStatus = $projectedStatus
+        targetThreshold = $target
+        fixPlan         = @($plan)
     }
 }
 
