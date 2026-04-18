@@ -170,7 +170,15 @@ function Invoke-RangerWafRuleEvaluation {
             $maxPts = if ($null -ne $rule.maxPoints) { [int]$rule.maxPoints } elseif ($null -ne $rule.points) { [int]$rule.points } else { 1 }
 
             if ($null -eq $value) {
-                Write-Warning "WAF rule '$($rule.id)' references undefined or null calculation '$($rule.calculation)' — skipping."
+                # Issue #331: distinguish a rule authoring error (calculation key not in the
+                # definitions dict at all) from data unavailable (key defined but resolved to
+                # null because the manifest field is absent). The latter is normal — e.g. AMA
+                # not deployed — and should not appear as a terminal warning every run.
+                if ($calculations.Contains([string]$rule.calculation)) {
+                    Write-RangerLog -Level debug -Message "WAF rule '$($rule.id)': calculation '$($rule.calculation)' resolved to null — data unavailable; rule scored 0."
+                } else {
+                    Write-Warning "WAF rule '$($rule.id)' references undefined calculation '$($rule.calculation)' — check waf-rules.json."
+                }
                 [void]$ruleResults.Add([ordered]@{
                     id             = $rule.id
                     pillar         = $rule.pillar

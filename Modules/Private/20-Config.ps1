@@ -617,17 +617,38 @@ function Set-RangerStructuralOverrides {
         $Config.behavior.skipPreCheck = [bool]$StructuralOverrides['SkipPreCheck']
     }
 
-    # Issue #314: -NetworkDeviceConfigs parameter — validate paths exist then merge into
-    # domains.hints.networkDeviceConfigs so the networking collector parser picks them up.
+    # Issue #322: -Debug / -Verbose inject LogLevel='debug' via structural overrides
+    if ($StructuralOverrides.ContainsKey('LogLevel') -and -not [string]::IsNullOrWhiteSpace($StructuralOverrides['LogLevel'])) {
+        if (-not ($Config.behavior -is [System.Collections.IDictionary])) { $Config.behavior = [ordered]@{} }
+        $Config.behavior.logLevel = $StructuralOverrides['LogLevel']
+    }
+
+    # Issue #314 / #315: -NetworkDeviceConfigs — validate paths, expand directories recursively,
+    # then merge into domains.hints.networkDeviceConfigs for the networking collector parser.
     if ($StructuralOverrides.ContainsKey('NetworkDeviceConfigs') -and @($StructuralOverrides['NetworkDeviceConfigs']).Count -gt 0) {
         $validPaths = [System.Collections.Generic.List[string]]::new()
+        $configExtensions = @('.txt', '.cfg', '.conf', '.log')
         foreach ($p in @($StructuralOverrides['NetworkDeviceConfigs'])) {
             if ([string]::IsNullOrWhiteSpace($p)) { continue }
             $resolved = try { (Resolve-Path -Path $p -ErrorAction Stop).Path } catch { $null }
-            if ($resolved -and (Test-Path $resolved)) {
-                $validPaths.Add($resolved)
+            if (-not $resolved) {
+                throw "NetworkDeviceConfigs: path not found — '$p'. Verify the path exists before running."
+            }
+            if (Test-Path $resolved -PathType Container) {
+                # Issue #315: directory supplied — expand recursively to all switch-config files.
+                $expanded = @(Get-ChildItem -Path $resolved -Recurse -File -ErrorAction SilentlyContinue |
+                    Where-Object { $_.Extension -in $configExtensions } |
+                    Select-Object -ExpandProperty FullName)
+                if ($expanded.Count -eq 0) {
+                    Write-RangerLog -Level warn -Message "NetworkDeviceConfigs: directory '$resolved' contained no files with extensions $($configExtensions -join ', '). No configs loaded from this path."
+                } else {
+                    Write-RangerLog -Level debug -Message "NetworkDeviceConfigs: expanded directory '$resolved' to $($expanded.Count) file(s): $($expanded -join '; ')"
+                    # Issue #325: wrap as { path } objects — plain strings bypass normalization and the parser reads .path
+                    foreach ($f in $expanded) { $validPaths.Add([ordered]@{ path = $f }) }
+                }
             } else {
-                throw "NetworkDeviceConfigs: path not found — '$p'. Verify the file exists before running."
+                # Issue #325: same — wrap as { path } object
+                $validPaths.Add([ordered]@{ path = $resolved })
             }
         }
         if (-not ($Config.domains -is [System.Collections.IDictionary])) { $Config.domains = [ordered]@{} }
@@ -876,6 +897,22 @@ function Invoke-RangerAzureAutoDiscovery {
         return $false
     }
 
+    # Issue #317: fill tenantId from the active Az session whenever it is absent.
+    # Arc auto-discovery already proves the session is authenticated; querying for
+    # tenantId again after this point is redundant and confusing to the operator.
+    if ([string]::IsNullOrWhiteSpace($Config.targets.azure.tenantId) -or
+        $Config.targets.azure.tenantId -eq '00000000-0000-0000-0000-000000000000') {
+        try {
+            $ctx = Get-AzContext -ErrorAction SilentlyContinue
+            if ($ctx -and -not [string]::IsNullOrWhiteSpace($ctx.Tenant.Id)) {
+                $Config.targets.azure.tenantId = $ctx.Tenant.Id
+                Write-RangerLog -Level info -Message "Invoke-RangerAzureAutoDiscovery: tenantId '$($ctx.Tenant.Id)' sourced from active Az session (issue #317)."
+            }
+        } catch {
+            Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: could not read tenantId from AzContext — $($_.Exception.Message)"
+        }
+    }
+
     $configNodes = @($Config.targets.cluster.nodes | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
     $needRg    = [string]::IsNullOrWhiteSpace($Config.targets.azure.resourceGroup)
     $needFqdn  = [string]::IsNullOrWhiteSpace($Config.targets.cluster.fqdn)
@@ -1111,10 +1148,19 @@ function Resolve-RangerSelectedCollectors {
     $exclude = @($Config.domains.exclude | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { Resolve-RangerCanonicalDomainName -Name $_ })
     $selected = New-Object System.Collections.ArrayList
 
+    $hasBmcEndpoints = @($Config.targets.bmc.endpoints | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }).Count -gt 0
+
     foreach ($definition in $definitions.Values) {
         $covers = @($definition.Covers | ForEach-Object { Resolve-RangerCanonicalDomainName -Name $_ })
         $isIncluded = $include.Count -eq 0 -or @($covers | Where-Object { $_ -in $include }).Count -gt 0
         $isExcluded = @($covers | Where-Object { $_ -in $exclude }).Count -gt 0
+
+        # Issue #316: auto-deselect collectors that require BMC when no endpoints are configured,
+        # unless the operator explicitly listed one of the collector's domains in domains.include.
+        if ($definition.RequiredTargets -contains 'bmc' -and -not $hasBmcEndpoints -and $include.Count -eq 0) {
+            continue
+        }
+
         if ($isIncluded -and -not $isExcluded) {
             [void]$selected.Add($definition)
         }

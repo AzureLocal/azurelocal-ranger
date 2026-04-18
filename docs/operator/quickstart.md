@@ -62,6 +62,35 @@ Fastest for ad-hoc runs. Azure Arc auto-discovery fills in the resource group, c
 !!! tip "`-ShowProgress`"
     Add `-ShowProgress` to any invocation for a live per-collector progress display (requires the optional `PwshSpectreConsole` module; automatically suppressed in CI and `-Unattended` mode).
 
+### Run mode prompt (v2.6.5)
+
+For Path 2 and Path 3, when `-OutputMode` is not supplied, Ranger asks which mode to use before the run starts:
+
+```text
+[Ranger] Run mode:
+  (1) current-state  — recurring operational snapshot
+  (2) as-built       — formal handoff documentation
+[Ranger] Select [Enter = current-state]:
+```
+
+Press Enter to keep the default, or type `1`/`2` (or the mode name). To skip the prompt, pass `-OutputMode current-state` or `-OutputMode as-built` on the CLI, or set `output.mode` in your config file.
+
+### Network device config import (v2.6.5)
+
+Pass switch or firewall running-config export files directly without a config file. Individual files or full directories are both accepted:
+
+```powershell
+# Single file
+Invoke-AzureLocalRanger -TenantId <guid> -SubscriptionId <guid> `
+  -NetworkDeviceConfigs C:\exports\core-sw01.cfg
+
+# Directory — recursively expanded to .txt, .cfg, .conf, .log files
+Invoke-AzureLocalRanger -TenantId <guid> -SubscriptionId <guid> `
+  -NetworkDeviceConfigs C:\exports\switch-configs\
+```
+
+Ranger maps the configs to `domains.hints.networkDeviceConfigs` before the networking collector runs.
+
 ### Running in disconnected or semi-connected environments
 
 Ranger probes all transport surfaces before collectors run. If cluster nodes are unreachable on WinRM ports but are Arc-registered, it automatically falls back to Arc Run Command transport (requires `Az.ConnectedMachine` and an active Az context). Collectors whose transport is confirmed unavailable are skipped with `status: skipped` rather than failing the run.

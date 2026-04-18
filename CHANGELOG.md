@@ -8,6 +8,41 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [2.6.5] — Credential UX & Discovery Hardening (in progress)
+
+19 first-run friction and reliability issues, all found during live tplabs validation.
+
+### Fixed
+
+- **Credential prompt clarity (#302)** — `Get-Credential` prompts name the target system and expected account format.
+- **WinRM silent-start (#303)** — `Invoke-RangerEnsureWinRmRunning` starts the WinRM service at run start.
+- **Cluster / domain credential reuse (#304)** — domain credential reuses cluster credential when unconfigured.
+- **Node FQDN resolver (#306)** — 4-step FQDN chain: pass-through → Arc map → cluster suffix → DNS.
+- **Arc node FQDN extraction (#308)** — `properties.dnsFqdn` from Arc machines fed into `nodeFqdns` map.
+- **Cluster selection UX (#309)** — auto-selection prints chosen cluster; numbered menu for multi-cluster subscriptions.
+- **Azure-first discovery phase (#310)** — Azure discovery completes before any on-prem WinRM session opens.
+- **Node inventory FQDN overwrite fix (#311)** — `Resolve-RangerNodeInventory` no longer overwrites Arc-discovered FQDNs.
+- **BMC interactive prompt (#312)** — iDRAC collection prompts added before credential phase when no endpoints are configured.
+- **LLDP passive reporting (#313)** — `Get-NetLldpNeighbor` replaces broken MSNdis WMI class; WMI retained as fallback.
+- **`-NetworkDeviceConfigs` parameter (#314)** — exposed as direct CLI parameter on `Invoke-AzureLocalRanger`.
+- **`-NetworkDeviceConfigs` directory expansion (#315)** — directory paths recursively expanded to `.txt`/`.cfg`/`.conf`/`.log` files.
+- **Hardware collector auto-deselect (#316)** — hardware collector excluded from scope when no BMC endpoints are configured.
+- **`tenantId` auto-fill (#317)** — filled from `(Get-AzContext).Tenant.Id` after cluster auto-discovery.
+- **Log bootstrapping gap (#318)** — bootstrap-phase entries buffered and flushed to `ranger.log` with level filtering.
+- **Interactive run-mode prompt (#319)** — prompts for `current-state` / `as-built` when `-OutputMode` is not set.
+- **`-Debug`/`-Verbose` log file verbosity (#320)** — correctly elevates `$script:RangerLogLevel` to debug before run.
+- **`-Debug`/`-Verbose` terminal output (#328)** — `Write-RangerLog` forces local `$VerbosePreference = 'Continue'` via module-scope flag; both terminal and log file receive debug entries.
+- **BMC credential ordering (#326)** — BMC credential prompted immediately after IP entry, before WinRM credentials.
+- **BMC interactive prompt stores plain strings (#324)** — IPs now stored as `{ host, node }` objects; hardware collector can read `.host`.
+- **`-NetworkDeviceConfigs` paths stored as plain strings (#325)** — paths now stored as `{ path }` objects; networking parser no longer warns "missing path field".
+- **`-Debug`/`-Verbose` preference-variable propagation — definitive fix (#322)** — detection via `$PSBoundParameters` in `Invoke-AzureLocalRanger`; injected through structural overrides.
+- **Arc node discovery 'Argument types do not match' (#327)** — `$subscriptionId` and `$clusterRg` in `Resolve-RangerArcMachinesForCluster` now explicitly cast to `[string]` before use; same root cause as #261.
+- **BMC Redfish 401 Unauthorized (#329)** — `Invoke-RangerRedfishRequest` now passes `-Authentication Basic` to `Invoke-RestMethod`; iDRAC requires Basic auth and returned 401 for every request without it.
+- **Run-complete hashtable printed to console (#330)** — `Invoke-AzureLocalRanger` captures the runtime return value and emits a clean `Write-Host` summary (collector outcomes + output path + log path) instead of the raw ordered hashtable.
+- **WAF SEC-007 spurious null-calculation warning (#331)** — data-unavailable case (calculation key defined but manifest field null) now logged at debug level; genuine rule-authoring errors (undefined key) keep the `Write-Warning`.
+- **External verbose output missing from ranger.log (#332)** — `global:Write-Verbose` proxy installed alongside `global:Write-Warning`; all external module verbose output (Invoke-RestMethod HTTP tracing, PackageManagement, CIM, Az SDK) now written to `ranger.log` when running at debug level. Entries already written by `Write-RangerLog` are skipped to prevent duplicates.
+- **Hardware collector probes iDRAC IPs with WinRM (#333)** — when `endpoint.node` is null and no cluster node FQDN matches, `$remoteNodeTarget` fell back to the BMC IP, causing `Invoke-RangerClusterCommand` to probe it with WinRM — producing 45-second timeouts per endpoint. `$hasWinRmTarget` flag now guards the VBS/DeviceGuard/OMI WinRM block; skipped with a debug log when the target is still the BMC IP.
+
 ## [2.6.4] — 2026-04-17
 
 First-Run UX Patch — fixes a structural-placeholder leak that blocked the 2-field / zero-config invocation path advertised in v2.6.3. Same bug class as v2.6.3 #292, but for structural fields (`environment.*`, `targets.cluster.*`, `targets.azure.*`).

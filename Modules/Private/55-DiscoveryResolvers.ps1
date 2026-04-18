@@ -309,8 +309,10 @@ function Resolve-RangerArcMachinesForCluster {
         [string[]]$NodeHints
     )
 
-    $subscriptionId = $Config.targets.azure.subscriptionId
-    $clusterRg      = $Config.targets.azure.resourceGroup
+    # Issue #327: cast to [string] — values from YAML parsing can arrive as PSCustomObject
+    # wrappers, causing "Argument types do not match" when passed to Get-AzResource params.
+    $subscriptionId = [string]$Config.targets.azure.subscriptionId
+    $clusterRg      = [string]$Config.targets.azure.resourceGroup
     $result = [ordered]@{ Machines = @(); CrossRg = @() }
 
     if ([string]::IsNullOrWhiteSpace($subscriptionId) -or

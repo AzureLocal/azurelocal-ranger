@@ -70,6 +70,11 @@ function Invoke-RangerHardwareCollector {
         if ([string]::IsNullOrWhiteSpace([string]$remoteNodeTarget)) {
             $remoteNodeTarget = $nodeName
         }
+
+        # When no matching cluster node was found, $remoteNodeTarget equals the BMC IP.
+        # iDRAC / BMC IPs run Redfish only — attempting WinRM against them always fails.
+        # Skip all WinRM-based sub-collectors (VBS posture, DDA, OMI) for this endpoint.
+        $hasWinRmTarget = $remoteNodeTarget -ne $bmcHost
         try {
             $systemUri = "https://$bmcHost/redfish/v1/Systems/System.Embedded.1"
             $system = Invoke-RangerRedfishRequest -Uri $systemUri -Credential $CredentialMap.bmc
@@ -322,8 +327,13 @@ function Invoke-RangerHardwareCollector {
                 }
             )
 
-            # VBS sub-components (OS-level — requires WinRM on the node)
-            $vbsPosture = Invoke-RangerSafeAction -Label "VBS sub-component posture for $nodeName" -DefaultValue $null -ScriptBlock {
+            # VBS sub-components (OS-level — requires WinRM on the cluster node, not the BMC IP).
+            # Skip when no matching cluster node was resolved; probing the iDRAC IP via WinRM always fails.
+            $vbsPosture = if (-not $hasWinRmTarget) {
+                Write-RangerLog -Level debug -Message "VBS sub-component posture for $nodeName skipped — no cluster node FQDN matched; '$remoteNodeTarget' is the BMC IP, not a WinRM target."
+                $null
+            } else {
+            Invoke-RangerSafeAction -Label "VBS sub-component posture for $nodeName" -DefaultValue $null -ScriptBlock {
                 Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -NodeName $remoteNodeTarget -ScriptBlock {
                     $dg = Get-CimInstance -Namespace 'root\Microsoft\Windows\DeviceGuard' -ClassName Win32_DeviceGuard -ErrorAction SilentlyContinue
                     # Issue #57: DDA and GPU-P capability
@@ -353,6 +363,7 @@ function Invoke-RangerHardwareCollector {
                     }
                 }
             }
+            } # end $hasWinRmTarget guard
 
             # Issue #57: TPM detail extraction from system.TrustedModules
             $tpmDetail = if (@($system.TrustedModules).Count -gt 0) {

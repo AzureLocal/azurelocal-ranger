@@ -12,20 +12,6 @@ Ranger supports two outcomes through one discovery engine:
 
 **Upcoming** — what's next, in ship order. Each milestone link has the full issue backlog; tables below surface the highlights.
 
-## v2.6.5 — Credential UX & Discovery Hardening
-
-First-run friction fixes uncovered during live validation: credential prompts that don't explain themselves, WinRM dialogs that fire mid-flow, duplicate cluster/domain prompts, node connections that use short names instead of FQDNs, and silent cluster auto-selection. Milestone: [#32](https://github.com/AzureLocal/azurelocal-ranger/milestone/32).
-
-| Item | Detail | Issue |
-| --- | --- | --- |
-| Credential prompt clarity | `Get-Credential` title and message must name the target system and expected account format (`DOMAIN\user` or `user@domain.com`); same treatment for BMC / switch / firewall paths | [#302](https://github.com/AzureLocal/azurelocal-ranger/issues/302) |
-| WinRM silent-start preflight | Ranger starts WinRM service silently during preflight instead of letting Windows throw an interactive service-start dialog mid-run | [#303](https://github.com/AzureLocal/azurelocal-ranger/issues/303) |
-| Cluster / domain credential reuse | When `credentials.domain` is unconfigured, reuse the cluster credential automatically — no second prompt for the same account | [#304](https://github.com/AzureLocal/azurelocal-ranger/issues/304) |
-| Arc node FQDN extraction | `Invoke-RangerAzureAutoDiscovery` pulls `properties.dnsFqdn` from Arc machines into a `nodeFqdns` map; all per-node WinRM/CIM fan-out uses FQDNs, eliminating `0x8009030e` failures on non-domain-joined management machines | [#308](https://github.com/AzureLocal/azurelocal-ranger/issues/308) |
-| Node FQDN resolver (s2d pattern) | Port `Resolve-S2DNodeFqdn`'s 4-step chain (pass-through / cluster-suffix / DNS / short-name) as `Resolve-RangerNodeFqdn` for cases where Arc does not supply a FQDN | [#306](https://github.com/AzureLocal/azurelocal-ranger/issues/306) |
-| Cluster selection UX | Auto-selection prints the chosen cluster and RG; multiple clusters show a numbered menu; `-Unattended` still throws `RANGER-DISC-002` on multiples | [#309](https://github.com/AzureLocal/azurelocal-ranger/issues/309) |
-| Azure-first discovery phase | Azure discovery (cluster, node FQDNs, RG, domain, Arc overlay) runs to completion before any on-prem WinRM session opens, so collectors start with full context | [#310](https://github.com/AzureLocal/azurelocal-ranger/issues/310) |
-
 ## v2.7.0 — Documentation and Reporting Overhaul
 
 Two parallel tracks: deep, comprehensive public-facing documentation with production-quality draw.io diagrams, and a full revisit of every output format for executive-grade quality. Milestone: [#25](https://github.com/AzureLocal/azurelocal-ranger/milestone/25).
@@ -40,6 +26,7 @@ Two parallel tracks: deep, comprehensive public-facing documentation with produc
 | Production-quality draw.io diagrams | 9 architecture/data-flow/auth/output-pipeline diagrams with consistent shape library, layers, legends | [#270](https://github.com/AzureLocal/azurelocal-ranger/issues/270) |
 | Per-collector operator reference | One page per collector + analyzer — permissions, output, failure modes | [#269](https://github.com/AzureLocal/azurelocal-ranger/issues/269) |
 | WAF rule engine reference | Calculations, thresholds, priority scoring, authoring custom rules, full rule catalog | [#268](https://github.com/AzureLocal/azurelocal-ranger/issues/268) |
+| WAF results operator guide | How to read your score, interpret per-pillar results, use the Now/Next/Later compliance roadmap, generate remediation scripts, and understand the two data sources (manifest rule engine vs Azure Advisor) | [#321](https://github.com/AzureLocal/azurelocal-ranger/issues/321) |
 | Troubleshooting playbook | Symptom → diagnosis → fix for 40+ common failure modes, keyed by error text | [#272](https://github.com/AzureLocal/azurelocal-ranger/issues/272) |
 | Public-facing getting-started funnel | Landing, 5-minute quickstart, first 30 minutes, next steps with branching paths | [#271](https://github.com/AzureLocal/azurelocal-ranger/issues/271) |
 
@@ -86,6 +73,35 @@ Enterprise integrations, specialized hardware protocols, advanced topology cover
 ---
 
 **Shipped** — most recent first.
+
+## Shipped — v2.6.5 — Credential UX & Discovery Hardening (2026-04-17)
+
+First-run friction fixes uncovered during live validation: credential prompts that don't explain themselves, WinRM dialogs that fire mid-flow, duplicate cluster/domain prompts, node connections that use short names instead of FQDNs, silent cluster auto-selection, LLDP collection returning empty data, missing CLI access to the network-device-config import feature, directory paths not expanded for network device configs, the hardware collector silently skipping when no BMC endpoints are configured, tenantId prompt appearing after Arc auto-discovery, a log bootstrapping gap that swallowed config/discovery entries before the output path was known, no prompt for run mode on interactive bare invocations, and `-Debug`/`-Verbose` not elevating log file verbosity. Milestone: [#32](https://github.com/AzureLocal/azurelocal-ranger/milestone/32).
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Credential prompt clarity | `Get-Credential` title and message must name the target system and expected account format (`DOMAIN\user` or `user@domain.com`); same treatment for BMC / switch / firewall paths | [#302](https://github.com/AzureLocal/azurelocal-ranger/issues/302) |
+| WinRM silent-start preflight | Ranger starts WinRM service silently during preflight instead of letting Windows throw an interactive service-start dialog mid-run | [#303](https://github.com/AzureLocal/azurelocal-ranger/issues/303) |
+| Cluster / domain credential reuse | When `credentials.domain` is unconfigured, reuse the cluster credential automatically — no second prompt for the same account | [#304](https://github.com/AzureLocal/azurelocal-ranger/issues/304) |
+| Arc node FQDN extraction | `Invoke-RangerAzureAutoDiscovery` pulls `properties.dnsFqdn` from Arc machines into a `nodeFqdns` map; all per-node WinRM/CIM fan-out uses FQDNs, eliminating `0x8009030e` failures on non-domain-joined management machines | [#308](https://github.com/AzureLocal/azurelocal-ranger/issues/308) |
+| Node FQDN resolver (s2d pattern) | Port `Resolve-S2DNodeFqdn`'s 4-step chain (pass-through / cluster-suffix / DNS / short-name) as `Resolve-RangerNodeFqdn` for cases where Arc does not supply a FQDN | [#306](https://github.com/AzureLocal/azurelocal-ranger/issues/306) |
+| Cluster selection UX | Auto-selection prints the chosen cluster and RG; multiple clusters show a numbered menu; `-Unattended` still throws `RANGER-DISC-002` on multiples | [#309](https://github.com/AzureLocal/azurelocal-ranger/issues/309) |
+| Azure-first discovery phase | Azure discovery (cluster, node FQDNs, RG, domain, Arc overlay) runs to completion before any on-prem WinRM session opens, so collectors start with full context | [#310](https://github.com/AzureLocal/azurelocal-ranger/issues/310) |
+| Node inventory FQDN overwrite fix | `Resolve-RangerNodeInventory` now resolves all returned Arc short names through `Resolve-RangerNodeFqdn` before returning, preventing the topology collector from overwriting FQDNs set by auto-discovery | [#311](https://github.com/AzureLocal/azurelocal-ranger/issues/311) |
+| BMC interactive prompt | Runtime prompts for iDRAC/BMC endpoint IPs when none are configured and the session is interactive, so hardware collection enters scope before the credential map is built | [#312](https://github.com/AzureLocal/azurelocal-ranger/issues/312) |
+| LLDP passive reporting | Replaced broken WMI `MSNdis_NetworkLinkDescription` with `Get-NetLldpNeighbor` (Windows Server 2019+ / Azure Local); WMI retained as fallback for older hosts | [#313](https://github.com/AzureLocal/azurelocal-ranger/issues/313) |
+| `-NetworkDeviceConfigs` parameter | Exposes the existing `domains.hints.networkDeviceConfigs` Cisco NX-OS/IOS running-config import feature (added in #36) as a direct `-NetworkDeviceConfigs [string[]]` CLI parameter on `Invoke-AzureLocalRanger` | [#314](https://github.com/AzureLocal/azurelocal-ranger/issues/314) |
+| `-NetworkDeviceConfigs` directory expansion | When a directory path is supplied, `Set-RangerStructuralOverrides` recursively expands it to all `.txt`, `.cfg`, `.conf`, `.log` files inside; a warning fires if the directory has no matching files | [#315](https://github.com/AzureLocal/azurelocal-ranger/issues/315) |
+| Hardware collector auto-deselect | `Resolve-RangerSelectedCollectors` no longer selects the hardware collector when `targets.bmc.endpoints` is empty, eliminating the misleading `skipped` log entry on runs with no BMC configured | [#316](https://github.com/AzureLocal/azurelocal-ranger/issues/316) |
+| tenantId auto-filled from Az session | `Invoke-RangerAzureAutoDiscovery` now fills `targets.azure.tenantId` from `(Get-AzContext).Tenant.Id` after cluster auto-discovery succeeds — the tenantId prompt no longer appears when the Az session is already authenticated | [#317](https://github.com/AzureLocal/azurelocal-ranger/issues/317) |
+| Log bootstrapping gap fixed | `Write-RangerLog` buffers entries to `$script:RangerPreLogBuffer` when the log file is not yet open; `Initialize-RangerFileLog` flushes the buffer (filtered to the configured log level) under a `# bootstrap phase` section header — config load, auto-discovery, and validation entries now appear in every run log | [#318](https://github.com/AzureLocal/azurelocal-ranger/issues/318) |
+| Interactive run-mode prompt | `Invoke-RangerDiscoveryRuntime` now prompts for run mode (`current-state` / `as-built`) in interactive sessions when `-OutputMode` was not supplied on the CLI; defaults to the current config value so config-file operators press Enter to confirm; CI and `-Unattended` runs are unaffected | [#319](https://github.com/AzureLocal/azurelocal-ranger/issues/319) |
+| `-Debug`/`-Verbose` elevate log file verbosity | Passing `-Debug` or `-Verbose` to `Invoke-AzureLocalRanger` now elevates `$script:RangerLogLevel` to `debug` before the Az SDK noise guard fires — debug-level entries appear in `ranger.log` as expected; the bootstrap buffer now captures all entries without early filtering so bootstrap debug output is also preserved when these flags are set | [#320](https://github.com/AzureLocal/azurelocal-ranger/issues/320) |
+| `-Debug`/`-Verbose` log elevation — definitive fix | #320 read `$DebugPreference`/`$VerbosePreference` in the runtime, which doesn't propagate across module boundaries. Detection moved to `$PSBoundParameters` in `Invoke-AzureLocalRanger`; `LogLevel = 'debug'` injected through structural overrides into `config.behavior.logLevel` | [#322](https://github.com/AzureLocal/azurelocal-ranger/issues/322) |
+| `-Debug`/`-Verbose` entries missing from terminal | `Write-Verbose` inside `Write-RangerLog` didn't show because PowerShell common-parameter preferences don't propagate into nested module scopes. `Invoke-AzureLocalRanger` now sets `$script:RangerVerboseToConsole`; `Write-RangerLog` forces local `$VerbosePreference = 'Continue'` before each call | [#328](https://github.com/AzureLocal/azurelocal-ranger/issues/328) |
+| BMC credential prompt ordering | After entering BMC IPs interactively, the WinRM cluster credential was prompted before the BMC credential — breaking operator context. BMC credential is now prompted immediately after IP entry and stored as an override; cluster/domain prompts follow | [#326](https://github.com/AzureLocal/azurelocal-ranger/issues/326) |
+| Interactive BMC prompt stores plain IP strings | The #312 prompt wrote IPs as plain strings after normalization had run. The hardware collector reads `.host` on each endpoint — gets `$null` on a string — skips all → "No usable BMC endpoints" even with valid IPs. Fixed: each IP wrapped as `{ host, node }` at prompt time | [#324](https://github.com/AzureLocal/azurelocal-ranger/issues/324) |
+| `-NetworkDeviceConfigs` paths stored as plain strings | `Set-RangerStructuralOverrides` added resolved paths as plain strings after normalization. The networking parser reads `.path` → `$null` on every string → warns "missing path field" and skips all files. Fixed: each path wrapped as `{ path }` | [#325](https://github.com/AzureLocal/azurelocal-ranger/issues/325) |
 
 ## Shipped — v2.6.4 — First-Run UX Patch (2026-04-17)
 

@@ -17,8 +17,13 @@ AzureLocalRanger exports twelve public commands:
 ## Input Resolution Precedence
 
 ```text
-Parameter  ->  Config file  ->  Interactive prompt  ->  Default  ->  Error
+Parameter  ->  Config file  ->  Arc auto-discovery  ->  Interactive prompt  ->  Default  ->  Error
 ```
+
+In interactive sessions, two prompts fire automatically when their values are not already resolved:
+
+- **Cluster selection** — when only `tenantId` + `subscriptionId` are supplied, `Select-RangerCluster` enumerates HCI clusters and auto-selects a singleton; multiples show a numbered menu.
+- **Run mode** — when `-OutputMode` is not on the CLI, a short menu asks whether this is a `current-state` or `as-built` run before the run starts. The prompt defaults to whatever `output.mode` is in the config (or `current-state` if unset). Omit `-OutputMode as-built` on the CLI to always be prompted; set it in the config file or pass it as a parameter to skip the prompt.
 
 ## Invoke-AzureLocalRanger
 
@@ -55,6 +60,9 @@ Parameter  ->  Config file  ->  Interactive prompt  ->  Default  ->  Error
 | `-SkipRun` | `switch` | No | With `-Wizard`: save only, do not launch a run |
 | `-SkipPreCheck` | `switch` | No | v1.6.0 (#212). Skip the pre-run RBAC / provider audit |
 | `-SkipModuleUpdate` | `switch` | No | v2.0.0 (#231). Skip the required-module install/update validation on startup (air-gapped environments) |
+| `-PublishToStorage` | `switch` | No | v2.3.0 (#244). Push the run package to Azure Blob after the run completes. Requires `output.remoteStorage` config block |
+| `-PublishToLogAnalytics` | `switch` | No | v2.3.0 (#247). Stream `RangerRun_CL` + `RangerFinding_CL` rows to Log Analytics after the run. Requires `output.logAnalytics` config block |
+| `-NetworkDeviceConfigs` | `string[]` | No | v2.6.5 (#314). Path(s) to switch or firewall running-config export files. Directories are recursively expanded to `.txt`, `.cfg`, `.conf`, `.log` files. Populates `domains.hints.networkDeviceConfigs` |
 
 ## Invoke-AzureLocalRanger -Wizard (recommended)
 
@@ -70,13 +78,14 @@ the main command. This is the recommended first-run path.
 The wizard walks through:
 
 1. Environment name and cluster display name
-2. Cluster FQDN and node FQDNs
-3. Azure subscription ID, tenant ID, and resource group
-4. Credential strategy (current context or prompt at run time)
-5. Output path and report formats
-6. Domain scope — include or exclude specific data domains
+2. Cluster FQDN and node FQDNs (leave blank to auto-discover from Arc)
+3. Azure subscription ID, tenant ID, and resource group (GUIDs validated inline)
+4. Credential strategy — one of six: `existing-context`, runtime `prompt`, `service-principal`, `managed-identity`, `device-code`, `azure-cli`
+5. BMC / iDRAC — optional endpoint IPs for hardware and OEM collection
+6. Output — run mode (`current-state` or `as-built`), root path, report formats
+7. Scope — include or exclude specific data domains
 
-At the end it offers: **[S]** save only, **[R]** run immediately without saving, or **[B]** save and run.
+At the end it prints a full review screen with the resulting YAML config. Press Enter to continue, or type `N` to cancel without saving. Then it offers: **[S]** save only, **[R]** run immediately without saving, or **[B]** save and run.
 
 ```powershell
 # Launch the wizard
@@ -113,11 +122,11 @@ Recommended pattern:
 Example:
 
 ```powershell
-Invoke-AzureLocalRanger \
-	-ConfigPath .\ranger.yml \
-	-Unattended \
-	-OutputPath \\fileserver\AzureLocalRanger \
-	-BaselineManifestPath .\baseline\audit-manifest.json
+Invoke-AzureLocalRanger `
+  -ConfigPath .\ranger.yml `
+  -Unattended `
+  -OutputPath \\fileserver\AzureLocalRanger `
+  -BaselineManifestPath .\baseline\audit-manifest.json
 ```
 
 Ranger writes `run-status.json` for scheduler monitoring and `manifest\drift-report.json` when a baseline manifest is supplied. Sample scheduler templates live under `samples/`.

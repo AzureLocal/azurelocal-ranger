@@ -696,7 +696,9 @@ function Invoke-RangerRedfishRequest {
         }
         return $true
     } -ScriptBlock {
-        Invoke-RestMethod -Uri $Uri -Method $Method -Credential $Credential -SkipCertificateCheck -ContentType 'application/json' -ErrorAction Stop
+        # Issue #329: iDRAC Redfish requires Basic auth explicitly; Invoke-RestMethod with
+        # -Credential alone defaults to Negotiate (Kerberos/NTLM) which iDRAC rejects with 401.
+        Invoke-RestMethod -Uri $Uri -Method $Method -Credential $Credential -Authentication Basic -SkipCertificateCheck -ContentType 'application/json' -ErrorAction Stop
     }
 }
 

@@ -5,10 +5,10 @@ Azure Local Ranger is multi-target and multi-credential by design. Operators sho
 ## Target Credential Map
 
 | Target | Typical credential |
-|---|---|
-| Azure | existing Az context, interactive login, service principal, or managed identity |
+| --- | --- |
+| Azure | one of six methods — see [Azure Authentication Options](#azure-authentication-options) below |
 | Cluster nodes | domain credential or local administrator credential for WinRM |
-| Active Directory | domain credential with read access |
+| Active Directory | domain read credential — reuses the cluster credential automatically when `credentials.domain` is unconfigured (v2.6.5 #304) |
 | BMC / iDRAC | local BMC credential |
 | Future switch or firewall targets | vendor-specific API, SSH, or SNMP credential |
 
@@ -19,7 +19,7 @@ A valid Azure login does not imply valid WinRM access. A valid cluster credentia
 Operators should expect Ranger to route credentials according to the domains being run.
 
 | Domain area | Required credential posture |
-|---|---|
+| --- | --- |
 | Cluster, storage, networking, virtual machines, management tools, performance | Cluster WinRM credential |
 | Identity and security | Cluster WinRM credential and, when AD discovery is needed, domain read credential |
 | Azure integration and Azure-side monitoring or policy overlays | Azure credential |
@@ -52,6 +52,9 @@ Azure-side discovery supports six methods, all selectable via the wizard (`Invok
 | 6 | `azure-cli` | `az login` session | Cross-platform runners where `az` is the established auth pattern |
 
 The right option depends on whether the run is interactive, scheduled, or hosted inside Azure.
+
+!!! tip "tenantId is auto-filled from your Az session"
+    Since v2.6.5 (#317), `Invoke-RangerAzureAutoDiscovery` reads `(Get-AzContext).Tenant.Id` after cluster discovery succeeds and sets `targets.azure.tenantId` automatically. You will not be prompted for `tenantId` on an `existing-context` run if you are already signed into the correct tenant.
 
 ## Key Vault References
 

@@ -65,19 +65,31 @@ function Write-RangerLog {
     )
 
     $normalizedLevel = Resolve-RangerLogLevel -Level $Level
-    $currentLevel = Resolve-RangerLogLevel -Level $(if ($script:RangerLogLevel) { $script:RangerLogLevel } else { 'info' })
-    if ((Get-RangerLogLevelRank -Level $normalizedLevel) -lt (Get-RangerLogLevelRank -Level $currentLevel)) {
-        return
-    }
-
     $timestamp = (Get-Date).ToString('s')
     $levelTag = $normalizedLevel.ToUpperInvariant().PadRight(5)
     $line = "[$timestamp][$levelTag] $Message"
 
+    # Issue #328: $VerbosePreference set by -Debug/-Verbose on Invoke-AzureLocalRanger does not
+    # propagate into nested module function scopes. Force it locally when the flag is set so every
+    # log entry — including DEBUG — appears in the running PowerShell terminal.
+    if ($script:RangerVerboseToConsole) { $VerbosePreference = 'Continue' }
     Write-Verbose $line
+
+    # Issue #318 / #320: bootstrap buffer phase — log file not yet open. Buffer ALL entries
+    # without level filtering so debug entries from config load, auto-discovery, and validation
+    # are preserved. Initialize-RangerFileLog applies the level filter at flush time, after
+    # $script:RangerLogLevel has been elevated by -Debug/-Verbose (issue #320).
+    if (-not $script:RangerLogPath -and $null -ne $script:RangerPreLogBuffer) {
+        $script:RangerPreLogBuffer.Add([pscustomobject]@{ Level = $normalizedLevel; Line = $line })
+        return
+    }
 
     # Issue #109: write to file log when package root is known
     if ($script:RangerLogPath) {
+        $currentLevel = Resolve-RangerLogLevel -Level $(if ($script:RangerLogLevel) { $script:RangerLogLevel } else { 'info' })
+        if ((Get-RangerLogLevelRank -Level $normalizedLevel) -lt (Get-RangerLogLevelRank -Level $currentLevel)) {
+            return
+        }
         try {
             Add-Content -LiteralPath $script:RangerLogPath -Value $line -Encoding UTF8 -ErrorAction Stop
         }
@@ -102,6 +114,27 @@ function Initialize-RangerFileLog {
     catch {
         $script:RangerLogPath = $null
     }
+
+    # Issue #318: flush bootstrap-phase buffer — entries captured before the log file was open.
+    # Apply the now-configured log level so debug entries are only written when the operator asked for them.
+    if ($script:RangerLogPath -and $script:RangerPreLogBuffer -and $script:RangerPreLogBuffer.Count -gt 0) {
+        try {
+            $configuredLevel = Resolve-RangerLogLevel -Level $(if ($script:RangerLogLevel) { $script:RangerLogLevel } else { 'info' })
+            $flushLines = @($script:RangerPreLogBuffer |
+                Where-Object { (Get-RangerLogLevelRank -Level $_.Level) -ge (Get-RangerLogLevelRank -Level $configuredLevel) } |
+                ForEach-Object { $_.Line })
+            if ($flushLines.Count -gt 0) {
+                Add-Content -LiteralPath $script:RangerLogPath -Value '' -Encoding UTF8 -ErrorAction Stop
+                Add-Content -LiteralPath $script:RangerLogPath -Value '# bootstrap phase' -Encoding UTF8 -ErrorAction Stop
+                Add-Content -LiteralPath $script:RangerLogPath -Value $flushLines -Encoding UTF8 -ErrorAction Stop
+                Add-Content -LiteralPath $script:RangerLogPath -Value '' -Encoding UTF8 -ErrorAction Stop
+                Add-Content -LiteralPath $script:RangerLogPath -Value '# run phase' -Encoding UTF8 -ErrorAction Stop
+            }
+        }
+        catch { }
+        $script:RangerPreLogBuffer = $null
+    }
+
     return $logPath
 }
 

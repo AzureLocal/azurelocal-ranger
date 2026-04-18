@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '2.6.4'
+    ModuleVersion     = '2.6.5'
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
@@ -60,119 +60,60 @@
                 'Az.ConnectedMachine'
             )
             ReleaseNotes = @'
-## v2.6.4 — First-Run UX Patch
+## v2.6.5 — Credential UX & Discovery Hardening
 
-Patch release that completes v2.6.3's First-Run UX work. The v2.6.3
-drop shipped with a structural-placeholder leak in the default config
-that blocked the advertised 2-field / zero-config invocation path —
-bare `Invoke-AzureLocalRanger` still threw on `environment.name`,
-`cluster.fqdn`, and `resourceGroup` even after the operator answered
-the subscription + tenant prompts. Same bug class as v2.6.3 #292
-(kv-ranger leak) but for structural fields.
+24 first-run friction and reliability issues found during live tplabs validation.
 
 ### Fixed
-- **Default config scaffold placeholders break bare `Invoke-AzureLocalRanger`
-  and the 2-field invocation (#300)** — `Get-RangerDefaultConfig` no
-  longer ships placeholder values for `environment.name`, `clusterName`,
-  `description`, `targets.cluster.fqdn`, `targets.azure.subscriptionId`
-  / `tenantId` / `resourceGroup`, or `targets.bmc.endpoints`. The auto-
-  discovery cluster-select gate now fires correctly when the operator
-  hasn't supplied a clusterName.
+- **Credential prompt clarity (#302)** — prompts name the target system and expected account format.
+- **WinRM silent-start (#303)** — WinRM service started automatically at run start.
+- **Credential reuse (#304)** — domain credential reuses cluster credential when unconfigured.
+- **Node FQDN resolver (#306)** — 4-step chain: pass-through → Arc map → cluster suffix → DNS.
+- **Arc FQDN extraction (#308)** — `properties.dnsFqdn` fed into nodeFqdns map.
+- **Cluster selection UX (#309)** — auto-selects and prints chosen cluster; numbered menu for multi-cluster.
+- **Azure-first phase (#310)** — Azure discovery completes before any on-prem WinRM session opens.
+- **FQDN overwrite fix (#311)** — `Resolve-RangerNodeInventory` no longer overwrites Arc-discovered FQDNs.
+- **BMC interactive prompt (#312)** — iDRAC prompts before credentials when no endpoints configured.
+- **LLDP passive reporting (#313)** — `Get-NetLldpNeighbor` replaces broken MSNdis WMI class.
+- **`-NetworkDeviceConfigs` parameter (#314)** — exposed as direct CLI parameter on `Invoke-AzureLocalRanger`.
+- **`-NetworkDeviceConfigs` directory expansion (#315)** — directory paths recursively expanded to config files.
+- **Hardware collector auto-deselect (#316)** — excluded from scope when no BMC endpoints configured.
+- **`tenantId` auto-fill (#317)** — filled from `(Get-AzContext).Tenant.Id` after cluster auto-discovery.
+- **Log bootstrapping gap (#318)** — bootstrap-phase entries buffered and flushed to `ranger.log` with level filtering.
+- **Run-mode prompt (#319)** — prompts for `current-state`/`as-built` when `-OutputMode` is not set.
+- **`-Debug`/`-Verbose` (#320, #322, #328)** — log level elevated via `$PSBoundParameters`; terminal and log both receive debug entries.
+- **BMC credential ordering (#326)** — BMC credential prompted immediately after IP entry, before WinRM credentials.
+- **BMC prompt stores objects (#324)** — IPs stored as `{ host, node }` objects; hardware collector reads `.host`.
+- **`-NetworkDeviceConfigs` path objects (#325)** — paths stored as `{ path }` objects; parser no longer warns on missing field.
+- **Arc type mismatch (#327)** — `$subscriptionId`/`$clusterRg` cast to `[string]` before `Get-AzResource`.
+- **Redfish 401 Unauthorized (#329)** — `Invoke-RangerRedfishRequest` passes `-Authentication Basic` to `Invoke-RestMethod`.
+- **Console hashtable (#330)** — `Invoke-AzureLocalRanger` emits clean `Write-Host` summary instead of raw ordered hashtable.
+- **WAF SEC-007 null calc (#331)** — no warning when AMA absent; warning preserved for missing calculation keys.
+- **Network device report sections (#332)** — switchConfig/firewallConfig now rendered in HTML report.
 
-### Changed
-- **Interactive prompt re-runs auto-discovery between answers (#300)** —
-  `Invoke-RangerInteractiveInput` now prompts one field at a time and
-  re-runs `Invoke-RangerAzureAutoDiscovery` after each answer. Supplying
-  subscription + tenant at the first two prompts fires
-  `Select-RangerCluster` on the next pass and auto-fills clusterName,
-  resourceGroup, cluster.fqdn, and nodes — so the remaining prompts
-  collapse to zero or one.
-- **Prompt order now leads with Azure identifiers (#300)** —
-  `Get-RangerMissingRequiredInputs` lists `subscriptionId` and
-  `tenantId` before the fields that auto-discovery would fill. Operators
-  who know nothing but those two can now invoke bare
-  `Invoke-AzureLocalRanger` and be done.
-- **Fixture-mode bypass in `Test-RangerConfiguration` (#300)** — the
-  required-target check now respects fixture mode the same way
-  `Get-RangerMissingRequiredInputs` does, so fixture-backed runs no
-  longer fail validation just because the default cluster target is
-  now legitimately empty.
+## v2.6.4 — First-Run UX Patch
+
+Completes v2.6.3 First-Run UX: fixes structural-placeholder leak in default config
+that blocked bare `Invoke-AzureLocalRanger` even after answering prompts. Interactive
+prompt re-runs auto-discovery between answers; prompt order leads with Azure identifiers;
+fixture-mode bypass in config validation (#300).
 
 ## v2.6.3 — First-Run UX
 
-Lowers the required-input floor to **tenantId + subscriptionId**, fills in the
-rest via Azure Arc auto-discovery, and rebuilds the setup wizard with full
-credential-method coverage and a proper YAML serializer.
-
-### Added
-- **Cluster node auto-discovery (#294)** — `Invoke-RangerAzureAutoDiscovery`
-  now populates `targets.cluster.nodes` from Arc cluster `properties.nodes` or
-  a subscription-wide Arc machines query. Short names are promoted to FQDNs
-  using the discovered cluster domain suffix.
-- **Three-field minimum invocation (#296)** — `Invoke-AzureLocalRanger` no
-  longer requires `-ConfigPath` or `-ConfigObject`. Passing
-  `-SubscriptionId -TenantId -ClusterName` on the command line (or any subset,
-  with prompting for the rest in interactive mode) is enough to start a run.
-- **Two-field cluster auto-select (#297)** — new `Select-RangerCluster`
-  enumerates `microsoft.azurestackhci/clusters` in the subscription. Single
-  clusters auto-select; multiples prompt an interactive menu; `-Unattended`
-  and non-interactive hosts fail fast with `RANGER-DISC-002`. No HCI clusters
-  throws `RANGER-DISC-001`; permission failures throw `RANGER-AUTH-001`.
-
-### Changed
-- **Scope-gated device credential prompting (#295)** —
-  `Resolve-RangerCredentialMap` only prompts for BMC / switch / firewall
-  credentials when the relevant collector is in scope AND a matching target
-  list is populated. Explicit credential overrides are still honored even
-  when the target list is empty.
-- **Wizard overhaul (#291)** — `Invoke-RangerWizard` covers all six Azure
-  auth strategies (existing-context, run-time prompt, service-principal with
-  optional KV secret ref, managed-identity, device-code, azure-cli); GUID
-  fields are validated inline and re-prompted; an optional BMC section adds
-  iDRAC endpoints; a review screen prints the assembled YAML before save or
-  run; existing files prompt for overwrite; and save now writes YAML via
-  `ConvertTo-RangerYaml` by default — fixing the bug where `.yml` files
-  contained JSON.
-
-### Fixed
-- **kv-ranger credential leak (#292)** — `Get-RangerDefaultConfig` no longer
-  ships placeholder `keyvault://kv-ranger/*` password references for the
-  `cluster`, `domain`, and `bmc` credential blocks. Missing credentials now
-  fall through to the interactive prompt instead of producing a spurious KV
-  DNS error from a vault the operator never configured.
+Lowers required-input floor to tenantId + subscriptionId; rest filled via Arc
+auto-discovery. Added cluster node auto-discovery (#294), 3-field minimum invocation
+(#296), 2-field cluster auto-select (#297), scope-gated credential prompting (#295),
+wizard overhaul with all 6 Azure auth strategies (#291). Fixed kv-ranger credential
+leak (#292).
 
 ## v2.6.2 — TRAILHEAD Bug Fixes (P7 Regression)
 
-Bug-fix release addressing two issues found during TRAILHEAD P7 regression testing.
-
-### Fixed
-- **Config validator rejects pptx and json-evidence formats (#262)** —
-  `Test-RangerConfiguration` now includes `pptx` and `json-evidence` in the
-  `$supportedFormats` whitelist. These formats were added in v2.5.0 but omitted
-  from validation, causing any config referencing them to be rejected.
-- **New-AzureLocalRangerConfig YAML template has misindented fields (#263)** —
-  `credentials.azure.method` and `behavior.promptForMissingRequired` in the
-  generated YAML config template now have correct indentation, preventing YAML
-  parse errors when the template is used as-is.
+`pptx`/`json-evidence` format validation fix (#262); YAML template indentation fix (#263).
 
 ## v2.6.1 — TRAILHEAD Bug Fixes (P3 Live Validation)
 
-Bug-fix release addressing failures discovered during TRAILHEAD live validation
-against a 4-node Dell AX-760 Azure Local cluster.
-
-### Fixed
-- **Topology collector returns 0 nodes on partial WinRM failure (#259)** —
-  `Invoke-RangerRemoteCommand` now executes each cluster node individually rather
-  than batching all targets in one `Invoke-Command` call. A single-node Kerberos/
-  Negotiate error (0x80090304) no longer aborts collection from healthy nodes.
-- **licenseProfiles/default 404 causes transcript noise (#260)** —
-  `Get-AzResource` for optional Arc license profiles now uses
-  `-ErrorAction SilentlyContinue` so missing profiles (404) are returned as
-  `not-found` status without being promoted to terminating errors.
-- **Search-AzGraph 'Argument types do not match' (#261)** —
-  `Get-RangerArmResourcesByGraph` now explicitly casts subscription and
-  management-group arrays to `[string[]]`, fixing a type mismatch when
-  subscription IDs originate from YAML parsing.
+Per-node WinRM execution prevents single-node failure aborting collection (#259);
+Arc license profile 404 suppressed (#260); Search-AzGraph type cast fix (#261).
 
 ## v2.5.0 — Extended Platform Coverage
 

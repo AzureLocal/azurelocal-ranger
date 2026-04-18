@@ -1042,6 +1042,52 @@ function New-RangerReportPayload {
             })
         }
 
+        # Imported switch configurations — technical only (#334)
+        $switchConfigs = @($Manifest.domains.networking.switchConfig)
+        if ($switchConfigs.Count -gt 0) {
+            $switchRows = @($switchConfigs | ForEach-Object {
+                $s = $_
+                @(
+                    [string]($s.sourceFile ?? '—'),
+                    [string]($s.vendor ?? '—'),
+                    [string]($s.parseStatus ?? '—'),
+                    [string]((@($s.vlans)).Count),
+                    [string]((@($s.portChannels)).Count),
+                    [string]((@($s.interfaces)).Count),
+                    [string]((@($s.acls)).Count)
+                )
+            })
+            [void]$sections.Add([ordered]@{
+                heading = 'Imported Switch Configurations'
+                type    = 'table'
+                headers = @('File', 'Vendor', 'Parse Status', 'VLANs', 'Port-Channels', 'Interfaces', 'ACLs')
+                rows    = $switchRows
+            })
+        }
+
+        # Imported firewall configurations — technical only (#334)
+        $firewallConfigs = @($Manifest.domains.networking.firewallConfig)
+        if ($firewallConfigs.Count -gt 0) {
+            $firewallRows = @($firewallConfigs | ForEach-Object {
+                $f = $_
+                @(
+                    [string]($f.sourceFile ?? '—'),
+                    [string]($f.vendor ?? '—'),
+                    [string]($f.parseStatus ?? '—'),
+                    [string]((@($f.vlans)).Count),
+                    [string]((@($f.portChannels)).Count),
+                    [string]((@($f.interfaces)).Count),
+                    [string]((@($f.acls)).Count)
+                )
+            })
+            [void]$sections.Add([ordered]@{
+                heading = 'Imported Firewall Configurations'
+                type    = 'table'
+                headers = @('File', 'Vendor', 'Parse Status', 'VLANs', 'Port-Channels', 'Interfaces', 'ACLs')
+                rows    = $firewallRows
+            })
+        }
+
         # Domain summary (counts) — retained as bullets, replaces Technical Domain Deep Dive
         [void]$sections.Add([ordered]@{
             heading = 'Domain Summary'

@@ -96,11 +96,21 @@ Check:
 - subscription and tenant alignment
 - RBAC scope for the selected resource group or Azure Local instance
 
+### Hardware Domain Shows `skipped` With No BMC Configured
+
+Since v2.6.5 (#316), the hardware collector is automatically removed from the run when `targets.bmc.endpoints` is empty and the hardware domain was not explicitly included via `domains.include`. This is expected behavior — no misleading `skipped` entry will appear in the log.
+
+If you want hardware collection but see `skipped`:
+
+- Confirm `targets.bmc.endpoints` contains at least one IP or hostname in your config, or
+- Pass BMC IPs when prompted — in interactive sessions Ranger asks `Include BMC / iDRAC hardware collection? [Y/N]` before collectors run, or
+- Add `hardware` to `domains.include` in your config to force-include it (you will then be prompted for BMC endpoints or the collector will fail with a clear error)
+
 ### Redfish or iDRAC Access Fails
 
 Symptoms:
 
-- hardware or OEM-management domains skip or fail
+- hardware or OEM-management domains skip or fail with a BMC connectivity error
 
 Check:
 
@@ -160,6 +170,25 @@ Check:
 - whether the environment is actually a disconnected-operations deployment
 - whether the required local control-plane prerequisites exist
 - whether a dedicated management cluster exists where the documented disconnected model requires it
+
+### Run Failed Before Any Log Entries Appeared
+
+Before v2.6.5, the log file was not opened until after config loading, auto-discovery, and validation completed — so a failure during that phase produced either no log file or an empty one with only the header line.
+
+Since v2.6.5 (#318), `ranger.log` begins with a `# bootstrap phase` section that captures every `Write-RangerLog` call made during config load, auto-discovery, and validation. The first line is always the invocation parameters:
+
+```text
+# bootstrap phase
+[2026-04-17T10:32:01][INFO ] Invoke-AzureLocalRanger: invoked — ConfigPath='.\ranger.yml'
+[2026-04-17T10:32:02][INFO ] Invoke-RangerAzureAutoDiscovery: tenantId '...' sourced from active Az session
+...
+# run phase
+[2026-04-17T10:32:05][INFO ] AzureLocalRanger run started — package: tplabs-current-state-20260417T103201Z
+```
+
+If the run failed before a package root could be created (e.g., the output path is invalid), there will still be no log file — look at the PowerShell error output in that case. For everything else, the bootstrap section tells you exactly what Ranger saw when it started.
+
+To get the most detail in the bootstrap section, set `behavior.logLevel: debug` in your config or pass `-Verbose` to the PowerShell session before invoking.
 
 ## What To Do With Missing Data
 

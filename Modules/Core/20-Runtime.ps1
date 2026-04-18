@@ -61,7 +61,36 @@ function Invoke-RangerCollectorExecution {
             throw "Collector function '$functionName' is not available."
         }
 
-        $result = & $functionName @arguments
+        # Issue #332: use 4>&1 to capture verbose stream from compiled cmdlets (Az SDK,
+        # Invoke-RestMethod tracing, PackageManagement, CIM) — global:Write-Verbose overrides
+        # cannot intercept PSCmdlet.WriteVerbose() calls, only 4>&1 can.
+        # PipelineStoppedException is caught and swallowed because Select-Object -First and
+        # similar early-exit pipeline ops throw it internally; it is not a real error.
+        if ($script:RangerLogPath -and $script:RangerLogLevel -eq 'debug') {
+            $rawOutput = [System.Collections.Generic.List[object]]::new()
+            try {
+                & $functionName @arguments 4>&1 | ForEach-Object { $rawOutput.Add($_) }
+            } catch {
+                if ($_.Exception -isnot [System.Management.Automation.PipelineStoppedException] -and
+                    $_.Exception.Message -notlike '*pipeline has been stopped*') {
+                    throw
+                }
+            }
+            foreach ($item in $rawOutput) {
+                if ($item -is [System.Management.Automation.VerboseRecord]) {
+                    if ($item.Message -notmatch '^\[\d{4}-\d{2}-\d{2}T') {
+                        try {
+                            Add-Content -LiteralPath $script:RangerLogPath -Value "[$((Get-Date).ToString('s'))][DEBUG] $($item.Message)" -Encoding UTF8 -ErrorAction Stop
+                        } catch {}
+                    }
+                    Microsoft.PowerShell.Utility\Write-Verbose -Message $item.Message
+                } else {
+                    $result = $item
+                }
+            }
+        } else {
+            $result = & $functionName @arguments
+        }
         if (-not $result) {
             $status = 'not-applicable'
             $result = @{}
@@ -443,6 +472,17 @@ function Invoke-RangerDiscoveryRuntime {
         [string]$BaselineManifestPath
     )
 
+    # Issue #318: pre-log buffer — captures Write-RangerLog calls during bootstrap (config load →
+    # structural overrides → auto-discovery → validation) before the output path is known and the
+    # log file can be opened. Flushed and cleared by Initialize-RangerFileLog once the file is ready.
+    $script:RangerPreLogBuffer = [System.Collections.Generic.List[pscustomobject]]::new()
+    $invokeDesc = @()
+    if (-not [string]::IsNullOrWhiteSpace($ConfigPath)) { $invokeDesc += "ConfigPath='$ConfigPath'" }
+    if ($StructuralOverrides -and $StructuralOverrides.Count -gt 0) { $invokeDesc += "overrides=[$($StructuralOverrides.Keys -join ', ')]" }
+    if ($Unattended) { $invokeDesc += 'Unattended' }
+    if ($NoRender)   { $invokeDesc += 'NoRender' }
+    Write-RangerLog -Level info -Message "Invoke-AzureLocalRanger: invoked$(if ($invokeDesc) { " — $($invokeDesc -join '; ')" } else { ' — no ConfigPath, no overrides' })"
+
     $config = Import-RangerConfiguration -ConfigPath $ConfigPath -ConfigObject $ConfigObject
     $config = Set-RangerStructuralOverrides -Config $config -StructuralOverrides $StructuralOverrides
 
@@ -469,7 +509,39 @@ function Invoke-RangerDiscoveryRuntime {
         $config = Invoke-RangerInteractiveInput -Config $config
     }
 
-    $script:RangerLogLevel = Resolve-RangerLogLevel -Level $(if ($config.behavior.logLevel) { $config.behavior.logLevel } else { 'info' })
+    # Issue #319: interactive run-mode prompt — fires when running interactively and the operator
+    # did not supply -OutputMode on the CLI. Config-file operators press Enter to confirm their
+    # existing setting. CI / -Unattended / -Wizard runs are unaffected.
+    if ($AllowInteractiveInput -and -not $StructuralOverrides.ContainsKey('OutputMode') -and
+        (Get-Command -Name 'Test-RangerInteractivePromptAvailable' -ErrorAction SilentlyContinue) -and
+        (Test-RangerInteractivePromptAvailable)) {
+        try {
+            $currentMode = if ([string]$config.output.mode -eq 'as-built') { 'as-built' } else { 'current-state' }
+            Write-Host ''
+            Write-Host '[Ranger] Run mode:'
+            Write-Host '  (1) current-state  — recurring operational snapshot'
+            Write-Host '  (2) as-built       — formal handoff documentation'
+            $modeAnswer = Read-Host "[Ranger] Select [Enter = $currentMode]"
+            $modeAnswer = $modeAnswer.Trim()
+            if ($modeAnswer -eq '2' -or $modeAnswer -match '^as-built$') {
+                $config.output.mode = 'as-built'
+            }
+            elseif ($modeAnswer -eq '1' -or $modeAnswer -match '^current-state$') {
+                $config.output.mode = 'current-state'
+            }
+            # Empty answer keeps current value
+            Write-RangerLog -Level info -Message "Run mode: '$($config.output.mode)' (issue #319)"
+        }
+        catch {
+            Write-RangerLog -Level debug -Message "Run mode prompt failed — $($_.Exception.Message)"
+        }
+    }
+
+    # Issue #322: log level is set from config.behavior.logLevel which is already 'debug'
+    # when -Debug or -Verbose was passed (injected via structural overrides in 10-Commands.ps1).
+    $script:RangerLogLevel = Resolve-RangerLogLevel -Level $(
+        if ($config.behavior.logLevel) { $config.behavior.logLevel } else { 'info' }
+    )
     $script:RangerBehaviorRetryCount = if ($config.behavior.retryCount -gt 0) { [int]$config.behavior.retryCount } else { 0 }
     $validation = Test-RangerConfiguration -Config $config -PassThru
     if (-not $validation.IsValid) {
@@ -534,11 +606,32 @@ function Invoke-RangerDiscoveryRuntime {
             $bmcAnswer = Read-Host '[Ranger] Include BMC / iDRAC hardware collection? [Y/N]'
             if ($bmcAnswer -match '^[Yy]') {
                 $rawIps = Read-Host '[Ranger] Enter iDRAC IP addresses (comma-separated)'
-                $bmcEndpoints = @($rawIps -split '[,;\s]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+                # Issue #324: store as { host, node } objects matching the normalized shape so the hardware
+                # collector can read .host. Plain strings bypass Normalize-RangerConfiguration.
+                $bmcEndpoints = @($rawIps -split '[,;\s]+' |
+                    Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+                    ForEach-Object { [ordered]@{ host = $_.Trim(); node = $null } })
                 if ($bmcEndpoints.Count -gt 0) {
                     if (-not ($config.targets.bmc -is [System.Collections.IDictionary])) { $config.targets.bmc = [ordered]@{} }
                     $config.targets.bmc.endpoints = $bmcEndpoints
-                    Write-RangerLog -Level info -Message "Interactive BMC prompt: $($bmcEndpoints.Count) endpoint(s) added — $($bmcEndpoints -join ', ')"
+                    Write-RangerLog -Level info -Message "Interactive BMC prompt: $($bmcEndpoints.Count) endpoint(s) added — $($bmcEndpoints.host -join ', ')"
+
+                    # Issue #326: prompt for BMC credential immediately while the operator still has
+                    # BMC context in mind. Store in CredentialOverrides so Resolve-RangerCredentialMap
+                    # skips the BMC prompt and the cluster/domain prompts come after, not before.
+                    if (-not $CredentialOverrides.bmc) {
+                        $targetHint = if (-not [string]::IsNullOrWhiteSpace($config.targets.cluster.fqdn)) { [string]$config.targets.cluster.fqdn } else { '' }
+                        $bmcPromptText = Get-RangerCredentialPromptText -Name 'bmc' -TargetHint $targetHint
+                        try {
+                            $bmcCred = Get-Credential -Message $bmcPromptText.Message -Title $bmcPromptText.Title
+                        } catch {
+                            $bmcCred = Get-Credential -Message "Enter the BMC / iDRAC credential"
+                        }
+                        if ($bmcCred) {
+                            $CredentialOverrides.bmc = $bmcCred
+                            Write-RangerLog -Level info -Message "Interactive BMC prompt: credential captured for '$($bmcCred.UserName)'"
+                        }
+                    }
                 }
             }
         } catch {
@@ -584,8 +677,9 @@ function Invoke-RangerDiscoveryRuntime {
     }
     $DebugPreference = 'SilentlyContinue'
 
-    # Install a global Write-Warning proxy so warnings from ANY module (Az, WinRM, S2D, etc.) are
-    # captured in the run log for the duration of this run, then restored in the finally block.
+    # Install global Write-Warning and Write-Verbose proxies so output from ANY module
+    # (Az, WinRM, PackageManagement, Invoke-RestMethod HTTP tracing, etc.) is captured in
+    # the run log for the duration of this run, then restored in the finally block.
     $script:_rangerPrevWriteWarning = Get-Item function:\global:Write-Warning -ErrorAction SilentlyContinue
     function global:Write-Warning {
         param([AllowNull()][object]$Message)
@@ -993,7 +1087,7 @@ function Invoke-RangerDiscoveryRuntime {
             }
         }
 
-        # Restore whatever Write-Warning existed before the run (usually the built-in)
+        # Restore whatever Write-Warning / Write-Verbose existed before the run
         if ($script:_rangerPrevWriteWarning) {
             Set-Item function:\global:Write-Warning -Value $script:_rangerPrevWriteWarning.ScriptBlock
         } else {
@@ -1004,6 +1098,7 @@ function Invoke-RangerDiscoveryRuntime {
         $InformationPreference = $script:_rangerPrevInformationPreference
         $ProgressPreference = $script:_rangerPrevProgressPreference
         $script:RangerLogPath = $null
+        $script:RangerPreLogBuffer = $null
         $script:RangerRetryDetails = $null
         $script:RangerWinRmProbeCache = $null
         $script:RangerBehaviorRetryCount = $null

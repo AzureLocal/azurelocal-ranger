@@ -272,12 +272,39 @@ function Invoke-AzureLocalRanger {
         $structuralOverrides['NetworkDeviceConfigs'] = $NetworkDeviceConfigs
     }
 
+    # Issue #322: -Debug / -Verbose must elevate file log verbosity. Preference-variable
+    # propagation is unreliable across module boundaries; $PSBoundParameters is authoritative.
+    if ($PSBoundParameters.ContainsKey('Debug') -or $PSBoundParameters.ContainsKey('Verbose')) {
+        $structuralOverrides['LogLevel'] = 'debug'
+        # Issue #328: set module-scope flag so Write-RangerLog forces $VerbosePreference = 'Continue'
+        # locally before each Write-Verbose call. $VerbosePreference set by common parameters only
+        # applies to the declaring function's scope and does not propagate into nested module functions.
+        $script:RangerVerboseToConsole = $true
+    }
+
     try {
-        Invoke-RangerDiscoveryRuntime -ConfigPath $ConfigPath -ConfigObject $ConfigObject -OutputPath $OutputPath -CredentialOverrides $credentialOverrides -IncludeDomains $IncludeDomain -ExcludeDomains $ExcludeDomain -NoRender:$NoRender -StructuralOverrides $structuralOverrides -AllowInteractiveInput:(-not $Unattended) -Unattended:$Unattended -BaselineManifestPath $BaselineManifestPath
+        $runResult = Invoke-RangerDiscoveryRuntime -ConfigPath $ConfigPath -ConfigObject $ConfigObject -OutputPath $OutputPath -CredentialOverrides $credentialOverrides -IncludeDomains $IncludeDomain -ExcludeDomains $ExcludeDomain -NoRender:$NoRender -StructuralOverrides $structuralOverrides -AllowInteractiveInput:(-not $Unattended) -Unattended:$Unattended -BaselineManifestPath $BaselineManifestPath
+
+        # Issue #330: suppress the raw ordered hashtable from the pipeline — printing the full
+        # Config + Manifest objects to the terminal on every unassigned call is noisy and unusable.
+        # Emit a clean host summary instead so the operator sees where the output landed.
+        if ($runResult) {
+            $collectors    = $runResult.Manifest.collectors
+            $totalCount    = if ($collectors -is [System.Collections.IDictionary]) { $collectors.Count } else { 0 }
+            $failedCount   = if ($collectors -is [System.Collections.IDictionary]) { @($collectors.Values | Where-Object { $_.status -eq 'failed' }).Count } else { 0 }
+            $skippedCount  = if ($collectors -is [System.Collections.IDictionary]) { @($collectors.Values | Where-Object { $_.status -in @('skipped','not-applicable') }).Count } else { 0 }
+            $passedCount   = $totalCount - $failedCount - $skippedCount
+            $statusLine    = "collectors: $passedCount ok / $skippedCount skipped / $failedCount failed"
+            Write-Host ''
+            Write-Host "[Ranger] Run complete — $statusLine" -ForegroundColor $(if ($failedCount -gt 0) { 'Yellow' } else { 'Green' })
+            Write-Host "[Ranger] Output  → $($runResult.PackageRoot)"
+            Write-Host "[Ranger] Log     → $($runResult.LogPath)"
+        }
     }
     finally {
         # v2.0.0 (#230): release the concurrent-collection guard even on throw.
         $script:RangerCollectionInProgress = $false
+        $script:RangerVerboseToConsole = $false
     }
 }
 
