@@ -12,13 +12,19 @@ Ranger supports two outcomes through one discovery engine:
 
 **Upcoming** — what's next, in ship order. Each milestone link has the full issue backlog; tables below surface the highlights.
 
-## v2.6.4 — Cloud Publishing UX
+## v2.6.5 — Credential UX & Discovery Hardening
 
-Opt-in auto-provisioning of Azure resources when publishing, plus first-run friction fixes. Milestone: [#29](https://github.com/AzureLocal/azurelocal-ranger/milestone/29).
+First-run friction fixes uncovered during live validation: credential prompts that don't explain themselves, WinRM dialogs that fire mid-flow, duplicate cluster/domain prompts, node connections that use short names instead of FQDNs, and silent cluster auto-selection. Milestone: [#32](https://github.com/AzureLocal/azurelocal-ranger/milestone/32).
 
 | Item | Detail | Issue |
 | --- | --- | --- |
-| Auto-provision storage account + container + RBAC | `output.remoteStorage.ensureExists` block and `-EnsureExists` parameter so first-time publishers don't have to pre-create SA, container, and role assignment manually | [#289](https://github.com/AzureLocal/azurelocal-ranger/issues/289) |
+| Credential prompt clarity | `Get-Credential` title and message must name the target system and expected account format (`DOMAIN\user` or `user@domain.com`); same treatment for BMC / switch / firewall paths | [#302](https://github.com/AzureLocal/azurelocal-ranger/issues/302) |
+| WinRM silent-start preflight | Ranger starts WinRM service silently during preflight instead of letting Windows throw an interactive service-start dialog mid-run | [#303](https://github.com/AzureLocal/azurelocal-ranger/issues/303) |
+| Cluster / domain credential reuse | When `credentials.domain` is unconfigured, reuse the cluster credential automatically — no second prompt for the same account | [#304](https://github.com/AzureLocal/azurelocal-ranger/issues/304) |
+| Arc node FQDN extraction | `Invoke-RangerAzureAutoDiscovery` pulls `properties.dnsFqdn` from Arc machines into a `nodeFqdns` map; all per-node WinRM/CIM fan-out uses FQDNs, eliminating `0x8009030e` failures on non-domain-joined management machines | [#308](https://github.com/AzureLocal/azurelocal-ranger/issues/308) |
+| Node FQDN resolver (s2d pattern) | Port `Resolve-S2DNodeFqdn`'s 4-step chain (pass-through / cluster-suffix / DNS / short-name) as `Resolve-RangerNodeFqdn` for cases where Arc does not supply a FQDN | [#306](https://github.com/AzureLocal/azurelocal-ranger/issues/306) |
+| Cluster selection UX | Auto-selection prints the chosen cluster and RG; multiple clusters show a numbered menu; `-Unattended` still throws `RANGER-DISC-002` on multiples | [#309](https://github.com/AzureLocal/azurelocal-ranger/issues/309) |
+| Azure-first discovery phase | Azure discovery (cluster, node FQDNs, RG, domain, Arc overlay) runs to completion before any on-prem WinRM session opens, so collectors start with full context | [#310](https://github.com/AzureLocal/azurelocal-ranger/issues/310) |
 
 ## v2.7.0 — Documentation and Reporting Overhaul
 
@@ -41,6 +47,7 @@ Two parallel tracks: deep, comprehensive public-facing documentation with produc
 
 | Item | Detail | Issue |
 | --- | --- | --- |
+| S2D-style storage analysis | 7-stage capacity waterfall, per-disk wear / firmware / reliability telemetry, thin-provisioning risk checks, cache tier analysis, TiB/TB dual-unit display, and four new SVG diagrams (Disk-to-Node Map, Pool Layout, Volume Resiliency, Health Scorecard) ported from `azurelocal-s2d-cartographer` | [#307](https://github.com/AzureLocal/azurelocal-ranger/issues/307) |
 | HTML reports | Executive-grade visual design, interactive navigation, theming, accessibility | [#281](https://github.com/AzureLocal/azurelocal-ranger/issues/281) |
 | Markdown reports | GitHub-flavored fidelity, Mermaid diagrams, MkDocs integration, cross-links | [#274](https://github.com/AzureLocal/azurelocal-ranger/issues/274) |
 | DOCX | Professional Word deliverable — cover page, TOC, styles, embedded diagrams | [#273](https://github.com/AzureLocal/azurelocal-ranger/issues/273) |
@@ -53,6 +60,15 @@ Two parallel tracks: deep, comprehensive public-facing documentation with produc
 | json-evidence + raw manifest JSON | Published JSON Schema, versioning, consumer examples (jq / PowerShell / Python / C#) | [#285](https://github.com/AzureLocal/azurelocal-ranger/issues/285) |
 | Estate rollup outputs | Cross-cluster heatmaps, drill-down, trend tracking, estate PPTX + SVG | [#286](https://github.com/AzureLocal/azurelocal-ranger/issues/286) |
 | Remediation runbooks | Change-management-ready, rollback guidance, dependency graph, ServiceNow/Jira formats | [#288](https://github.com/AzureLocal/azurelocal-ranger/issues/288) |
+
+## v2.8.0 — Cloud Publishing UX
+
+Cloud publishing ergonomics plus the Spectre.Console TUI rewrite. Milestone: [#29](https://github.com/AzureLocal/azurelocal-ranger/milestone/29).
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Auto-provision storage account + container + RBAC | `output.remoteStorage.ensureExists` block and `-EnsureExists` parameter so first-time publishers don't have to pre-create SA, container, and role assignment manually | [#289](https://github.com/AzureLocal/azurelocal-ranger/issues/289) |
+| Spectre.Console TUI — real implementation | Current `80-ProgressDisplay.ps1` is a non-functional stub (no live bars, module not in manifest, syntax error on line 175, zero tests). Rewrite using `Invoke-SpectreCommandWithProgress` + `Add-SpectreJob` for genuine live-updating per-collector bars; add `PwshSpectreConsole` as an optional manifest dependency; add Pester coverage; run PSScriptAnalyzer in CI | [#305](https://github.com/AzureLocal/azurelocal-ranger/issues/305) |
 
 ## v3.0.0 — Enterprise & OEM Integration
 
