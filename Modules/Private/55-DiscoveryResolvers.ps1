@@ -534,6 +534,26 @@ function Resolve-RangerNodeInventory {
         }
     }
 
+    # Port of s2d NodeTargets pattern (#306/#308): resolve every short name to
+    # FQDN before returning so that callers (topology collector, fan-out code)
+    # always work with FQDNs. Uses the cluster FQDN suffix first (same as
+    # Resolve-S2DNodeFqdn), then falls back to the Arc-sourced nodeFqdns map
+    # built by Invoke-RangerAzureAutoDiscovery, then DNS.
+    if ($result.Nodes.Count -gt 0) {
+        $clusterFqdn = [string]$Config.targets.cluster.fqdn
+        $nodeFqdnMap = if ($Config.targets.cluster -is [System.Collections.IDictionary] -and
+                           $Config.targets.cluster.Contains('nodeFqdns') -and
+                           $Config.targets.cluster.nodeFqdns) {
+            $Config.targets.cluster.nodeFqdns
+        } else { @{} }
+
+        $result.Nodes = @($result.Nodes | ForEach-Object {
+            $resolved = try { Resolve-RangerNodeFqdn -Name $_ -ClusterFqdn $clusterFqdn -NodeFqdnMap $nodeFqdnMap } catch { $null }
+            if (-not [string]::IsNullOrWhiteSpace($resolved)) { $resolved } else { $_ }
+        } | Select-Object -Unique)
+        Write-RangerLog -Level debug -Message "Resolve-RangerNodeInventory: resolved $($result.Nodes.Count) node target(s) to FQDNs: $($result.Nodes -join ', ')"
+    }
+
     return $result
 }
 
