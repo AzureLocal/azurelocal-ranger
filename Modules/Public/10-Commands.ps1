@@ -299,6 +299,7 @@ function Invoke-AzureLocalRanger {
             Write-Host "[Ranger] Run complete — $statusLine" -ForegroundColor $(if ($failedCount -gt 0) { 'Yellow' } else { 'Green' })
             Write-Host "[Ranger] Output  → $($runResult.PackageRoot)"
             Write-Host "[Ranger] Log     → $($runResult.LogPath)"
+            $runResult
         }
     }
     finally {
