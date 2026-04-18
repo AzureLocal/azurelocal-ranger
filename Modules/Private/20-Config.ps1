@@ -617,6 +617,25 @@ function Set-RangerStructuralOverrides {
         $Config.behavior.skipPreCheck = [bool]$StructuralOverrides['SkipPreCheck']
     }
 
+    # Issue #314: -NetworkDeviceConfigs parameter — validate paths exist then merge into
+    # domains.hints.networkDeviceConfigs so the networking collector parser picks them up.
+    if ($StructuralOverrides.ContainsKey('NetworkDeviceConfigs') -and @($StructuralOverrides['NetworkDeviceConfigs']).Count -gt 0) {
+        $validPaths = [System.Collections.Generic.List[string]]::new()
+        foreach ($p in @($StructuralOverrides['NetworkDeviceConfigs'])) {
+            if ([string]::IsNullOrWhiteSpace($p)) { continue }
+            $resolved = try { (Resolve-Path -Path $p -ErrorAction Stop).Path } catch { $null }
+            if ($resolved -and (Test-Path $resolved)) {
+                $validPaths.Add($resolved)
+            } else {
+                throw "NetworkDeviceConfigs: path not found — '$p'. Verify the file exists before running."
+            }
+        }
+        if (-not ($Config.domains -is [System.Collections.IDictionary])) { $Config.domains = [ordered]@{} }
+        if (-not ($Config.domains.hints -is [System.Collections.IDictionary])) { $Config.domains.hints = [ordered]@{} }
+        $existing = @($Config.domains.hints.networkDeviceConfigs | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+        $Config.domains.hints.networkDeviceConfigs = @($existing) + @($validPaths)
+    }
+
     return $Config
 }
 

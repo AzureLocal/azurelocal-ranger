@@ -206,7 +206,11 @@ function Invoke-AzureLocalRanger {
         [switch]$PublishToStorage,
 
         # v2.3.0 (#247): post distilled run + findings records to Log Analytics per output.logAnalytics.
-        [switch]$PublishToLogAnalytics
+        [switch]$PublishToLogAnalytics,
+
+        # Issue #314: pass switch/firewall config export file paths directly without a full config file.
+        # Populates domains.hints.networkDeviceConfigs before the networking collector runs.
+        [string[]]$NetworkDeviceConfigs
     )
 
     # #211: -Wizard dispatches to Invoke-RangerWizard, which already handles
@@ -263,7 +267,10 @@ function Invoke-AzureLocalRanger {
     if ($PSBoundParameters.ContainsKey('RetryCount'))        { $structuralOverrides['RetryCount']        = $RetryCount }
     if ($PSBoundParameters.ContainsKey('TimeoutSeconds'))    { $structuralOverrides['TimeoutSeconds']    = $TimeoutSeconds }
     if ($PSBoundParameters.ContainsKey('AzureMethod'))       { $structuralOverrides['AzureMethod']       = $AzureMethod }
-    if ($PSBoundParameters.ContainsKey('SkipPreCheck'))      { $structuralOverrides['SkipPreCheck']      = [bool]$SkipPreCheck }
+    if ($PSBoundParameters.ContainsKey('SkipPreCheck'))          { $structuralOverrides['SkipPreCheck']          = [bool]$SkipPreCheck }
+    if ($PSBoundParameters.ContainsKey('NetworkDeviceConfigs') -and @($NetworkDeviceConfigs).Count -gt 0) {
+        $structuralOverrides['NetworkDeviceConfigs'] = $NetworkDeviceConfigs
+    }
 
     try {
         Invoke-RangerDiscoveryRuntime -ConfigPath $ConfigPath -ConfigObject $ConfigObject -OutputPath $OutputPath -CredentialOverrides $credentialOverrides -IncludeDomains $IncludeDomain -ExcludeDomains $ExcludeDomain -NoRender:$NoRender -StructuralOverrides $structuralOverrides -AllowInteractiveInput:(-not $Unattended) -Unattended:$Unattended -BaselineManifestPath $BaselineManifestPath
