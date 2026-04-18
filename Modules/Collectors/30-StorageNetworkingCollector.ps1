@@ -518,22 +518,34 @@ function Invoke-RangerStorageNetworkingCollector {
                         }
                     })
                 } else { @() }
-                $lldpNeighbors = if (Get-Command -Name Get-NetAdapter -ErrorAction SilentlyContinue) {
-                    @(Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | ForEach-Object {
-                        $adapterName = $_.Name
-                        try {
-                            # LLDP neighbor data from adapter advanced properties (read-only LLDP)
-                            $lldpProp = Get-NetAdapterAdvancedProperty -Name $adapterName -RegistryKeyword '*PMNSOffload' -ErrorAction SilentlyContinue
-                            # Try WMI-based LLDP where available
-                            $lldpWmi = Get-CimInstance -Namespace 'root\wmi' -ClassName MSNdis_NetworkLinkDescription -Filter "InstanceName like '%$adapterName%'" -ErrorAction SilentlyContinue
-                            if ($null -ne $lldpWmi) {
-                                [ordered]@{ interface = $adapterName; lldpData = $lldpWmi.LinkDescription }
-                            } else {
-                                [ordered]@{ interface = $adapterName; lldpData = $null }
-                            }
-                        } catch { [ordered]@{ interface = $adapterName; lldpData = $null } }
-                    } | Where-Object { $_.lldpData })
-                } else { @() }
+                # Issue #313 — LLDP passive reporting: always collect neighbor data
+                # using Get-NetLldpNeighbor (available on Azure Local / Windows Server
+                # 2019+). Falls back to empty list gracefully when LLDP cmdlets are
+                # absent. No switch credentials required — data comes from the node OS.
+                $lldpNeighbors = @(
+                    try {
+                        if (Get-Command -Name Get-NetLldpNeighbor -ErrorAction SilentlyContinue) {
+                            @(Get-NetLldpNeighbor -ErrorAction SilentlyContinue | ForEach-Object {
+                                [ordered]@{
+                                    interface        = $_.LocalPort
+                                    neighborSystem   = $_.SystemName
+                                    neighborPort     = $_.PortId
+                                    neighborPortDesc = $_.PortDescription
+                                    neighborMgmtAddr = $_.ManagementAddress
+                                    neighborMac      = $_.ChassisId
+                                    ttl              = $_.TimeToLive
+                                }
+                            })
+                        } elseif (Get-Command -Name Get-NetAdapter -ErrorAction SilentlyContinue) {
+                            # Fallback: read LLDP via WMI on older OS versions
+                            @(Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | ForEach-Object {
+                                $adapterName = $_.Name
+                                $lldpWmi = Get-CimInstance -Namespace 'root\wmi' -ClassName MSNdis_NetworkLinkDescription -Filter "InstanceName like '%$adapterName%'" -ErrorAction SilentlyContinue
+                                if ($lldpWmi) { [ordered]@{ interface = $adapterName; neighborSystem = $null; lldpData = $lldpWmi.LinkDescription } }
+                            } | Where-Object { $_ })
+                        }
+                    } catch { @() }
+                )
                 # Issue #59: SMB configuration depth and Live Migration settings
                 $smbConfig = [ordered]@{
                     serverConfig    = if (Get-Command -Name Get-SmbServerConfiguration -ErrorAction SilentlyContinue) {

@@ -522,6 +522,30 @@ function Invoke-RangerDiscoveryRuntime {
         }
     }
 
+    # Issue #312 — interactive BMC endpoint prompt: when no BMC endpoints are
+    # configured and the run is interactive, ask whether to include iDRAC/BMC
+    # collection. If yes, collect endpoint IPs before collector selection so
+    # the hardware collector is included in scope and credential prompting fires.
+    if ($AllowInteractiveInput -and -not $Unattended -and
+        @($config.targets.bmc.endpoints | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }).Count -eq 0 -and
+        (Get-Command -Name 'Test-RangerInteractivePromptAvailable' -ErrorAction SilentlyContinue) -and
+        (Test-RangerInteractivePromptAvailable)) {
+        try {
+            $bmcAnswer = Read-Host '[Ranger] Include BMC / iDRAC hardware collection? [Y/N]'
+            if ($bmcAnswer -match '^[Yy]') {
+                $rawIps = Read-Host '[Ranger] Enter iDRAC IP addresses (comma-separated)'
+                $bmcEndpoints = @($rawIps -split '[,;\s]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+                if ($bmcEndpoints.Count -gt 0) {
+                    if (-not ($config.targets.bmc -is [System.Collections.IDictionary])) { $config.targets.bmc = [ordered]@{} }
+                    $config.targets.bmc.endpoints = $bmcEndpoints
+                    Write-RangerLog -Level info -Message "Interactive BMC prompt: $($bmcEndpoints.Count) endpoint(s) added — $($bmcEndpoints -join ', ')"
+                }
+            }
+        } catch {
+            Write-RangerLog -Level debug -Message "Interactive BMC prompt failed — $($_.Exception.Message)"
+        }
+    }
+
     $selectedCollectors = Resolve-RangerSelectedCollectors -Config $config
     $credentialMap = Resolve-RangerCredentialMap -Config $config -Overrides $CredentialOverrides
     $basePath = if ($ConfigPath) { Split-Path -Parent (Resolve-RangerPath -Path $ConfigPath) } else { (Get-Location).Path }
