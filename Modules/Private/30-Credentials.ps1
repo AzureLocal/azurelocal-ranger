@@ -158,12 +158,63 @@ function Resolve-RangerPasswordValue {
     return $null
 }
 
+function Get-RangerCredentialPromptText {
+    # Issue #302 — per-credential-kind prompt text so operators know what
+    # account type, format, and target to supply.
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [string]$TargetHint
+    )
+
+    $targetSuffix = if (-not [string]::IsNullOrWhiteSpace($TargetHint)) { " for $TargetHint" } else { '' }
+
+    switch ($Name) {
+        'cluster' {
+            return [ordered]@{
+                Title   = "Cluster node credential (WinRM)$targetSuffix"
+                Message = "Enter a Windows domain account with local admin rights on the cluster nodes.`nFormat: DOMAIN\username or username@domain.com"
+            }
+        }
+        'domain' {
+            return [ordered]@{
+                Title   = "Active Directory read credential$targetSuffix"
+                Message = "Enter a domain account with read access to AD.`nFormat: DOMAIN\username or username@domain.com.`nLeave blank to reuse the cluster credential."
+            }
+        }
+        'bmc' {
+            return [ordered]@{
+                Title   = "BMC / iDRAC credential$targetSuffix"
+                Message = "Enter the baseboard management controller (iDRAC / iLO / XClarity) login.`nFormat: local username (e.g. 'root' or 'admin'), no domain prefix."
+            }
+        }
+        'switch' {
+            return [ordered]@{
+                Title   = "Network switch credential$targetSuffix"
+                Message = "Enter the ToR switch management login.`nFormat: local username as configured on the switch (e.g. 'admin')."
+            }
+        }
+        'firewall' {
+            return [ordered]@{
+                Title   = "Firewall credential$targetSuffix"
+                Message = "Enter the firewall management login.`nFormat: local username as configured on the appliance."
+            }
+        }
+        default {
+            return [ordered]@{
+                Title   = "$Name credential$targetSuffix"
+                Message = "Enter the $Name credential for Azure Local Ranger."
+            }
+        }
+    }
+}
+
 function Resolve-RangerCredentialDefinition {
     param(
         [string]$Name,
         $CredentialBlock,
         [PSCredential]$OverrideCredential,
-        [bool]$AllowPrompt = $true
+        [bool]$AllowPrompt = $true,
+        [string]$TargetHint
     )
 
     if ($OverrideCredential) {
@@ -199,10 +250,16 @@ function Resolve-RangerCredentialDefinition {
 
     if ($AllowPrompt -and $Name -ne 'azure') {
         try {
-            return Get-Credential -Message "Enter the $Name credential for Azure Local Ranger"
+            $promptText = Get-RangerCredentialPromptText -Name $Name -TargetHint $TargetHint
+            return Get-Credential -Message $promptText.Message -Title $promptText.Title
         }
         catch {
-            return $null
+            try {
+                return Get-Credential -Message "Enter the $Name credential for Azure Local Ranger"
+            }
+            catch {
+                return $null
+            }
         }
     }
 
@@ -277,12 +334,44 @@ function Resolve-RangerCredentialMap {
     if ($overrides.switch)   { $switchInScope   = $true }
     if ($overrides.firewall) { $firewallInScope = $true }
 
+    $clusterTargetHint = if (-not [string]::IsNullOrWhiteSpace($Config.targets.cluster.fqdn)) {
+        [string]$Config.targets.cluster.fqdn
+    } elseif (-not [string]::IsNullOrWhiteSpace($Config.environment.clusterName)) {
+        [string]$Config.environment.clusterName
+    } else { '' }
+
+    $clusterCred  = Resolve-RangerCredentialDefinition -Name 'cluster' -CredentialBlock $Config.credentials.cluster -OverrideCredential $overrides.cluster -AllowPrompt $allowPrompt -TargetHint $clusterTargetHint
+
+    # Issue #304: when credentials.domain has no username and no passwordRef
+    # configured, reuse the cluster credential automatically. The config
+    # template has documented this reuse intent since v1.0 but the code path
+    # never honored it, so operators got prompted twice for the same account.
+    $domainBlock        = $Config.credentials.domain
+    $domainHasUsername  = $domainBlock -and -not [string]::IsNullOrWhiteSpace([string]$domainBlock.username)
+    $domainHasPasswordRef = $domainBlock -and -not [string]::IsNullOrWhiteSpace([string]$domainBlock.passwordRef)
+    $domainHasPassword  = $domainBlock -and -not [string]::IsNullOrWhiteSpace([string]$domainBlock.password)
+    $domainIsConfigured = $domainHasUsername -or $domainHasPasswordRef -or $domainHasPassword
+
+    if ($overrides.domain) {
+        $domainCred = $overrides.domain
+    }
+    elseif ($domainIsConfigured) {
+        $domainCred = Resolve-RangerCredentialDefinition -Name 'domain' -CredentialBlock $domainBlock -OverrideCredential $null -AllowPrompt $allowPrompt -TargetHint $clusterTargetHint
+    }
+    elseif ($clusterCred) {
+        Write-RangerLog -Level info -Message "Resolve-RangerCredentialMap: reusing cluster credential '$($clusterCred.UserName)' for domain queries (credentials.domain is unconfigured)."
+        $domainCred = $clusterCred
+    }
+    else {
+        $domainCred = Resolve-RangerCredentialDefinition -Name 'domain' -CredentialBlock $domainBlock -OverrideCredential $null -AllowPrompt $allowPrompt -TargetHint $clusterTargetHint
+    }
+
     [ordered]@{
         azure    = Resolve-RangerAzureCredentialSettings -Config $Config
-        cluster  = Resolve-RangerCredentialDefinition -Name 'cluster' -CredentialBlock $Config.credentials.cluster -OverrideCredential $overrides.cluster -AllowPrompt $allowPrompt
-        domain   = Resolve-RangerCredentialDefinition -Name 'domain' -CredentialBlock $Config.credentials.domain -OverrideCredential $overrides.domain -AllowPrompt $allowPrompt
-        bmc      = if ($bmcInScope) { Resolve-RangerCredentialDefinition -Name 'bmc' -CredentialBlock $Config.credentials.bmc -OverrideCredential $overrides.bmc -AllowPrompt $allowPrompt } else { $null }
-        firewall = if ($firewallInScope) { Resolve-RangerCredentialDefinition -Name 'firewall' -CredentialBlock $Config.credentials.firewall -OverrideCredential $overrides.firewall -AllowPrompt $allowPrompt } else { $null }
-        switch   = if ($switchInScope) { Resolve-RangerCredentialDefinition -Name 'switch' -CredentialBlock $Config.credentials.switch -OverrideCredential $overrides.switch -AllowPrompt $allowPrompt } else { $null }
+        cluster  = $clusterCred
+        domain   = $domainCred
+        bmc      = if ($bmcInScope) { Resolve-RangerCredentialDefinition -Name 'bmc' -CredentialBlock $Config.credentials.bmc -OverrideCredential $overrides.bmc -AllowPrompt $allowPrompt -TargetHint $clusterTargetHint } else { $null }
+        firewall = if ($firewallInScope) { Resolve-RangerCredentialDefinition -Name 'firewall' -CredentialBlock $Config.credentials.firewall -OverrideCredential $overrides.firewall -AllowPrompt $allowPrompt -TargetHint $clusterTargetHint } else { $null }
+        switch   = if ($switchInScope) { Resolve-RangerCredentialDefinition -Name 'switch' -CredentialBlock $Config.credentials.switch -OverrideCredential $overrides.switch -AllowPrompt $allowPrompt -TargetHint $clusterTargetHint } else { $null }
     }
 }

@@ -595,6 +595,12 @@ function Invoke-RangerDiscoveryRuntime {
         $manifestPath = Join-Path -Path $packageRoot -ChildPath 'manifest\audit-manifest.json'
         $evidenceRoot = Join-Path -Path $packageRoot -ChildPath 'evidence'
 
+        # Issue #303 — silently start WinRM before any probe so Windows does not
+        # pop an interactive service-start dialog when the service is stopped.
+        if (Get-Command -Name 'Invoke-RangerEnsureWinRmRunning' -ErrorAction SilentlyContinue) {
+            Invoke-RangerEnsureWinRmRunning
+        }
+
         # Issue #139 — WinRM preflight: probe all cluster targets before any collector runs.
         # Fails the run immediately when any configured target is unreachable.
         $preflightTargets = [System.Collections.Generic.List[string]]::new()
@@ -709,6 +715,17 @@ function Invoke-RangerDiscoveryRuntime {
         # when PwshSpectreConsole is absent, in CI, or in Unattended / non-interactive mode.
         # Default to $true when the config key is absent so operators get progress display
         # without needing to add showProgress: true to every config file.
+        # Issue #310 — Azure-first execution: run all azure-credential collectors
+        # before on-prem WinRM collectors so the Azure manifest overlay (FQDNs,
+        # domain, Arc extensions, policy, Advisor) is complete when WinRM sessions
+        # open. Stable sort preserves registration order within each phase.
+        $azurePhase  = @($selectedCollectors | Where-Object { $_.RequiredCredential -eq 'azure' })
+        $onPremPhase = @($selectedCollectors | Where-Object { $_.RequiredCredential -ne 'azure' })
+        $orderedCollectors = @($azurePhase) + @($onPremPhase)
+        if ($azurePhase.Count -gt 0 -and $onPremPhase.Count -gt 0) {
+            Write-RangerLog -Level info -Message "Collector execution: AzurePhase ($($azurePhase.Count)) → OnPremPhase ($($onPremPhase.Count))"
+        }
+
         $progressCtx = $null
         $showProgress = if ($config.output -is [System.Collections.IDictionary] -and $config.output.Contains('showProgress')) {
             [bool]$config.output['showProgress']
@@ -716,10 +733,10 @@ function Invoke-RangerDiscoveryRuntime {
             $true
         }
         if ($showProgress -and -not $Unattended -and (Get-Command -Name 'New-RangerProgressContext' -ErrorAction SilentlyContinue)) {
-            $progressCtx = New-RangerProgressContext -Collectors $selectedCollectors
+            $progressCtx = New-RangerProgressContext -Collectors $orderedCollectors
         }
 
-        foreach ($collector in $selectedCollectors) {
+        foreach ($collector in $orderedCollectors) {
             Write-RangerLog -Level info -Message "Collector '$($collector.Id)' starting"
             if ($progressCtx -and (Get-Command -Name 'Update-RangerProgressCollectorStart' -ErrorAction SilentlyContinue)) {
                 Update-RangerProgressCollectorStart -Context $progressCtx -CollectorId $collector.Id

@@ -297,6 +297,34 @@ function Test-RangerCollectorConnectivitySatisfied {
 # Connectivity finding factory
 # ─────────────────────────────────────────────────────────────────────────────
 
+# ─────────────────────────────────────────────────────────────────────────────
+# WinRM service ensure (Issue #303)
+# ─────────────────────────────────────────────────────────────────────────────
+
+function Invoke-RangerEnsureWinRmRunning {
+    <#
+    .SYNOPSIS
+        Issue #303: silently start the local WinRM service when it is stopped so
+        that the WinRM preflight probe does not trigger an interactive Windows
+        service-start consent dialog.
+    .DESCRIPTION
+        Only acts on the local machine. Does nothing when the service is already
+        running, when WinRM is unavailable (non-Windows), or when Start-Service
+        fails — in the latter case a warning is logged and the run continues so
+        the preflight can surface a more specific error.
+    #>
+    $svc = Get-Service -Name WinRM -ErrorAction SilentlyContinue
+    if (-not $svc) { return }
+    if ($svc.Status -eq 'Running') { return }
+
+    try {
+        Start-Service -Name WinRM -ErrorAction Stop
+        Write-RangerLog -Level info -Message 'WinRM service was stopped; started silently for this run (issue #303).'
+    } catch {
+        Write-RangerLog -Level warn -Message "WinRM service could not be started — $($_.Exception.Message). Continuing; preflight will surface the connectivity error."
+    }
+}
+
 function New-RangerConnectivityFinding {
     <#
     .SYNOPSIS

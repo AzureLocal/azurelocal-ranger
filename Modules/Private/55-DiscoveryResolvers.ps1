@@ -64,25 +64,34 @@ function Resolve-RangerClusterFqdn {
 function Resolve-RangerNodeFqdn {
     <#
     .SYNOPSIS
-        v1.6.0 (#203): resolve a short node name to an FQDN by appending the
-        cluster domain suffix or via DNS.
+        v1.6.0 (#203) / v2.6.5 (#306): resolve a short node name to an FQDN.
+        4-step resolution: passthrough → Arc FQDN map → cluster suffix → DNS.
     #>
     param(
         [Parameter(Mandatory = $true)]
         [string]$Name,
 
-        [string]$ClusterFqdn
+        [string]$ClusterFqdn,
+
+        # Issue #306: optional map of shortname → FQDN built from Arc properties.dnsFqdn.
+        # When present, map lookup is tried before cluster-suffix and DNS fallbacks.
+        [hashtable]$NodeFqdnMap
     )
 
     $name = $Name.Trim()
     if ([string]::IsNullOrWhiteSpace($name)) { return $null }
 
-    # Step 1 — passthrough
+    # Step 1 — passthrough: already an FQDN
     if ($name -match '\.') {
         return $name
     }
 
-    # Step 2 — append cluster domain suffix
+    # Step 2 — Arc FQDN map (sourced from properties.dnsFqdn in auto-discovery)
+    if ($NodeFqdnMap -and $NodeFqdnMap.ContainsKey($name)) {
+        return $NodeFqdnMap[$name]
+    }
+
+    # Step 3 — append cluster domain suffix
     if (-not [string]::IsNullOrWhiteSpace($ClusterFqdn) -and $ClusterFqdn -match '\.') {
         $suffix = $ClusterFqdn.Substring($ClusterFqdn.IndexOf('.') + 1)
         if (-not [string]::IsNullOrWhiteSpace($suffix)) {
@@ -90,7 +99,7 @@ function Resolve-RangerNodeFqdn {
         }
     }
 
-    # Step 3 — DNS
+    # Step 4 — DNS
     try {
         $entry = [System.Net.Dns]::GetHostEntry($name)
         if ($entry -and -not [string]::IsNullOrWhiteSpace($entry.HostName) -and $entry.HostName -match '\.') {
@@ -728,6 +737,12 @@ function Select-RangerCluster {
     elseif ($clusters.Count -eq 1) {
         $selected = $clusters[0]
         Write-RangerLog -Level info -Message "Select-RangerCluster: auto-selected single cluster '$($selected.Name)' (rg=$($selected.ResourceGroupName))"
+        # Issue #309: always notify the operator which cluster was chosen, even
+        # on auto-select. Under -Unattended the log entry above is sufficient.
+        if (-not $Unattended) {
+            Write-Host ("[Ranger] Found 1 Azure Local cluster in subscription: {0}  (rg: {1})" -f $selected.Name, $selected.ResourceGroupName) -ForegroundColor Cyan
+            Write-Host ("[Ranger] Auto-selected: {0}" -f $selected.Name) -ForegroundColor Cyan
+        }
     }
     else {
         if ($Unattended) {
@@ -751,10 +766,10 @@ function Select-RangerCluster {
         }
 
         Write-Host ''
-        Write-Host ("Found {0} Azure Local clusters in subscription {1}:" -f $clusters.Count, $subscriptionId) -ForegroundColor Cyan
+        Write-Host ("[Ranger] Found {0} Azure Local clusters in subscription:" -f $clusters.Count) -ForegroundColor Cyan
         Write-Host ''
         for ($i = 0; $i -lt $clusters.Count; $i++) {
-            Write-Host ("  [{0}] {1,-24} {2,-28} {3}" -f ($i + 1), $clusters[$i].Name, $clusters[$i].ResourceGroupName, $clusters[$i].Location)
+            Write-Host ("  [{0}] {1,-30} (rg: {2})" -f ($i + 1), $clusters[$i].Name, $clusters[$i].ResourceGroupName)
         }
         Write-Host ''
 

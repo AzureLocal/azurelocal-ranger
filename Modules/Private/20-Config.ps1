@@ -970,6 +970,11 @@ function Invoke-RangerAzureAutoDiscovery {
             Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: reading Arc properties.nodes threw — $($_.Exception.Message)"
         }
 
+        # Issue #308: build a nodeFqdns map from Arc machine properties.dnsFqdn
+        # so WinRM connections use FQDNs discovered in Azure before any on-prem
+        # session opens. Short names are preserved in nodes[] for report labels.
+        $nodeFqdnMap = @{}
+
         if ($discoveredNodes.Count -eq 0) {
             try {
                 $arcMachines = Resolve-RangerArcMachinesForCluster -Config $Config -NodeHints @()
@@ -977,6 +982,37 @@ function Invoke-RangerAzureAutoDiscovery {
                     $discoveredNodes = @($arcMachines.Machines | ForEach-Object { [string]$_.Name } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
                     if ($discoveredNodes.Count -gt 0) {
                         Write-RangerLog -Level info -Message "Invoke-RangerAzureAutoDiscovery: Arc machines query returned $($discoveredNodes.Count) node(s) in cluster resource group"
+                    }
+
+                    # Extract FQDN from each Arc machine: prefer properties.dnsFqdn,
+                    # fall back to shortname + properties.domainName.
+                    foreach ($machine in $arcMachines.Machines) {
+                        $shortName = [string]$machine.Name
+                        if ([string]::IsNullOrWhiteSpace($shortName)) { continue }
+                        $fqdn = if (-not [string]::IsNullOrWhiteSpace([string]$machine.Properties.DnsFqdn)) {
+                            [string]$machine.Properties.DnsFqdn
+                        } elseif (-not [string]::IsNullOrWhiteSpace([string]$machine.Properties.DomainName)) {
+                            "$shortName.$([string]$machine.Properties.DomainName)"
+                        } else { $null }
+                        if (-not [string]::IsNullOrWhiteSpace($fqdn)) {
+                            $nodeFqdnMap[$shortName] = $fqdn
+                        }
+                    }
+
+                    if ($nodeFqdnMap.Count -gt 0) {
+                        Write-RangerLog -Level info -Message "Invoke-RangerAzureAutoDiscovery: extracted FQDNs for $($nodeFqdnMap.Count) node(s) from Arc properties.dnsFqdn"
+                        $Config.targets.cluster.nodeFqdns = $nodeFqdnMap
+                    }
+
+                    # Populate config.targets.cluster.domain from first machine with a domainName
+                    if ([string]::IsNullOrWhiteSpace([string]$Config.targets.cluster.domain)) {
+                        $domainFromArc = [string]($arcMachines.Machines | Where-Object {
+                            -not [string]::IsNullOrWhiteSpace([string]$_.Properties.DomainName)
+                        } | Select-Object -First 1).Properties.DomainName
+                        if (-not [string]::IsNullOrWhiteSpace($domainFromArc)) {
+                            $Config.targets.cluster.domain = $domainFromArc
+                            Write-RangerLog -Level info -Message "Invoke-RangerAzureAutoDiscovery: AD domain '$domainFromArc' sourced from Arc properties.domainName"
+                        }
                     }
                 }
             } catch {
@@ -986,11 +1022,12 @@ function Invoke-RangerAzureAutoDiscovery {
 
         if ($discoveredNodes.Count -gt 0) {
             # Promote short NetBIOS names to FQDNs when the cluster FQDN gives
-            # us a domain suffix to append. Per-collector resolvers already
-            # tolerate short names, but FQDN-first keeps WinRM happy on TLS.
+            # us a domain suffix to append. Arc-sourced nodeFqdnMap is checked
+            # first (step 2 of Resolve-RangerNodeFqdn), so nodes that have an
+            # explicit FQDN from Arc always win over suffix-derived guesses.
             $clusterFqdn = [string]$Config.targets.cluster.fqdn
             $fqdnNodes = @($discoveredNodes | ForEach-Object {
-                $resolved = try { Resolve-RangerNodeFqdn -Name $_ -ClusterFqdn $clusterFqdn } catch { $null }
+                $resolved = try { Resolve-RangerNodeFqdn -Name $_ -ClusterFqdn $clusterFqdn -NodeFqdnMap $nodeFqdnMap } catch { $null }
                 if (-not [string]::IsNullOrWhiteSpace($resolved)) { $resolved } else { $_ }
             })
             $Config.targets.cluster.nodes = @($fqdnNodes | Select-Object -Unique)
