@@ -63,6 +63,9 @@ output:
   formats: [html, markdown, docx, xlsx, pdf, svg]
   rootPath: C:\AzureLocalRanger
 
+!!! note
+    `kv-ranger` in the examples above is a **placeholder vault name**, not a vault Ranger creates or requires. Substitute your actual Key Vault when you copy any of these snippets. (In v2.6.3, fake `keyvault://kv-ranger/*` placeholders were removed from the default config — see issue [#292](https://github.com/AzureLocal/azurelocal-ranger/issues/292).)
+
 ## Input Resolution Precedence
 
 Ranger resolves structural input in this order:
@@ -72,6 +75,20 @@ Parameter  ->  Config file  ->  Interactive prompt  ->  Default  ->  Error
 ```
 
 That rule applies to environment name, cluster addressing, and Azure target metadata. Credentials follow the same broad shape, but can also be resolved through `passwordRef` URIs.
+
+### Zero-config invocation
+
+v2.6.3 introduced a two-field floor: `-TenantId` and `-SubscriptionId` alone are enough to start a run. Ranger enumerates `microsoft.azurestackhci/clusters` in the subscription and auto-selects the single match (or prompts a numbered menu on multiples). Azure Arc then auto-discovers the resource group, cluster FQDN, node list, and AD domain from the selected cluster resource:
+
+```powershell
+# Two-field — Ranger selects the cluster and fills everything else from Arc
+Invoke-AzureLocalRanger -TenantId <guid> -SubscriptionId <guid>
+
+# Three-field — skip the selection prompt
+Invoke-AzureLocalRanger -TenantId <guid> -SubscriptionId <guid> -ClusterName <name>
+```
+
+Under `-Unattended`, multi-cluster subscriptions throw `RANGER-DISC-002` so scheduled runs fail fast instead of blocking on a menu. `RANGER-DISC-001` fires when no HCI clusters exist in the subscription, and `RANGER-AUTH-001` fires when the caller lacks permissions to list them.
 
 ## v1.2.0 Config Keys
 

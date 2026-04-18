@@ -74,26 +74,33 @@ If you are running in a disconnected environment or do not have Azure access, Ra
 Invoke-AzureLocalRanger -Wizard
 ```
 
-The `-Wizard` switch is the recommended first-run path — it dispatches to the
-same interactive flow as the standalone `Invoke-RangerWizard` command but keeps
-you in the main command surface so every subsequent run uses the same entry
-point.
+The `-Wizard` switch is the recommended first-run path — it dispatches to the same interactive flow as the standalone `Invoke-RangerWizard` command but keeps you in the main command surface so every subsequent run uses the same entry point.
 
-The wizard asks six short sections of questions:
+The wizard asks seven short sections of questions:
 
 1. **Environment** — a short name for this cluster (used in output filenames)
-2. **Cluster Nodes** — the FQDN of the cluster and/or individual node FQDNs
-3. **Azure** — subscription ID, tenant ID, and resource group
-4. **Credentials** — whether to use your current session or prompt at runtime
-5. **Output** — where to save reports (default: `C:\AzureLocalRanger`)
-6. **Scope** — which data domains to collect (press Enter to collect everything)
+2. **Cluster Nodes** — the FQDN of the cluster and/or individual node FQDNs (leave blank to auto-discover from Arc)
+3. **Azure** — subscription ID, tenant ID, and resource group (GUIDs validated inline)
+4. **Credentials** — one of six strategies: current session context, runtime prompt, service principal, managed identity, device code, or Azure CLI
+5. **BMC / iDRAC** — optional: add BMC endpoints for hardware / OEM collection
+6. **Output** — run mode (current-state or as-built), root path, and report formats
+7. **Scope** — which data domains to collect (press Enter to collect everything)
 
-At the end, choose **[B] Both** to save the config file and run immediately.
+Before anything runs, the wizard prints a **review screen** with the full YAML config. Press Enter to continue, or type `N` to cancel without saving. At the end, choose **[B] Both** to save the config file and run immediately.
 
 !!! tip
     Press **Enter** to accept the default shown in `[brackets]` for any prompt.
 
 See [Wizard Guide](wizard-guide.md) for a complete walkthrough with example answers.
+
+### Already comfortable? Two alternatives
+
+If you've run Ranger before and want a faster path than the wizard:
+
+- **Config file + run** — `New-AzureLocalRangerConfig -Path .\ranger.yml`, edit the file, then `Invoke-AzureLocalRanger -ConfigPath .\ranger.yml`. Best for version-controlled configs and CI runs.
+- **2-field zero-config** — `Invoke-AzureLocalRanger -TenantId <guid> -SubscriptionId <guid>`. Ranger enumerates the HCI clusters in the subscription, prompts you to pick one if there are multiple, then auto-discovers the rest from Azure Arc. Fastest for ad-hoc runs.
+
+See the [Quickstart](quickstart.md) for full details on all three paths.
 
 ---
 

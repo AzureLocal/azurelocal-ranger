@@ -2,6 +2,9 @@
 
 A complete, annotated `ranger.yml` you can copy, fill in the `[REQUIRED]` fields, and run immediately. Every key maps to a section in the [Configuration Reference](configuration-reference.md).
 
+!!! note
+    `kv-ranger` throughout this example is a **placeholder vault name**, not a vault Ranger creates or requires. Substitute your actual Key Vault. v2.6.3 ([#292](https://github.com/AzureLocal/azurelocal-ranger/issues/292)) removed these placeholders from the runtime default config.
+
 The same file lives under [samples/configs/ranger.yml](https://github.com/AzureLocal/azurelocal-ranger/blob/main/samples/configs/ranger.yml) and can be regenerated at any time with:
 
 ```powershell

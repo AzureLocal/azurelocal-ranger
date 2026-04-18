@@ -40,12 +40,16 @@ That order keeps automation possible while still allowing ad-hoc use.
 
 ## Azure Authentication Options
 
-Azure-side discovery should support:
+Azure-side discovery supports six methods, all selectable via the wizard (`Invoke-AzureLocalRanger -Wizard`) or the `credentials.azure.method` field in a config file:
 
-- existing authenticated Az context
-- `Connect-AzAccount` interactive login
-- service principal with client secret or certificate
-- managed identity for Azure-hosted execution environments
+| # | Method value | Strategy | When to use |
+| --- | --- | --- | --- |
+| 1 | `existing-context` | Current Az context | Interactive runs after `Connect-AzAccount` |
+| 2 | `existing-context` (+ `promptForMissingCredentials: true`) | Runtime prompt for cluster / domain creds | First run, or when the Az context account lacks cluster WinRM access |
+| 3 | `service-principal` | Client ID + client secret (or `keyvault://` ref) / cert | CI / scheduled runs with a non-user identity |
+| 4 | `managed-identity` | System- or user-assigned managed identity | Runners hosted on an Azure VM or Arc-enabled machine |
+| 5 | `device-code` | Browser-based Entra sign-in on a separate device | Runners without a browser (or disconnected shells) |
+| 6 | `azure-cli` | `az login` session | Cross-platform runners where `az` is the established auth pattern |
 
 The right option depends on whether the run is interactive, scheduled, or hosted inside Azure.
 
@@ -56,6 +60,9 @@ The documented secret reference format is:
 ```text
 keyvault://<vault-name>/<secret-name>[/<version>]
 ```
+
+!!! note
+    `kv-ranger` in the examples below is a **placeholder vault name**, not a vault Ranger creates or requires. Substitute your actual Key Vault name. (In v2.6.3, fake `keyvault://kv-ranger/*` placeholders were removed from the default config — see issue [#292](https://github.com/AzureLocal/azurelocal-ranger/issues/292) — so an empty config no longer dies resolving a vault the operator never configured.)
 
 Examples:
 

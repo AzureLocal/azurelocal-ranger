@@ -13,7 +13,7 @@ Documentation: [azurelocal.cloud](https://azurelocal.cloud) | Solutions: [Azure 
 
 Azure Local Ranger is a read-only discovery, documentation, audit, and reporting solution for Azure Local. It builds a manifest-first view of one deployment: the physical platform, the cluster fabric, hosted workloads, and the Azure resources that represent, manage, monitor, or extend that environment.
 
-AzureLocalRanger `1.2.0` is the current release. Install from PSGallery or import from source while developing locally.
+AzureLocalRanger `2.6.3` is the current release. Install from PSGallery or import from source while developing locally.
 
 ## What Ranger Covers
 
@@ -31,30 +31,58 @@ AzureLocalRanger `1.2.0` is the current release. Install from PSGallery or impor
 
 ## Installation
 
-### From source today
+```powershell
+Install-Module AzureLocalRanger -Scope CurrentUser -Force
+Import-Module AzureLocalRanger
+Connect-AzAccount                 # once per session
+```
+
+## Quick Start
+
+Three ways to run Ranger, ranked. Pick the one that matches how thorough you want to be.
+
+### Path 1 — Guided wizard (recommended for first runs)
+
+```powershell
+Invoke-AzureLocalRanger -Wizard
+```
+
+The wizard walks every question it needs (environment, cluster, Azure auth, optional BMC, output, scope), validates GUIDs inline, shows a review screen before anything runs, and saves a reusable YAML config for next time. Supports all six Azure auth methods: `existing-context`, runtime prompt, `service-principal`, `managed-identity`, `device-code`, and `azure-cli`.
+
+### Path 2 — Config file + run
+
+```powershell
+New-AzureLocalRangerConfig -Path .\ranger.yml
+# edit .\ranger.yml in your editor
+Invoke-AzureLocalRanger -ConfigPath .\ranger.yml
+```
+
+Best for version-controlled configs, CI / scheduled runs, and team-standard deployments.
+
+### Path 3 — Parameters or zero-config
+
+```powershell
+# Minimum: 2 fields — Ranger lists HCI clusters in the subscription and picks one
+Invoke-AzureLocalRanger -TenantId <guid> -SubscriptionId <guid>
+
+# Named cluster: skip the selection prompt
+Invoke-AzureLocalRanger -TenantId <guid> -SubscriptionId <guid> -ClusterName <name>
+
+# Bare: prompts interactively for whatever is missing
+Invoke-AzureLocalRanger
+```
+
+Fastest for ad-hoc runs. Azure Arc auto-discovery fills in the resource group, cluster FQDN, nodes, and AD domain.
+
+Reports land under `C:\AzureLocalRanger\<environment>-<mode>-<timestamp>\` by default.
+
+### For contributors — import from source
 
 ```powershell
 git clone https://github.com/AzureLocal/azurelocal-ranger.git
 Set-Location .\azurelocal-ranger
 Import-Module .\AzureLocalRanger.psd1 -Force
 ```
-
-### From PSGallery
-
-```powershell
-Install-Module AzureLocalRanger -Scope CurrentUser
-Import-Module AzureLocalRanger
-```
-
-## Quick Start
-
-1. Review the [prerequisites guide](docs/prerequisites.md).
-2. Validate the runner with `Test-AzureLocalRangerPrerequisites`.
-3. Generate a starter config with `New-AzureLocalRangerConfig -Path .\ranger.yml`.
-4. Fill in the fields marked `[REQUIRED]`.
-5. Run the assessment with `Invoke-AzureLocalRanger -ConfigPath .\ranger.yml`.
-
-Reports are written under `C:\AzureLocalRanger\<environment>-<mode>-<timestamp>\` by default.
 
 ## Commands
 

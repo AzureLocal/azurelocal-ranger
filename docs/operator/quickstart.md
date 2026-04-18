@@ -12,48 +12,29 @@ Test-AzureLocalRangerPrerequisites
 
 Use `-InstallPrerequisites` in an elevated session if you want Ranger to install missing RSAT and Az dependencies.
 
-## Step 2: Build a Config (Wizard or Manual)
+## Step 2: Run Ranger — three paths, ranked
 
-### Option A — Interactive wizard (recommended for first runs)
+Pick the path that matches how thorough you want to be. All three produce the same output package; they differ only in how you supply configuration.
+
+### Path 1 — Guided wizard (recommended for first runs)
 
 ```powershell
 Invoke-AzureLocalRanger -Wizard
 ```
 
-The wizard walks through cluster addressing, Azure IDs, credentials, output path, and domain scope with prompted questions. At the end it can save a YAML config file, launch a run immediately, or both. No manual editing required.
+The wizard walks every question — environment, cluster, Azure auth, optional BMC, output mode, scope — with inline GUID validation and a review screen before anything runs. Supports all six Azure auth methods (`existing-context`, runtime prompt, `service-principal`, `managed-identity`, `device-code`, `azure-cli`). At the end you can save the YAML config, launch a run immediately, or both. Existing save paths trigger an overwrite confirmation rather than being silently clobbered.
 
-### Option B — Generate a scaffold and edit
+See the [Wizard Guide](wizard-guide.md) for a full walkthrough with example answers.
+
+### Path 2 — Config file + run
 
 ```powershell
 New-AzureLocalRangerConfig -Path .\ranger.yml
-```
-
-The generated YAML is annotated and marks mandatory values with `[REQUIRED]`.
-
-## Step 3: Fill in Required Values (Option B only)
-
-At minimum, update:
-
-- `environment.name`
-- `targets.cluster.fqdn` or `targets.cluster.nodes`
-- `targets.azure.subscriptionId`
-- `targets.azure.tenantId`
-- `targets.azure.resourceGroup`
-- `credentials.cluster.username`
-
-## Step 4: Run Discovery
-
-```powershell
+# edit .\ranger.yml in your editor
 Invoke-AzureLocalRanger -ConfigPath .\ranger.yml
 ```
 
-Add `-ShowProgress` for a live per-collector progress display (requires the optional `PwshSpectreConsole` module; automatically suppressed in CI and `-Unattended` mode):
-
-```powershell
-Invoke-AzureLocalRanger -ConfigPath .\ranger.yml -ShowProgress
-```
-
-You can override structural values at runtime, for example:
+The generated YAML is annotated and marks mandatory values. Best for version-controlled configs, CI / scheduled runs, and team-standard deployments. You can override any structural value at runtime without editing the file:
 
 ```powershell
 Invoke-AzureLocalRanger `
@@ -63,11 +44,29 @@ Invoke-AzureLocalRanger `
   -ShowProgress
 ```
 
+### Path 3 — Parameters or zero-config
+
+```powershell
+# Minimum: 2 fields — Ranger lists HCI clusters in the subscription and picks one
+Invoke-AzureLocalRanger -TenantId <guid> -SubscriptionId <guid>
+
+# Named cluster: skip the selection prompt
+Invoke-AzureLocalRanger -TenantId <guid> -SubscriptionId <guid> -ClusterName <name>
+
+# Bare: prompts interactively for whatever is missing
+Invoke-AzureLocalRanger
+```
+
+Fastest for ad-hoc runs. Azure Arc auto-discovery fills in the resource group, cluster FQDN, nodes, and AD domain from the selected HCI cluster resource. When exactly one cluster exists in the subscription it's auto-selected; when multiple exist, Ranger prints a numbered menu. Under `-Unattended`, multi-cluster subscriptions throw `RANGER-DISC-002` so the operator knows to pass `-ClusterName`.
+
+!!! tip "`-ShowProgress`"
+    Add `-ShowProgress` to any invocation for a live per-collector progress display (requires the optional `PwshSpectreConsole` module; automatically suppressed in CI and `-Unattended` mode).
+
 ### Running in disconnected or semi-connected environments
 
 Ranger probes all transport surfaces before collectors run. If cluster nodes are unreachable on WinRM ports but are Arc-registered, it automatically falls back to Arc Run Command transport (requires `Az.ConnectedMachine` and an active Az context). Collectors whose transport is confirmed unavailable are skipped with `status: skipped` rather than failing the run.
 
-## Step 5: Open the Output Package
+## Step 3: Open the Output Package
 
 By default Ranger writes to:
 
@@ -86,7 +85,7 @@ Key artifacts are:
 - `reports\*.xlsx`
 - `diagrams\*.svg`
 
-## Step 6: Re-Render Without Live Access
+## Step 4: Re-Render Without Live Access
 
 ```powershell
 Export-AzureLocalRangerReport \
@@ -96,7 +95,7 @@ Export-AzureLocalRangerReport \
 
 That reuses the saved manifest and does not reconnect to the cluster or Azure.
 
-## Step 7: Schedule an Unattended Run
+## Step 5: Schedule an Unattended Run
 
 For recurring runs, use `-Unattended` so Ranger never prompts for input and emits a scheduler-friendly `run-status.json` file.
 

@@ -115,6 +115,9 @@ credentials:
     tenantId: 11111111-1111-1111-1111-111111111111
 ```
 
+!!! note
+    `kv-ranger` in these examples is a **placeholder vault name**, not a vault Ranger creates or requires. Substitute your actual Key Vault. v2.6.3 ([#292](https://github.com/AzureLocal/azurelocal-ranger/issues/292)) removed the fake `keyvault://kv-ranger/*` placeholders from the default config so a bare invocation no longer dies resolving a vault the operator never configured.
+
 ### `credentials.cluster`
 
 | Key | Type | Required | Default | Description |

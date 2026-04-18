@@ -2,7 +2,10 @@
 
 `Invoke-AzureLocalRanger -Wizard` is the interactive terminal wizard that builds a Ranger configuration file through prompted questions and optionally launches a run immediately. (The standalone `Invoke-RangerWizard` command is retained and behaves identically — the `-Wizard` switch on the main command simply dispatches to it.)
 
-It is the fastest way to get a correct configuration without editing YAML by hand.
+It is the fastest way to get a correct configuration without editing YAML by hand. **This is the recommended first-run path** — the wizard covers every field most operators need, validates your input inline, and shows a review screen before it commits.
+
+!!! info "Advanced tuning fields"
+    The wizard covers the structural fields (environment, cluster, Azure auth, BMC, output mode, scope). It does **not** yet prompt for advanced tuning fields like `behavior.logLevel`, `behavior.retryCount`, `output.diagramFormat`, or `credentials.*.passwordRef`. You can set these by editing the saved YAML file, or by copying the config and extending it. Tracked in issue [#299](https://github.com/AzureLocal/azurelocal-ranger/issues/299).
 
 ---
 
@@ -104,51 +107,101 @@ Leave all three blank to skip Azure-side discovery. Ranger will still collect al
 
 ```
 ── Credentials ──────────────────────────
-  Credential strategy options:
-    [1] Use current session context (default)
-    [2] Prompt at run time
+  Credential strategies:
+    [1] Current session context (uses Connect-AzAccount session)
+    [2] Prompt at run time (Get-Credential for cluster + domain)
+    [3] Service principal (clientId + clientSecret or keyvault:// ref)
+    [4] Managed identity (Azure VM / Arc machine runners)
+    [5] Device code (browser-based Entra sign-in)
+    [6] Azure CLI (az login session)
 Credential strategy [1]:
 ```
 
-**Option 1 — Current session context (recommended for interactive runs)**
+| # | Strategy | `credentials.azure.method` | When to use |
+| --- | --- | --- | --- |
+| **1** | Current session context | `existing-context` | Interactive runs where you've already run `Connect-AzAccount` |
+| **2** | Prompt at run time | `existing-context` (with `promptForMissingCredentials: true`) | First run, or when the current session account doesn't have cluster WinRM access |
+| **3** | Service principal | `service-principal` | CI / scheduled runs. Wizard prompts for the client ID and an optional `keyvault://` secret reference. |
+| **4** | Managed identity | `managed-identity` | Runners hosted on an Azure VM or an Arc-enabled machine with a system or user-assigned identity |
+| **5** | Device code | `device-code` | Runners without a browser, signing in interactively on another device |
+| **6** | Azure CLI | `azure-cli` | Cross-platform runners where `az login` is the established auth pattern |
 
-Ranger uses your current PowerShell session credentials for WinRM connections. This works when you are already authenticated with a domain account that has access to the cluster.
+### Strategy 2 — Prompt at run time
 
-**Option 2 — Prompt at run time**
-
-Ranger prompts for credentials when the run starts. You will also be asked for usernames now:
+The wizard also asks for usernames up front, so the runtime prompt only needs passwords:
 
 ```
-Cluster WinRM username (DOMAIN\user): CONTOSO\ranger-read
+Cluster WinRM username (DOMAIN\user, blank = prompt at run): CONTOSO\ranger-read
 Domain username (DOMAIN\user, blank = same as cluster):
 ```
 
+### Strategy 3 — Service principal
+
+```
+Service principal client ID (GUID): 2c57833c-5fe3-4fa3-9699-04f4168c1c0f
+Client secret keyvault:// reference (or leave blank to prompt at run time):
+  keyvault://<your-vault>/<secret-name>
+```
+
+The client ID is validated as a GUID inline — if you mistype it, the wizard re-prompts. The secret reference is optional; if blank, Ranger prompts for the secret at run time using `Read-Host -AsSecureString`.
+
 !!! note
-    Passwords are never stored in the config file. When Option 2 is selected, Ranger prompts for passwords at run time using a secure prompt (`Read-Host -AsSecureString`).
+    Passwords and secrets are **never stored in the config file**. The wizard stores only a `keyvault://` reference or a username; the actual secret is resolved from Key Vault or prompted interactively at run time.
 
 ---
 
-## Section 5 — Output
+## Section 5 — BMC / iDRAC endpoints (optional)
+
+```
+── BMC / iDRAC (optional) ───────────────
+  Configure BMC endpoints to include the hardware/OEM collector.
+Configure BMC endpoints now? (Y/N) [N]:
+```
+
+If you answer **Y**, the wizard asks for a BMC username, then loops through an entry loop:
+
+```
+BMC username (e.g. idrac_admin, blank = prompt at run): idrac_azl_admin
+  Enter BMC hosts one per line. Blank line ends the list.
+  BMC host or IP: 192.168.214.11
+    Corresponding cluster node FQDN for 192.168.214.11 (optional): tplabs-01-n01.azrl.mgmt
+  BMC host or IP: 192.168.214.12
+    Corresponding cluster node FQDN for 192.168.214.12 (optional): tplabs-01-n02.azrl.mgmt
+  BMC host or IP:
+```
+
+Press **Enter** on an empty host prompt to end the list. Each entry lands in `targets.bmc.endpoints[]` with `host` and `node` fields. The BMC username is stored in `credentials.bmc.username`; BMC passwords are never written to the config.
+
+Choose **N** to skip BMC entirely — this saves time and avoids noise in the hardware domain when you don't have OOB network access to the BMCs.
+
+---
+
+## Section 6 — Output
 
 ```
 ── Output ───────────────────────────────
+Run mode (C=current-state, A=as-built) [C]:
 Output root path [C:\AzureLocalRanger]:
-Report formats [html,markdown,json,svg]:
+Report formats [html,markdown,docx,xlsx,pdf,svg,drawio]:
 ```
 
 | Prompt | Default | Notes |
 | --- | --- | --- |
+| Run mode | `C` (current-state) | `A` switches to as-built handoff packaging |
 | Output root path | `C:\AzureLocalRanger` | Ranger creates a timestamped subfolder here |
-| Report formats | `html,markdown,json,svg` | Also available: `docx`, `xlsx`, `pdf`, `drawio` |
+| Report formats | `html,markdown,docx,xlsx,pdf,svg` | Also available: `drawio`, `pptx`, `json`, `json-evidence` |
 
 Each run creates a new subfolder:
+
 ```text
 C:\AzureLocalRanger\tplabs-prod-01-current-state-20260416T044502Z\
 ```
 
+Pick `A` (as-built) when you are running against a freshly deployed cluster and want a customer-handoff package. Pick `C` (current-state) for ongoing assessments of an existing deployment, including workload inventory.
+
 ---
 
-## Section 6 — Collection Scope
+## Section 7 — Collection Scope
 
 ```
 ── Collection Scope ─────────────────────
@@ -175,6 +228,31 @@ Exclude these domains: hardware,performance
 
 ---
 
+## Review screen
+
+Before the wizard commits to anything, it prints the assembled configuration as YAML and asks for confirmation:
+
+```
+── Review configuration ─────────────────
+environment:
+  name: tplabs-prod-01
+  clusterName: tplabs-prod-01
+  description: Generated by Invoke-RangerWizard on 2026-04-17
+targets:
+  cluster:
+    fqdn: tplabs-clus01.azrl.mgmt
+    nodes:
+      - tplabs-01-n01.azrl.mgmt
+      - tplabs-01-n02.azrl.mgmt
+...
+
+Continue? (Y=yes, N=cancel without saving) [Y]:
+```
+
+Review the values. If anything looks wrong, type **N** and press Enter — the wizard exits without saving or running. Re-run the wizard to start over. If the configuration is correct, press **Enter** (or **Y**) to continue to the save/run choice.
+
+---
+
 ## Completing the Wizard
 
 ```
@@ -187,11 +265,25 @@ Choice [B]:
 
 | Choice | What happens |
 | --- | --- |
-| **S** | Saves the YAML config file to the path you specified; no run |
+| **S** | Saves the config file to the path you specified; no run |
 | **R** | Runs immediately using the collected config; config is not saved to disk |
 | **B** (recommended) | Saves the config file and then launches a run |
 
 Choose **B** to get both a saved config for future runs and immediate results.
+
+### Save path and file format
+
+The wizard writes **YAML by default**. If the save path ends in `.json`, it writes JSON instead. The default filename is `<env-name>-ranger.yml` under `C:\AzureLocalRanger\`.
+
+### Overwrite guard
+
+If the save path already exists, the wizard prints the path and asks before clobbering:
+
+```
+File exists: C:\AzureLocalRanger\tplabs-prod-01-ranger.yml — overwrite? (Y/N) [N]:
+```
+
+Press **Enter** (or **N**) to cancel the save. If you chose **B** (both), the wizard falls through to running without saving. Type **Y** to overwrite the existing file.
 
 ---
 
@@ -203,16 +295,16 @@ The wizard saves a YAML file like this:
 environment:
   name: tplabs-prod-01
   clusterName: tplabs-prod-01
-  description: Generated by Invoke-RangerWizard on 2026-04-16
+  description: Generated by Invoke-RangerWizard on 2026-04-17
 
 targets:
   cluster:
-    fqdn: tplabs-clus01.contoso.com
+    fqdn: tplabs-clus01.azrl.mgmt
     nodes:
-      - tplabs-01-n01.contoso.com
-      - tplabs-01-n02.contoso.com
-      - tplabs-01-n03.contoso.com
-      - tplabs-01-n04.contoso.com
+      - tplabs-01-n01.azrl.mgmt
+      - tplabs-01-n02.azrl.mgmt
+      - tplabs-01-n03.azrl.mgmt
+      - tplabs-01-n04.azrl.mgmt
   azure:
     subscriptionId: 00000000-0000-0000-0000-000000000000
     tenantId: 11111111-1111-1111-1111-111111111111
@@ -233,7 +325,9 @@ output:
   formats:
     - html
     - markdown
-    - json
+    - docx
+    - xlsx
+    - pdf
     - svg
   rootPath: C:\AzureLocalRanger
   showProgress: true
@@ -242,6 +336,26 @@ behavior:
   promptForMissingCredentials: false
   degradationMode: graceful
   transport: auto
+```
+
+If you chose strategy 3 (service principal) and configured BMC endpoints, the wizard also emits the matching fields:
+
+```yaml
+credentials:
+  azure:
+    method: service-principal
+    clientId: 2c57833c-5fe3-4fa3-9699-04f4168c1c0f
+    clientSecretRef: keyvault://<your-vault>/<secret-name>
+  bmc:
+    username: idrac_azl_admin
+
+targets:
+  bmc:
+    endpoints:
+      - host: 192.168.214.11
+        node: tplabs-01-n01.azrl.mgmt
+      - host: 192.168.214.12
+        node: tplabs-01-n02.azrl.mgmt
 ```
 
 ---

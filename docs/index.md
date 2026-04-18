@@ -29,18 +29,48 @@ If you are new to Ranger, the cleanest path through the docs is:
 
 ## Current Project Phase
 
-AzureLocalRanger is at **v2.6.3**. Install from PSGallery:
+AzureLocalRanger is at **v2.6.3** — First-Run UX. Install from PSGallery:
 
 ```powershell
 Install-Module AzureLocalRanger -Scope CurrentUser -Force
 Import-Module AzureLocalRanger
+Connect-AzAccount                 # once per session
+```
 
-# First-time run — pass -Wizard to be walked through a config interactively
+Three ways to run Ranger, ranked. Pick the one that matches how thorough you want to be.
+
+### Path 1 — Guided wizard (recommended for first runs)
+
+```powershell
 Invoke-AzureLocalRanger -Wizard
+```
 
-# Subsequent runs — point at the saved config (or omit for inline prompts)
+Walks every question, validates GUIDs inline, shows a review screen before anything runs, and saves a reusable YAML config for next time. Supports all six Azure auth methods (`existing-context`, runtime prompt, `service-principal`, `managed-identity`, `device-code`, `azure-cli`), an optional BMC endpoints section, and per-run mode selection (current-state vs as-built). See the [Wizard Guide](operator/wizard-guide.md).
+
+### Path 2 — Config file + run
+
+```powershell
+New-AzureLocalRangerConfig -Path .\ranger.yml
+# edit .\ranger.yml in your editor
 Invoke-AzureLocalRanger -ConfigPath .\ranger.yml
 ```
+
+Best for version-controlled configs, CI / scheduled runs, and team-standard deployments.
+
+### Path 3 — Parameters or zero-config
+
+```powershell
+# Minimum: 2 fields — Ranger enumerates HCI clusters in the subscription and picks one
+Invoke-AzureLocalRanger -TenantId <guid> -SubscriptionId <guid>
+
+# Named cluster: skip the selection prompt
+Invoke-AzureLocalRanger -TenantId <guid> -SubscriptionId <guid> -ClusterName <name>
+
+# Bare: prompts interactively for whatever is missing
+Invoke-AzureLocalRanger
+```
+
+Fastest for ad-hoc runs. Azure Arc auto-discovery fills in resource group, cluster FQDN, nodes, and AD domain from the selected cluster resource.
 
 ## Where To Start
 

@@ -122,16 +122,20 @@ The `-InstallPrerequisites` switch on `Test-AzureLocalRangerPrerequisites` does 
 
 ## Minimum Inputs
 
-A useful Ranger run typically starts with:
+Ranger v2.6.3 lowered the required-input floor. Pick the invocation style that fits your workflow:
 
-- a target Azure Local cluster name or node list
-- a cluster credential for WinRM
-- Azure access for Azure-side discovery when Azure integration is in scope
+1. **Two fields — `-TenantId` + `-SubscriptionId`.** Ranger enumerates the `microsoft.azurestackhci/clusters` resources in the subscription and auto-selects the only match (or prompts a menu when there are several). Azure Arc then auto-discovers the resource group, cluster FQDN, node list, and AD domain from the selected cluster resource. No config file required.
+2. **Three fields — `-TenantId` + `-SubscriptionId` + `-ClusterName`.** Skips the cluster-selection prompt when you already know the name. Everything else is still auto-discovered from Arc.
+3. **Full config file.** `New-AzureLocalRangerConfig -Path .\ranger.yml` followed by editing the annotated YAML. Best for CI / scheduled runs and team-standard deployments where the config is version-controlled.
+
+For any path you also need network access to the cluster's management network and an account that can authenticate over WinRM (or an Arc-registered cluster for the Arc Run Command transport fallback).
 
 Hardware discovery adds:
 
-- BMC target list
+- BMC / iDRAC target list (OOB-network hosts, one per node)
 - BMC or iDRAC credential
+
+Network device discovery (switches, firewalls) adds target lists for each device class and matching credentials — populate these only when you're running against a cluster whose ToR switches and firewalls you also need to document.
 
 ## Network Reachability
 
