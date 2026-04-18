@@ -31,7 +31,7 @@ Describe 'Azure Local Ranger runtime' {
         Test-Path -Path (Join-Path $result.PackageRoot 'package-index.json') | Should -BeTrue
 
         $manifest = Get-Content -Path $result.ManifestPath -Raw | ConvertFrom-Json -Depth 100
-        @($manifest.collectors.PSObject.Properties).Count | Should -Be 7
+        @($manifest.collectors.PSObject.Properties).Count | Should -Be 6
         $manifest.domains.clusterNode.nodes.Count | Should -Be 2
         $manifest.domains.virtualMachines.inventory.Count | Should -Be 1
         $manifest.domains.monitoring.ama.Count | Should -Be 1
