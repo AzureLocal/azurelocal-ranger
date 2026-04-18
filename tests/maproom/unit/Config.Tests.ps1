@@ -622,6 +622,53 @@ behavior:
         }
     }
 
+    It 'default config does not carry structural scaffold placeholders (issue #300)' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+
+            # environment block — all three must be null
+            $config.environment.name        | Should -BeNullOrEmpty
+            $config.environment.clusterName | Should -BeNullOrEmpty
+            $config.environment.description | Should -BeNullOrEmpty
+
+            # cluster targets — FQDN null and nodes empty
+            $config.targets.cluster.fqdn     | Should -BeNullOrEmpty
+            @($config.targets.cluster.nodes) | Should -HaveCount 0
+
+            # azure identifiers — all three must be null
+            $config.targets.azure.subscriptionId | Should -BeNullOrEmpty
+            $config.targets.azure.tenantId       | Should -BeNullOrEmpty
+            $config.targets.azure.resourceGroup  | Should -BeNullOrEmpty
+
+            # BMC endpoints empty
+            @($config.targets.bmc.endpoints) | Should -HaveCount 0
+        }
+    }
+
+    It 'missing-required prompts list Azure subscription and tenant first (issue #300)' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $missing = Get-RangerMissingRequiredInputs -Config $config
+            @($missing).Count | Should -BeGreaterThan 0
+            $missing[0].Path | Should -Be 'targets.azure.subscriptionId'
+            $missing[1].Path | Should -Be 'targets.azure.tenantId'
+        }
+    }
+
+    It 'missing-required drops cluster.fqdn and RG once clusterName is known (issue #300)' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $config.targets.azure.subscriptionId = '22222222-2222-2222-2222-222222222222'
+            $config.targets.azure.tenantId       = '33333333-3333-3333-3333-333333333333'
+            $config.environment.clusterName      = 'tplabs-clus01'
+
+            $missing = Get-RangerMissingRequiredInputs -Config $config
+            # Should prompt for resourceGroup (not known) and environment.name (not derived yet)
+            # — but NOT cluster.fqdn, because clusterName was supplied.
+            ($missing | ForEach-Object { $_.Path }) | Should -Not -Contain 'targets.cluster.fqdn'
+        }
+    }
+
     It 'default config does not carry placeholder keyvault:// credential references (issue #292)' {
         $config = InModuleScope AzureLocalRanger {
             Get-RangerDefaultConfig

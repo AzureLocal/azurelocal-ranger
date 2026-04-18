@@ -71,6 +71,17 @@ Enterprise integrations, specialized hardware protocols, advanced topology cover
 
 **Shipped** — most recent first.
 
+## Shipped — v2.6.4 — First-Run UX Patch (2026-04-17)
+
+Fixes a structural-placeholder leak that blocked the 2-field / zero-config invocation path advertised in v2.6.3. Same bug class as v2.6.3 #292 but for structural fields.
+
+| Item | Detail | Issue |
+| --- | --- | --- |
+| Default config scaffold placeholders removed | `Get-RangerDefaultConfig` no longer ships `'azlocal-prod-01'`, `'00000000-...'`, etc. for `environment.*`, `targets.cluster.*`, `targets.azure.*`, or `targets.bmc.endpoints`. The v2.6.3 cluster auto-select gate now fires correctly; bare `Invoke-AzureLocalRanger` completes after supplying only subscription + tenant | [#300](https://github.com/AzureLocal/azurelocal-ranger/issues/300) |
+| Interactive prompt re-runs auto-discovery between answers | `Invoke-RangerInteractiveInput` now prompts one field at a time and re-runs `Invoke-RangerAzureAutoDiscovery` after each answer; subscription + tenant unlock `Select-RangerCluster` on the next pass, collapsing remaining prompts to zero or one | [#300](https://github.com/AzureLocal/azurelocal-ranger/issues/300) |
+| Prompt order leads with Azure identifiers | `Get-RangerMissingRequiredInputs` lists `subscriptionId` and `tenantId` before fields that auto-discovery would fill | [#300](https://github.com/AzureLocal/azurelocal-ranger/issues/300) |
+| Fixture-mode bypass in `Test-RangerConfiguration` | Required-target check now respects fixture mode the same way the missing-required check does; fixture-backed runs no longer fail validation just because the default cluster target is now legitimately empty | [#300](https://github.com/AzureLocal/azurelocal-ranger/issues/300) |
+
 ## Shipped — v2.6.3 — First-Run UX (2026-04-17)
 
 Drops the required-input floor to tenantId + subscriptionId, fills in the rest via Azure Arc auto-discovery, and rebuilds the setup wizard.

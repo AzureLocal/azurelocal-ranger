@@ -13,7 +13,7 @@ Documentation: [azurelocal.cloud](https://azurelocal.cloud) | Solutions: [Azure 
 
 Azure Local Ranger is a read-only discovery, documentation, audit, and reporting solution for Azure Local. It builds a manifest-first view of one deployment: the physical platform, the cluster fabric, hosted workloads, and the Azure resources that represent, manage, monitor, or extend that environment.
 
-AzureLocalRanger `2.6.3` is the current release. Install from PSGallery or import from source while developing locally.
+AzureLocalRanger `2.6.4` is the current release. Install from PSGallery or import from source while developing locally.
 
 ## What Ranger Covers
 

@@ -1,28 +1,35 @@
 function Get-RangerDefaultConfig {
+    # Issue #300 — same bug class as #292 (kv-ranger leak): scaffold placeholder
+    # values in the runtime default config survive the deep merge whenever a
+    # user config or CLI invocation omits them. The v2.6.3 cluster auto-select
+    # gate in Invoke-RangerAzureAutoDiscovery uses [string]::IsNullOrWhiteSpace
+    # on clusterName, which returns false for the placeholder 'azlocal-prod-01'
+    # — so the cluster-select path was skipped on bare `Invoke-AzureLocalRanger`
+    # and the user got stuck in the old prompt loop for env.name / cluster.fqdn
+    # / resourceGroup with no auto-discovery help.
+    #
+    # Fix: null out every structural placeholder here. The annotated YAML
+    # template (Get-RangerAnnotatedConfigYaml, below) keeps its '[REQUIRED]'
+    # sample values for human editors — that template is still how operators
+    # see a bootstrapped config file.
     [ordered]@{
         environment = [ordered]@{
-            name        = 'prod-azlocal-01'
-            clusterName = 'azlocal-prod-01'
-            description = 'Primary production Azure Local instance'
+            name        = $null
+            clusterName = $null
+            description = $null
         }
         targets = [ordered]@{
             cluster = [ordered]@{
-                fqdn  = 'azlocal-prod-01.contoso.com'
-                nodes = @(
-                    'azl-node-01.contoso.com',
-                    'azl-node-02.contoso.com'
-                )
+                fqdn  = $null
+                nodes = @()
             }
             azure = [ordered]@{
-                subscriptionId = '00000000-0000-0000-0000-000000000000'
-                resourceGroup  = 'rg-azlocal-prod-01'
-                tenantId       = '11111111-1111-1111-1111-111111111111'
+                subscriptionId = $null
+                resourceGroup  = $null
+                tenantId       = $null
             }
             bmc = [ordered]@{
-                endpoints = @(
-                    [ordered]@{ host = 'idrac-node-01.contoso.com'; node = 'azl-node-01.contoso.com' },
-                    [ordered]@{ host = 'idrac-node-02.contoso.com'; node = 'azl-node-02.contoso.com' }
-                )
+                endpoints = @()
             }
             switches  = @()
             firewalls = @()
@@ -685,18 +692,13 @@ function Get-RangerMissingRequiredInputs {
     $requiresAzure = @($collectors | Where-Object { 'azure' -in @($_.RequiredTargets) }).Count -gt 0
     $missing = New-Object System.Collections.ArrayList
 
-    if (Test-RangerPlaceholderValue -Value $Config.environment.name -FieldName 'environment.name') {
-        [void]$missing.Add([ordered]@{ Path = 'environment.name'; Prompt = 'Environment name'; Example = 'tplabs-prod-01'; Description = 'Short identifier used in output file names' })
-    }
-
-    $clusterNodes = @($Config.targets.cluster.nodes | Where-Object {
-        -not (Test-RangerPlaceholderValue -Value $_ -FieldName 'targets.cluster.node')
-    })
-    $hasClusterFqdn = -not (Test-RangerPlaceholderValue -Value $Config.targets.cluster.fqdn -FieldName 'targets.cluster.fqdn')
-    if (-not $hasClusterFqdn -and $clusterNodes.Count -eq 0) {
-        [void]$missing.Add([ordered]@{ Path = 'targets.cluster.fqdn'; Prompt = 'Cluster FQDN'; Example = 'mycluster.contoso.com'; Description = 'Cluster name object FQDN or first reachable node FQDN' })
-    }
-
+    # Issue #300: Azure identifiers come first. Once subscriptionId and tenantId
+    # are known, the interactive loop re-runs Invoke-RangerAzureAutoDiscovery
+    # between prompts, so Select-RangerCluster can fill clusterName,
+    # resourceGroup, cluster.fqdn, and nodes from Arc — removing those fields
+    # from subsequent passes of this missing-list check automatically. The
+    # operator only ends up answering the fields auto-discovery genuinely
+    # can't cover.
     if ($requiresAzure) {
         if (Test-RangerPlaceholderValue -Value $Config.targets.azure.subscriptionId -FieldName 'targets.azure.subscriptionId') {
             [void]$missing.Add([ordered]@{ Path = 'targets.azure.subscriptionId'; Prompt = 'Azure subscription ID'; Example = '22222222-2222-2222-2222-222222222222'; Description = 'Azure subscription that contains the Arc-enabled HCI resource' })
@@ -704,9 +706,29 @@ function Get-RangerMissingRequiredInputs {
         if (Test-RangerPlaceholderValue -Value $Config.targets.azure.tenantId -FieldName 'targets.azure.tenantId') {
             [void]$missing.Add([ordered]@{ Path = 'targets.azure.tenantId'; Prompt = 'Azure tenant ID'; Example = '33333333-3333-3333-3333-333333333333'; Description = 'Microsoft Entra tenant ID' })
         }
-        if (Test-RangerPlaceholderValue -Value $Config.targets.azure.resourceGroup -FieldName 'targets.azure.resourceGroup') {
-            [void]$missing.Add([ordered]@{ Path = 'targets.azure.resourceGroup'; Prompt = 'Azure resource group'; Example = 'rg-azlocal-prod-01'; Description = 'Resource group that contains the Arc-enabled HCI cluster' })
-        }
+    }
+
+    # Cluster identity — only prompted when both FQDN and nodes are empty AND
+    # clusterName is empty. When clusterName is set (either by the operator or
+    # by Select-RangerCluster on a prior auto-discovery pass),
+    # Resolve-RangerClusterArcResource and Resolve-RangerNodeInventory fill the
+    # rest.
+    $clusterNodes   = @($Config.targets.cluster.nodes | Where-Object { -not (Test-RangerPlaceholderValue -Value $_ -FieldName 'targets.cluster.node') })
+    $hasClusterFqdn = -not (Test-RangerPlaceholderValue -Value $Config.targets.cluster.fqdn -FieldName 'targets.cluster.fqdn')
+    $hasClusterName = -not [string]::IsNullOrWhiteSpace([string]$Config.environment.clusterName)
+    if (-not $hasClusterFqdn -and $clusterNodes.Count -eq 0 -and -not $hasClusterName) {
+        [void]$missing.Add([ordered]@{ Path = 'targets.cluster.fqdn'; Prompt = 'Cluster FQDN'; Example = 'mycluster.contoso.com'; Description = 'Cluster name object FQDN or first reachable node FQDN' })
+    }
+
+    if ($requiresAzure -and (Test-RangerPlaceholderValue -Value $Config.targets.azure.resourceGroup -FieldName 'targets.azure.resourceGroup')) {
+        [void]$missing.Add([ordered]@{ Path = 'targets.azure.resourceGroup'; Prompt = 'Azure resource group'; Example = 'rg-azlocal-prod-01'; Description = 'Resource group that contains the Arc-enabled HCI cluster' })
+    }
+
+    # Environment name comes last — by the time we check this, auto-discovery
+    # may have already derived it from clusterName (see the tail of
+    # Invoke-RangerAzureAutoDiscovery and Set-RangerStructuralOverrides).
+    if (Test-RangerPlaceholderValue -Value $Config.environment.name -FieldName 'environment.name') {
+        [void]$missing.Add([ordered]@{ Path = 'environment.name'; Prompt = 'Environment name'; Example = 'tplabs-prod-01'; Description = 'Short identifier used in output file names' })
     }
 
     return @($missing)
@@ -752,18 +774,39 @@ function Invoke-RangerInteractiveInput {
         return $Config
     }
 
-    $missingList = @(Get-RangerMissingRequiredInputs -Config $Config)
-    if ($missingList.Count -gt 0) {
-        # v1.6.0 (#211): surface the inline wizard as the recommended alternative
-        # to field-by-field prompting.
-        Write-Host '  Tip: Run Invoke-AzureLocalRanger -Wizard to create a config file interactively.' -ForegroundColor DarkGray
-    }
-    foreach ($missing in $missingList) {
+    # Issue #300: iterate one prompt at a time and re-run auto-discovery
+    # after each answer. The critical case: user running bare
+    # `Invoke-AzureLocalRanger` supplies subscriptionId + tenantId at the
+    # first two prompts, which unlocks Select-RangerCluster on the next
+    # auto-discovery pass — filling clusterName, resourceGroup, FQDN, and
+    # nodes without any more prompts. The 8-iteration cap is a safety net;
+    # real flows complete in 1-2 passes.
+    $tipShown = $false
+    for ($pass = 0; $pass -lt 8; $pass++) {
+        $missingList = @(Get-RangerMissingRequiredInputs -Config $Config)
+        if ($missingList.Count -eq 0) { break }
+
+        if (-not $tipShown) {
+            # v1.6.0 (#211): surface the inline wizard as the recommended alternative
+            # to field-by-field prompting.
+            Write-Host '  Tip: Run Invoke-AzureLocalRanger -Wizard to create a config file interactively.' -ForegroundColor DarkGray
+            $tipShown = $true
+        }
+
+        $missing = $missingList[0]
         $prompt = "[Ranger] $($missing.Prompt) is required.`nEnter $($missing.Prompt) (e.g., $($missing.Example)):"
         $value = Read-Host -Prompt $prompt
-        if (-not [string]::IsNullOrWhiteSpace($value)) {
-            Set-RangerConfigValueByPath -Config $Config -Path $missing.Path -Value $value.Trim()
+        if ([string]::IsNullOrWhiteSpace($value)) {
+            # Operator pressed Enter without answering — stop to avoid looping.
+            break
         }
+
+        Set-RangerConfigValueByPath -Config $Config -Path $missing.Path -Value $value.Trim()
+
+        # Re-run auto-discovery. When the operator just answered
+        # subscriptionId or tenantId, this fires Select-RangerCluster and
+        # auto-fills everything else on the next pass.
+        Invoke-RangerAzureAutoDiscovery -Config $Config | Out-Null
     }
 
     return $Config
@@ -1096,14 +1139,26 @@ function Test-RangerConfiguration {
         }
     }
 
-    foreach ($collector in $selectedCollectors) {
-        foreach ($requiredTarget in $collector.RequiredTargets) {
-            if (-not (Test-RangerTargetConfigured -Config $Config -TargetName $requiredTarget)) {
-                if ($collector.Class -eq 'core') {
-                    $errors.Add("Collector '$($collector.Id)' requires target '$requiredTarget'.")
-                }
-                else {
-                    $warnings.Add("Collector '$($collector.Id)' will be skipped because target '$requiredTarget' is not configured.")
+    # Issue #300: fixture-mode bypass. When every selected collector has a
+    # fixture path, the run reads from local JSON files and never touches the
+    # cluster or Azure — so the required-target check is moot. This mirrors
+    # the fixture-mode short-circuit in Get-RangerMissingRequiredInputs.
+    $fixtureMap = if ($Config.domains -and $Config.domains.hints -and $Config.domains.hints.fixtures) { $Config.domains.hints.fixtures } else { $null }
+    $fixtureMode = $false
+    if ($fixtureMap -is [System.Collections.IDictionary] -and $selectedCollectors.Count -gt 0) {
+        $fixtureMode = @($selectedCollectors | Where-Object { -not $fixtureMap.Contains($_.Id) -or [string]::IsNullOrWhiteSpace([string]$fixtureMap[$_.Id]) }).Count -eq 0
+    }
+
+    if (-not $fixtureMode) {
+        foreach ($collector in $selectedCollectors) {
+            foreach ($requiredTarget in $collector.RequiredTargets) {
+                if (-not (Test-RangerTargetConfigured -Config $Config -TargetName $requiredTarget)) {
+                    if ($collector.Class -eq 'core') {
+                        $errors.Add("Collector '$($collector.Id)' requires target '$requiredTarget'.")
+                    }
+                    else {
+                        $warnings.Add("Collector '$($collector.Id)' will be skipped because target '$requiredTarget' is not configured.")
+                    }
                 }
             }
         }

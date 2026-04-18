@@ -2,6 +2,15 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
+## v2.6.4 — First-Run UX Patch
+
+Patch release that completes v2.6.3's First-Run UX work. The v2.6.3 drop shipped with a structural-placeholder leak in the default config that blocked the advertised 2-field / zero-config invocation path — bare `Invoke-AzureLocalRanger` still threw on `environment.name`, `cluster.fqdn`, and `resourceGroup` even after the operator supplied subscription + tenant. Same bug class as v2.6.3 #292 (kv-ranger leak) but for structural fields.
+
+- **Default config scaffold placeholders removed (#300)** — `Get-RangerDefaultConfig` no longer ships `'azlocal-prod-01'`, `'00000000-...'`, etc. for `environment.*`, `targets.cluster.*`, `targets.azure.*`, or `targets.bmc.endpoints`. The v2.6.3 cluster auto-select gate now fires correctly.
+- **Interactive prompt re-runs auto-discovery between answers (#300)** — answering subscription + tenant at the first two prompts fires `Select-RangerCluster` on the next pass and auto-fills everything else from Arc.
+- **Prompt order leads with Azure identifiers (#300)** — `Get-RangerMissingRequiredInputs` lists `subscriptionId` and `tenantId` first, so auto-discovery has a chance to fire before operators are asked to hand-type fields Ranger could have filled.
+- **Fixture-mode bypass in `Test-RangerConfiguration` (#300)** — fixture-backed test runs no longer fail the required-target check.
+
 ## v2.6.3 — First-Run UX
 
 - **Cluster node auto-discovery (#294)** — `Invoke-RangerAzureAutoDiscovery` populates `targets.cluster.nodes` from Arc cluster `properties.nodes` or a subscription Arc machines query; short names are promoted to FQDNs via the discovered domain suffix.

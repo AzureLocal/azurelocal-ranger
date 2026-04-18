@@ -1,6 +1,10 @@
 # Project Status
 
-## Current Release Track — v2.6.3
+## Current Release Track — v2.6.4
+
+AzureLocalRanger v2.6.4 — First-Run UX Patch — fixes a structural-placeholder leak in `Get-RangerDefaultConfig` that blocked the 2-field / zero-config invocation path advertised in v2.6.3. Bare `Invoke-AzureLocalRanger` (and `-SubscriptionId x -TenantId y` alone) now complete the run — `Get-RangerDefaultConfig` no longer ships scaffold values for `environment.name`, `clusterName`, `cluster.fqdn`, `azure.subscriptionId`/`tenantId`/`resourceGroup`, and so on; `Invoke-RangerInteractiveInput` now re-runs `Invoke-RangerAzureAutoDiscovery` between prompts so answering subscription + tenant unlocks `Select-RangerCluster` on the next pass; and `Get-RangerMissingRequiredInputs` lists Azure identifiers before auto-discoverable fields (#300). v2.6.3 — First-Run UX — remains the previous release.
+
+## Previous Release — v2.6.3 — First-Run UX
 
 AzureLocalRanger v2.6.3 — First-Run UX — drops the required-input floor to two fields (tenantId + subscriptionId), fills in the rest via Azure Arc auto-discovery, and rebuilds the setup wizard with full credential-method coverage and a proper YAML serializer. Key additions: cluster node auto-discovery from Arc (#294); three-field minimum invocation that works without a config file (#296); two-field cluster auto-select enumerating HCI clusters in the subscription with `RANGER-DISC-*` / `RANGER-AUTH-*` error codes (#297); scope-gated BMC / switch / firewall credential prompting (#295); wizard overhaul covering all six Azure auth methods, GUID validation, BMC section, review screen, overwrite guard, and the YAML-writes-as-JSON bug fix (#291); and the kv-ranger credential leak fix in the default config (#292). v2.6.2 — TRAILHEAD Bug Fixes — remains the previous release.
 

@@ -8,6 +8,20 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+## [2.6.4] — 2026-04-17
+
+First-Run UX Patch — fixes a structural-placeholder leak that blocked the 2-field / zero-config invocation path advertised in v2.6.3. Same bug class as v2.6.3 #292, but for structural fields (`environment.*`, `targets.cluster.*`, `targets.azure.*`).
+
+### Fixed
+
+- **Default config scaffold placeholders break bare `Invoke-AzureLocalRanger` and the 2-field invocation (#300)** — `Get-RangerDefaultConfig` no longer ships placeholder values for `environment.name`, `environment.clusterName`, `environment.description`, `targets.cluster.fqdn`, `targets.azure.subscriptionId`, `tenantId`, `resourceGroup`, or `targets.bmc.endpoints`. The v2.6.3 auto-discovery cluster-select gate used `[string]::IsNullOrWhiteSpace($Config.environment.clusterName)` to decide whether to run `Select-RangerCluster`; with `clusterName` carrying the placeholder `'azlocal-prod-01'`, that check returned false and cluster-select was silently skipped. The annotated YAML template (`Get-RangerAnnotatedConfigYaml`) still ships its human-readable `[REQUIRED]` scaffold values for operators who prefer to edit a file — that path is untouched.
+
+### Changed
+
+- **Interactive prompt re-runs auto-discovery between answers (#300)** — `Invoke-RangerInteractiveInput` now prompts one field at a time and re-runs `Invoke-RangerAzureAutoDiscovery` after each answer. Supplying subscription + tenant at the first two prompts fires `Select-RangerCluster` on the next pass and auto-fills `clusterName`, `resourceGroup`, `cluster.fqdn`, and `nodes` from Arc — so the remaining prompts collapse to zero or one. Previous behavior was to collect every missing field in a single pass, then validate. Even when the operator gave Ranger everything it needed to auto-discover, the single run of auto-discovery had already happened before the prompts, so the values had no effect.
+- **Prompt order now leads with Azure identifiers (#300)** — `Get-RangerMissingRequiredInputs` lists `subscriptionId` and `tenantId` before the fields that auto-discovery would fill (cluster FQDN, resource group, environment name). Operators who know nothing but those two can invoke bare `Invoke-AzureLocalRanger` and complete the run with exactly two keystroke-level answers.
+- **Fixture-mode bypass in `Test-RangerConfiguration` (#300)** — the required-target check now respects fixture mode the same way `Get-RangerMissingRequiredInputs` does. Without the bypass, fixture-backed test runs failed `Test-RangerTargetConfigured` because the default config's cluster target is now legitimately empty instead of carrying placeholder values.
+
 ## [2.6.3] — 2026-04-17
 
 First-Run UX — drop the required-input floor to two fields (tenantId +

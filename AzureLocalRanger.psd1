@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '2.6.3'
+    ModuleVersion     = '2.6.4'
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
@@ -60,6 +60,44 @@
                 'Az.ConnectedMachine'
             )
             ReleaseNotes = @'
+## v2.6.4 — First-Run UX Patch
+
+Patch release that completes v2.6.3's First-Run UX work. The v2.6.3
+drop shipped with a structural-placeholder leak in the default config
+that blocked the advertised 2-field / zero-config invocation path —
+bare `Invoke-AzureLocalRanger` still threw on `environment.name`,
+`cluster.fqdn`, and `resourceGroup` even after the operator answered
+the subscription + tenant prompts. Same bug class as v2.6.3 #292
+(kv-ranger leak) but for structural fields.
+
+### Fixed
+- **Default config scaffold placeholders break bare `Invoke-AzureLocalRanger`
+  and the 2-field invocation (#300)** — `Get-RangerDefaultConfig` no
+  longer ships placeholder values for `environment.name`, `clusterName`,
+  `description`, `targets.cluster.fqdn`, `targets.azure.subscriptionId`
+  / `tenantId` / `resourceGroup`, or `targets.bmc.endpoints`. The auto-
+  discovery cluster-select gate now fires correctly when the operator
+  hasn't supplied a clusterName.
+
+### Changed
+- **Interactive prompt re-runs auto-discovery between answers (#300)** —
+  `Invoke-RangerInteractiveInput` now prompts one field at a time and
+  re-runs `Invoke-RangerAzureAutoDiscovery` after each answer. Supplying
+  subscription + tenant at the first two prompts fires
+  `Select-RangerCluster` on the next pass and auto-fills clusterName,
+  resourceGroup, cluster.fqdn, and nodes — so the remaining prompts
+  collapse to zero or one.
+- **Prompt order now leads with Azure identifiers (#300)** —
+  `Get-RangerMissingRequiredInputs` lists `subscriptionId` and
+  `tenantId` before the fields that auto-discovery would fill. Operators
+  who know nothing but those two can now invoke bare
+  `Invoke-AzureLocalRanger` and be done.
+- **Fixture-mode bypass in `Test-RangerConfiguration` (#300)** — the
+  required-target check now respects fixture mode the same way
+  `Get-RangerMissingRequiredInputs` does, so fixture-backed runs no
+  longer fail validation just because the default cluster target is
+  now legitimately empty.
+
 ## v2.6.3 — First-Run UX
 
 Lowers the required-input floor to **tenantId + subscriptionId**, fills in the
