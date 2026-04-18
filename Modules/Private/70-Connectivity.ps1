@@ -313,6 +313,7 @@ function Invoke-RangerEnsureWinRmRunning {
         fails — in the latter case a warning is logged and the run continues so
         the preflight can surface a more specific error.
     #>
+    if (-not $IsWindows) { return }
     $svc = Get-Service -Name WinRM -ErrorAction SilentlyContinue
     if (-not $svc) { return }
     if ($svc.Status -eq 'Running') { return }
