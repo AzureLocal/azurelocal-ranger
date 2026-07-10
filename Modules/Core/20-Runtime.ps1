@@ -507,6 +507,7 @@ function Invoke-RangerDiscoveryRuntime {
 
     if ($AllowInteractiveInput) {
         $config = Invoke-RangerInteractiveInput -Config $config
+        Show-RangerResolvedTargetSummary -Config $config
     }
 
     # Issue #319: interactive run-mode prompt — fires when running interactively and the operator

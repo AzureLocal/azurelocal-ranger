@@ -316,8 +316,8 @@ function New-AzureLocalRangerConfig {
 
     .DESCRIPTION
         New-AzureLocalRangerConfig writes a starter configuration to disk in YAML (default)
-        or JSON format. The YAML output includes inline comments that describe every key and
-        mark fields that must be filled in before running Invoke-AzureLocalRanger.
+        or JSON format. The YAML output includes inline comments that explain which values
+        Ranger can discover and which values may be needed for the selected collection scope.
 
     .PARAMETER Path
         Destination path for the configuration file, e.g. C:\ranger\ranger.yml.

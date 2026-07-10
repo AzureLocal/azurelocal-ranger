@@ -37,6 +37,16 @@ Describe 'Azure Local Ranger configuration helpers' {
         Test-Path -Path $path | Should -BeTrue
     }
 
+    It 'creates a discovery-friendly YAML starter without fake required values' {
+        $path = Join-Path $TestDrive 'starter-config.yml'
+        New-AzureLocalRangerConfig -Path $path -Format yaml -Force | Out-Null
+
+        $content = Get-Content -Path $path -Raw
+        $content | Should -Not -Match '\[REQUIRED\]'
+        $content | Should -Not -Match '00000000-0000-0000-0000-000000000000'
+        $content | Should -Match 'Options: current-state \| as-built'
+    }
+
     It 'hydrates BMC endpoints from sibling variables.yml when the Ranger config leaves them empty' {
         $fixtureRoot = Join-Path $TestDrive 'bmc-fallback'
         New-Item -ItemType Directory -Path $fixtureRoot -Force | Out-Null
@@ -460,6 +470,10 @@ behavior:
             $selected.Name | Should -Be 'only-cluster'
             $config.environment.clusterName        | Should -Be 'only-cluster'
             $config.targets.azure.resourceGroup    | Should -Be 'rg-only'
+            Assert-MockCalled Get-AzResource -ModuleName AzureLocalRanger -Times 1 -Exactly -ParameterFilter {
+                $ResourceType -eq 'microsoft.azurestackhci/clusters' -and
+                $SubscriptionId -eq '22222222-2222-2222-2222-222222222222'
+            }
         }
     }
 
