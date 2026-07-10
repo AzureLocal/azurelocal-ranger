@@ -1301,7 +1301,8 @@ function Invoke-RangerWizard {
     # ── Section 1: Environment ─────────────────────────────────────────────────
     Write-Host '── Environment ──────────────────────────' -ForegroundColor DarkCyan
     $envName     = Prompt-WizardValue -Label 'Environment name (short label)'  -Default 'prod-azlocal-01'
-    $clusterName = Prompt-WizardValue -Label 'Cluster name (CNO / display name)' -Default "$envName"
+    Write-Host '  Leave the cluster name blank to discover it from Azure Arc after sign-in.' -ForegroundColor Gray
+    $clusterName = Prompt-WizardValue -Label 'Cluster name (CNO / display name, optional)' -Default ''
     $clusterFqdn = Prompt-WizardValue -Label 'Cluster FQDN or NetBIOS name (leave blank = auto-discover)'
 
     # ── Section 2: Nodes ──────────────────────────────────────────────────────
@@ -1424,7 +1425,10 @@ function Invoke-RangerWizard {
             showProgress = $true
         }
         behavior = [ordered]@{
-            promptForMissingCredentials = ($credStrategy -eq '2')
+            # Azure auth and on-premises credentials are separate. Even when the
+            # operator uses the current Azure context, an interactive run still
+            # needs a chance to obtain the cluster WinRM credential.
+            promptForMissingCredentials = ($credStrategy -in @('1', '2'))
             degradationMode             = 'graceful'
             transport                   = 'auto'
         }

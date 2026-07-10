@@ -888,7 +888,9 @@ function Invoke-RangerAzureAutoDiscovery {
                 if ($_.Exception.Data -and $_.Exception.Data.Contains('RangerErrorCode')) {
                     throw
                 }
-                Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: Select-RangerCluster threw — $($_.Exception.Message)"
+                $message = "Azure cluster discovery could not complete: $($_.Exception.Message)"
+                Write-RangerLog -Level warn -Message "Invoke-RangerAzureAutoDiscovery: $message"
+                Write-Warning "[Ranger] $message"
             }
         }
     }
@@ -930,7 +932,9 @@ function Invoke-RangerAzureAutoDiscovery {
         try {
             $arc = Resolve-RangerClusterArcResource -Config $Config
         } catch {
-            Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: Arc lookup threw — $($_.Exception.Message)"
+            $message = "Azure Arc lookup could not complete: $($_.Exception.Message). Ranger will try local DNS/WinRM discovery where possible."
+            Write-RangerLog -Level warn -Message "Invoke-RangerAzureAutoDiscovery: $message"
+            Write-Warning "[Ranger] $message"
         }
     }
 
@@ -946,7 +950,9 @@ function Invoke-RangerAzureAutoDiscovery {
                     $filled = $true
                 }
             } catch {
-                Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: TrustedHosts/DNS fallback threw — $($_.Exception.Message)"
+                $message = "Local cluster name resolution failed: $($_.Exception.Message). Provide -ClusterFqdn or cluster node names if needed."
+                Write-RangerLog -Level warn -Message "Invoke-RangerAzureAutoDiscovery: $message"
+                Write-Warning "[Ranger] $message"
             }
         }
         return $filled
@@ -977,7 +983,7 @@ function Invoke-RangerAzureAutoDiscovery {
                 }
             }
         } catch {
-            Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: FQDN extraction failed — $($_.Exception.Message)"
+            Write-RangerLog -Level warn -Message "Invoke-RangerAzureAutoDiscovery: FQDN extraction failed — $($_.Exception.Message)"
         }
 
         if (-not [string]::IsNullOrWhiteSpace($fqdn)) {
@@ -996,7 +1002,9 @@ function Invoke-RangerAzureAutoDiscovery {
                     $filled = $true
                 }
             } catch {
-                Write-RangerLog -Level debug -Message "Invoke-RangerAzureAutoDiscovery: TrustedHosts/DNS fallback threw — $($_.Exception.Message)"
+                $message = "Local cluster name resolution failed: $($_.Exception.Message). Provide -ClusterFqdn if needed."
+                Write-RangerLog -Level warn -Message "Invoke-RangerAzureAutoDiscovery: $message"
+                Write-Warning "[Ranger] $message"
             }
         }
     }

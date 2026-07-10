@@ -721,13 +721,18 @@ function Select-RangerCluster {
     }
 
     if (-not (Get-Command -Name Get-AzResource -ErrorAction SilentlyContinue)) {
-        Write-RangerLog -Level debug -Message 'Select-RangerCluster: Az.Resources is not available — cannot enumerate HCI clusters.'
+        $message = 'Azure cluster discovery is unavailable because Az.Resources is not installed. Install Az.Resources or provide -ClusterName/-ResourceGroup and use on-premises discovery.'
+        Write-RangerLog -Level warn -Message "Select-RangerCluster: $message"
+        Write-Warning "[Ranger] $message"
         return $null
     }
 
     $clusters = @()
     try {
-        $clusters = @(Get-AzResource -ResourceType 'microsoft.azurestackhci/clusters' -ErrorAction Stop)
+        # Get-AzResource otherwise queries the caller's current context, which can
+        # differ from the subscription supplied to Ranger. Always scope discovery
+        # to the requested subscription so CLI/config behavior is predictable.
+        $clusters = @(Get-AzResource -ResourceType 'microsoft.azurestackhci/clusters' -SubscriptionId $subscriptionId -ErrorAction Stop)
     } catch {
         $ex = [System.Management.Automation.RuntimeException]::new(
             "RANGER-AUTH-001: Unable to list Azure Local clusters in subscription '$subscriptionId'. " +
