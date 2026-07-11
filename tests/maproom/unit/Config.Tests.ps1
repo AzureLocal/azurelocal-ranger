@@ -284,7 +284,7 @@ behavior:
             try {
                 $value = Get-RangerSecretFromUri -Uri 'keyvault://kv-ranger/cluster-read' -AsPlainText
                 $value | Should -Be 'mock-secret-from-cli'
-                Assert-MockCalled Get-AzKeyVaultSecret -Times 1 -Exactly
+                Should -Invoke -CommandName Get-AzKeyVaultSecret -Times 1 -Exactly
             }
             finally {
                 Remove-Item Function:\global:az -ErrorAction SilentlyContinue
@@ -351,7 +351,7 @@ behavior:
             $result.FQDN | Should -Be 'corp.contoso.com'
             $result.NetBIOS | Should -Be 'CORP'
             $result.ResolvedBy | Should -Be 'node-cim'
-            Assert-MockCalled Invoke-RangerRemoteCommand -Times 1 -Exactly
+            Should -Invoke -CommandName Invoke-RangerRemoteCommand -Times 1 -Exactly
         } -Parameters @{ TestConfig = $config; TestCredential = $credential }
     }
 
@@ -420,7 +420,7 @@ behavior:
             $map.bmc      | Should -BeNullOrEmpty
             $map.switch   | Should -BeNullOrEmpty
             $map.firewall | Should -BeNullOrEmpty
-            Assert-MockCalled Get-Credential -Times 0 -Exactly
+            Should -Invoke -CommandName Get-Credential -Times 0 -Exactly
         }
     }
 
@@ -482,7 +482,7 @@ behavior:
             $selected.Name | Should -Be 'only-cluster'
             $config.environment.clusterName        | Should -Be 'only-cluster'
             $config.targets.azure.resourceGroup    | Should -Be 'rg-only'
-            Assert-MockCalled Get-AzResource -ModuleName AzureLocalRanger -Times 1 -Exactly -ParameterFilter {
+            Should -Invoke -CommandName Get-AzResource -ModuleName AzureLocalRanger -Times 1 -Exactly -ParameterFilter {
                 $ResourceType -eq 'microsoft.azurestackhci/clusters'
             }
         }
@@ -506,7 +506,7 @@ behavior:
 
             Select-RangerCluster -Config $config | Out-Null
 
-            Assert-MockCalled Set-AzContext -ModuleName AzureLocalRanger -Times 1 -Exactly -ParameterFilter {
+            Should -Invoke -CommandName Set-AzContext -ModuleName AzureLocalRanger -Times 1 -Exactly -ParameterFilter {
                 $SubscriptionId -eq '22222222-2222-2222-2222-222222222222'
             }
         }

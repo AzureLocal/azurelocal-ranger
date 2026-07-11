@@ -74,6 +74,20 @@ Enterprise integrations, specialized hardware protocols, advanced topology cover
 
 **Shipped** — most recent first.
 
+## Shipped — v2.6.6 — Subscription-Scoped Discovery & Auth-Context Hardening (2026-07-11)
+
+Tightens target-estate selection and authentication ordering. Cluster enumeration is now scoped to the supplied subscription ID rather than the caller's current Az context; all non-interactive auth methods establish an Az context before Arc discovery; interactive runs print a resolved-target summary before collection; the wizard leaves `clusterName` blank so Arc cluster selection can run; generated YAML uses discovery-friendly blanks; and name-resolution failures now surface as actionable warnings. CI restored by migrating the Pester suite off the removed `Assert-MockCalled` to `Should -Invoke`.
+
+| Item | Detail |
+| --- | --- |
+| Subscription-scoped cluster enumeration | Azure Local cluster discovery scoped to the supplied subscription ID instead of the caller's current Az context |
+| Resolved-target summary | Interactive runs print a non-secret tenant / subscription / resource group / cluster / nodes summary before collection |
+| Auth establishes context before discovery | Device-code, managed-identity, service-principal, certificate, and Azure CLI auth set an Az context before Arc target discovery; Azure CLI imports a subscription-scoped ARM token |
+| Wizard blank cluster default | Setup wizard leaves `clusterName` blank so Arc cluster selection can run; current-context auth still allows a separate cluster credential prompt |
+| Discovery-friendly YAML | Generated config uses blank values instead of fake required placeholders and documents only `current-state` / `as-built` modes |
+| Actionable name-resolution warnings | Azure/Arc and local name-resolution failures surface actionable warnings instead of debug-only entries |
+| CI hardening | Pester unit suite migrated from the removed `Assert-MockCalled` to `Should -Invoke` |
+
 ## Shipped — v2.6.5 — Credential UX & Discovery Hardening (2026-04-17)
 
 First-run friction fixes uncovered during live validation: credential prompts that don't explain themselves, WinRM dialogs that fire mid-flow, duplicate cluster/domain prompts, node connections that use short names instead of FQDNs, silent cluster auto-selection, LLDP collection returning empty data, missing CLI access to the network-device-config import feature, directory paths not expanded for network device configs, the hardware collector silently skipping when no BMC endpoints are configured, tenantId prompt appearing after Arc auto-discovery, a log bootstrapping gap that swallowed config/discovery entries before the output path was known, no prompt for run mode on interactive bare invocations, and `-Debug`/`-Verbose` not elevating log file verbosity. Milestone: [#32](https://github.com/AzureLocal/azurelocal-ranger/milestone/32).

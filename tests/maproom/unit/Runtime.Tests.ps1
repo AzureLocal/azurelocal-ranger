@@ -94,8 +94,8 @@ Describe 'Azure Local Ranger runtime' {
             $result.SelectedSource | Should -Be 'domain'
             $result.UserName | Should -Be $TestDomainCredential.UserName
             @($result.Results).Count | Should -Be 2
-            Assert-MockCalled Test-RangerRemoteAuthorization -Times 2 -Exactly -ParameterFilter { $Credential.UserName -eq $TestDomainCredential.UserName }
-            Assert-MockCalled Test-RangerRemoteAuthorization -Times 0 -Exactly -ParameterFilter { $Credential -and $Credential.UserName -eq $TestClusterCredential.UserName }
+            Should -Invoke -CommandName Test-RangerRemoteAuthorization -Times 2 -Exactly -ParameterFilter { $Credential.UserName -eq $TestDomainCredential.UserName }
+            Should -Invoke -CommandName Test-RangerRemoteAuthorization -Times 0 -Exactly -ParameterFilter { $Credential -and $Credential.UserName -eq $TestClusterCredential.UserName }
         } -Parameters @{ TestClusterCredential = $clusterCredential; TestDomainCredential = $domainCredential }
     }
 
@@ -127,8 +127,8 @@ Describe 'Azure Local Ranger runtime' {
             $result.SelectedSource | Should -Be 'cluster'
             $result.UserName | Should -Be $TestClusterCredential.UserName
             $result.Detail | Should -Match 'Selected cluster remoting credential'
-            Assert-MockCalled Test-RangerRemoteAuthorization -Times 2 -Exactly -ParameterFilter { $Credential.UserName -eq $TestDomainCredential.UserName }
-            Assert-MockCalled Test-RangerRemoteAuthorization -Times 2 -Exactly -ParameterFilter { $Credential.UserName -eq $TestClusterCredential.UserName }
+            Should -Invoke -CommandName Test-RangerRemoteAuthorization -Times 2 -Exactly -ParameterFilter { $Credential.UserName -eq $TestDomainCredential.UserName }
+            Should -Invoke -CommandName Test-RangerRemoteAuthorization -Times 2 -Exactly -ParameterFilter { $Credential.UserName -eq $TestClusterCredential.UserName }
         } -Parameters @{ TestClusterCredential = $clusterCredential; TestDomainCredential = $domainCredential }
     }
 
@@ -188,7 +188,7 @@ Describe 'Azure Local Ranger runtime' {
 
             $result.SelectedSource | Should -Be 'current-context'
             $result.UserName | Should -Be '<current-context>'
-            Assert-MockCalled Test-RangerRemoteAuthorization -Times 1 -Exactly -ParameterFilter { $null -eq $Credential }
+            Should -Invoke -CommandName Test-RangerRemoteAuthorization -Times 1 -Exactly -ParameterFilter { $null -eq $Credential }
         }
     }
 
@@ -285,8 +285,8 @@ Describe 'Azure Local Ranger runtime' {
             $runStatus.unattended | Should -BeTrue
             $runStatus.status | Should -Be 'success'
 
-            Assert-MockCalled Invoke-RangerInteractiveInput -Times 0 -Exactly
-            Assert-MockCalled Get-Credential -Times 0 -Exactly
+            Should -Invoke -CommandName Invoke-RangerInteractiveInput -Times 0 -Exactly
+            Should -Invoke -CommandName Get-Credential -Times 0 -Exactly
         } -Parameters @{ TestConfig = $config; OutputRoot = (Join-Path $TestDrive 'unattended-output') }
     }
 
@@ -364,8 +364,8 @@ Describe 'Azure Local Ranger runtime' {
             { Invoke-RangerRemoteCommand -ComputerName @('node01.contoso.com') -ScriptBlock { 'ok' } } | Should -Throw
             { Invoke-RangerRemoteCommand -ComputerName @('node01.contoso.com') -ScriptBlock { 'ok' } } | Should -Throw
 
-            Assert-MockCalled Test-NetConnection -Times 2 -Exactly
-            Assert-MockCalled Test-WSMan -Times 0
+            Should -Invoke -CommandName Test-NetConnection -Times 2 -Exactly
+            Should -Invoke -CommandName Test-WSMan -Times 0
         }
     }
 
@@ -401,8 +401,8 @@ Describe 'Azure Local Ranger runtime' {
             $result.Reachable | Should -BeTrue
             $result.Transport | Should -Be 'https'
             $result.Port | Should -Be 5986
-            Assert-MockCalled Test-NetConnection -Times 2 -Exactly
-            Assert-MockCalled Test-WSMan -Times 1 -Exactly -ParameterFilter { $UseSSL }
+            Should -Invoke -CommandName Test-NetConnection -Times 2 -Exactly
+            Should -Invoke -CommandName Test-WSMan -Times 1 -Exactly -ParameterFilter { $UseSSL }
         }
     }
 
@@ -430,8 +430,8 @@ Describe 'Azure Local Ranger runtime' {
             $result2.Reachable | Should -BeTrue
             $result1.Transport | Should -Be 'http'
             $result2.Transport | Should -Be 'http'
-            Assert-MockCalled Test-NetConnection -Times 1 -Exactly
-            Assert-MockCalled Test-WSMan -Times 1 -Exactly
+            Should -Invoke -CommandName Test-NetConnection -Times 1 -Exactly
+            Should -Invoke -CommandName Test-WSMan -Times 1 -Exactly
         }
     }
 
@@ -456,8 +456,8 @@ Describe 'Azure Local Ranger runtime' {
 
             $result.Reachable | Should -BeFalse
             $result.Message | Should -Match 'Access is denied'
-            Assert-MockCalled Test-NetConnection -Times 2 -Exactly
-            Assert-MockCalled Test-WSMan -Times 2 -Exactly
+            Should -Invoke -CommandName Test-NetConnection -Times 2 -Exactly
+            Should -Invoke -CommandName Test-WSMan -Times 2 -Exactly
         }
     }
 }

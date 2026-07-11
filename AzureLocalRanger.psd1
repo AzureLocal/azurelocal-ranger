@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '2.6.5'
+    ModuleVersion     = '2.6.6'
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
@@ -60,6 +60,20 @@
                 'Az.ConnectedMachine'
             )
             ReleaseNotes = @'
+## v2.6.6 — Subscription-Scoped Discovery & Auth-Context Hardening
+
+Discovery-scoping and authentication-ordering hardening on top of v2.6.5.
+
+### Changed
+- **Subscription-scoped cluster enumeration** — Azure Local cluster discovery is now explicitly scoped to the subscription ID supplied to Ranger instead of relying on the caller's current Az context.
+- **Resolved-target summary** — interactive runs print a non-secret resolved-target summary (tenant, subscription, resource group, cluster, nodes) before collection begins.
+- **Auth establishes context before discovery** — device-code, managed-identity, service-principal, certificate, and Azure CLI authentication now establish an Az context before Arc target discovery; Azure CLI imports a subscription-scoped ARM token.
+- **Wizard blank cluster default** — the setup wizard leaves `clusterName` blank by default so Azure Arc cluster selection can run; current-context authentication still allows a separate cluster credential prompt.
+- **Discovery-friendly YAML** — generated configuration uses blank discovery-friendly values instead of fake required placeholders, and documents only the supported `current-state` and `as-built` modes.
+
+### Fixed
+- **Name-resolution warnings** — Azure/Arc and local name-resolution failures now surface actionable warnings instead of being visible only in debug logs.
+
 ## v2.6.5 — Credential UX & Discovery Hardening
 
 24 first-run friction and reliability issues found during live tplabs validation.

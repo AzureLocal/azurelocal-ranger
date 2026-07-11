@@ -2,6 +2,18 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
+## v2.6.6 — Subscription-Scoped Discovery & Auth-Context Hardening
+
+Discovery-scoping and authentication-ordering hardening on top of v2.6.5.
+
+- **Subscription-scoped cluster enumeration** — Azure Local cluster discovery is now scoped to the subscription ID supplied to Ranger instead of the caller's current Az context, so a signed-in session pointed at a different default subscription no longer enumerates the wrong estate.
+- **Resolved-target summary** — interactive runs print a non-secret resolved-target summary (tenant, subscription, resource group, cluster, cluster target, nodes) before collection begins, so operators can confirm scope before the run starts.
+- **Auth establishes context before discovery** — device-code, managed-identity, service-principal, certificate, and Azure CLI authentication now establish an Az context before Arc target discovery; Azure CLI imports a subscription-scoped ARM token so `Search-AzGraph`/`Get-AzResource` resolve against the intended subscription.
+- **Wizard blank cluster default** — the setup wizard leaves `clusterName` blank by default so Azure Arc cluster selection can run; current-context authentication still allows a separate cluster credential prompt.
+- **Discovery-friendly YAML** — generated configuration uses blank discovery-friendly values instead of fake required placeholders, and documents only the supported `current-state` and `as-built` modes.
+- **Name-resolution warnings** — Azure/Arc and local name-resolution failures now surface actionable warnings instead of being visible only in debug logs.
+- **CI hardening** — the Pester unit suite moved from the removed `Assert-MockCalled` command to `Should -Invoke`, restoring green CI on current Pester runners.
+
 ## v2.6.5 — Credential UX & Discovery Hardening
 
 15 first-run friction issues closed after live tplabs validation. Milestone: [#32](https://github.com/AzureLocal/azurelocal-ranger/milestone/32).
