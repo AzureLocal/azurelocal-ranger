@@ -852,6 +852,44 @@ function Connect-RangerAzureContext {
             Connect-AzAccount @connectParams | Out-Null
             return $true
         }
+        'azure-cli' {
+            if (-not (Test-RangerAzureCliAuthenticated)) {
+                throw "Azure CLI authentication was selected, but 'az account show' failed. Run 'az login' and retry."
+            }
+
+            $accountJson = (& az account show --output json 2>$null) -join [Environment]::NewLine
+            if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($accountJson)) {
+                throw 'Azure CLI did not return an active account.'
+            }
+            $account = $accountJson | ConvertFrom-Json
+
+            $tokenArgs = @('account', 'get-access-token', '--resource', 'https://management.azure.com/', '--output', 'json')
+            if ($settings.subscriptionId) { $tokenArgs += @('--subscription', [string]$settings.subscriptionId) }
+            $tokenJson = (& az @tokenArgs 2>$null) -join [Environment]::NewLine
+            if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($tokenJson)) {
+                throw 'Azure CLI could not obtain an Azure Resource Manager access token for the requested subscription.'
+            }
+            $token = $tokenJson | ConvertFrom-Json
+
+            $tenantId = if ($settings.tenantId) { [string]$settings.tenantId } else { [string]$account.tenantId }
+            $accountId = if ($account.user -and $account.user.name) { [string]$account.user.name } else { [string]$account.name }
+            $accessToken = [string]$token.accessToken
+            if ([string]::IsNullOrWhiteSpace($tenantId) -or [string]::IsNullOrWhiteSpace($accountId) -or [string]::IsNullOrWhiteSpace($accessToken)) {
+                throw 'Azure CLI account/token output was missing tenantId, account identity, or accessToken.'
+            }
+
+            $accessTokenType = (Get-Command Connect-AzAccount -ErrorAction Stop).Parameters['AccessToken'].ParameterType
+            $connectParams = @{
+                AccessToken = if ($accessTokenType -eq [securestring]) { ConvertTo-SecureString $accessToken -AsPlainText -Force } else { $accessToken }
+                AccountId   = $accountId
+                Tenant      = $tenantId
+                ErrorAction = 'Stop'
+            }
+            if ($settings.subscriptionId) { $connectParams.Subscription = [string]$settings.subscriptionId }
+            if ($azureEnvironment)        { $connectParams.Environment  = $azureEnvironment }
+            Connect-AzAccount @connectParams | Out-Null
+            return $true
+        }
         default {
             return $false
         }

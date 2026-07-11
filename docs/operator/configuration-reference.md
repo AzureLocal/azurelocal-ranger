@@ -241,8 +241,8 @@ output:
 | --- | --- | --- | --- | --- |
 | `behavior.transport` | string | No | `auto` | WinRM transport mode. `auto` tries WinRM first; falls back to Arc Run Command when nodes are unreachable. `winrm` forces WinRM only. `arc` forces Arc Run Command only. |
 | `behavior.degradationMode` | string | No | `graceful` | How to handle collectors whose transport is confirmed unreachable. `graceful` skips with `status: skipped`. `strict` fails the entire run. |
-| `behavior.promptForMissingCredentials` | bool | No | `true` | Prompt interactively for unresolved cluster, domain, or BMC credentials. |
-| `behavior.promptForMissingRequired` | bool | No | `true` | Prompt interactively for missing required structural fields (environment name, cluster FQDN, etc.). |
+| `behavior.promptForMissingCredentials` | bool | No | `true` | Prompt interactively for unresolved cluster, domain, or BMC credentials. This does not select the Azure authentication method. |
+| `behavior.promptForMissingRequired` | bool | No | `true` | After auto-discovery, prompt interactively for structural values still required by the selected collectors. |
 | `behavior.retryCount` | int | No | `2` | Number of WinRM retry attempts per operation before marking a collector as failed. |
 | `behavior.timeoutSeconds` | int | No | `30` | WinRM operation timeout in seconds. |
 | `behavior.skipUnavailableOptionalDomains` | bool | No | `true` | Skip optional collectors silently when their required resources are absent. |
@@ -288,7 +288,7 @@ credentials:
 
 | Omitted key | Behaviour |
 | --- | --- |
-| `targets.cluster.fqdn` and `targets.cluster.nodes` | Ranger attempts Arc-based node resolution; fails if no Azure context or cluster not Arc-registered |
+| `targets.cluster.fqdn` and `targets.cluster.nodes` | Ranger attempts subscription-scoped Arc discovery, then local name resolution; local collectors may be skipped or validation may fail if no endpoint can be resolved |
 | `targets.azure` (entire section) | All Azure-side collectors skip gracefully |
 | `targets.bmc` (entire section) | Redfish hardware collection skipped; WinRM-based hardware facts still collected |
 | `credentials.cluster` | Ranger uses current Windows identity; prompts if `promptForMissingCredentials: true` |

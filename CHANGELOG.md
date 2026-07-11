@@ -8,6 +8,18 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+### Changed
+
+- Azure Local cluster enumeration is now explicitly scoped to the subscription ID supplied to Ranger instead of relying on the caller's current Az context.
+- Interactive runs print a non-secret resolved-target summary before collection.
+- The setup wizard leaves `clusterName` blank by default so Azure Arc cluster selection can run, and current-context authentication still allows a separate cluster credential prompt.
+- Device-code, managed-identity, service-principal, certificate, and Azure CLI authentication now establish an Az context before Arc target discovery; Azure CLI imports a subscription-scoped ARM token.
+- Generated YAML configuration uses discovery-friendly blank values instead of fake required placeholders and documents only the supported `current-state` and `as-built` modes.
+
+### Fixed
+
+- Azure/Arc and local name-resolution failures now surface actionable warnings instead of being visible only in debug logs.
+
 ## [2.6.5] — Credential UX & Discovery Hardening (in progress)
 
 19 first-run friction and reliability issues, all found during live tplabs validation.

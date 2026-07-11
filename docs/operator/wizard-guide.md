@@ -47,15 +47,18 @@ The wizard requires an interactive PowerShell session. It will throw an error if
 ```
 ── Environment ──────────────────────────
 Environment name (short label) [prod-azlocal-01]:
-Cluster name (CNO / display name) [prod-azlocal-01]:
-Cluster FQDN or NetBIOS name (leave blank to skip):
+  Leave the cluster name blank to discover it from Azure Arc after sign-in.
+Cluster name (CNO / display name, optional):
+Cluster FQDN or NetBIOS name (leave blank = auto-discover):
 ```
 
 | Prompt | What to enter | Example |
 | --- | --- | --- |
 | Environment name | Short label used in output folder names | `tplabs-prod-01` |
-| Cluster name | Display name used in reports | `tplabs-prod-01` |
+| Cluster name | Optional known Arc/CNO name; leave blank to select from Azure | `tplabs-prod-01` |
 | Cluster FQDN | Cluster name that resolves on DNS | `tplabs-clus01.contoso.com` |
+
+Leaving the cluster name blank is the recommended connected first-run path. It allows Ranger to enumerate the clusters in the requested subscription instead of assuming the environment label is also the Azure resource name.
 
 The environment name appears in every output filename:
 `tplabs-prod-01-current-state-20260416T044502Z`
@@ -119,12 +122,14 @@ Credential strategy [1]:
 
 | # | Strategy | `credentials.azure.method` | When to use |
 | --- | --- | --- | --- |
-| **1** | Current session context | `existing-context` | Interactive runs where you've already run `Connect-AzAccount` |
+| **1** | Current session context | `existing-context` | Interactive runs where you've already run `Connect-AzAccount`. Ranger still prompts for a cluster WinRM credential when local collection needs one. |
 | **2** | Prompt at run time | `existing-context` (with `promptForMissingCredentials: true`) | First run, or when the current session account doesn't have cluster WinRM access |
 | **3** | Service principal | `service-principal` | CI / scheduled runs. Wizard prompts for the client ID and an optional `keyvault://` secret reference. |
 | **4** | Managed identity | `managed-identity` | Runners hosted on an Azure VM or an Arc-enabled machine with a system or user-assigned identity |
 | **5** | Device code | `device-code` | Runners without a browser, signing in interactively on another device |
-| **6** | Azure CLI | `azure-cli` | Cross-platform runners where `az login` is the established auth pattern |
+| **6** | Azure CLI | `azure-cli` | Runners where `az login` is established. Ranger imports a subscription-scoped ARM token into Az PowerShell before discovery. |
+
+Azure authentication and cluster authentication are separate. Strategies 1–6 select the Azure method; strategies 1 and 2 both allow the interactive runtime to request a cluster credential. Strategy 2 additionally lets you save the expected cluster/domain usernames in the generated config.
 
 ### Strategy 2 — Prompt at run time
 
@@ -383,8 +388,8 @@ Invoke-AzureLocalRanger -ConfigPath C:\ranger\tplabs.yml -OutputPath D:\ranger-r
 | WinRM connection fails immediately | Add cluster node IPs to TrustedHosts (see [First Run](first-run.md) Step 2) |
 | Azure collectors skipped — no Az context | Run `Connect-AzAccount` before starting the wizard |
 | Cluster FQDN not resolving | Use node FQDNs directly instead of the cluster FQDN |
-| Wrong subscription context | Run `Set-AzContext -SubscriptionId <id>` before the wizard |
-| Config saved but run fails on missing credentials | Use credential strategy [2] so Ranger prompts at runtime |
+| Wrong subscription context | Confirm the subscription ID entered in the wizard; Ranger scopes cluster enumeration to that ID even when the current Az context points elsewhere |
+| Config saved but run fails on missing credentials | Use strategy [1] or [2] for interactive prompting, or configure a `keyvault://` reference for unattended runs |
 
 ---
 

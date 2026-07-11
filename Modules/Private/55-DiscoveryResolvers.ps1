@@ -729,10 +729,17 @@ function Select-RangerCluster {
 
     $clusters = @()
     try {
-        # Get-AzResource otherwise queries the caller's current context, which can
-        # differ from the subscription supplied to Ranger. Always scope discovery
-        # to the requested subscription so CLI/config behavior is predictable.
-        $clusters = @(Get-AzResource -ResourceType 'microsoft.azurestackhci/clusters' -SubscriptionId $subscriptionId -ErrorAction Stop)
+        # Get-AzResource has no -SubscriptionId parameter in supported Az.Resources
+        # releases. Select the requested subscription when necessary and keep it
+        # active because the Arc detail queries and collectors that follow must
+        # use the same subscription selected for cluster enumeration.
+        $currentContext = Get-AzContext -ErrorAction SilentlyContinue
+        if (-not $currentContext -or [string]$currentContext.Subscription.Id -ne $subscriptionId) {
+            Set-AzContext -SubscriptionId $subscriptionId -ErrorAction Stop | Out-Null
+            Write-RangerLog -Level info -Message "Select-RangerCluster: switched Az context to requested subscription '$subscriptionId'"
+        }
+
+        $clusters = @(Get-AzResource -ResourceType 'microsoft.azurestackhci/clusters' -ErrorAction Stop)
     } catch {
         $ex = [System.Management.Automation.RuntimeException]::new(
             "RANGER-AUTH-001: Unable to list Azure Local clusters in subscription '$subscriptionId'. " +

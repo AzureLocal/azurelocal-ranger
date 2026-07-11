@@ -57,7 +57,9 @@ Invoke-AzureLocalRanger -TenantId <guid> -SubscriptionId <guid> -ClusterName <na
 Invoke-AzureLocalRanger
 ```
 
-Fastest for ad-hoc runs. Azure Arc auto-discovery fills in the resource group, cluster FQDN, nodes, and AD domain from the selected HCI cluster resource. When exactly one cluster exists in the subscription it's auto-selected; when multiple exist, Ranger prints a numbered menu. Under `-Unattended`, multi-cluster subscriptions throw `RANGER-DISC-002` so the operator knows to pass `-ClusterName`.
+Fastest for ad-hoc runs. Azure Arc auto-discovery fills in the resource group, cluster FQDN, nodes, and AD domain from the selected HCI cluster resource. Cluster enumeration is explicitly scoped to the supplied subscription ID, even when the caller's current Az context points to another subscription. When exactly one cluster exists it is auto-selected; when multiple exist, Ranger prints a numbered menu. Under `-Unattended`, multi-cluster subscriptions throw `RANGER-DISC-002` so the operator knows to pass `-ClusterName`.
+
+Before collection starts, interactive runs print a **Resolved target** summary containing the tenant, subscription, resource group, cluster, endpoint, and nodes. A value shown as `<not resolved>` includes an actionable warning when it affects local collection. This summary contains no passwords or secrets.
 
 !!! tip "`-ShowProgress`"
     Add `-ShowProgress` to any invocation for a live per-collector progress display (requires the optional `PwshSpectreConsole` module; automatically suppressed in CI and `-Unattended` mode).

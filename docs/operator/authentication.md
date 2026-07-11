@@ -49,9 +49,11 @@ Azure-side discovery supports six methods, all selectable via the wizard (`Invok
 | 3 | `service-principal` | Client ID + client secret (or `keyvault://` ref) / cert | CI / scheduled runs with a non-user identity |
 | 4 | `managed-identity` | System- or user-assigned managed identity | Runners hosted on an Azure VM or Arc-enabled machine |
 | 5 | `device-code` | Browser-based Entra sign-in on a separate device | Runners without a browser (or disconnected shells) |
-| 6 | `azure-cli` | `az login` session | Cross-platform runners where `az` is the established auth pattern |
+| 6 | `azure-cli` | `az login` session | Runners where `az` is established. Ranger requests a subscription-scoped ARM token and imports it into Az PowerShell before discovery. |
 
 The right option depends on whether the run is interactive, scheduled, or hosted inside Azure.
+
+Azure authentication is established before Azure Arc target discovery for methods 3–6. Cluster WinRM, domain, BMC, switch, and firewall credentials are independent of the Azure method and are requested only when their targets are in scope.
 
 !!! tip "tenantId is auto-filled from your Az session"
     Since v2.6.5 (#317), `Invoke-RangerAzureAutoDiscovery` reads `(Get-AzContext).Tenant.Id` after cluster discovery succeeds and sets `targets.azure.tenantId` automatically. You will not be prompted for `tenantId` on an `existing-context` run if you are already signed into the correct tenant.

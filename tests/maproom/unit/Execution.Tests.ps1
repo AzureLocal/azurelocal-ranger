@@ -7,6 +7,37 @@ BeforeAll {
     Import-Module (Join-Path $script:repoRoot 'AzureLocalRanger.psd1') -Force
 }
 
+Describe 'Connect-RangerAzureContext — Azure CLI bridge' {
+
+    It 'imports a subscription-scoped Azure CLI token into Az PowerShell' {
+        InModuleScope AzureLocalRanger {
+            Mock Get-AzContext { $null }
+            Mock Test-RangerAzureCliAuthenticated { $true }
+            Mock Connect-AzAccount { }
+            Mock az {
+                $global:LASTEXITCODE = 0
+                if ($args -contains 'show') {
+                    return '{"tenantId":"33333333-3333-3333-3333-333333333333","name":"Test subscription","user":{"name":"operator@contoso.com"}}'
+                }
+                return '{"accessToken":"test-access-token"}'
+            }
+
+            $settings = [ordered]@{
+                method         = 'azure-cli'
+                tenantId       = '33333333-3333-3333-3333-333333333333'
+                subscriptionId = '22222222-2222-2222-2222-222222222222'
+            }
+
+            Connect-RangerAzureContext -AzureCredentialSettings $settings | Should -BeTrue
+            Should -Invoke Connect-AzAccount -Times 1 -ParameterFilter {
+                $AccountId -eq 'operator@contoso.com' -and
+                $Tenant -eq '33333333-3333-3333-3333-333333333333' -and
+                $Subscription -eq '22222222-2222-2222-2222-222222222222'
+            }
+        }
+    }
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Bug #157 — authorization probe must use RetryCount 0 (not the run RetryCount)
 # "Access is denied" is a definitive auth failure, not a transient network error.

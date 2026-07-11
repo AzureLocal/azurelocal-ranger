@@ -45,6 +45,14 @@ Describe 'Azure Local Ranger configuration helpers' {
         $content | Should -Not -Match '\[REQUIRED\]'
         $content | Should -Not -Match '00000000-0000-0000-0000-000000000000'
         $content | Should -Match 'Options: current-state \| as-built'
+
+        InModuleScope AzureLocalRanger {
+            param($ConfigPath)
+            $loaded = Import-RangerConfiguration -ConfigPath $ConfigPath
+            $loaded.environment.clusterName | Should -BeNullOrEmpty
+            @($loaded.targets.cluster.nodes) | Should -HaveCount 0
+            $loaded.output.mode | Should -Be 'current-state'
+        } -Parameters @{ ConfigPath = $path }
     }
 
     It 'hydrates BMC endpoints from sibling variables.yml when the Ranger config leaves them empty' {
@@ -455,6 +463,10 @@ behavior:
             $config.targets.azure.subscriptionId     = '22222222-2222-2222-2222-222222222222'
             $config.targets.azure.resourceGroup      = $null
 
+            Mock Get-AzContext -ModuleName AzureLocalRanger {
+                [pscustomobject]@{ Subscription = [pscustomobject]@{ Id = '22222222-2222-2222-2222-222222222222' } }
+            }
+
             Mock Get-AzResource -ModuleName AzureLocalRanger {
                 @([pscustomobject]@{
                     Name              = 'only-cluster'
@@ -471,7 +483,30 @@ behavior:
             $config.environment.clusterName        | Should -Be 'only-cluster'
             $config.targets.azure.resourceGroup    | Should -Be 'rg-only'
             Assert-MockCalled Get-AzResource -ModuleName AzureLocalRanger -Times 1 -Exactly -ParameterFilter {
-                $ResourceType -eq 'microsoft.azurestackhci/clusters' -and
+                $ResourceType -eq 'microsoft.azurestackhci/clusters'
+            }
+        }
+    }
+
+    It 'switches to the configured subscription and keeps it active for subsequent discovery' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $config.environment.clusterName = $null
+            $config.targets.azure.subscriptionId = '22222222-2222-2222-2222-222222222222'
+
+            Mock Get-AzContext -ModuleName AzureLocalRanger {
+                [pscustomobject]@{ Name = 'original'; Subscription = [pscustomobject]@{ Id = '11111111-1111-1111-1111-111111111111' } }
+            }
+            Mock Set-AzContext -ModuleName AzureLocalRanger {
+                [pscustomobject]@{ Name = 'target'; Subscription = [pscustomobject]@{ Id = '22222222-2222-2222-2222-222222222222' } }
+            }
+            Mock Get-AzResource -ModuleName AzureLocalRanger {
+                @([pscustomobject]@{ Name = 'only-cluster'; ResourceGroupName = 'rg-only'; Location = 'eastus' })
+            } -ParameterFilter { $ResourceType -eq 'microsoft.azurestackhci/clusters' }
+
+            Select-RangerCluster -Config $config | Out-Null
+
+            Assert-MockCalled Set-AzContext -ModuleName AzureLocalRanger -Times 1 -Exactly -ParameterFilter {
                 $SubscriptionId -eq '22222222-2222-2222-2222-222222222222'
             }
         }
@@ -482,6 +517,10 @@ behavior:
             $config = Get-RangerDefaultConfig
             $config.environment.clusterName      = $null
             $config.targets.azure.subscriptionId = '22222222-2222-2222-2222-222222222222'
+
+            Mock Get-AzContext -ModuleName AzureLocalRanger {
+                [pscustomobject]@{ Subscription = [pscustomobject]@{ Id = '22222222-2222-2222-2222-222222222222' } }
+            }
 
             Mock Get-AzResource -ModuleName AzureLocalRanger {
                 @(
@@ -500,6 +539,10 @@ behavior:
             $config.environment.clusterName      = $null
             $config.targets.azure.subscriptionId = '22222222-2222-2222-2222-222222222222'
 
+            Mock Get-AzContext -ModuleName AzureLocalRanger {
+                [pscustomobject]@{ Subscription = [pscustomobject]@{ Id = '22222222-2222-2222-2222-222222222222' } }
+            }
+
             Mock Get-AzResource -ModuleName AzureLocalRanger {
                 @()
             } -ParameterFilter { $ResourceType -eq 'microsoft.azurestackhci/clusters' }
@@ -513,6 +556,10 @@ behavior:
             $config = Get-RangerDefaultConfig
             $config.environment.clusterName      = $null
             $config.targets.azure.subscriptionId = '22222222-2222-2222-2222-222222222222'
+
+            Mock Get-AzContext -ModuleName AzureLocalRanger {
+                [pscustomobject]@{ Subscription = [pscustomobject]@{ Id = '22222222-2222-2222-2222-222222222222' } }
+            }
 
             Mock Get-AzResource -ModuleName AzureLocalRanger {
                 @(

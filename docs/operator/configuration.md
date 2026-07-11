@@ -165,10 +165,10 @@ Canonical names and common aliases are:
 
 Two behavior flags govern interactive prompting:
 
-- `behavior.promptForMissingCredentials` controls whether Ranger will prompt for unresolved cluster, domain, or BMC credentials.
-- `behavior.promptForMissingRequired` controls whether Ranger will prompt for missing required structural values such as environment name or cluster FQDN.
+- `behavior.promptForMissingCredentials` controls whether Ranger will prompt for unresolved cluster, domain, or BMC credentials. Azure authentication is configured separately under `credentials.azure`.
+- `behavior.promptForMissingRequired` controls whether Ranger will prompt after auto-discovery for structural values still needed by the selected collectors.
 
-If prompting is disabled or unavailable, missing required values cause validation failure.
+If prompting is disabled or unavailable, unresolved values required by the selected collectors cause validation failure. Optional targets such as BMC endpoints remain skippable.
 ```
 
 ## Include and Exclude Rules
@@ -228,7 +228,8 @@ If a required value is missing, the desired behavior is:
 
 - fail early for invalid configuration
 - prompt for credentials when interactive prompting is enabled
-- prompt for required structural fields when interactive prompting is enabled
+- auto-discover Azure, cluster, node, and domain values before prompting
+- prompt only for structural fields that remain unresolved and are required by the selected scope
 - skip optional domains when targets or credentials are absent
 
 ## Related Pages

@@ -81,7 +81,7 @@ The wizard asks seven short sections of questions:
 1. **Environment** — a short name for this cluster (used in output filenames)
 2. **Cluster Nodes** — the FQDN of the cluster and/or individual node FQDNs (leave blank to auto-discover from Arc)
 3. **Azure** — subscription ID, tenant ID, and resource group (GUIDs validated inline)
-4. **Credentials** — one of six strategies: current session context, runtime prompt, service principal, managed identity, device code, or Azure CLI
+4. **Credentials** — choose the Azure authentication method separately from the cluster WinRM credential; interactive current-context runs still prompt for the cluster credential when needed
 5. **BMC / iDRAC** — optional: add BMC endpoints for hardware / OEM collection
 6. **Output** — run mode (current-state or as-built), root path, and report formats
 7. **Scope** — which data domains to collect (press Enter to collect everything)

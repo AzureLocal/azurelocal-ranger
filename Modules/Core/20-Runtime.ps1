@@ -498,6 +498,27 @@ function Invoke-RangerDiscoveryRuntime {
         $config.behavior.promptForMissingCredentials = $false
     }
 
+    # Authentication methods that establish their own session must run before
+    # Arc auto-discovery. Previously these methods were not applied until the
+    # collectors ran, so first-run discovery asked for values Azure already knew.
+    $discoveryAzureMethod = [string]$config.credentials.azure.method
+    $hasAzureSubscription = -not [string]::IsNullOrWhiteSpace([string]$config.targets.azure.subscriptionId) -and
+                            $config.targets.azure.subscriptionId -ne '00000000-0000-0000-0000-000000000000'
+    if ($hasAzureSubscription -and $discoveryAzureMethod -in @('device-code', 'managed-identity', 'service-principal', 'service-principal-cert', 'azure-cli')) {
+        try {
+            $discoveryAzureSettings = Resolve-RangerAzureCredentialSettings -Config $config
+            if (-not (Connect-RangerAzureContext -AzureCredentialSettings $discoveryAzureSettings)) {
+                Write-Warning "[Ranger] Azure authentication method '$discoveryAzureMethod' did not establish a context. Auto-discovery may require manual target values."
+            }
+        }
+        catch {
+            $message = "Azure authentication for discovery failed using '$discoveryAzureMethod': $($_.Exception.Message)"
+            Write-RangerLog -Level warn -Message $message
+            if ($Unattended) { throw }
+            Write-Warning "[Ranger] $message"
+        }
+    }
+
     # v1.6.0 (#196/#197) / v2.6.3 (#294/#297): auto-discover missing clusterName,
     # resourceGroup, cluster FQDN, and nodes from Azure Arc before any prompting
     # or validation, headless or interactive. Pass -Unattended so the cluster
