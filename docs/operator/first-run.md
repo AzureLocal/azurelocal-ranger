@@ -88,9 +88,9 @@ The wizard asks seven short sections of questions:
 
 Before anything runs, the wizard prints a **review screen** with the full YAML config. Press Enter to continue, or type `N` to cancel without saving. At the end, choose **[B] Both** to save the config file and run immediately.
 
-!!! tip
-    Press **Enter** to accept the default shown in `[brackets]` for any prompt.
-
+> [!TIP]
+> Press **Enter** to accept the default shown in `[brackets]` for any prompt.
+>
 See [Wizard Guide](wizard-guide.md) for a complete walkthrough with example answers.
 
 ### Already comfortable? Two alternatives

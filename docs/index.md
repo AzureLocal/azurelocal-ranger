@@ -74,9 +74,10 @@ Fastest for ad-hoc runs. Azure Arc auto-discovery fills in resource group, clust
 
 ## Where To Start
 
-!!! tip "New here?"
-    Start with the [First Run](operator/first-run.md) guide — it takes you from install to finished output in six steps with no decisions to make.
-
+> [!TIP]
+> **New here?**
+> Start with the [First Run](operator/first-run.md) guide — it takes you from install to finished output in six steps with no decisions to make.
+>
 | Audience | Start Here |
 | --- | --- |
 | **New operators** | [First Run](operator/first-run.md) |

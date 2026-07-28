@@ -55,9 +55,10 @@ The right option depends on whether the run is interactive, scheduled, or hosted
 
 Azure authentication is established before Azure Arc target discovery for methods 3–6. Cluster WinRM, domain, BMC, switch, and firewall credentials are independent of the Azure method and are requested only when their targets are in scope.
 
-!!! tip "tenantId is auto-filled from your Az session"
-    Since v2.6.5 (#317), `Invoke-RangerAzureAutoDiscovery` reads `(Get-AzContext).Tenant.Id` after cluster discovery succeeds and sets `targets.azure.tenantId` automatically. You will not be prompted for `tenantId` on an `existing-context` run if you are already signed into the correct tenant.
-
+> [!TIP]
+> **tenantId is auto-filled from your Az session**
+> Since v2.6.5 (#317), `Invoke-RangerAzureAutoDiscovery` reads `(Get-AzContext).Tenant.Id` after cluster discovery succeeds and sets `targets.azure.tenantId` automatically. You will not be prompted for `tenantId` on an `existing-context` run if you are already signed into the correct tenant.
+>
 ## Key Vault References
 
 The documented secret reference format is:
@@ -66,9 +67,9 @@ The documented secret reference format is:
 keyvault://<vault-name>/<secret-name>[/<version>]
 ```
 
-!!! note
-    `kv-ranger` in the examples below is a **placeholder vault name**, not a vault Ranger creates or requires. Substitute your actual Key Vault name. (In v2.6.3, fake `keyvault://kv-ranger/*` placeholders were removed from the default config — see issue [#292](https://github.com/AzureLocal/azurelocal-ranger/issues/292) — so an empty config no longer dies resolving a vault the operator never configured.)
-
+> [!NOTE]
+> `kv-ranger` in the examples below is a **placeholder vault name**, not a vault Ranger creates or requires. Substitute your actual Key Vault name. (In v2.6.3, fake `keyvault://kv-ranger/*` placeholders were removed from the default config — see issue [#292](https://github.com/AzureLocal/azurelocal-ranger/issues/292) — so an empty config no longer dies resolving a vault the operator never configured.)
+>
 Examples:
 
 ```text

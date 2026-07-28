@@ -4,9 +4,10 @@
 
 It is the fastest way to get a correct configuration without editing YAML by hand. **This is the recommended first-run path** — the wizard covers every field most operators need, validates your input inline, and shows a review screen before it commits.
 
-!!! info "Advanced tuning fields"
-    The wizard covers the structural fields (environment, cluster, Azure auth, BMC, output mode, scope). It does **not** yet prompt for advanced tuning fields like `behavior.logLevel`, `behavior.retryCount`, `output.diagramFormat`, or `credentials.*.passwordRef`. You can set these by editing the saved YAML file, or by copying the config and extending it. Tracked in issue [#299](https://github.com/AzureLocal/azurelocal-ranger/issues/299).
-
+> [!NOTE]
+> **Advanced tuning fields**
+> The wizard covers the structural fields (environment, cluster, Azure auth, BMC, output mode, scope). It does **not** yet prompt for advanced tuning fields like `behavior.logLevel`, `behavior.retryCount`, `output.diagramFormat`, or `credentials.*.passwordRef`. You can set these by editing the saved YAML file, or by copying the config and extending it. Tracked in issue [#299](https://github.com/AzureLocal/azurelocal-ranger/issues/299).
+>
 ---
 
 ## When to Use the Wizard
@@ -63,9 +64,9 @@ Leaving the cluster name blank is the recommended connected first-run path. It a
 The environment name appears in every output filename:
 `tplabs-prod-01-current-state-20260416T044502Z`
 
-!!! tip
-    If you leave Cluster FQDN blank, Ranger will use the node list instead. At least one of FQDN or node FQDNs must be provided.
-
+> [!TIP]
+> If you leave Cluster FQDN blank, Ranger will use the node list instead. At least one of FQDN or node FQDNs must be provided.
+>
 ---
 
 ## Section 2 — Cluster Nodes
@@ -82,9 +83,9 @@ Enter the fully-qualified name of each cluster node, separated by commas.
 tplabs-01-n01.contoso.com,tplabs-01-n02.contoso.com,tplabs-01-n03.contoso.com,tplabs-01-n04.contoso.com
 ```
 
-!!! tip
-    If your cluster is Arc-registered, Ranger can resolve nodes automatically from Azure. In that case you can leave this blank and rely on Azure resolution — but providing nodes explicitly is more reliable for first runs.
-
+> [!TIP]
+> If your cluster is Arc-registered, Ranger can resolve nodes automatically from Azure. In that case you can leave this blank and rely on Azure resolution — but providing nodes explicitly is more reliable for first runs.
+>
 ---
 
 ## Section 3 — Azure Integration
@@ -150,9 +151,9 @@ Client secret keyvault:// reference (or leave blank to prompt at run time):
 
 The client ID is validated as a GUID inline — if you mistype it, the wizard re-prompts. The secret reference is optional; if blank, Ranger prompts for the secret at run time using `Read-Host -AsSecureString`.
 
-!!! note
-    Passwords and secrets are **never stored in the config file**. The wizard stores only a `keyvault://` reference or a username; the actual secret is resolved from Key Vault or prompted interactively at run time.
-
+> [!NOTE]
+> Passwords and secrets are **never stored in the config file**. The wizard stores only a `keyvault://` reference or a username; the actual secret is resolved from Key Vault or prompted interactively at run time.
+>
 ---
 
 ## Section 5 — BMC / iDRAC endpoints (optional)
@@ -228,9 +229,9 @@ Use **Exclude** to skip specific domains:
 Exclude these domains: hardware,performance
 ```
 
-!!! tip
-    Exclude `hardware` if you don't have BMC/iDRAC credentials. Exclude `performance` for a faster run — it adds significant collection time.
-
+> [!TIP]
+> Exclude `hardware` if you don't have BMC/iDRAC credentials. Exclude `performance` for a faster run — it adds significant collection time.
+>
 ---
 
 ## Review screen

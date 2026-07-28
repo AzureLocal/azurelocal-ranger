@@ -63,9 +63,9 @@ output:
   formats: [html, markdown, docx, xlsx, pdf, svg]
   rootPath: C:\AzureLocalRanger
 
-!!! note
-    `kv-ranger` in the examples above is a **placeholder vault name**, not a vault Ranger creates or requires. Substitute your actual Key Vault when you copy any of these snippets. (In v2.6.3, fake `keyvault://kv-ranger/*` placeholders were removed from the default config — see issue [#292](https://github.com/AzureLocal/azurelocal-ranger/issues/292).)
-
+> [!NOTE]
+> `kv-ranger` in the examples above is a **placeholder vault name**, not a vault Ranger creates or requires. Substitute your actual Key Vault when you copy any of these snippets. (In v2.6.3, fake `keyvault://kv-ranger/*` placeholders were removed from the default config — see issue [#292](https://github.com/AzureLocal/azurelocal-ranger/issues/292).)
+>
 ## Input Resolution Precedence
 
 Ranger resolves structural input in this order:

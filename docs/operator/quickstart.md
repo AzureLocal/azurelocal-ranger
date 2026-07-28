@@ -61,9 +61,10 @@ Fastest for ad-hoc runs. Azure Arc auto-discovery fills in the resource group, c
 
 Before collection starts, interactive runs print a **Resolved target** summary containing the tenant, subscription, resource group, cluster, endpoint, and nodes. A value shown as `<not resolved>` includes an actionable warning when it affects local collection. This summary contains no passwords or secrets.
 
-!!! tip "`-ShowProgress`"
-    Add `-ShowProgress` to any invocation for a live per-collector progress display (requires the optional `PwshSpectreConsole` module; automatically suppressed in CI and `-Unattended` mode).
-
+> [!TIP]
+> **`-ShowProgress`**
+> Add `-ShowProgress` to any invocation for a live per-collector progress display (requires the optional `PwshSpectreConsole` module; automatically suppressed in CI and `-Unattended` mode).
+>
 ### Run mode prompt (v2.6.5)
 
 For Path 2 and Path 3, when `-OutputMode` is not supplied, Ranger asks which mode to use before the run starts:
