@@ -203,6 +203,10 @@ function Add-RangerCollectorToManifest {
         targetScope     = @($CollectorResult.TargetScope)
         credentialScope = $CollectorResult.CredentialScope
         messages        = @($CollectorResult.Messages)
+        # v2.7.0: 'degraded' = the collector finished but skipped one or more failed reads.
+        degraded        = (@($CollectorResult.Degradations | Where-Object { $_ }).Count -gt 0)
+        degradationCount = @($CollectorResult.Degradations | Where-Object { $_ }).Count
+        degradations    = @($CollectorResult.Degradations | Where-Object { $_ })
     }
 
     if ($CollectorResult.ContainsKey('Topology') -and $CollectorResult.Topology) {

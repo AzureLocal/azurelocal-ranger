@@ -271,7 +271,7 @@ function Get-RangerArmResourcesByGraph {
             $cls = Get-RangerArmErrorCategory -ErrorRecord $_
             $scope = if ($SubscriptionId) { "subscription/$SubscriptionId" } else { 'tenant' }
             Add-RangerSkippedResource -Scope 'resource-graph' -Target $scope -Category $cls.Category -Reason "Search-AzGraph: $($cls.Detail)"
-        } catch { }
+        } catch { Write-RangerSwallowedError -Source 'Get-RangerArmResourcesByGraph' -ErrorRecord $_ }
         Write-RangerLog -Level debug -Message "Get-RangerArmResourcesByGraph: Search-AzGraph failed ($($_.Exception.Message)) — caller should fall back."
         return $null
     }

@@ -93,7 +93,7 @@ function Invoke-RangerCimDepthProbe {
     }
     finally {
         if ($cimSession) {
-            try { Remove-CimSession -CimSession $cimSession -ErrorAction SilentlyContinue } catch { }
+            try { Remove-CimSession -CimSession $cimSession -ErrorAction SilentlyContinue } catch { Write-RangerSwallowedError -Source 'Invoke-RangerCimDepthProbe' -ErrorRecord $_ }
         }
     }
 

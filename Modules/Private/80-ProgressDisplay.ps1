@@ -128,7 +128,7 @@ function Update-RangerProgressCollectorStart {
             Write-SpectreHost "[grey]Collecting:[/] [cyan]$CollectorId[/]…" -NoNewline
             $null = $pct
         }
-        catch { }
+        catch { Write-RangerSwallowedError -Source 'Update-RangerProgressCollectorStart' -ErrorRecord $_ }
         return
     }
 
@@ -172,9 +172,9 @@ function Update-RangerProgressCollectorDone {
             if ($row) { $row.Status = $Status }
             $pct = [int](($Context.Completed / $Context.Total) * 100)
             Write-SpectreHost " [$statusColour]$Status[/]"
-            _ = $pct
+            $null = $pct
         }
-        catch { }
+        catch { Write-RangerSwallowedError -Source 'Update-RangerProgressCollectorDone' -ErrorRecord $_ }
         return
     }
 
@@ -212,7 +212,7 @@ function Complete-RangerProgressDisplay {
         if ($failed  -gt 0) { $summaryParts += "[red]$failed failed[/]" }
         Write-SpectreHost "Collectors: $($summaryParts -join '  ')  [grey]($total total)[/]"
     }
-    catch { }
+    catch { Write-RangerSwallowedError -Source 'Complete-RangerProgressDisplay' -ErrorRecord $_ }
 }
 
 function Write-RangerProgressSummary {
@@ -228,7 +228,6 @@ function Write-RangerProgressSummary {
     )
 
     $posture    = $Manifest.run.connectivity.posture
-    $pkgId      = Split-Path -Leaf (Split-Path -Parent $Manifest.run.startTimeUtc)
     $findingCnt = @($Manifest.findings).Count
     $warnCnt    = @($Manifest.findings | Where-Object { $_.severity -eq 'warning' }).Count
     $critCnt    = @($Manifest.findings | Where-Object { $_.severity -eq 'critical' }).Count
@@ -239,7 +238,7 @@ function Write-RangerProgressSummary {
             Write-SpectreHost "  Posture   : [cyan]$posture[/]"
             Write-SpectreHost "  Findings  : [yellow]$findingCnt[/]  ([red]$critCnt critical[/], [yellow]$warnCnt warning[/])"
         }
-        catch { }
+        catch { Write-RangerSwallowedError -Source 'Write-RangerProgressSummary' -ErrorRecord $_ }
     }
     else {
         Write-RangerLog -Level info -Message "Run complete — posture: $posture, findings: $findingCnt (critical: $critCnt, warning: $warnCnt)"

@@ -1296,7 +1296,7 @@ function Test-RangerPermissions {
 
     $config = Import-RangerConfiguration -ConfigPath $ConfigPath -ConfigObject $ConfigObject
     # Silently try auto-discovery so the audit checks the actual resolved scope.
-    try { Invoke-RangerAzureAutoDiscovery -Config $config | Out-Null } catch { }
+    try { Invoke-RangerAzureAutoDiscovery -Config $config | Out-Null } catch { Write-RangerSwallowedError -Source 'Test-RangerPermissions' -ErrorRecord $_ }
 
     $result = Invoke-RangerPermissionAudit -Config $config
 

@@ -65,7 +65,7 @@ function Write-RangerProgressState {
     catch {
         # Clean up stray temp file if the move failed
         if (Test-Path -Path $tempPath -PathType Leaf) {
-            try { [System.IO.File]::Delete($tempPath) } catch { }
+            try { [System.IO.File]::Delete($tempPath) } catch { Write-RangerSwallowedError -Source 'Write-RangerProgressState' -ErrorRecord $_ }
         }
         throw
     }
@@ -112,6 +112,6 @@ function Remove-RangerProgressState {
 
     $path = Get-RangerProgressStatePath -RunId $RunId
     if (Test-Path -Path $path -PathType Leaf) {
-        try { [System.IO.File]::Delete($path) } catch { }
+        try { [System.IO.File]::Delete($path) } catch { Write-RangerSwallowedError -Source 'Remove-RangerProgressState' -ErrorRecord $_ }
     }
 }

@@ -163,8 +163,7 @@ function Get-RangerExecutionHostContext {
         $domain = if (-not [string]::IsNullOrWhiteSpace([string]$computerSystem.Domain)) { [string]$computerSystem.Domain } else { $null }
         $isDomainJoined = [bool]$computerSystem.PartOfDomain
     }
-    catch {
-    }
+    catch { Write-RangerSwallowedError -Source 'Get-RangerExecutionHostContext' -ErrorRecord $_ }
 
     [ordered]@{
         ComputerName    = $computerName
@@ -464,7 +463,7 @@ function Invoke-RangerRemoteCommand {
                     if ($rangerShouldLogWarn -and $rangerLogPath) {
                         try {
                             Add-Content -LiteralPath $rangerLogPath -Value "[$((Get-Date).ToString('s'))][WARN] [WinRM] '$nodeTarget' failed: $($_.Exception.Message)" -Encoding UTF8 -ErrorAction SilentlyContinue
-                        } catch {}
+                        } catch { Write-Debug "Ranger log or cleanup step failed (ignored): $($_.Exception.Message)" }
                     }
                 }
 
@@ -473,7 +472,7 @@ function Invoke-RangerRemoteCommand {
                     if ($rangerShouldLogWarn -and -not [string]::IsNullOrWhiteSpace($warningMessage) -and $rangerLogPath) {
                         try {
                             Add-Content -LiteralPath $rangerLogPath -Value "[$((Get-Date).ToString('s'))][WARN] [$nodeTarget] $warningMessage" -Encoding UTF8 -ErrorAction Stop
-                        } catch {}
+                        } catch { Write-Debug "Ranger log or cleanup step failed (ignored): $($_.Exception.Message)" }
                     }
                 }
             }
@@ -977,7 +976,7 @@ function Import-RangerAzureContext {
     }
 
     if (-not $KeepFile) {
-        try { [System.IO.File]::Delete($Path) } catch { }
+        try { [System.IO.File]::Delete($Path) } catch { Write-RangerSwallowedError -Source 'Import-RangerAzureContext' -ErrorRecord $_ }
     }
     return $true
 }

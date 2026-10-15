@@ -59,7 +59,7 @@ function Get-RangerArmErrorCategory {
     try {
         if ($ErrorRecord.Exception) { $message = [string]$ErrorRecord.Exception.Message }
         if (-not $message -and $ErrorRecord.ErrorDetails) { $message = [string]$ErrorRecord.ErrorDetails.Message }
-    } catch { }
+    } catch { Write-RangerSwallowedError -Source 'Get-RangerArmErrorCategory' -ErrorRecord $_ }
 
     if ($message -match '(?i)AuthorizationFailed|403|does not have authorization') {
         return @{ Category = 'Authorization'; Action = 'Skip'; Detail = 'Caller is not authorised on the target.' }

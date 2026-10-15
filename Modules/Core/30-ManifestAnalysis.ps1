@@ -156,7 +156,7 @@ function Invoke-RangerCostLicensingAnalysis {
     )
 
     $existing = $null
-    try { $existing = $Manifest.domains.azureIntegration.costLicensing } catch { }
+    try { $existing = $Manifest.domains.azureIntegration.costLicensing } catch { Write-RangerSwallowedError -Source 'Invoke-RangerCostLicensingAnalysis' -ErrorRecord $_ }
     if ($existing -and $existing.summary -and $null -ne $existing.summary.totalPhysicalCores) {
         # Collector/fixture already populated — ensure pricing date is set.
         if (-not $existing.pricingReference) {
@@ -179,7 +179,7 @@ function Invoke-RangerCostLicensingAnalysis {
     try {
         $saStatus = [string]$cluster.softwareAssuranceProperties.softwareAssuranceStatus
         $ahbEnabled = $saStatus -match '^(Enabled|enabled|True|1)$'
-    } catch { }
+    } catch { Write-RangerSwallowedError -Source 'Invoke-RangerCostLicensingAnalysis' -ErrorRecord $_ }
 
     $totalCores = 0
     $perNode = New-Object System.Collections.ArrayList

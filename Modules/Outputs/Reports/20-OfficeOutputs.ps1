@@ -460,10 +460,10 @@ function Resolve-RangerHeadlessBrowser {
             try {
                 $verOutput = & $path --version 2>$null
                 if ($verOutput) { $ver = ($verOutput | Select-Object -First 1).ToString().Trim() }
-            } catch { }
+            } catch { Write-RangerSwallowedError -Source 'Resolve-RangerHeadlessBrowser' -ErrorRecord $_ }
 
             return @{ Path = $path; Name = $c.Name; Version = $ver }
-        } catch { }
+        } catch { Write-RangerSwallowedError -Source 'Resolve-RangerHeadlessBrowser' -ErrorRecord $_ }
     }
 
     return $null
@@ -503,7 +503,7 @@ function Invoke-RangerHeadlessPdf {
     try {
         $proc = Start-Process -FilePath $browser.Path -ArgumentList $argList -NoNewWindow -PassThru -RedirectStandardOutput ([System.IO.Path]::GetTempFileName()) -RedirectStandardError ([System.IO.Path]::GetTempFileName())
         if (-not $proc.WaitForExit($TimeoutSeconds * 1000)) {
-            try { $proc.Kill() } catch { }
+            try { $proc.Kill() } catch { Write-RangerSwallowedError -Source 'Invoke-RangerHeadlessPdf' -ErrorRecord $_ }
             Write-RangerLog -Level warn -Message "Headless PDF render timed out after ${TimeoutSeconds}s — output may be incomplete."
             return $false
         }

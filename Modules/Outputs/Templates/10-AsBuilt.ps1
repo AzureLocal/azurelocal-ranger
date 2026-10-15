@@ -257,7 +257,7 @@ function New-RangerAsBuiltValidationRecordSection {
     try {
         $reportName = $Manifest.domains.clusterNode.updatePosture.clusterAwareUpdating.lastTestClusterReport
         if ($reportName) { $validationFileHint = [string]$reportName }
-    } catch { }
+    } catch { Write-RangerSwallowedError -Source 'New-RangerAsBuiltValidationRecordSection' -ErrorRecord $_ }
 
     $validationRef = if ($validationFileHint) { $validationFileHint } else { 'See cluster-validation report artifact (Test-Cluster output)' }
     $schemaVal     = if ($Manifest.run.schemaValidation.isValid) { 'Passed' } elseif ($null -eq $Manifest.run.schemaValidation.isValid) { 'Not recorded' } else { 'Failed' }

@@ -135,6 +135,10 @@ function Invoke-RangerSafeAction {
     }
     catch {
         Write-RangerLog -Level warn -Message "$Label failed: $($_.Exception.Message)"
+        # v2.7.0: a defaulted action means the collector ran with less data than it asked for.
+        if ($script:RangerCollectorDegradations -is [System.Collections.IList]) {
+            [void]$script:RangerCollectorDegradations.Add([ordered]@{ source = $Label; message = [string]$_.Exception.Message })
+        }
         return $DefaultValue
     }
 }

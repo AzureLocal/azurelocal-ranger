@@ -217,7 +217,7 @@ function Resolve-RangerBlobAuth {
                 $ctx = Get-AzContext -ErrorAction SilentlyContinue
                 if ($ctx -and $ctx.Account) { return @{ method = 'entraRbac' } }
             }
-        } catch { }
+        } catch { Write-RangerSwallowedError -Source 'Resolve-RangerBlobAuth' -ErrorRecord $_ }
 
         # Last-chance fallback to a Key Vault SAS if one was provided alongside default.
         $sas = & $resolveSas
@@ -274,7 +274,7 @@ function Invoke-RangerBlobUpload {
 
     # Idempotency — compare remote metadata.x-ranger-sha256 if present.
     $existing = $null
-    try { $existing = Get-AzStorageBlob -Container $Container -Blob $BlobName -Context $ctx -ErrorAction SilentlyContinue } catch { }
+    try { $existing = Get-AzStorageBlob -Container $Container -Blob $BlobName -Context $ctx -ErrorAction SilentlyContinue } catch { Write-RangerSwallowedError -Source 'Invoke-RangerBlobUpload' -ErrorRecord $_ }
     if ($existing -and $existing.ICloudBlob -and $existing.ICloudBlob.Metadata) {
         $remoteSha = [string]$existing.ICloudBlob.Metadata['x-ranger-sha256']
         if ($remoteSha -and $remoteSha -eq $sha) {
@@ -512,7 +512,7 @@ function Update-RangerCloudCatalog {
     $indexUri  = $null
     if ($ctx) {
         $existing = $null
-        try { $existing = Get-AzStorageBlob -Container $RemoteStorageConfig.container -Blob $indexBlob -Context $ctx -ErrorAction SilentlyContinue } catch { }
+        try { $existing = Get-AzStorageBlob -Container $RemoteStorageConfig.container -Blob $indexBlob -Context $ctx -ErrorAction SilentlyContinue } catch { Write-RangerSwallowedError -Source 'Update-RangerCloudCatalog' -ErrorRecord $_ }
         $doc = $null
         if ($existing) {
             try {
@@ -617,7 +617,7 @@ function Build-RangerLogAnalyticsPayload {
         try {
             $eval = Invoke-RangerWafRuleEvaluation -Manifest $Manifest
             $rules = @($eval.ruleResults)
-        } catch { }
+        } catch { Write-RangerSwallowedError -Source 'Build-RangerLogAnalyticsPayload' -ErrorRecord $_ }
     }
     foreach ($rr in $rules) {
         if ($rr.pass) { continue }

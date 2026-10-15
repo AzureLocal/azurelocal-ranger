@@ -55,7 +55,7 @@ Cloud publishing ergonomics plus the Spectre.Console TUI rewrite. Milestone: [#2
 | Item | Detail | Issue |
 | --- | --- | --- |
 | Auto-provision storage account + container + RBAC | `output.remoteStorage.ensureExists` block and `-EnsureExists` parameter so first-time publishers don't have to pre-create SA, container, and role assignment manually | [#289](https://github.com/AzureLocal/azurelocal-ranger/issues/289) |
-| Spectre.Console TUI — real implementation | Current `80-ProgressDisplay.ps1` is a non-functional stub (no live bars, module not in manifest, syntax error on line 175, zero tests). Rewrite using `Invoke-SpectreCommandWithProgress` + `Add-SpectreJob` for genuine live-updating per-collector bars; add `PwshSpectreConsole` as an optional manifest dependency; add Pester coverage; run PSScriptAnalyzer in CI | [#305](https://github.com/AzureLocal/azurelocal-ranger/issues/305) |
+| Spectre.Console TUI — real implementation | `80-ProgressDisplay.ps1` parses cleanly, detects CI and non-interactive sessions, falls back to `Write-Progress`, and has Pester coverage for the non-interactive path and a mocked Spectre path (`tests/maproom/unit/Hardening.Tests.ps1`, v2.7.0); the earlier note that it had a syntax error was stale. In Spectre mode it still only prints status lines. Remaining work: genuine live-updating per-collector bars using `Invoke-SpectreCommandWithProgress` + `Add-SpectreJob`. `PwshSpectreConsole` stays an optional dependency (not in the manifest). PSScriptAnalyzer runs in CI from v2.7.0 | [#305](https://github.com/AzureLocal/azurelocal-ranger/issues/305) |
 
 ## v3.0.0 — Enterprise & OEM Integration
 

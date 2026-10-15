@@ -93,7 +93,7 @@ function Invoke-RangerManagementPerformanceCollector {
                     try {
                         $scomSetup = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Microsoft Operations Manager\3.0\Setup' -ErrorAction Stop
                         $scomInfo['version'] = $scomSetup.ServerVersion
-                    } catch { }
+                    } catch { Write-Debug "Non-fatal read failed on the node: $($_.Exception.Message)" }
                     try {
                         $mgGroupKeys = @(Get-ChildItem -Path 'HKLM:\SOFTWARE\Microsoft\Microsoft Operations Manager\3.0\Agent Management Groups' -ErrorAction Stop)
                         if (@($mgGroupKeys).Count -gt 0) {
@@ -102,7 +102,7 @@ function Invoke-RangerManagementPerformanceCollector {
                             $scomInfo['managementServer']    = try { $firstMg.ManagementServerDNSName } catch { $null }
                             $scomInfo['lastHeartbeat']       = try { (Get-ItemProperty -Path "$($mgGroupKeys[0].PSPath)\Agent Parameters" -Name 'LastHeartbeatRequestTime' -ErrorAction Stop).LastHeartbeatRequestTime } catch { $null }
                         }
-                    } catch { }
+                    } catch { Write-Debug "Non-fatal read failed on the node: $($_.Exception.Message)" }
                 }
 
                 # Performance baseline

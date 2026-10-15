@@ -22,6 +22,9 @@ function Invoke-RangerCollectorExecution {
     $start = (Get-Date).ToUniversalTime().ToString('o')
     $status = 'success'
     $functionName = $Definition.FunctionName
+    # v2.7.0: non-fatal errors inside this collector are counted so the manifest can show it as degraded.
+    $script:RangerCurrentCollectorId = [string]$Definition.Id
+    $script:RangerCollectorDegradations = New-Object System.Collections.ArrayList
     $arguments = @{
         Config        = $Config
         CredentialMap = $CredentialMap
@@ -81,7 +84,7 @@ function Invoke-RangerCollectorExecution {
                     if ($item.Message -notmatch '^\[\d{4}-\d{2}-\d{2}T') {
                         try {
                             Add-Content -LiteralPath $script:RangerLogPath -Value "[$((Get-Date).ToString('s'))][DEBUG] $($item.Message)" -Encoding UTF8 -ErrorAction Stop
-                        } catch {}
+                        } catch { Write-Debug "Ranger log or cleanup step failed (ignored): $($_.Exception.Message)" }
                     }
                     Microsoft.PowerShell.Utility\Write-Verbose -Message $item.Message
                 } else {
@@ -115,6 +118,7 @@ function Invoke-RangerCollectorExecution {
     }
 
     $end = (Get-Date).ToUniversalTime().ToString('o')
+    $script:RangerCurrentCollectorId = $null
     return @{
         CollectorId     = $Definition.Id
         Status          = $status
@@ -123,6 +127,7 @@ function Invoke-RangerCollectorExecution {
         TargetScope     = @($Definition.RequiredTargets)
         CredentialScope = $Definition.RequiredCredential
         Messages        = @(@($messages) + @($result.Messages) | Where-Object { $null -ne $_ })
+        Degradations    = @($script:RangerCollectorDegradations | Select-Object -First 50)
         Domains         = if ($result.Domains) { $result.Domains } else { @{} }
         Topology        = $result.Topology
         Relationships   = @($result.Relationships)
@@ -455,6 +460,7 @@ function New-RangerRunStatus {
             failed        = @($collectorEntries | Where-Object { $_.status -eq 'failed' }).Count
             skipped       = @($collectorEntries | Where-Object { $_.status -eq 'skipped' }).Count
             notApplicable = @($collectorEntries | Where-Object { $_.status -eq 'not-applicable' }).Count
+            degraded      = @($collectorEntries | Where-Object { $_.degraded }).Count
         }
     }
 }
@@ -581,14 +587,14 @@ function Invoke-RangerDiscoveryRuntime {
     # Azure / cluster calls will occur so an ARM permission audit is moot).
     $skipPreCheck = [bool]($config.behavior.skipPreCheck)
     $fixtureMap = $null
-    try { $fixtureMap = $config.domains.hints.fixtures } catch { }
+    try { $fixtureMap = $config.domains.hints.fixtures } catch { Write-RangerSwallowedError -Source 'Invoke-RangerDiscoveryRuntime' -ErrorRecord $_ }
     $isFixtureMode = $false
     try {
         $selected = Resolve-RangerSelectedCollectors -Config $config
         if ($fixtureMap -is [System.Collections.IDictionary] -and @($selected).Count -gt 0) {
             $isFixtureMode = @($selected | Where-Object { -not $fixtureMap.Contains($_.Id) -or [string]::IsNullOrWhiteSpace([string]$fixtureMap[$_.Id]) }).Count -eq 0
         }
-    } catch { }
+    } catch { Write-RangerSwallowedError -Source 'Invoke-RangerDiscoveryRuntime' -ErrorRecord $_ }
 
     if ($skipPreCheck) {
         Write-RangerLog -Level debug -Message 'Pre-check skipped (-SkipPreCheck or behavior.skipPreCheck=true).'
@@ -723,8 +729,7 @@ function Invoke-RangerDiscoveryRuntime {
             try {
                 Add-Content -LiteralPath $script:RangerLogPath -Value "[$((Get-Date).ToString('s'))][WARN] $messageText" -Encoding UTF8 -ErrorAction Stop
             }
-            catch {
-            }
+            catch { Write-Debug "Ranger log or cleanup step failed (ignored): $($_.Exception.Message)" }
         }
 
         Microsoft.PowerShell.Utility\Write-Warning -Message $messageText
@@ -898,6 +903,13 @@ function Invoke-RangerDiscoveryRuntime {
                 Update-RangerProgressCollectorDone -Context $progressCtx -CollectorId $collector.Id -Status $collectorResult.Status
             }
             Add-RangerCollectorToManifest -Manifest ([ref]$manifest) -CollectorResult $collectorResult -EvidenceRoot $evidenceRoot -KeepRawEvidence ([bool]$config.output.keepRawEvidence)
+            if ($manifest.collectors[$collector.Id].degraded) {
+                $degradedCount = [int]$manifest.collectors[$collector.Id].degradationCount
+                Write-RangerLog -Level warn -Message "Collector '$($collector.Id)' is degraded: $degradedCount non-fatal error(s); see manifest.collectors.$($collector.Id).degradations."
+                $manifest.findings += @(
+                    New-RangerFinding -Severity informational -Title "Collector '$($collector.Id)' ran degraded" -Description 'The collector finished but one or more reads failed and were skipped, so parts of its data may be missing.' -CurrentState "$degradedCount non-fatal error(s)" -Recommendation 'Review manifest.collectors.<id>.degradations and ranger.log (debug level) and re-run after fixing access or connectivity.'
+                )
+            }
         }
 
         if ($progressCtx -and (Get-Command -Name 'Complete-RangerProgressDisplay' -ErrorAction SilentlyContinue)) {
@@ -1133,16 +1145,14 @@ function Invoke-RangerDiscoveryRuntime {
         try {
             Stop-Transcript | Out-Null
         }
-        catch {
-        }
+        catch { Write-RangerSwallowedError -Source 'Invoke-RangerDiscoveryRuntime' -ErrorRecord $_ }
 
         if ($logPath -and (Test-Path -LiteralPath $logPath) -and (Test-Path -LiteralPath $transcriptPath)) {
             try {
                 Add-Content -LiteralPath $logPath -Value @('', '# Host transcript', '') -Encoding UTF8 -ErrorAction Stop
                 Get-Content -LiteralPath $transcriptPath -ErrorAction Stop | Add-Content -LiteralPath $logPath -Encoding UTF8 -ErrorAction Stop
             }
-            catch {
-            }
+            catch { Write-RangerSwallowedError -Source 'Invoke-RangerDiscoveryRuntime' -ErrorRecord $_ }
         }
 
         # v2.7.0: final redaction sweep (the log and transcript were merged just above) and optional private map.

@@ -93,9 +93,34 @@ function Write-RangerLog {
         try {
             Add-Content -LiteralPath $script:RangerLogPath -Value $line -Encoding UTF8 -ErrorAction Stop
         }
-        catch {
-            # Swallow file write errors — never let logging crash the run
+        catch { Write-Debug "Ranger log or cleanup step failed (ignored): $($_.Exception.Message)" }
+    }
+}
+
+function Write-RangerSwallowedError {
+    <#
+    .SYNOPSIS
+        v2.7.0: records a non-fatal error that the caller deliberately continues past.
+    .DESCRIPTION
+        Replaces the empty catch blocks. The error is written to the run log at debug level with the source and,
+        while a collector is running, counted against that collector so the manifest shows it as degraded.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Source,
+        [AllowNull()]$ErrorRecord,
+        [string]$Detail
+    )
+    try {
+        $message = if ($ErrorRecord -and $ErrorRecord.Exception) { [string]$ErrorRecord.Exception.Message } elseif ($ErrorRecord) { [string]$ErrorRecord } else { $Detail }
+        $collector = if ($script:RangerCurrentCollectorId) { [string]$script:RangerCurrentCollectorId } else { '-' }
+        Write-RangerLog -Level debug -Message "[$collector] $Source - non-fatal error ignored: $message"
+        if ($script:RangerCollectorDegradations -is [System.Collections.IList]) {
+            [void]$script:RangerCollectorDegradations.Add([ordered]@{ source = $Source; message = $message })
         }
+    }
+    catch {
+        Write-Debug "Write-RangerSwallowedError failed: $($_.Exception.Message)"
     }
 }
 
@@ -131,7 +156,7 @@ function Initialize-RangerFileLog {
                 Add-Content -LiteralPath $script:RangerLogPath -Value '# run phase' -Encoding UTF8 -ErrorAction Stop
             }
         }
-        catch { }
+        catch { Write-Debug "Ranger log or cleanup step failed (ignored): $($_.Exception.Message)" }
         $script:RangerPreLogBuffer = $null
     }
 

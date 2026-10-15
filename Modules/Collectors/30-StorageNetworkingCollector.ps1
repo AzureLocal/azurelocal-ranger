@@ -625,7 +625,7 @@ function Invoke-RangerStorageNetworkingCollector {
                         @(Get-NetAdapter -ErrorAction SilentlyContinue | ForEach-Object {
                             $a = $_
                             $advProps = @{}
-                            try { Get-NetAdapterAdvancedProperty -Name $a.Name -ErrorAction SilentlyContinue | ForEach-Object { $advProps[$_.RegistryKeyword] = $_.RegistryValue } } catch {}
+                            try { Get-NetAdapterAdvancedProperty -Name $a.Name -ErrorAction SilentlyContinue | ForEach-Object { $advProps[$_.RegistryKeyword] = $_.RegistryValue } } catch { [void]$rangerDiagnostics.Add("Get-NetAdapterAdvancedProperty failed for $($a.Name): $($_.Exception.Message)") }
                             [ordered]@{
                                 name                 = $a.Name
                                 interfaceDescription = $a.InterfaceDescription

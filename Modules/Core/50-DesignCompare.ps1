@@ -217,7 +217,7 @@ function ConvertTo-RangerAsBuiltSnapshot {
         $row = [ordered]@{ name = $iname; traffic = @($traffic | Select-Object -Unique); adapters = @($names) }
         $mine = @($adapters | Where-Object { [string](Get-RangerObjectValue -InputObject $_ -CandidateNames @('name')) -in $names -or [string](Get-RangerObjectValue -InputObject $_ -CandidateNames @('interfaceDescription')) -in $names })
         $mtus = @($mine | ForEach-Object { Get-RangerObjectValue -InputObject $_ -CandidateNames @('mtuSize', 'MtuSize') } | Where-Object { $_ } | ForEach-Object { [int]$_ })
-        if ($mtus.Count) { $row['jumbo'] = [int](($mtus | Measure-Object -Maximum).Maximum) }
+        if ($mtus.Count) { $row['jumbo'] = [int](($mtus | Measure-Object -Minimum).Minimum) }
         $rdma = @($mine | ForEach-Object { Get-RangerObjectValue -InputObject $_ -CandidateNames @('rdmaCapable', 'rdmaEnabled') } | Where-Object { $null -ne $_ })
         if ($rdma.Count) { $row['rdma'] = [bool]($rdma -contains $true) }
         if ('storage' -in $traffic -and $trafficClasses.Count) {
@@ -628,6 +628,8 @@ function Compare-RangerDesign {
         notCaptured = @($all | Where-Object { $_.status -eq 'not-captured' }).Count
         errors      = @($all | Where-Object { $_.severity -eq 'error' }).Count
         warnings    = @($all | Where-Object { $_.severity -eq 'warning' }).Count
+        # Share of design items the as-built snapshot could actually be compared on (red-team review: report coverage separately).
+        coveragePercent = if ($all.Count -gt 0) { [math]::Round(100.0 * ($all.Count - @($all | Where-Object { $_.status -eq 'not-captured' }).Count) / $all.Count, 1) } else { $null }
     }
     $result = [ordered]@{
         schema         = 'design-comparison.v1'
