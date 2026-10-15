@@ -119,6 +119,24 @@ Describe 'Azure Local 12.2609 (latest) platform evidence' {
         $m.domains.identitySecurity.localIdentity.dnsServers.Count | Should -BeGreaterThan 0
     }
 
+    It 'the technical reports show the 12.2609 platform posture table' {
+        $m = Get-Content (Join-Path $script:fixtureRoot 'synthetic-manifest.json') -Raw | ConvertFrom-Json -AsHashtable
+        $m.domains.clusterNode.updatePosture.solutionUpdateEnv = $script:fx.solutionUpdateEnv
+        $m.domains.clusterNode.updatePosture.pendingSolutionUpdates = $script:fx.solutionUpdates
+        InModuleScope AzureLocalRanger -Parameters @{ m = $m } { param($m) $null = Invoke-RangerPlatform2609Analysis -Manifest $m }
+        $m.domains.azureIntegration.securityBaseline = @(InModuleScope AzureLocalRanger -Parameters @{ fx = $script:fx } { param($fx) ConvertTo-RangerSecurityBaselineScore -MachineName 'node-01' -Assignment $fx.baselineAssignment })
+        $path = Join-Path $TestDrive 'platform-manifest.json'
+        $m | ConvertTo-Json -Depth 100 | Set-Content $path
+        $out = Join-Path $TestDrive 'platform-reports'
+        Export-AzureLocalRangerReport -ManifestPath $path -OutputPath $out -Formats @('markdown') | Out-Null
+        $md = (Get-ChildItem (Join-Path $out 'reports') -Filter '*Technical*.md' | Select-Object -First 1)
+        $text = Get-Content $md.FullName -Raw
+        $text | Should -Match 'Azure Local 12.2609 platform posture'
+        $text | Should -Match 'Rack aware cluster'
+        $text | Should -Match 'Solution Builder Extension'
+        $text | Should -Match '75(\.0)?% average'
+    }
+
     It 'Evidence orchestration returns every 12.2609 block (collectors mocked, no Azure or node access)' {
         $r = InModuleScope AzureLocalRanger -Parameters @{ fx = $script:fx } {
             param($fx)

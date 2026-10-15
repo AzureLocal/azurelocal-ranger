@@ -794,7 +794,7 @@ function New-RangerReportPayload {
                 heading = 'Azure Local 12.2609 platform posture'
                 type    = 'table'
                 headers = @('Item', 'Finding', 'Learn')
-                rows    = @($p26)
+                rows    = $p26.ToArray()
             })
         }
     }
