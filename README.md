@@ -95,6 +95,8 @@ Import-Module .\AzureLocalRanger.psd1 -Force
 | `Test-AzureLocalRangerPrerequisites` | Validate the execution environment and optionally install missing prerequisites |
 | `Test-RangerPermissions` | Dedicated pre-run RBAC and provider-registration audit (#202) |
 | `Export-RangerWafConfig` / `Import-RangerWafConfig` | v2.0.0 (#226) hot-swap WAF rule config |
+| `Compare-RangerDesign` / `ConvertTo-RangerAsBuiltSnapshot` | v2.7.0 compare the build with a design record; export `as-built-snapshot.v1` ([docs](docs/reference/design-vs-as-built.md)) |
+| `-Redact` (on `Invoke-AzureLocalRanger`, `Export-AzureLocalRangerReport`, `Publish-RangerRun`) | v2.7.0 pseudonymise identifiers in every output format ([docs](docs/operator/redaction.md)) |
 
 ## Output Model
 

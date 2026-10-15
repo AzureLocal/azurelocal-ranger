@@ -69,10 +69,12 @@ Examples:
 - Include `[CmdletBinding()]` and `param()` blocks on all functions
 - Use `Write-Verbose` for diagnostic output, `Write-Warning` for non-fatal issues, `Write-Error` for failures
 - All discovery functions must be read-only — no cluster state changes, no writes to remote systems
+- No empty `catch` blocks: call `Write-RangerSwallowedError` so the error is logged at debug level and the collector is marked degraded
+- PSScriptAnalyzer must report no Errors or Warnings with the checked-in `PSScriptAnalyzerSettings.psd1`; suppress a rule in code only with a justification
 
 ### Testing
 
-- Run Pester tests before submitting: `Invoke-Pester -Path .\tests\`
+- Run the checks before submitting: `pwsh scripts/ci/Invoke-RangerCi.ps1 -Check All` (PSScriptAnalyzer, manifest, Markdown links and Pester); a single file: `-Check Pester -TestFile Config.Tests.ps1`
 - Test against a real Azure Local environment when possible
 - Describe your test environment and results in the PR
 
@@ -98,21 +100,24 @@ This repository can be used as a standalone project without the parent multi-roo
 
 ### Prerequisites
 
-- Python 3.x and pip (for MkDocs documentation)
-- [MkDocs Material](https://squidfunk.github.io/mkdocs-material/): `pip install mkdocs-material`
+- Node.js 20 or later (for the VitePress documentation site)
+- PowerShell 7.4 or later with `Pester` 5.9.1, `PSScriptAnalyzer` and `powershell-yaml` for the checks in [CI, release and publishing](docs/contributor/ci-and-release.md)
 
 ### Run Documentation Locally
 
 ```bash
-mkdocs serve
+cd docs
+npm install
+npm run docs:dev
 ```
 
-Browse to <http://127.0.0.1:8000>
+Browse to the address VitePress prints (the site is served under `/azurelocal-ranger/`).
 
 ### Build Documentation
 
 ```bash
-mkdocs build
+cd docs
+npm run docs:build
 ```
 
 ## Code of Conduct

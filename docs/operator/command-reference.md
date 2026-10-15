@@ -1,6 +1,6 @@
 # Command Reference
 
-AzureLocalRanger exports twelve public commands:
+AzureLocalRanger exports fourteen public commands:
 
 - `Invoke-AzureLocalRanger` — main entry point (pass `-Wizard` for the guided first-run)
 - `Invoke-RangerWizard` — standalone wrapper around the wizard, equivalent to `-Wizard`
@@ -13,6 +13,8 @@ AzureLocalRanger exports twelve public commands:
 - `Publish-RangerRun` — v2.3.0 push a run package to Azure Blob and stream telemetry to Log Analytics
 - `Invoke-AzureLocalRangerEstate` — v2.5.0 run Ranger across a multi-cluster estate config
 - `Import-RangerManualEvidence` — v2.5.0 merge hand-collected evidence into an existing manifest
+- `Compare-RangerDesign` — v2.7.0 compare a manifest with a design record (deploy automation environment file or Trailwright `infrastructure.yml`); see [Design versus as-built](../reference/design-vs-as-built.md)
+- `ConvertTo-RangerAsBuiltSnapshot` — v2.7.0 export a manifest as `as-built-snapshot.v1` (also `-Formats as-built-snapshot`)
 
 ## Input Resolution Precedence
 
@@ -62,6 +64,10 @@ In interactive sessions, two prompts fire automatically when their values are no
 | `-SkipModuleUpdate` | `switch` | No | v2.0.0 (#231). Skip the required-module install/update validation on startup (air-gapped environments) |
 | `-PublishToStorage` | `switch` | No | v2.3.0 (#244). Push the run package to Azure Blob after the run completes. Requires `output.remoteStorage` config block |
 | `-PublishToLogAnalytics` | `switch` | No | v2.3.0 (#247). Stream `RangerRun_CL` + `RangerFinding_CL` rows to Log Analytics after the run. Requires `output.logAnalytics` config block |
+| `-Redact` | `switch` | No | v2.7.0. Pseudonymise IPs, MACs, hostnames, serials, GUIDs, resource groups and UPNs in every output. See [Redaction](redaction.md). Overrides `output.redact` |
+| `-RedactMapPath` | `string` | No | v2.7.0. Write the private reverse-mapping file here (relative paths are placed next to the manifest). Never written without this switch |
+| `-RedactTerm` | `string[]` | No | v2.7.0. Extra words to remove everywhere, including inside longer names |
+| `-RedactSeed` | `string` | No | v2.7.0. Seed for repeatable GUID and serial pseudonyms |
 | `-NetworkDeviceConfigs` | `string[]` | No | v2.6.5 (#314). Path(s) to switch or firewall running-config export files. Directories are recursively expanded to `.txt`, `.cfg`, `.conf`, `.log` files. Populates `domains.hints.networkDeviceConfigs` |
 
 ## Invoke-AzureLocalRanger -Wizard (recommended)
@@ -156,7 +162,9 @@ Ranger writes `run-status.json` for scheduler monitoring and `manifest\drift-rep
 | --- | --- | --- | --- |
 | `-ManifestPath` | `string` | Yes | Path to an existing `audit-manifest.json` |
 | `-OutputPath` | `string` | No | Destination folder; defaults to the manifest folder |
-| `-Formats` | `string[]` | No | Any of `html`, `markdown`, `docx`, `xlsx`, `pdf`, `svg`, `drawio`, `pptx`, `powerbi`, `json-evidence` |
+| `-Formats` | `string[]` | No | Any of `html`, `markdown`, `docx`, `xlsx`, `pdf`, `svg`, `drawio`, `pptx`, `powerbi`, `json-evidence`, `as-built-snapshot` |
+| `-Redact` / `-RedactMapPath` / `-RedactTerm` / `-RedactSeed` | | No | v2.7.0. Render from a pseudonymised copy of the manifest into `<manifest folder>\redacted` (or `-OutputPath`, which must differ from the source folder). See [Redaction](redaction.md) |
+| `-DesignPath` / `-DesignKind` | `string` | No | v2.7.0. Compare with a design record and add a **Design vs as-built** section to the reports. `-DesignKind` is `auto`, `environment`, `infrastructure` or `snapshot` |
 
 ## Get-RangerRemediation
 
@@ -181,6 +189,18 @@ Get-RangerRemediation -ManifestPath .\audit-manifest.json -FindingId SEC-001,OPS
 # Live script with dependency expansion
 Get-RangerRemediation -ManifestPath .\audit-manifest.json -Commit -IncludeDependencies
 ```
+
+## Compare-RangerDesign
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `-ManifestPath` / `-Manifest` / `-Snapshot` | | One of | The as-built side: a manifest file, a loaded manifest or an `as-built-snapshot.v1` |
+| `-DesignPath` | `string` | Yes | The design record (YAML or JSON) |
+| `-DesignKind` | `string` | No | `auto` (default), `environment`, `infrastructure` or `snapshot` |
+| `-OutputPath` | `string` | No | Folder for `design-comparison.json` and `design-comparison.html` |
+| `-Release` | `string` | No | Deployed release build (for example `12.2609.1003.7`) when the manifest does not carry it |
+
+Returns `design-comparison.v1`: a summary (match, drift, missing, not captured, errors, warnings, coverage) and one finding row per compared item with status, severity and a Learn link. Field mapping: [Design versus as-built](../reference/design-vs-as-built.md).
 
 ## Publish-RangerRun
 

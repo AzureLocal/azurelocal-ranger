@@ -1,0 +1,23 @@
+# Platform evidence for Azure Local 12.2609 (latest)
+
+Ranger 2.7.0 reads the items below. Everything is read-only: Azure Resource Manager GETs and read-only cmdlets on the nodes. Secrets are never read. Each item lists where it lands in the manifest and the Microsoft Learn page that defines it. The fixture is `tests/maproom/Fixtures/platform-2609.json` and the tests are `tests/maproom/unit/Platform2609.Tests.ps1`.
+
+| Item | Manifest path | How it is read | Learn |
+| --- | --- | --- | --- |
+| Arc gateway resource | `domains.azureIntegration.arcGateways` | `Microsoft.HybridCompute/gateways` in the cluster resource group, then the subscription | [About Azure Arc gateway for Azure Local](https://learn.microsoft.com/azure/azure-local/deploy/deployment-azure-arc-gateway-overview) |
+| Arc gateway routing per node | `domains.azureIntegration.arcGatewayNodeRouting` | `azcmagent show` and `azcmagent check` on each node: `Using HTTPS Proxy` is `http://localhost:40343`, `Azure Arc Proxy` is running, `connection.type` is `gateway`, agent 1.45 or later | [Register with Arc gateway](https://learn.microsoft.com/azure/azure-local/deploy/deployment-with-azure-arc-gateway) |
+| Security baseline compliance score | `domains.azureIntegration.securityBaseline` | The `AzureWindowsBaseline` Machine Configuration assignment on each Arc machine; score is compliant rules over total rules | [Manage security defaults](https://learn.microsoft.com/azure/azure-local/manage/manage-secure-baseline) |
+| Secure Boot 2023 certificate status | `domains.identitySecurity.secureBootCertificates` | Per node: `Confirm-SecureBootUEFI`, the `UEFICA2023Status` servicing value and `Test-AzSSecureBootUpdateCompleted` when present; state is `updated`, `in-progress`, `not-updated` or `secure-boot-disabled` | [Manage Secure Boot updates](https://learn.microsoft.com/azure/azure-local/manage/manage-secure-boot-updates) |
+| Key backup (automatic key backup, preview) | `domains.azureIntegration.keyBackup` | Key Vault metadata in the cluster resource group (soft delete, purge protection, RBAC, network access). Whether backup is switched on is a deployment setting with no read API, so the result is a candidate list | [Trusted launch VMs, automatic key backup](https://learn.microsoft.com/azure/azure-local/manage/trusted-launch-vm-overview) |
+| Local identity with Key Vault, internal DNS (preview) | `domains.identitySecurity.localIdentity` | Cluster `ADAware` parameter (0 none, 1 AD, 2 local identity), WORKGROUP nodes, Key Vaults, configured DNS servers | [Deploy with local identity](https://learn.microsoft.com/azure/azure-local/deploy/deployment-local-identity-with-key-vault) |
+| Private path network | `domains.azureIntegration.privatePath` | Arc gateway present plus private endpoint and Private Link resources in the resource group | [Private path network](https://learn.microsoft.com/azure/azure-local/concepts/private-path-network-overview) |
+| Rack aware cluster | `domains.clusterNode.rackAware` | `Get-ClusterFaultDomain` Rack fault domains as local availability zones with their nodes; layout such as `2+2`, balance, unassigned nodes. Rack domains used to be counted only as `multiRackIndicators` | [Rack aware cluster reference architecture](https://learn.microsoft.com/azure/azure-local/concepts/rack-aware-cluster-reference-architecture) |
+| SBE and OEM update detail | `domains.clusterNode.solutionUpdateDetail` | `Get-SolutionUpdateEnvironment` and `Get-SolutionUpdate`: SBE family, version, state, `AdditionalContentRequired`, `Pending OEM Validation`, release link and notify message | [Solution Builder Extension updates](https://learn.microsoft.com/azure/azure-local/update/solution-builder-extension) |
+| Disaggregated and SAN indicators | `domains.storage.architectureIndicators` | Derived from the storage data: Storage Spaces Direct off with CSVs, Fibre Channel or iSCSI disks or initiator ports | [Architecture best practices for Azure Local](https://learn.microsoft.com/azure/well-architected/service-guides/azure-local) |
+
+The Arc gateway claim in the v2.0.0 notes: the report layer, the permission probe and the synthetic fixture generator referenced `arcGateways`, but no collector populated it. That gap is closed in 2.7.0; the same applies to the per-node routing list.
+
+## Reading the results
+
+- A degraded Azure read (403, throttling) does not fail the collector. It is listed under `collectors.workload-identity-azure.degradations` and in `run.skippedResources`.
+- The HTML, Markdown, DOCX and PDF reports show these items in an **Azure Local 12.2609 platform posture** table in the technical tiers.

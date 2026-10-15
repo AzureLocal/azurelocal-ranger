@@ -1,0 +1,118 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://azurelocal.cloud/azurelocal-ranger/reference/manifest.schema.json",
+  "title": "AzureLocalRanger audit manifest",
+  "description": "The manifest written to manifest/audit-manifest.json. The envelope (run, target, topology, collectors, domains, relationships, findings, artifacts, evidence) is strict about what Ranger depends on; the payload inside each domain is open, because collectors add keys between releases. See docs/architecture/audit-manifest.md.",
+  "type": "object",
+  "required": ["run", "target", "topology", "collectors", "domains", "relationships", "findings", "artifacts", "evidence"],
+  "properties": {
+    "run": {
+      "type": "object",
+      "required": ["toolVersion", "schemaVersion", "startTimeUtc", "mode", "selectedCollectors"],
+      "properties": {
+        "toolVersion": { "type": "string" },
+        "schemaVersion": { "type": "string" },
+        "startTimeUtc": { "type": "string" },
+        "endTimeUtc": { "type": ["string", "null"] },
+        "mode": { "enum": ["current-state", "as-built"] },
+        "runner": { "type": ["string", "null"] },
+        "unattended": { "type": "boolean" },
+        "includeDomains": { "type": "array", "items": { "type": "string" } },
+        "excludeDomains": { "type": "array", "items": { "type": "string" } },
+        "selectedCollectors": { "type": "array", "items": { "type": "string" } },
+        "baselineManifestPath": { "type": ["string", "null"] },
+        "drift": { "type": "object", "properties": { "status": { "type": "string" } } },
+        "schemaValidation": { "type": "object", "properties": { "isValid": { "type": ["boolean", "null"] }, "errors": { "type": "array" }, "warnings": { "type": "array" } } },
+        "connectivity": { "type": "object" },
+        "redaction": {
+          "type": "object",
+          "description": "Present when the run or export used -Redact. The mapping is never stored in the manifest.",
+          "required": ["enabled"],
+          "properties": { "enabled": { "type": "boolean" }, "toolVersion": { "type": "string" }, "seedFingerprint": { "type": "string" }, "mappedValues": { "type": "integer" }, "note": { "type": "string" } }
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "environmentLabel": { "type": ["string", "null"] },
+        "clusterName": { "type": ["string", "null"] },
+        "clusterFqdn": { "type": ["string", "null"] },
+        "resourceGroup": { "type": ["string", "null"] },
+        "subscriptionId": { "type": ["string", "null"] },
+        "tenantId": { "type": ["string", "null"] },
+        "nodeList": { "type": "array" }
+      }
+    },
+    "topology": { "type": "object" },
+    "collectors": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": { "enum": ["success", "partial", "failed", "skipped", "not-applicable"] },
+          "startTimeUtc": { "type": ["string", "null"] },
+          "endTimeUtc": { "type": ["string", "null"] },
+          "targetScope": { "type": "array" },
+          "credentialScope": { "type": ["string", "null"] },
+          "messages": { "type": "array" },
+          "degraded": { "type": "boolean", "description": "The collector finished but skipped one or more failed reads (v2.7.0)." },
+          "degradationCount": { "type": "integer", "minimum": 0 },
+          "degradations": { "type": "array", "items": { "type": "object", "properties": { "source": { "type": "string" }, "message": { "type": ["string", "null"] } } } }
+        }
+      }
+    },
+    "domains": {
+      "type": "object",
+      "properties": {
+        "clusterNode": { "type": "object" },
+        "hardware": { "type": "object" },
+        "storage": { "type": "object" },
+        "networking": { "type": "object" },
+        "virtualMachines": { "type": "object" },
+        "identitySecurity": { "type": "object" },
+        "azureIntegration": { "type": "object" },
+        "monitoring": { "type": "object" },
+        "managementTools": { "type": "object" },
+        "performance": { "type": "object" },
+        "oemIntegration": { "type": "object" },
+        "wafAssessment": { "type": "object" },
+        "designComparison": { "type": "object", "description": "Present when Export-AzureLocalRangerReport -DesignPath was used." }
+      },
+      "required": ["clusterNode", "hardware", "storage", "networking", "virtualMachines", "identitySecurity", "azureIntegration", "monitoring", "managementTools", "performance", "oemIntegration"]
+    },
+    "relationships": { "type": "array", "items": { "type": "object" } },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "title", "description"],
+        "properties": {
+          "severity": { "enum": ["critical", "warning", "informational", "good"] },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "affectedComponents": { "type": "array", "items": { "type": "string" } },
+          "currentState": { "type": ["string", "null"] },
+          "recommendation": { "type": ["string", "null"] },
+          "evidenceReferences": { "type": "array" }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "relativePath", "status"],
+        "properties": {
+          "type": { "type": "string" },
+          "relativePath": { "type": "string" },
+          "status": { "enum": ["generated", "skipped", "planned"] },
+          "audience": { "type": ["string", "null"] },
+          "reason": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "evidence": { "type": "array" }
+  }
+}

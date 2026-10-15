@@ -21,10 +21,10 @@ Two parallel tracks: deep, comprehensive public-facing documentation with produc
 | Item | Detail | Issue |
 | --- | --- | --- |
 | End-to-end operator workflow guides | Network-gear import, drift, cloud publishing, estate, WAF remediation — raw input to verified outcome | [#267](https://github.com/AzureLocal/azurelocal-ranger/issues/267) |
-| Manifest schema reference | Every field in `audit-manifest.json` documented with a machine-readable JSON Schema | [#266](https://github.com/AzureLocal/azurelocal-ranger/issues/266) |
+| Manifest schema reference | Every field in `audit-manifest.json` documented with a machine-readable JSON Schema. **Started in 2.7.0**: the envelope schema is published at `docs/reference/manifest.schema.json` and tested against the fixtures; the field-by-field domain reference remains | [#266](https://github.com/AzureLocal/azurelocal-ranger/issues/266) |
 | Configuration reference deep-dive | Every `ranger.yml` key, decision trees, 5 annotated sample configs | [#265](https://github.com/AzureLocal/azurelocal-ranger/issues/265) |
 | Production-quality draw.io diagrams | 9 architecture/data-flow/auth/output-pipeline diagrams with consistent shape library, layers, legends | [#270](https://github.com/AzureLocal/azurelocal-ranger/issues/270) |
-| Per-collector operator reference | One page per collector + analyzer — permissions, output, failure modes | [#269](https://github.com/AzureLocal/azurelocal-ranger/issues/269) |
+| Per-collector operator reference | One page per collector + analyzer — permissions, output, failure modes. **Started in 2.7.0**: pages for the seven collectors are generated from the collector definitions (`docs/reference/collectors/`); the capacity analyzer page remains | [#269](https://github.com/AzureLocal/azurelocal-ranger/issues/269) |
 | WAF rule engine reference | Calculations, thresholds, priority scoring, authoring custom rules, full rule catalog | [#268](https://github.com/AzureLocal/azurelocal-ranger/issues/268) |
 | WAF results operator guide | How to read your score, interpret per-pillar results, use the Now/Next/Later compliance roadmap, generate remediation scripts, and understand the two data sources (manifest rule engine vs Azure Advisor) | [#321](https://github.com/AzureLocal/azurelocal-ranger/issues/321) |
 | Troubleshooting playbook | Symptom → diagnosis → fix for 40+ common failure modes, keyed by error text | [#272](https://github.com/AzureLocal/azurelocal-ranger/issues/272) |

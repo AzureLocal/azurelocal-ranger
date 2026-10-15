@@ -5,7 +5,7 @@
 # discovers the remaining values where possible and prompts only when needed.
 # Run: Invoke-AzureLocalRanger -ConfigPath <this file>
 # Resolution precedence: parameter > config file > auto-discovery > prompt > default > error
-# Docs: https://azurelocal.github.io/azurelocal-ranger
+# Docs: https://azurelocal.cloud/azurelocal-ranger
 
 environment:
   name:                         # Optional; derived from the selected cluster when blank

@@ -2,6 +2,13 @@
 
 The primary changelog for the repository lives at the root in `CHANGELOG.md`, but the main milestones are summarised here for docs readers.
 
+## v2.7.0 — Redaction, design comparison and Azure Local 12.2609 (latest) evidence
+
+- **Redaction** — `-Redact` pseudonymises identifiers in every output format; the reverse map is written only on request. [Redaction](../operator/redaction.md)
+- **Design versus as-built** — `Compare-RangerDesign` and the shared `as-built-snapshot.v1` export. [Design versus as-built](../reference/design-vs-as-built.md)
+- **Azure Local 12.2609 (latest) evidence** — Arc gateway, security baseline score, Secure Boot 2023 status, key backup candidates, local identity, private path, rack aware zones, SBE detail, SAN indicators. [Platform evidence](../reference/platform-2609-evidence.md)
+- Degraded collectors in the manifest, manifest JSON Schema, per-collector reference pages, GitHub CI and a gated PSGallery publish job. [CI and release](../contributor/ci-and-release.md)
+
 ## v2.6.6 — Subscription-Scoped Discovery & Auth-Context Hardening
 
 Discovery-scoping and authentication-ordering hardening on top of v2.6.5.
