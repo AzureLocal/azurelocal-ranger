@@ -84,9 +84,23 @@ Describe 'Redaction pseudonymiser' {
     }
 
     It 'leaves masks, loopback, link-local and public Microsoft names alone' {
-        $text = 'mask 255.255.255.0 any 0.0.0.0 lo 127.0.0.1 ::1 apipa 169.254.1.2 fe80::1 https://management.azure.com/ https://learn.microsoft.com/azure/azure-local/ Microsoft.AzureStackHCI 10.0.25398.1 report.md'
+        $text = 'mask 255.255.255.0 any 0.0.0.0 lo 127.0.0.1 ::1 https://management.azure.com/ https://learn.microsoft.com/azure/azure-local/ Microsoft.AzureStackHCI 10.0.25398.1 report.md'
         $r = & (Get-Module AzureLocalRanger) { param($c, $t) Protect-RangerText -Context $c -Text $t } $script:ctx $text
         $r | Should -BeExactly $text
+    }
+
+    It 'removes SAS signatures, SNMP communities, down-level accounts, APIPA and link-local addresses' {
+        $text = 'https://x.example.test/c?sv=2023-11-03&sig=Qm9ndXNTaWduYXR1cmU%3D and snmp-server community BranchMonitoringRO ro by FABRIKAM\jpatel apipa 169.254.42.17 ll fe80::a12b:34ff:fe56:7890 password=Hunter2!x cert CN=idrac07.fabrikam,O=Fabrikam Manufacturing'
+        $r = & (Get-Module AzureLocalRanger) { param($c, $t) Protect-RangerText -Context $c -Text $t } $script:ctx $text
+        foreach ($secret in 'Qm9ndXNTaWduYXR1cmU', 'BranchMonitoringRO', 'jpatel', 'FABRIKAM', '169.254.42.17', 'a12b:34ff', 'Hunter2', 'Fabrikam Manufacturing', 'idrac07') {
+            $r | Should -Not -Match ([regex]::Escape($secret))
+        }
+        $r | Should -Match 'NT AUTHORITY|snmp-server community'
+    }
+
+    It 'leaves built-in down-level authorities readable' {
+        $r = & (Get-Module AzureLocalRanger) { param($c) Protect-RangerText -Context $c -Text 'NT AUTHORITY\SYSTEM BUILTIN\Administrators root\cimv2 C:\Windows\System32' } $script:ctx
+        $r | Should -BeExactly 'NT AUTHORITY\SYSTEM BUILTIN\Administrators root\cimv2 C:\Windows\System32'
     }
 
     It 'hides storage account and key vault names but keeps the service suffix' {

@@ -266,7 +266,11 @@ function Get-RangerRedactionRegex {
 
     # Free-form structural rules that are not whole-token matches.
     $arm = [regex]::new('(?<=/resource[gG]roups/)[^/\s"''\\,;]+', $opts)
-    $dn = [regex]::new('(?<=\b(?:CN|OU|DC)=)[^,;"''\\\r\n]+', $opts)
+    $dn = [regex]::new('(?<=\b(?:CN|OU|DC|O|L|ST)=)[^,;"''\\\r\n]+', $opts)
+    # SAS / bearer style secrets and SNMP communities: keep the key, drop the value.
+    $secret = [regex]::new('(?<=(?:[?&;]|\b)(?:sig|sv|se|sp|st|spr|srt|ss|sr|skoid|sktid|token|access_token|apikey|api_key|key|password|pwd|passwd|secret|sharedkey|client_secret)\s*[=:]\s*)[^&\s"'';,]+|(?<=snmp-server\s+community\s+)\S+|(?<=\bcommunity\s+)(?!ro\b|rw\b)\S+', $opts)
+    # DOMAIN\user (upper-case NetBIOS domain); well-known built-in authorities are left readable.
+    $downlevel = [regex]::new('(?<![A-Za-z0-9\\])(?!(?:NT|AUTHORITY|SERVICE|BUILTIN|NTSERVICE|WORKGROUP|ROOT|HKLM|HKCU|SYSTEM|LOCAL|NETWORK|APPLICATION|WINDOWS|MICROSOFT)\\)[A-Z][A-Z0-9-]{1,14}\\[A-Za-z0-9._$-]{2,}(?![A-Za-z0-9._$\\-])')
     $userPath = [regex]::new('(?<=[\\/]Users[\\/])[^\\/\s"'':*?<>|]+', $opts)
     $termRegex = if ($Context['Terms'].Count) {
         [regex]::new((@($Context['Terms'] | Sort-Object -Property @{ Expression = { $_.Length }; Descending = $true } | ForEach-Object { [regex]::Escape($_) }) -join '|'), $opts)
@@ -278,7 +282,7 @@ function Get-RangerRedactionRegex {
     }
     else { $null }
     $generatedOnly = [regex]::new('^(?:' + $generated + ')$', $opts)
-    $Context['Cache'] = @{ Memo = [System.Collections.Generic.Dictionary[string, string]]::new(); Embedded = $embeddedRegex; Generated = $generatedOnly; Regex = $regex; Lookup = $lookup; Arm = $arm; Dn = $dn; UserPath = $userPath; Term = $termRegex }
+    $Context['Cache'] = @{ Memo = [System.Collections.Generic.Dictionary[string, string]]::new(); Embedded = $embeddedRegex; Generated = $generatedOnly; Regex = $regex; Lookup = $lookup; Arm = $arm; Dn = $dn; Secret = $secret; Downlevel = $downlevel; UserPath = $userPath; Term = $termRegex }
     return $Context['Cache']
 }
 
@@ -305,7 +309,7 @@ $script:RangerRedactionEvaluatorFactory = {
         }
         if ($m.Groups['mac'].Success) { return Get-RangerPseudonym -Context $script:RedactCtx -Value $v -Kind 'mac' }
         if ($m.Groups['ipv4'].Success) {
-            if ($v -match '^(?:0\.0\.0\.0|127\.|255\.|169\.254\.)') { return $v }
+            if ($v -match '^(?:0\.0\.0\.0|127\.|255\.)') { return $v }
             return Get-RangerPseudonym -Context $script:RedactCtx -Value $v -Kind 'ipv4'
         }
         if ($m.Groups['ipv6'].Success) {
@@ -314,7 +318,7 @@ $script:RangerRedactionEvaluatorFactory = {
                 $address.AddressFamily -ne [System.Net.Sockets.AddressFamily]::InterNetworkV6 -or
                 $address.Equals([System.Net.IPAddress]::IPv6Loopback) -or
                 $address.Equals([System.Net.IPAddress]::IPv6Any) -or
-                $address.IsIPv6LinkLocal) { return $v }
+                $v -eq 'fe80::') { return $v }
             return Get-RangerPseudonym -Context $script:RedactCtx -Value $v -Kind 'ipv6'
         }
         if ($m.Groups['upn'].Success) {
@@ -349,6 +353,16 @@ $script:RangerRedactionEvaluatorFactory = {
         if (Test-RangerRedactionSkip -Value $m.Value) { return $m.Value }
         Get-RangerPseudonym -Context $script:RedactCtx -Value $m.Value -Kind 'generic'
     }
+    $secretEval = [System.Text.RegularExpressions.MatchEvaluator] {
+        param($m)
+        if ($m.Value -match '^redacted-' -or (Test-RangerRedactionSkip -Value $m.Value)) { return $m.Value }
+        'redacted-secret'
+    }
+    $downEval = [System.Text.RegularExpressions.MatchEvaluator] {
+        param($m)
+        if (Test-RangerRedactionSkip -Value $m.Value) { return $m.Value }
+        Get-RangerPseudonym -Context $script:RedactCtx -Value $m.Value -Kind 'generic'
+    }
     $userPath = [System.Text.RegularExpressions.MatchEvaluator] {
         param($m)
         if ($m.Value -match '^(?:Public|Default|Default User|All Users)$' -or (Test-RangerRedactionSkip -Value $m.Value)) { return $m.Value }
@@ -358,7 +372,7 @@ $script:RangerRedactionEvaluatorFactory = {
         param($m)
         $script:RedactCtx['Map'][$m.Value]
     }
-    @{ Main = $main; Arm = $arm; Dn = $dn; UserPath = $userPath; Map = $map }
+    @{ Main = $main; Arm = $arm; Dn = $dn; Secret = $secretEval; Downlevel = $downEval; UserPath = $userPath; Map = $map }
 }
 function Protect-RangerText {
     [CmdletBinding()]
@@ -379,7 +393,11 @@ function Protect-RangerText {
     $ev = $cache.Evaluators
     $result = $cache.Regex.Replace($Text, $ev.Main)
     if ($result.IndexOf('roups/', [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { $result = $cache.Arm.Replace($result, $ev.Arm) }
-    if ($result.IndexOf('=') -ge 0) { $result = $cache.Dn.Replace($result, $ev.Dn) }
+    if ($result.IndexOf('=') -ge 0 -or $result.IndexOf(':') -ge 0 -or $result.IndexOf('community', [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+        $result = $cache.Secret.Replace($result, $ev.Secret)
+        if ($result.IndexOf('=') -ge 0) { $result = $cache.Dn.Replace($result, $ev.Dn) }
+    }
+    if ($result.IndexOf('\') -ge 0) { $result = $cache.Downlevel.Replace($result, $ev.Downlevel) }
     if ($result.IndexOf('Users', [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { $result = $cache.UserPath.Replace($result, $ev.UserPath) }
     if ($cache.Embedded) { $result = $cache.Embedded.Replace($result, $ev.Map) }
     if ($cache.Term) { $result = $cache.Term.Replace($result, $ev.Map) }    # Memoise only while the literal set is unchanged (a new literal resets Cache, and with it the memo).
@@ -409,6 +427,7 @@ $script:RangerRedactionFqdnKey = '(?i)^(fqdn|clusterFqdn|dnsName|dnsFqdn|host|ho
 $script:RangerRedactionRgKey = '(?i)^(resourceGroup|resourceGroupName|clusterResourceGroup|rg)$'
 $script:RangerRedactionDomainKey = '(?i)^(domain|domainName|dnsDomain|dnsSuffix|rootDomain|forest|forestName|userDnsDomain|adDomain|netBIOSDomain)$'
 $script:RangerRedactionNameKey = '(?i)^(subscriptionName|tenantName|environmentLabel|environmentName|organization|customerName|company|siteName|location_name|workspaceName|storageAccountName|keyVaultName|vaultName|accountName|witnessAccount|dcrName|dceName)$'
+$script:RangerRedactionOpaqueKey = '(?i)^(vmName|systemName|remoteSystemName|systemDescription|portDescription|switchHostname|chassisId|portId|dnsRacName|thumbprint|certThumbprint|certificateThumbprint|roleName|clusterGroupName|vlanName)$'
 $script:RangerRedactionUserKey = '(?i)^(userName|upn|userPrincipalName|createdBy|owner|ownerUpn|runAsAccount|remoteIdentity|account|principalName|signedInUser|identity)$'
 
 function Add-RangerRedactionLiteralsFromObject {
@@ -435,6 +454,7 @@ function Add-RangerRedactionLiteralsFromObject {
                         Add-RangerRedactionLiteral -Context $Context -Value $value -Kind $(if ($value.Contains('.')) { 'fqdn' } else { 'host' }); break
                     }
                     $script:RangerRedactionRgKey { Add-RangerRedactionLiteral -Context $Context -Value $value -Kind 'rg'; break }
+                    $script:RangerRedactionOpaqueKey { Add-RangerRedactionLiteral -Context $Context -Value $value -Kind 'generic'; break }
                     $script:RangerRedactionDomainKey { Add-RangerRedactionLiteral -Context $Context -Value $value -Kind 'generic'; break }
                     $script:RangerRedactionNameKey { Add-RangerRedactionLiteral -Context $Context -Value $value -Kind 'generic'; break }
                     $script:RangerRedactionUserKey { Add-RangerRedactionLiteral -Context $Context -Value $value -Kind $(if ($value.Contains('@')) { 'upn' } else { 'generic' }); break }
