@@ -137,7 +137,6 @@ function ConvertFrom-RangerCiscoNxosConfig {
         if ($line -match '^interface\s+(port-channel\d+)$') {
             $pcName = $Matches[1]
             $pcDesc = $null
-            $pcMembers = @()
             $pcMode = $null
             $allowedVlans = $null
 

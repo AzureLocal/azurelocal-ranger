@@ -156,10 +156,10 @@ function Invoke-AzureLocalRanger {
         Invoke-AzureLocalRanger -ConfigPath .\ranger.yml -Unattended -BaselineManifestPath .\baseline\audit-manifest.json
 
     .LINK
-        https://azurelocal.github.io/azurelocal-ranger/prerequisites/
+        https://azurelocal.cloud/azurelocal-ranger/operator/prerequisites
 
     .LINK
-        https://azurelocal.github.io/azurelocal-ranger/operator/command-reference/
+        https://azurelocal.cloud/azurelocal-ranger/operator/command-reference
     #>
     [CmdletBinding()]
     param(
@@ -367,7 +367,7 @@ function New-AzureLocalRangerConfig {
     .EXAMPLE
         New-AzureLocalRangerConfig -Path C:\ranger\ranger.json -Format json -Force
     #>
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $true)]
         [string]$Path,
@@ -383,6 +383,7 @@ function New-AzureLocalRangerConfig {
         throw "The configuration file already exists: $resolvedPath"
     }
 
+    if (-not $PSCmdlet.ShouldProcess($resolvedPath, 'Write Ranger configuration file')) { return }
     New-Item -ItemType Directory -Path (Split-Path -Parent $resolvedPath) -Force | Out-Null
     if ($Format -eq 'json') {
         Get-RangerDefaultConfig | ConvertTo-Json -Depth 50 | Set-Content -Path $resolvedPath -Encoding UTF8
@@ -1354,7 +1355,7 @@ function Invoke-RangerWizard {
         Invoke-RangerWizard -OutputConfigPath C:\ranger\new-env.yml
 
     .LINK
-        https://azurelocal.github.io/azurelocal-ranger/operator/wizard/
+        https://azurelocal.cloud/azurelocal-ranger/operator/wizard-guide
     #>
     [CmdletBinding()]
     param(
@@ -1369,7 +1370,7 @@ function Invoke-RangerWizard {
     }
 
     # ── helpers ────────────────────────────────────────────────────────────────
-    function Prompt-WizardValue {
+    function Read-WizardValue {
         param([string]$Label, [string]$Default)
         $prompt = if ($Default) { "$Label [$Default]" } else { $Label }
         $raw = Read-Host -Prompt $prompt
@@ -1377,7 +1378,7 @@ function Invoke-RangerWizard {
         return $raw
     }
 
-    function Prompt-WizardGuid {
+    function Read-WizardGuid {
         # Returns a valid GUID string or '' when the user presses Enter on an empty prompt.
         param([string]$Label, [switch]$AllowBlank)
         while ($true) {
@@ -1395,14 +1396,14 @@ function Invoke-RangerWizard {
         }
     }
 
-    function Prompt-WizardList {
+    function Read-WizardList {
         param([string]$Label, [string]$Hint)
         $raw = Read-Host -Prompt "$Label (comma-separated$Hint)"
         if ([string]::IsNullOrWhiteSpace($raw)) { return @() }
         return @($raw -split '\s*,\s*' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
     }
 
-    function Prompt-WizardChoice {
+    function Read-WizardChoice {
         param([string]$Label, [string[]]$ValidChoices, [string]$Default)
         while ($true) {
             $raw = Read-Host -Prompt "$Label [$Default]"
@@ -1423,24 +1424,24 @@ function Invoke-RangerWizard {
 
     # ── Section 1: Environment ─────────────────────────────────────────────────
     Write-Host '── Environment ──────────────────────────' -ForegroundColor DarkCyan
-    $envName     = Prompt-WizardValue -Label 'Environment name (short label)'  -Default 'prod-azlocal-01'
+    $envName     = Read-WizardValue -Label 'Environment name (short label)'  -Default 'prod-azlocal-01'
     Write-Host '  Leave the cluster name blank to discover it from Azure Arc after sign-in.' -ForegroundColor Gray
-    $clusterName = Prompt-WizardValue -Label 'Cluster name (CNO / display name, optional)' -Default ''
-    $clusterFqdn = Prompt-WizardValue -Label 'Cluster FQDN or NetBIOS name (leave blank = auto-discover)'
+    $clusterName = Read-WizardValue -Label 'Cluster name (CNO / display name, optional)' -Default ''
+    $clusterFqdn = Read-WizardValue -Label 'Cluster FQDN or NetBIOS name (leave blank = auto-discover)'
 
     # ── Section 2: Nodes ──────────────────────────────────────────────────────
     Write-Host ''
     Write-Host '── Cluster Nodes ────────────────────────' -ForegroundColor DarkCyan
     Write-Host '  Leave blank to auto-discover nodes from Azure Arc (#294).' -ForegroundColor Gray
-    $clusterNodes = Prompt-WizardList -Label 'Node FQDNs' -Hint ', e.g. node01.lab.local,node02.lab.local'
+    $clusterNodes = Read-WizardList -Label 'Node FQDNs' -Hint ', e.g. node01.lab.local,node02.lab.local'
 
     # ── Section 3: Azure ──────────────────────────────────────────────────────
     Write-Host ''
     Write-Host '── Azure Integration ────────────────────' -ForegroundColor DarkCyan
     Write-Host '  Subscription and tenant are required for Arc-based discovery and reporting.' -ForegroundColor Gray
-    $subscriptionId = Prompt-WizardGuid -Label 'Subscription ID (GUID, blank to skip Azure discovery)' -AllowBlank
-    $tenantId       = if ($subscriptionId) { Prompt-WizardGuid -Label 'Tenant ID (GUID)' } else { '' }
-    $resourceGroup  = Prompt-WizardValue -Label 'Resource group name (blank = auto-discover via Arc)'
+    $subscriptionId = Read-WizardGuid -Label 'Subscription ID (GUID, blank to skip Azure discovery)' -AllowBlank
+    $tenantId       = if ($subscriptionId) { Read-WizardGuid -Label 'Tenant ID (GUID)' } else { '' }
+    $resourceGroup  = Read-WizardValue -Label 'Resource group name (blank = auto-discover via Arc)'
 
     # ── Section 4: Credentials ────────────────────────────────────────────────
     Write-Host ''
@@ -1452,7 +1453,7 @@ function Invoke-RangerWizard {
     Write-Host '    [4] Managed identity (Azure VM / Arc machine runners)' -ForegroundColor Gray
     Write-Host '    [5] Device code (browser-based Entra sign-in)' -ForegroundColor Gray
     Write-Host '    [6] Azure CLI (az login session)' -ForegroundColor Gray
-    $credStrategy = Prompt-WizardChoice -Label 'Credential strategy' -ValidChoices @('1','2','3','4','5','6') -Default '1'
+    $credStrategy = Read-WizardChoice -Label 'Credential strategy' -ValidChoices @('1','2','3','4','5','6') -Default '1'
 
     $azureMethod = switch ($credStrategy) {
         '1' { 'existing-context' }
@@ -1466,26 +1467,26 @@ function Invoke-RangerWizard {
     $spClientId       = ''
     $spClientSecretRef = ''
     if ($credStrategy -eq '3') {
-        $spClientId        = Prompt-WizardGuid  -Label 'Service principal client ID (GUID)'
-        $spClientSecretRef = Prompt-WizardValue -Label 'Client secret keyvault:// reference (or leave blank to prompt at run time)'
+        $spClientId        = Read-WizardGuid  -Label 'Service principal client ID (GUID)'
+        $spClientSecretRef = Read-WizardValue -Label 'Client secret keyvault:// reference (or leave blank to prompt at run time)'
     }
 
     $clusterUsername = ''
     $domainUsername  = ''
     if ($credStrategy -eq '2') {
-        $clusterUsername = Prompt-WizardValue -Label 'Cluster WinRM username (DOMAIN\\user, blank = prompt at run)'
-        $domainUsername  = Prompt-WizardValue -Label 'Domain username (DOMAIN\\user, blank = same as cluster)'
+        $clusterUsername = Read-WizardValue -Label 'Cluster WinRM username (DOMAIN\\user, blank = prompt at run)'
+        $domainUsername  = Read-WizardValue -Label 'Domain username (DOMAIN\\user, blank = same as cluster)'
     }
 
     # ── Section 5: BMC endpoints (optional) ───────────────────────────────────
     Write-Host ''
     Write-Host '── BMC / iDRAC (optional) ───────────────' -ForegroundColor DarkCyan
     Write-Host '  Configure BMC endpoints to include the hardware/OEM collector.' -ForegroundColor Gray
-    $addBmc = Prompt-WizardChoice -Label 'Configure BMC endpoints now? (Y/N)' -ValidChoices @('Y','N') -Default 'N'
+    $addBmc = Read-WizardChoice -Label 'Configure BMC endpoints now? (Y/N)' -ValidChoices @('Y','N') -Default 'N'
     $bmcEndpoints = @()
     $bmcUsername  = ''
     if ($addBmc -eq 'Y') {
-        $bmcUsername = Prompt-WizardValue -Label 'BMC username (e.g. idrac_admin, blank = prompt at run)'
+        $bmcUsername = Read-WizardValue -Label 'BMC username (e.g. idrac_admin, blank = prompt at run)'
         Write-Host '  Enter BMC hosts one per line. Blank line ends the list.' -ForegroundColor Gray
         while ($true) {
             $host_ = Read-Host -Prompt '  BMC host or IP'
@@ -1501,10 +1502,10 @@ function Invoke-RangerWizard {
     # ── Section 6: Output ─────────────────────────────────────────────────────
     Write-Host ''
     Write-Host '── Output ───────────────────────────────' -ForegroundColor DarkCyan
-    $outputMode = Prompt-WizardChoice -Label 'Run mode (C=current-state, A=as-built)' -ValidChoices @('C','A') -Default 'C'
+    $outputMode = Read-WizardChoice -Label 'Run mode (C=current-state, A=as-built)' -ValidChoices @('C','A') -Default 'C'
     $modeString = if ($outputMode -eq 'A') { 'as-built' } else { 'current-state' }
-    $outputPath    = Prompt-WizardValue -Label 'Output root path' -Default 'C:\AzureLocalRanger'
-    $formatsRaw    = Prompt-WizardValue -Label 'Report formats [html,markdown,docx,xlsx,pdf,svg,drawio]' -Default 'html,markdown,docx,xlsx,pdf,svg'
+    $outputPath    = Read-WizardValue -Label 'Output root path' -Default 'C:\AzureLocalRanger'
+    $formatsRaw    = Read-WizardValue -Label 'Report formats [html,markdown,docx,xlsx,pdf,svg,drawio]' -Default 'html,markdown,docx,xlsx,pdf,svg'
     $reportFormats = @($formatsRaw -split '\s*,\s*' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 
     # ── Section 7: Scope ──────────────────────────────────────────────────────
@@ -1512,8 +1513,8 @@ function Invoke-RangerWizard {
     Write-Host '── Collection Scope ─────────────────────' -ForegroundColor DarkCyan
     Write-Host '  Available domains: clusterNode, hardware, storage, networking, virtualMachines,' -ForegroundColor Gray
     Write-Host '    identitySecurity, azureIntegration, monitoring, managementTools, performance, oemIntegration' -ForegroundColor Gray
-    $includeDomains = Prompt-WizardList -Label 'Include only these domains' -Hint ', blank = all'
-    $excludeDomains = Prompt-WizardList -Label 'Exclude these domains' -Hint ', blank = none'
+    $includeDomains = Read-WizardList -Label 'Include only these domains' -Hint ', blank = all'
+    $excludeDomains = Read-WizardList -Label 'Exclude these domains' -Hint ', blank = none'
 
     # ── Assemble config ────────────────────────────────────────────────────────
     $wizardConfig = [ordered]@{
@@ -1585,7 +1586,7 @@ function Invoke-RangerWizard {
     $previewYaml = (ConvertTo-RangerYaml -InputObject $wizardConfig) -join [Environment]::NewLine
     Write-Host $previewYaml -ForegroundColor Gray
     Write-Host ''
-    $confirm = Prompt-WizardChoice -Label 'Continue? (Y=yes, N=cancel without saving)' -ValidChoices @('Y','N') -Default 'Y'
+    $confirm = Read-WizardChoice -Label 'Continue? (Y=yes, N=cancel without saving)' -ValidChoices @('Y','N') -Default 'Y'
     if ($confirm -eq 'N') {
         Write-Host '  Wizard cancelled. No config was saved or run.' -ForegroundColor Yellow
         return
@@ -1597,7 +1598,7 @@ function Invoke-RangerWizard {
     Write-Host '    [S] Save configuration only' -ForegroundColor Gray
     Write-Host '    [R] Run immediately (without saving)' -ForegroundColor Gray
     Write-Host '    [B] Both — save and run' -ForegroundColor Gray
-    $action = Prompt-WizardChoice -Label 'Choice' -ValidChoices @('S','R','B') -Default 'B'
+    $action = Read-WizardChoice -Label 'Choice' -ValidChoices @('S','R','B') -Default 'B'
     if ($SkipRun -and $action -ne 'S') { $action = 'S' }
 
     $savedPath = $null
@@ -1605,13 +1606,13 @@ function Invoke-RangerWizard {
         $saveTo = if (-not [string]::IsNullOrWhiteSpace($OutputConfigPath)) {
             $OutputConfigPath
         } else {
-            Prompt-WizardValue -Label 'Save config to path' -Default "C:\AzureLocalRanger\$envName-ranger.yml"
+            Read-WizardValue -Label 'Save config to path' -Default "C:\AzureLocalRanger\$envName-ranger.yml"
         }
         $resolvedSave = Resolve-RangerPath -Path $saveTo
 
         # Overwrite guard — prompt before clobbering an existing file.
         if (Test-Path -Path $resolvedSave) {
-            $ok = Prompt-WizardChoice -Label "File exists: $resolvedSave — overwrite? (Y/N)" -ValidChoices @('Y','N') -Default 'N'
+            $ok = Read-WizardChoice -Label "File exists: $resolvedSave — overwrite? (Y/N)" -ValidChoices @('Y','N') -Default 'N'
             if ($ok -eq 'N') {
                 Write-Host '  Save cancelled. No file written.' -ForegroundColor Yellow
                 if ($action -eq 'S') { return }

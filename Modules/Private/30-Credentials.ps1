@@ -135,6 +135,7 @@ function Get-RangerSecretFromUri {
 }
 
 function Resolve-RangerPasswordValue {
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param(
         $CredentialBlock
     )
@@ -209,6 +210,7 @@ function Get-RangerCredentialPromptText {
 }
 
 function Resolve-RangerCredentialDefinition {
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param(
         [string]$Name,
         $CredentialBlock,

@@ -209,6 +209,7 @@ function Test-RangerDomainPopulated {
 }
 
 function Get-RangerAzureResources {
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param(
         [Parameter(Mandatory = $true)]
         [System.Collections.IDictionary]$Config,

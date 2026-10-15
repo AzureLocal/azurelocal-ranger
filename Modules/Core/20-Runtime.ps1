@@ -1,4 +1,5 @@
 function Invoke-RangerCollectorExecution {
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param(
         [Parameter(Mandatory = $true)]
         [object]$Definition,
@@ -637,7 +638,7 @@ function Invoke-RangerDiscoveryRuntime {
             if ($bmcAnswer -match '^[Yy]') {
                 $rawIps = Read-Host '[Ranger] Enter iDRAC IP addresses (comma-separated)'
                 # Issue #324: store as { host, node } objects matching the normalized shape so the hardware
-                # collector can read .host. Plain strings bypass Normalize-RangerConfiguration.
+                # collector can read .host. Plain strings bypass ConvertTo-RangerNormalizedConfiguration.
                 $bmcEndpoints = @($rawIps -split '[,;\s]+' |
                     Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
                     ForEach-Object { [ordered]@{ host = $_.Trim(); node = $null } })

@@ -28,10 +28,10 @@ BeforeAll {
 
     # Helper to call module-internal functions by name, since most helpers are not exported.
     function Invoke-RangerInternal {
-        param([string]$Name, [object[]]$Args)
+        param([string]$Name, [object[]]$ArgumentList)
         $mod = Get-Module AzureLocalRanger
         $sb  = [scriptblock]::Create("param(`$A) & `$$Name @A")
-        return & $mod $sb $Args
+        return & $mod $sb $ArgumentList
     }
 }
 

@@ -549,6 +549,7 @@ function Invoke-RangerWafAssessmentCollector {
         pillars. The returned wafAssessment domain is stored in the manifest and used by
         Invoke-RangerWafRuleEvaluation at report-generation time.
     #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param(
         [Parameter(Mandatory = $true)]
         [System.Collections.IDictionary]$Config,

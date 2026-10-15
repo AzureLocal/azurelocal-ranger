@@ -127,7 +127,7 @@ function New-RangerPptxDeck {
 function Add-PptxCorePart {
     param([System.IO.Packaging.Package]$Package)
 
-    $relsUri = [System.IO.Packaging.PackUriHelper]::CreatePartUri('/_rels/.rels')
+    $null = [System.IO.Packaging.PackUriHelper]::CreatePartUri('/_rels/.rels')
     # Implicitly created by AddRelationship below.
 
     $null = $Package.CreateRelationship(

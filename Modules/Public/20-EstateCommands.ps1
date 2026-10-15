@@ -78,7 +78,7 @@ function Invoke-AzureLocalRangerEstate {
             if ($t.configPath)   { $params['ConfigPath'] = [string]$t.configPath }
             if ($FixtureMode)    { $params['FixtureMode'] = $true }
 
-            $result = if (Get-Command -Name Invoke-AzureLocalRanger -ErrorAction SilentlyContinue) {
+            $null = if (Get-Command -Name Invoke-AzureLocalRanger -ErrorAction SilentlyContinue) {
                 Invoke-AzureLocalRanger @params
             } else { $null }
 

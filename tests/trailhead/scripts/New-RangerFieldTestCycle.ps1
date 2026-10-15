@@ -56,9 +56,9 @@ $ErrorActionPreference = "Stop"
 # Helpers
 # ---------------------------------------------------------------------------
 function Invoke-Gh {
-    param([string[]]$Args)
+    param([string[]]$GhArgs)
     if ($WhatIf) {
-        Write-Host "[WhatIf] gh $($Args -join ' ')" -ForegroundColor Cyan
+        Write-Host "[WhatIf] gh $($GhArgs -join ' ')" -ForegroundColor Cyan
         return "0"
     }
     gh @Args

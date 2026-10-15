@@ -118,7 +118,7 @@ function Get-RangerAnnotatedConfigYaml {
 # only when the selected collectors actually require them.
 # Run: Invoke-AzureLocalRanger -ConfigPath <this file>
 # Resolution precedence: parameter > config file > auto-discovery > prompt > default > error
-# Docs: https://azurelocal.github.io/azurelocal-ranger
+# Docs: https://azurelocal.cloud/azurelocal-ranger
 
 environment:
   name:                         # Optional; derived from the selected cluster when blank
@@ -304,7 +304,7 @@ function Merge-RangerConfiguration {
     $result
 }
 
-function Normalize-RangerConfiguration {
+function ConvertTo-RangerNormalizedConfiguration {
     param(
         [Parameter(Mandatory = $true)]
         [System.Collections.IDictionary]$Config
@@ -458,7 +458,7 @@ function Resolve-RangerBmcEndpointsFromVariablesData {
     return @($endpoints)
 }
 
-function Apply-RangerCompanionConfigurationFallbacks {
+function Set-RangerCompanionConfigurationFallbacks {
     param(
         [Parameter(Mandatory = $true)]
         [System.Collections.IDictionary]$Config,
@@ -492,7 +492,7 @@ function Import-RangerConfiguration {
     )
 
     if ($ConfigObject) {
-        return Normalize-RangerConfiguration -Config (Merge-RangerConfiguration -BaseConfig (Get-RangerDefaultConfig) -OverrideConfig (ConvertTo-RangerHashtable -InputObject $ConfigObject))
+        return ConvertTo-RangerNormalizedConfiguration -Config (Merge-RangerConfiguration -BaseConfig (Get-RangerDefaultConfig) -OverrideConfig (ConvertTo-RangerHashtable -InputObject $ConfigObject))
     }
 
     # v2.6.3 (#296): ConfigPath and ConfigObject are no longer hard requirements.
@@ -502,7 +502,7 @@ function Import-RangerConfiguration {
     # — throwing when both were absent — forced every ad-hoc run through a
     # config file, which is the opposite of the UX goal for the first-run flow.
     if (-not $ConfigPath) {
-        return Normalize-RangerConfiguration -Config (Get-RangerDefaultConfig)
+        return ConvertTo-RangerNormalizedConfiguration -Config (Get-RangerDefaultConfig)
     }
 
     $resolvedConfigPath = Resolve-RangerPath -Path $ConfigPath
@@ -529,8 +529,8 @@ function Import-RangerConfiguration {
         }
     }
 
-    $config = Normalize-RangerConfiguration -Config (Merge-RangerConfiguration -BaseConfig (Get-RangerDefaultConfig) -OverrideConfig (ConvertTo-RangerHashtable -InputObject $loaded))
-    return Apply-RangerCompanionConfigurationFallbacks -Config $config -ConfigPath $resolvedConfigPath
+    $config = ConvertTo-RangerNormalizedConfiguration -Config (Merge-RangerConfiguration -BaseConfig (Get-RangerDefaultConfig) -OverrideConfig (ConvertTo-RangerHashtable -InputObject $loaded))
+    return Set-RangerCompanionConfigurationFallbacks -Config $config -ConfigPath $resolvedConfigPath
 }
 
 function Set-RangerStructuralOverrides {

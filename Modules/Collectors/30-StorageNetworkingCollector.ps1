@@ -272,6 +272,7 @@ function New-RangerStorageAnalysisFindings {
 }
 
 function Invoke-RangerStorageNetworkingCollector {
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param(
         [Parameter(Mandatory = $true)]
         [System.Collections.IDictionary]$Config,
@@ -786,7 +787,6 @@ function Invoke-RangerStorageNetworkingCollector {
     $flattenedIpAddresses = @(Get-RangerFlattenedCollection -Items @($networkNodes | ForEach-Object { $_.ipAddresses }))
     $flattenedRoutes = @(Get-RangerFlattenedCollection -Items @($networkNodes | ForEach-Object { $_.routes }))
     $flattenedVlan = @(Get-RangerFlattenedCollection -Items @($networkNodes | ForEach-Object { $_.vlan }))
-    $flattenedFirewall = @(Get-RangerFlattenedCollection -Items @($networkNodes | ForEach-Object { $_.firewall }))
     $sdnByNode = @($networkNodes | ForEach-Object { [ordered]@{ node = $_.node; sdn = $_.sdn } })
     $proxyByNode = @($networkNodes | ForEach-Object { [ordered]@{ node = $_.node; proxy = $_.proxy; proxyRaw = $_.proxyRaw } })
     $dcbByNode = @($networkNodes | ForEach-Object { [ordered]@{ node = $_.node; dcb = $_.dcb } })
@@ -817,7 +817,6 @@ function Invoke-RangerStorageNetworkingCollector {
         replicaDepth          = ConvertTo-RangerHashtable -InputObject $storageSnapshot.replicaDepth
         summary               = [ordered]@{}
     })
-    $storageSummary = $storageDomain.summary
 
     $networkSummary = [ordered]@{
         nodeCount         = @($networkNodes).Count

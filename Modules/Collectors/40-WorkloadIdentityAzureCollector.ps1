@@ -154,6 +154,7 @@ function Resolve-RangerEsuOsEligibility {
 }
 
 function Invoke-RangerWorkloadIdentityAzureCollector {
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param(
         [Parameter(Mandatory = $true)]
         [System.Collections.IDictionary]$Config,
@@ -594,7 +595,7 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                 $vaultList = @(Get-AzRecoveryServicesVault -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue)
                 $items = New-Object System.Collections.ArrayList
                 foreach ($vault in $vaultList) {
-                    $ctx = Set-AzRecoveryServicesVaultContext -Vault $vault -ErrorAction SilentlyContinue
+                    $null = Set-AzRecoveryServicesVaultContext -Vault $vault -ErrorAction SilentlyContinue
                     $replicated = @(Get-AzRecoveryServicesAsrReplicationProtectedItem -ErrorAction SilentlyContinue)
                     foreach ($item in $replicated) {
                         [void]$items.Add([ordered]@{
@@ -636,7 +637,7 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                 $vaultList = @(Get-AzRecoveryServicesVault -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue)
                 $items = New-Object System.Collections.ArrayList
                 foreach ($vault in $vaultList) {
-                    $ctx = Set-AzRecoveryServicesVaultContext -Vault $vault -ErrorAction SilentlyContinue
+                    $null = Set-AzRecoveryServicesVaultContext -Vault $vault -ErrorAction SilentlyContinue
                     $protected = @(Get-AzRecoveryServicesBackupItem -WorkloadType AzureVM -ErrorAction SilentlyContinue)
                     $protected += @(Get-AzRecoveryServicesBackupItem -WorkloadType FileFolder -ErrorAction SilentlyContinue)
                     foreach ($item in $protected) {
@@ -668,7 +669,6 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
     $resourceBridge = @($azureResources | Where-Object { $_.ResourceType -match 'resourcebridge' })
     $customLocations = @($azureResources | Where-Object { $_.ResourceType -match 'customlocations' })
     $extensions = @($azureResources | Where-Object { $_.ResourceType -match 'extensions' })
-    $siteRecovery = @($azureResources | Where-Object { $_.ResourceType -match 'siterecovery' })
 
     # Issue #63: VM image gallery (marketplace + local gallery images)
     $vmImages = @(
@@ -945,10 +945,10 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # Issue #63: Correlate Arc Connected Machines to local VM inventory by name
     $arcEsuProfileByName = @{}
-    foreach ($profile in @($arcEsuProfiles)) {
-        $profileName = [string](Get-RangerCollectorPropertyValue -InputObject $profile -CandidateNames @('name', 'Name'))
+    foreach ($esuProfile in @($arcEsuProfiles)) {
+        $profileName = [string](Get-RangerCollectorPropertyValue -InputObject $esuProfile -CandidateNames @('name', 'Name'))
         if (-not [string]::IsNullOrWhiteSpace($profileName)) {
-            $arcEsuProfileByName[$profileName.ToUpperInvariant()] = $profile
+            $arcEsuProfileByName[$profileName.ToUpperInvariant()] = $esuProfile
         }
     }
 
@@ -992,13 +992,13 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
         }
 
         $esuEligibility = Resolve-RangerEsuOsEligibility -OsName ([string]$vm.guestOsName) -OsVersion ([string]$vm.guestOsVersion)
-        $profile = if (-not [string]::IsNullOrWhiteSpace([string]$vm.name) -and $arcEsuProfileByName.ContainsKey(([string]$vm.name).ToUpperInvariant())) {
+        $esuProfile = if (-not [string]::IsNullOrWhiteSpace([string]$vm.name) -and $arcEsuProfileByName.ContainsKey(([string]$vm.name).ToUpperInvariant())) {
             $arcEsuProfileByName[([string]$vm.name).ToUpperInvariant()]
         } else { $null }
-        $assignedLicense = Get-RangerCollectorPropertyValue -InputObject $profile -CandidateNames @('assignedLicense', 'AssignedLicense')
-        $profileEligibility = Get-RangerCollectorPropertyValue -InputObject $profile -CandidateNames @('esuEligibility', 'EsuEligibility')
-        $queryStatus = [string](Get-RangerCollectorPropertyValue -InputObject $profile -CandidateNames @('queryStatus', 'QueryStatus'))
-        $queryMessage = [string](Get-RangerCollectorPropertyValue -InputObject $profile -CandidateNames @('queryMessage', 'QueryMessage'))
+        $assignedLicense = Get-RangerCollectorPropertyValue -InputObject $esuProfile -CandidateNames @('assignedLicense', 'AssignedLicense')
+        $profileEligibility = Get-RangerCollectorPropertyValue -InputObject $esuProfile -CandidateNames @('esuEligibility', 'EsuEligibility')
+        $queryStatus = [string](Get-RangerCollectorPropertyValue -InputObject $esuProfile -CandidateNames @('queryStatus', 'QueryStatus'))
+        $queryMessage = [string](Get-RangerCollectorPropertyValue -InputObject $esuProfile -CandidateNames @('queryMessage', 'QueryMessage'))
 
         if ($queryStatus -eq 'unavailable') {
             $esuApiUnavailable = $true

@@ -390,6 +390,7 @@ function Get-RangerPrivatePathEvidence {
 # --- Fetchers (read-only) ----------------------------------------------------------------------
 
 function Get-RangerArcGatewayAzureResources {
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param([System.Collections.IDictionary]$Config, $CredentialMap)
     @(Invoke-RangerSafeAction -Label 'Arc gateway resources' -DefaultValue @() -ScriptBlock {
             Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
@@ -409,6 +410,7 @@ function Get-RangerArcGatewayAzureResources {
 }
 
 function Get-RangerNodeArcAgentFacts {
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param([System.Collections.IDictionary]$Config, $CredentialMap)
     @(Invoke-RangerSafeAction -Label 'Arc agent gateway routing per node' -DefaultValue @() -ScriptBlock {
             Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -ScriptBlock {
@@ -428,6 +430,7 @@ function Get-RangerNodeArcAgentFacts {
 }
 
 function Get-RangerSecurityBaselineAzure {
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param([System.Collections.IDictionary]$Config, $CredentialMap, [string[]]$MachineNames)
     @(foreach ($machine in @($MachineNames | Where-Object { $_ })) {
             $assignment = Invoke-RangerSafeAction -Label "Security baseline assignment ($machine)" -DefaultValue $null -ScriptBlock {
@@ -443,6 +446,7 @@ function Get-RangerSecurityBaselineAzure {
 }
 
 function Get-RangerNodeSecureBootFacts {
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param([System.Collections.IDictionary]$Config, $CredentialMap)
     @(Invoke-RangerSafeAction -Label 'Secure Boot 2023 certificate status per node' -DefaultValue @() -ScriptBlock {
             Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -ScriptBlock {
@@ -462,6 +466,7 @@ function Get-RangerNodeSecureBootFacts {
 }
 
 function Get-RangerKeyVaultMetadata {
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param([System.Collections.IDictionary]$Config, $CredentialMap)
     @(Invoke-RangerSafeAction -Label 'Key Vault metadata in the cluster resource group' -DefaultValue @() -ScriptBlock {
             Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.resourceGroup) -ScriptBlock {
@@ -473,6 +478,7 @@ function Get-RangerKeyVaultMetadata {
 }
 
 function Get-RangerClusterAdAware {
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param([System.Collections.IDictionary]$Config, $CredentialMap)
     $r = @(Invoke-RangerSafeAction -Label 'Cluster ADAware parameter' -DefaultValue @() -ScriptBlock {
             Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -SingleTarget -ScriptBlock {
@@ -488,6 +494,7 @@ function Invoke-RangerPlatform2609Evidence {
     .SYNOPSIS
         Collects every 12.2609 (latest) evidence block for the workload / identity / Azure collector in one call.
     #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param(
         [Parameter(Mandatory)][System.Collections.IDictionary]$Config,
         [Parameter(Mandatory)]$CredentialMap,

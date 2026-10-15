@@ -745,6 +745,7 @@ function Connect-RangerAzureContext {
         avoiding MFA prompts on every run. Forwards Environment (sovereign
         cloud) and TenantId / Subscription to Connect-AzAccount.
     #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingConvertToSecureStringWithPlainText', '',
         Justification = 'The Azure CLI (az account get-access-token) returns the ARM access token as a plaintext string; Connect-AzAccount -AccessToken requires a SecureString on Az.Accounts 5+, so an in-memory ConvertTo-SecureString is the only supported conversion. No secret is persisted.')]
     param(
@@ -982,6 +983,7 @@ function Import-RangerAzureContext {
 }
 
 function Invoke-RangerAzureQuery {
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param(
         [Parameter(Mandatory = $true)]
         [scriptblock]$ScriptBlock,

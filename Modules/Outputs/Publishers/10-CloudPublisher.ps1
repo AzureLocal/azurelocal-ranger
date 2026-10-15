@@ -299,7 +299,7 @@ function Invoke-RangerBlobUpload {
     }
     if ($BlobTags -and $BlobTags.Count -gt 0) { $setParams['Tag'] = $BlobTags }
 
-    $result = Set-AzStorageBlobContent @setParams -ErrorAction Stop
+    $null = Set-AzStorageBlobContent @setParams -ErrorAction Stop
 
     return [ordered]@{
         blobUri   = ('https://{0}.blob.core.windows.net/{1}/{2}' -f $StorageAccount, $Container, $BlobName)
@@ -548,7 +548,6 @@ function Update-RangerCloudCatalog {
         $histLine = ($indexEntry | ConvertTo-Json -Depth 5 -Compress)
         $histTemp = Join-Path $tempDir "ranger-history-$([guid]::NewGuid().ToString()).jsonl"
         # Try to download existing then append.
-        $existingHist = $null
         try {
             $null = Get-AzStorageBlobContent -Container $RemoteStorageConfig.container -Blob $historyBlob -Destination $histTemp -Context $ctx -Force -ErrorAction Stop
         } catch { New-Item -Path $histTemp -ItemType File -Force | Out-Null }
