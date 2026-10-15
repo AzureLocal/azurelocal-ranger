@@ -387,7 +387,6 @@ function Protect-RangerText {
     $script:RedactCtx = $Context
     $memoHit = $null
     if ($cache.Memo.TryGetValue($Text, [ref]$memoHit)) { return $memoHit }
-    $lookup = $cache.Lookup
 
     if (-not $cache.Evaluators) { $cache.Evaluators = . $script:RangerRedactionEvaluatorFactory }
     $ev = $cache.Evaluators
@@ -427,7 +426,7 @@ $script:RangerRedactionFqdnKey = '(?i)^(fqdn|clusterFqdn|dnsName|dnsFqdn|host|ho
 $script:RangerRedactionRgKey = '(?i)^(resourceGroup|resourceGroupName|clusterResourceGroup|rg)$'
 $script:RangerRedactionDomainKey = '(?i)^(domain|domainName|dnsDomain|dnsSuffix|rootDomain|forest|forestName|userDnsDomain|adDomain|netBIOSDomain)$'
 $script:RangerRedactionNameKey = '(?i)^(subscriptionName|tenantName|environmentLabel|environmentName|organization|customerName|company|siteName|location_name|workspaceName|storageAccountName|keyVaultName|vaultName|accountName|witnessAccount|dcrName|dceName)$'
-$script:RangerRedactionOpaqueKey = '(?i)^(vmName|systemName|remoteSystemName|systemDescription|portDescription|switchHostname|chassisId|portId|dnsRacName|thumbprint|certThumbprint|certificateThumbprint|roleName|clusterGroupName|vlanName)$'
+$script:RangerRedactionOpaqueKey = '(?i)^(vmName|systemName|remoteSystemName|systemDescription|portDescription|switchHostname|chassisId|portId|dnsRacName|thumbprint|certThumbprint|certificateThumbprint|roleName|clusterGroupName|vlanName|vlanDescription|RegisteredOrganization|RegisteredOwner|tenantDisplayName|organizationName|dnsName|DNSName)$'
 $script:RangerRedactionUserKey = '(?i)^(userName|upn|userPrincipalName|createdBy|owner|ownerUpn|runAsAccount|remoteIdentity|account|principalName|signedInUser|identity)$'
 
 function Add-RangerRedactionLiteralsFromObject {
@@ -461,6 +460,10 @@ function Add-RangerRedactionLiteralsFromObject {
                     '^name$' {
                         if ($ParentKey -match '(?i)^(nodes|nodeList|machines|arcMachines|clusterNodes)$') {
                             Add-RangerRedactionLiteral -Context $Context -Value $value -Kind $(if ($value.Contains('.')) { 'fqdn' } else { 'host' })
+                        }
+                        elseif ($ParentKey -match '(?i)^(inventory|placement)$') {
+                            # Guest VM names are workload identity (for example a company name in a VM name).
+                            Add-RangerRedactionLiteral -Context $Context -Value $value -Kind 'generic'
                         }
                         break
                     }
