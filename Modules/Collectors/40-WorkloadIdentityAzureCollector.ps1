@@ -1032,7 +1032,15 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
         })
     }
 
+    # v2.7.0: Azure Local 12.2609 (latest) platform evidence - Arc gateway, security baseline score, Secure Boot 2023
+    # certificates, key backup candidates, local identity and private path indicators. Read-only; see 45-Platform2609Evidence.ps1.
+    $platform2609 = Invoke-RangerSafeAction -Label 'Azure Local 12.2609 platform evidence' -DefaultValue ([ordered]@{}) -ScriptBlock {
+        Invoke-RangerPlatform2609Evidence -Config $Config -CredentialMap $CredentialMap -AzureResources @($azureResources) -ArcMachines @($arcMachines) -IdentitySnapshots @($identitySnapshots)
+    }
+    if (-not $platform2609) { $platform2609 = [ordered]@{} }
+
     $resourceSummary = [ordered]@{
+        arcGatewayCount = @($platform2609['arcGateways']).Count
         totalResources  = @($azureResources).Count
         byType          = @(Get-RangerGroupedCount -Items $azureResources -PropertyName 'ResourceType')
         byLocation      = @(Get-RangerGroupedCount -Items $azureResources -PropertyName 'Location')
@@ -1200,6 +1208,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                 auditPolicy     = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; values = $_.auditPolicy } })
                 activeDirectory = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; domain = $_.adDomain; forest = $_.adForest; adObjects = $_.adObjects; adSite = $_.adSite } })
                 entraJoin       = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; status = $_.entraJoinStatus; aadkerbConfigured = $_.aadkerbConfigured } })
+                secureBootCertificates = ConvertTo-RangerHashtable -InputObject @($platform2609['secureBootCertificates'])
+                localIdentity   = ConvertTo-RangerHashtable -InputObject $platform2609['localIdentity']
                 keyVault        = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; references = $keyVaultReferences } })
                 syslog          = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; detail = $_.syslogDetail } })
                 driftControl    = ConvertTo-RangerHashtable -InputObject @($identitySnapshots | ForEach-Object { [ordered]@{ node = $_.node; detail = $_.driftControl } })
@@ -1230,6 +1240,11 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
                 customLocations     = ConvertTo-RangerHashtable -InputObject $customLocations
                 extensions          = ConvertTo-RangerHashtable -InputObject $extensions
                 arcMachines         = ConvertTo-RangerHashtable -InputObject $arcMachines
+                arcGateways         = ConvertTo-RangerHashtable -InputObject @($platform2609['arcGateways'])
+                arcGatewayNodeRouting = ConvertTo-RangerHashtable -InputObject @($platform2609['arcGatewayNodeRouting'])
+                securityBaseline    = ConvertTo-RangerHashtable -InputObject @($platform2609['securityBaseline'])
+                keyBackup           = ConvertTo-RangerHashtable -InputObject $platform2609['keyBackup']
+                privatePath         = ConvertTo-RangerHashtable -InputObject $platform2609['privatePath']
                 arcMachineDetail    = ConvertTo-RangerHashtable -InputObject $arcMachineDetail
                 arcExtensionsDetail = ConvertTo-RangerHashtable -InputObject $arcExtensionsDetail
                 resourceProviders   = ConvertTo-RangerHashtable -InputObject $resourceProviders

@@ -1,0 +1,67 @@
+{
+  "_comment": "Raw inputs for the Azure Local 12.2609 (latest) evidence helpers. Neutral example values only.",
+  "gatewayResources": [
+    {
+      "Name": "arcgw-example-01",
+      "ResourceGroupName": "rg-example-arc",
+      "Location": "eastus",
+      "ResourceId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-example-arc/providers/Microsoft.HybridCompute/gateways/arcgw-example-01",
+      "Properties": {
+        "gatewayId": "11111111-2222-3333-4444-555555555555",
+        "gatewayType": "Public",
+        "gatewayEndpoint": "arcgw-example-01.gw.arc.azure.com",
+        "provisioningState": "Succeeded",
+        "allowedFeatures": [ "*" ]
+      }
+    }
+  ],
+  "azcmagentShowRouted": "Resource Name                   : node-01\nAgent Version                   : 1.47.02900\nAgent Status                    : Connected\nUsing HTTPS Proxy               : http://localhost:40343\nUpstream Proxy                  : proxy.example.test:8080\nAzure Arc Proxy                 : running\n",
+  "azcmagentCheckRouted": "connection.type   gateway\n",
+  "azcmagentShowDirect": "Resource Name                   : node-02\nAgent Version                   : 1.41.00000\nAgent Status                    : Connected\nUsing HTTPS Proxy               : \nAzure Arc Proxy                 : stopped\n",
+  "azcmagentCheckDirect": "connection.type   direct\n",
+  "baselineAssignment": {
+    "Properties": {
+      "complianceStatus": "NonCompliant",
+      "lastComplianceStatusChecked": "2026-10-14T03:00:00Z",
+      "latestAssignmentReport": {
+        "resources": [
+          { "resourceId": "Password complexity", "complianceStatus": true, "reasons": [] },
+          { "resourceId": "Account lockout threshold", "complianceStatus": true, "reasons": [] },
+          { "resourceId": "Audit logon events", "complianceStatus": true, "reasons": [] },
+          { "resourceId": "Minimum password length", "complianceStatus": false, "reasons": [ { "phrase": "Seven is less than the minimum value of 14." } ] }
+        ]
+      }
+    }
+  },
+  "secureBootUpdated": { "secureBootEnabled": true, "uefiCa2023Status": "Updated", "updateCompleted": true },
+  "secureBootPending": { "secureBootEnabled": true, "uefiCa2023Status": "NotStarted", "updateCompleted": false },
+  "keyVaults": [
+    {
+      "Name": "kv-example-backup",
+      "ResourceGroupName": "rg-example-arc",
+      "Properties": { "enableSoftDelete": true, "enablePurgeProtection": true, "enableRbacAuthorization": true, "publicNetworkAccess": "Disabled" }
+    }
+  ],
+  "faultDomainsRackAware": [
+    { "name": "Zone-A", "faultDomainType": "Rack", "location": "Room 1", "childrenNames": [ "node-01", "node-02" ] },
+    { "name": "Zone-B", "faultDomainType": "Rack", "location": "Room 2", "childrenNames": [ "node-03", "node-04" ] },
+    { "name": "node-01", "faultDomainType": "Node", "parentName": "Zone-A" },
+    { "name": "node-02", "faultDomainType": "Node", "parentName": "Zone-A" },
+    { "name": "node-03", "faultDomainType": "Node", "parentName": "Zone-B" },
+    { "name": "node-04", "faultDomainType": "Node", "parentName": "Zone-B" }
+  ],
+  "solutionUpdateEnv": { "SbeFamily": "Example Gen 1", "HardwareModel": "Example-680", "CurrentSbeVersion": "4.1.2312.5", "State": "UpdateAvailable" },
+  "solutionUpdates": [
+    { "DisplayName": "SBE_Example_Gen1_4.2.2402.1", "PackageType": "SBE", "Version": "4.2.2402.1", "SbeVersion": "4.2.2402.1", "State": "AdditionalContentRequired", "AdditionalProperties": { "SBEReleaseLink": "https://example.test/sbe/release-notes", "SBENotifyMessage": "Install in the next maintenance window." } },
+    { "DisplayName": "Azure Local 12.2609 bundle", "PackageType": "Solution", "Version": "12.2609.1003.7", "SbeVersion": "4.2.2402.1", "State": "Pending OEM Validation" }
+  ],
+  "sanManifest": {
+    "domains": {
+      "clusterNode": { "cluster": { "s2dEnabled": false } },
+      "storage": {
+        "physicalDisks": [ { "FriendlyName": "SAN LUN 01", "BusType": "Fibre Channel" } ],
+        "csvs": [ { "name": "Volume1" } ]
+      }
+    }
+  }
+}

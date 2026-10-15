@@ -745,6 +745,33 @@ function New-RangerReportPayload {
         }
     }
 
+    # v2.7.0: Azure Local 12.2609 (latest) platform posture (see docs/reference/platform-2609-evidence.md).
+    if ($Tier -ne 'executive') {
+        $p26 = New-Object System.Collections.Generic.List[object]
+        $ra = $Manifest.domains.clusterNode.rackAware
+        if ($ra) { $p26.Add([object[]]@('Rack aware cluster', [string]$(if ($ra.isRackAware) { "yes ($($ra.layout))" } else { "no ($($ra.rackCount) rack fault domain(s))" }), 'https://learn.microsoft.com/azure/azure-local/concepts/rack-aware-cluster-reference-architecture')) }
+        $sb = @($Manifest.domains.azureIntegration.securityBaseline | Where-Object { $_ })
+        if ($sb.Count -gt 0) { $scores = @($sb | Where-Object { $null -ne $_.scorePercent } | ForEach-Object { [double]$_.scorePercent }); $p26.Add([object[]]@('Security baseline compliance (AzureWindowsBaseline)', $(if ($scores.Count) { "$([math]::Round(($scores | Measure-Object -Average).Average, 1))% average over $($sb.Count) machine(s)" } else { 'no assignment found' }), 'https://learn.microsoft.com/azure/azure-local/manage/manage-secure-baseline')) }
+        $sbc = @($Manifest.domains.identitySecurity.secureBootCertificates | Where-Object { $_ })
+        if ($sbc.Count -gt 0) { $p26.Add([object[]]@('Secure Boot 2023 certificates', "$(@($sbc | Where-Object { $_.state -eq 'updated' }).Count) of $($sbc.Count) node(s) updated", 'https://learn.microsoft.com/azure/azure-local/manage/manage-secure-boot-updates')) }
+        $sud = $Manifest.domains.clusterNode.solutionUpdateDetail
+        if ($sud) { $p26.Add([object[]]@('Solution Builder Extension', "$($sud.sbeFamily) $($sud.currentSbeVersion) - $($sud.state)", 'https://learn.microsoft.com/azure/azure-local/update/solution-builder-extension')) }
+        $li = $Manifest.domains.identitySecurity.localIdentity
+        if ($li) { $p26.Add([object[]]@('Identity model', [string]$li.identityMode, 'https://learn.microsoft.com/azure/azure-local/deploy/deployment-local-identity-with-key-vault')) }
+        $kb = $Manifest.domains.azureIntegration.keyBackup
+        if ($kb) { $p26.Add([object[]]@('Key backup (preview)', [string]$kb.status, 'https://learn.microsoft.com/azure/azure-local/manage/trusted-launch-vm-overview')) }
+        $ai = $Manifest.domains.storage.architectureIndicators
+        if ($ai) { $p26.Add([object[]]@('Disaggregated / SAN indicators', $(if ($ai.likelyDisaggregated) { (@($ai.disaggregatedOrSanIndicators) -join ', ') } else { 'none' }), $ai.reference)) }
+        if ($p26.Count -gt 0) {
+            [void]$sections.Add([ordered]@{
+                heading = 'Azure Local 12.2609 platform posture'
+                type    = 'table'
+                headers = @('Item', 'Finding', 'Learn')
+                rows    = @($p26)
+            })
+        }
+    }
+
     # v2.0.0 (#221): Marketplace + Custom Gallery Images.
     if ($Tier -ne 'executive') {
         $mis = @(@($Manifest.domains.azureIntegration.marketplaceImages) + @($Manifest.domains.azureIntegration.galleryImages) | Where-Object { $_ })

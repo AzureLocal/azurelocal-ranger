@@ -63,7 +63,7 @@ function Invoke-RangerTopologyClusterCollector {
             }
 
             $faultDomains = if (Get-Command -Name Get-ClusterFaultDomain -ErrorAction SilentlyContinue) {
-                Get-ClusterFaultDomain | Select-Object Name, FaultDomainType, Location
+                Get-ClusterFaultDomain | Select-Object Name, FaultDomainType, Location, ParentName, @{ Name = 'ChildrenNames'; Expression = { @($_.ChildrenNames) } }
             }
             else {
                 @()
@@ -115,7 +115,7 @@ function Invoke-RangerTopologyClusterCollector {
             } else { @() }
 
             $solutionUpdateEnv = if (Get-Command -Name Get-SolutionUpdateEnvironment -ErrorAction SilentlyContinue) {
-                try { Get-SolutionUpdateEnvironment -ErrorAction Stop | Select-Object State, Version, SbeVersion, HardwareModel, LastCheckedForUpdates, LastUpdated, LifecycleUri } catch { $null }
+                try { Get-SolutionUpdateEnvironment -ErrorAction Stop | Select-Object State, Version, SbeVersion, SbeFamily, CurrentSbeVersion, HardwareModel, LastCheckedForUpdates, LastUpdated, LifecycleUri } catch { $null }
             } else { $null }
 
             $solutionUpdateHistory = if (Get-Command -Name Get-SolutionUpdateRun -ErrorAction SilentlyContinue) {
@@ -125,7 +125,7 @@ function Invoke-RangerTopologyClusterCollector {
             } else { @() }
 
             $pendingSolutionUpdates = if (Get-Command -Name Get-SolutionUpdate -ErrorAction SilentlyContinue) {
-                @(try { Get-SolutionUpdate -ErrorAction Stop | Where-Object { $_.State -in @('ReadyToInstall', 'Staged') } | Select-Object -First 10 Version, State, Description, PackagePath } catch { @() })
+                @(try { Get-SolutionUpdate -ErrorAction Stop | Where-Object { $_.State -in @('ReadyToInstall', 'Staged', 'AdditionalContentRequired', 'Pending OEM Validation', 'PendingOemValidation') } | Select-Object -First 10 DisplayName, PackageType, Version, SbeVersion, State, Description, PackagePath, AdditionalProperties } catch { @() })
             } else { @() }
 
             $arcRegistration = if (Get-Command -Name Get-AzureLocalRegistration -ErrorAction SilentlyContinue) {

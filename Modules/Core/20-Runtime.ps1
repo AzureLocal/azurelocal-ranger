@@ -927,6 +927,12 @@ function Invoke-RangerDiscoveryRuntime {
             catch { Write-RangerLog -Level warn -Message "Post-analysis warning: $($_.Exception.Message)" }
         }
 
+        # v2.7.0: 12.2609 (latest) derivations that need only the manifest (rack aware, SBE detail, SAN indicators).
+        if (Get-Command -Name 'Invoke-RangerPlatform2609Analysis' -ErrorAction SilentlyContinue) {
+            try { $null = Invoke-RangerPlatform2609Analysis -Manifest $manifest }
+            catch { Write-RangerLog -Level warn -Message "Platform 12.2609 analysis warning: $($_.Exception.Message)" }
+        }
+
         # v2.0.0 (#230): empty-data safeguard — if collection returned no nodes,
         # reporting would render empty tables with no actionable error.
         $nodeCount = @($manifest.domains.clusterNode.nodes).Count
