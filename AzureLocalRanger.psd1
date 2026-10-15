@@ -20,7 +20,9 @@
         'Get-RangerRemediation',
         'Publish-RangerRun',
         'Invoke-AzureLocalRangerEstate',
-        'Import-RangerManualEvidence'
+        'Import-RangerManualEvidence',
+        'Compare-RangerDesign',
+        'ConvertTo-RangerAsBuiltSnapshot'
     )
     CmdletsToExport   = @()
     VariablesToExport = @()

@@ -516,12 +516,14 @@ function ConvertTo-RangerRedactedManifest {
         [Parameter(Mandatory)][System.Collections.IDictionary]$Manifest,
         [hashtable]$Context,
         [string[]]$Term,
-        [string]$Seed
+        [string]$Seed,
+        [object[]]$Literal
     )
     if (-not $Context) {
         $Context = if ($Seed) { New-RangerRedactionContext -Seed $Seed } else { New-RangerRedactionContext }
     }
     foreach ($t in @($Term)) { Add-RangerRedactionTerm -Context $Context -Term $t }
+    foreach ($l in @($Literal | Where-Object { $_ })) { Add-RangerRedactionLiteral -Context $Context -Value ([string]$l.Value) -Kind ([string]$l.Kind) }
 
     # Anchor identifiers first so the free-text pass resolves them consistently.
     $target = $Manifest['target']
@@ -645,7 +647,7 @@ function New-RangerRedactedPackageCopy {
     $typeToFormat = @{
         'html-report' = 'html'; 'markdown-report' = 'markdown'; 'docx-report' = 'docx'; 'pdf-report' = 'pdf'
         'xlsx-workbook' = 'xlsx'; 'pptx' = 'pptx'; 'json-evidence' = 'json-evidence'; 'powerbi-bundle' = 'powerbi'
-        'svg-diagram' = 'svg'; 'drawio-diagram' = 'drawio'; 'diagram-svg' = 'svg'; 'diagram-drawio' = 'drawio'
+        'as-built-snapshot' = 'as-built-snapshot'; 'svg-diagram' = 'svg'; 'drawio-diagram' = 'drawio'; 'diagram-svg' = 'svg'; 'diagram-drawio' = 'drawio'
     }
     $formats = New-Object System.Collections.Generic.List[string]
     foreach ($a in @($Manifest['artifacts'])) {

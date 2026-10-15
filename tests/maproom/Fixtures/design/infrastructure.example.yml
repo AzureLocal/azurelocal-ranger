@@ -1,0 +1,31 @@
+# Neutral example of Azure Local Trailwright infrastructure.yml (schema_version 4.0.0 subset). Example values only.
+_metadata:
+  version: 1.0.0
+  schema_version: 4.0.0
+  environment_name: azlocal-iic-01
+  azure_local_release: "2609"
+azure_platform:
+  subscriptions: { sub_azure_local_id: 33333333-3333-3333-3333-333333333333 }
+  resource_groups: { rg_azurelocal_cluster: rg-iic-compute-01 }
+  instance_name: azlocal-iic-01
+identity:
+  mode: active-directory
+networking:
+  vlans:
+    - { name: mgmt, id: 2203 }
+    - { name: storage-a, id: 711 }
+  intents:
+    - { name: Management, traffic: [management, compute], adapters: [NIC1, NIC2] }
+compute:
+  cluster: { topology: switched, witness_type: cloud, node_count: 3 }
+  nodes:
+    - { name: azl-iic-n01, ip: 10.0.0.11, serial: ABC1234 }
+    - { name: azl-iic-n02, ip: 10.0.0.12, serial: ABC1235 }
+    - { name: azl-iic-n03, ip: 10.0.0.13, serial: ABC1236 }
+infrastructure_network:
+  dns_servers: [192.168.10.10, 192.168.10.11]
+storage:
+  volumes:
+    - { name: csv-iic-azlocal-01-vmstore-01, size_gib: 2000, resiliency: three-way }
+sdn:
+  enabled: false

@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://azurelocal.cloud/azurelocal-ranger/reference/as-built-snapshot.v1.schema.json",
+  "title": "as-built-snapshot.v1",
+  "description": "What Azure Local Ranger found, in the shape Azure Local Trailwright's As-built compare reads. Core fields match the Trailwright contract; optional extras are marked. Every section except schema is optional.",
+  "type": "object",
+  "required": ["schema"],
+  "additionalProperties": true,
+  "properties": {
+    "schema": { "const": "as-built-snapshot.v1" },
+    "capturedAt": { "type": "string" },
+    "source": {
+      "type": "object",
+      "properties": { "tool": { "type": "string" }, "version": { "type": "string" }, "note": { "type": "string" } }
+    },
+    "cluster": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "release": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+\\.\\d+$", "description": "Solution version, for example 12.2609.1003.7." },
+        "sbeVersion": { "type": "string", "description": "Extra: OEM Solution Builder Extension version." },
+        "osBuild": { "type": "string", "description": "Extra: OS build number." }
+      }
+    },
+    "azure": {
+      "type": "object",
+      "description": "Extra: Azure scope of the cluster.",
+      "properties": { "subscriptionId": { "type": "string" }, "resourceGroup": { "type": "string" } }
+    },
+    "identity": {
+      "type": "object",
+      "properties": {
+        "model": { "enum": ["active-directory", "local-identity-key-vault"] },
+        "domain": { "type": "string" }
+      }
+    },
+    "witness": { "type": "object", "properties": { "type": { "enum": ["cloud", "file-share", "none"] } } },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "managementIp": { "type": "string" },
+          "storageIps": { "type": "array", "items": { "type": "string" } },
+          "serial": { "type": "string" },
+          "bmcType": { "type": "string", "description": "Extra: idrac, ilo, xclarity or the reported manager model." },
+          "bmcIp": { "type": "string", "description": "Extra." }
+        }
+      }
+    },
+    "vlans": {
+      "type": "array",
+      "items": { "type": "object", "required": ["id"], "properties": { "id": { "type": "integer", "minimum": 1, "maximum": 4094 }, "name": { "type": "string" } } }
+    },
+    "intents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "traffic": { "type": "array", "items": { "enum": ["management", "compute", "storage"] } },
+          "adapters": { "type": "array", "items": { "type": "string" } },
+          "jumbo": { "type": "integer", "description": "Extra: largest MTU on the intent's adapters." },
+          "rdma": { "type": "boolean", "description": "Extra." },
+          "qos": { "type": "object", "description": "Extra: storage traffic class.", "properties": { "priority": { "type": ["integer", "null"] }, "bandwidthPercent": { "type": ["integer", "null"] } } }
+        }
+      }
+    },
+    "volumes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "sizeGiB": { "type": "number" },
+          "resiliency": { "enum": ["two-way", "three-way", "four-way", "parity", "nested-two-way"] }
+        }
+      }
+    },
+    "dnsServers": { "type": "array", "items": { "type": "string" } },
+    "sdn": {
+      "type": "object",
+      "description": "Extra.",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "prefix": { "type": "string" },
+        "logicalNetworks": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "vlan": { "type": "integer" }, "subnet": { "type": "string" } } } }
+      }
+    }
+  }
+}

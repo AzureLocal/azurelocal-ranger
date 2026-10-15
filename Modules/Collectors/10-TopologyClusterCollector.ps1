@@ -115,7 +115,7 @@ function Invoke-RangerTopologyClusterCollector {
             } else { @() }
 
             $solutionUpdateEnv = if (Get-Command -Name Get-SolutionUpdateEnvironment -ErrorAction SilentlyContinue) {
-                try { Get-SolutionUpdateEnvironment -ErrorAction Stop | Select-Object State, Version, SbeVersion, SbeFamily, CurrentSbeVersion, HardwareModel, LastCheckedForUpdates, LastUpdated, LifecycleUri } catch { $null }
+                try { Get-SolutionUpdateEnvironment -ErrorAction Stop | Select-Object State, Version, CurrentVersion, SbeVersion, SbeFamily, CurrentSbeVersion, HardwareModel, LastCheckedForUpdates, LastUpdated, LifecycleUri } catch { $null }
             } else { $null }
 
             $solutionUpdateHistory = if (Get-Command -Name Get-SolutionUpdateRun -ErrorAction SilentlyContinue) {

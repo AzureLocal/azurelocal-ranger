@@ -38,5 +38,8 @@ Export-ModuleMember -Function @(
     'Publish-RangerRun',
     # v2.5.0 (#129 / #32): estate orchestration and manual evidence import.
     'Invoke-AzureLocalRangerEstate',
-    'Import-RangerManualEvidence'
+    'Import-RangerManualEvidence',
+    # v2.7.0: redaction is a switch on the commands above; design-vs-as-built comparison and snapshot export.
+    'Compare-RangerDesign',
+    'ConvertTo-RangerAsBuiltSnapshot'
 )

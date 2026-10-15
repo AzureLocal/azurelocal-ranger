@@ -1,0 +1,59 @@
+# Neutral example of the deploy automation environment file shape (azure-local.environment schema). Example values only.
+cluster_name: azlocal-iic-01
+subscription_id: 33333333-3333-3333-3333-333333333333
+release:
+  azure_local_version: 12.2609.1003.7
+  sbe_version: 4.1.2312.5
+identity:
+  model: ad-joined
+  dns_zone: iic.local
+witness:
+  type: cloud
+  storage_account_name: stiicwitness01
+nodes:
+  - name: azl-iic-n01
+    management_ip: 10.0.0.11
+    storage_ips: { smb1: 10.0.1.11, smb2: 10.0.2.11 }
+    bmc_name: idrac-azl-iic-n01
+    bmc_ip: 10.245.64.11
+    service_tag: ABC1234
+  - name: azl-iic-n02
+    management_ip: 10.0.0.12
+    storage_ips: { smb1: 10.0.1.12, smb2: 10.0.2.12 }
+    bmc_name: idrac-azl-iic-n02
+    bmc_ip: 10.245.64.12
+    service_tag: ABC1235
+  - name: azl-iic-n04
+    management_ip: 10.0.0.14
+    storage_ips: { smb1: 10.0.1.14, smb2: 10.0.2.14 }
+    bmc_name: idrac-azl-iic-n04
+    bmc_ip: 10.245.64.14
+    service_tag: ABC1299
+vlans:
+  management: { id: 2203, name: mgmt, subnet: 10.0.0.0/24, gateway: 10.0.0.1, routed: true }
+  compute: { id: 2204, name: compute, subnet: 10.0.3.0/24, gateway: 10.0.3.1, routed: true }
+  storage_a: { id: 711, name: storage-a, subnet: 10.0.1.0/24, gateway: null, routed: false }
+intents:
+  - name: Management
+    traffic_types: [Management, Compute]
+    adapters: [NIC1, NIC2]
+  - name: Storage
+    traffic_types: [Storage]
+    adapters: [NIC3, NIC4]
+    overrides: { jumbo_packet: 9014, rdma_protocol: RoCEv2 }
+ip_plan:
+  management_subnet: 10.0.0.0/24
+  default_gateway: 10.0.0.1
+  infrastructure_pool: { start: 10.0.0.100, end: 10.0.0.110 }
+  dns_servers: [192.168.10.10, 192.168.10.11]
+  dns_zone: iic.local
+  storage_auto_ip: false
+storage:
+  volumes:
+    - { name: csv-iic-azlocal-01-vmstore-01, resiliency: three-way-mirror, size_gb: 2000 }
+    - { name: csv-iic-azlocal-01-vmstore-02, resiliency: two-way-mirror, size_gb: 2048 }
+    - { name: csv-iic-azlocal-01-archive-09, resiliency: three-way-mirror, size_gb: 512 }
+  storage_paths: []
+sdn:
+  enabled: false
+  prefix: iic

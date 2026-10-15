@@ -415,6 +415,13 @@ function Export-AzureLocalRangerReport {
         Report formats to generate. Accepted values include html, markdown, docx,
         xlsx, pdf, svg, and drawio. Defaults to html, markdown, svg.
 
+    .PARAMETER DesignPath
+        A design record to compare with the manifest (deploy automation environment file, Trailwright infrastructure.yml
+        or an as-built-snapshot.v1). The reports gain a 'Design vs as-built' section. See Compare-RangerDesign.
+
+    .PARAMETER DesignKind
+        auto (default), environment, infrastructure or snapshot.
+
     .PARAMETER Redact
         Pseudonymise identifiers (IPs, MACs, hostnames, serials, GUIDs, resource groups, UPNs) before rendering.
         The source manifest is never modified. When -OutputPath is omitted a redacted run writes to a
@@ -456,7 +463,9 @@ function Export-AzureLocalRangerReport {
         [switch]$Redact,
         [string]$RedactMapPath,
         [string[]]$RedactTerm,
-        [string]$RedactSeed
+        [string]$RedactSeed,
+        [string]$DesignPath,
+        [ValidateSet('auto', 'environment', 'infrastructure', 'snapshot')][string]$DesignKind = 'auto'
     )
 
     $resolvedManifestPath = Resolve-RangerPath -Path $ManifestPath
@@ -469,13 +478,21 @@ function Export-AzureLocalRangerReport {
     elseif ($Redact) { Join-Path -Path (Split-Path -Parent $resolvedManifestPath) -ChildPath 'redacted' }
     else { Split-Path -Parent $resolvedManifestPath }
 
+    if ($DesignPath) {
+        # Compare before redaction so the findings see the real values; redaction then covers the findings too.
+        $cmp = Compare-RangerDesign -Manifest (ConvertTo-RangerHashtable -InputObject $manifest) -DesignPath $DesignPath -DesignKind $DesignKind
+        $manifest = ConvertTo-RangerHashtable -InputObject $manifest
+        $manifest['domains']['designComparison'] = $cmp
+        $designLiterals = @(Get-RangerDesignRedactionLiterals -Design (ConvertFrom-RangerDesignRecord -Path $DesignPath -Kind $DesignKind))
+    }
+
     if ($Redact) {
         # Never write redacted output on top of the source package.
         if ((Split-Path -Parent $resolvedManifestPath) -eq $packageRoot) {
             throw 'With -Redact, -OutputPath must differ from the folder that holds the source manifest.'
         }
         $redactCtx = if ($RedactSeed) { New-RangerRedactionContext -Seed $RedactSeed } else { New-RangerRedactionContext }
-        $manifest = ConvertTo-RangerRedactedManifest -Manifest (ConvertTo-RangerHashtable -InputObject $manifest) -Context $redactCtx -Term @($RedactTerm)
+        $manifest = ConvertTo-RangerRedactedManifest -Manifest (ConvertTo-RangerHashtable -InputObject $manifest) -Context $redactCtx -Term @($RedactTerm) -Literal @($designLiterals)
         New-Item -ItemType Directory -Path (Join-Path $packageRoot 'manifest') -Force | Out-Null
         $manifest | ConvertTo-Json -Depth 100 | Set-Content -Path (Join-Path $packageRoot 'manifest\audit-manifest.redacted.json') -Encoding UTF8
         if ($RedactMapPath) {

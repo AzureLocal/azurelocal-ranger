@@ -40,6 +40,19 @@ function Invoke-RangerOutputGeneration {
         }
     }
 
+    # v2.7.0: as-built-snapshot.v1 (design-vs-as-built contract shared with Azure Local Trailwright).
+    if ('as-built-snapshot' -in $normalizedFormats -and (Get-Command -Name 'ConvertTo-RangerAsBuiltSnapshot' -ErrorAction SilentlyContinue)) {
+        try {
+            $reportsRoot = Join-Path -Path $PackageRoot -ChildPath 'reports'
+            New-Item -ItemType Directory -Path $reportsRoot -Force | Out-Null
+            $snapPath = Join-Path $reportsRoot ((Get-RangerArtifactPrefix -Manifest $Manifest) + '-as-built-snapshot.json')
+            ConvertTo-RangerAsBuiltSnapshot -Manifest $Manifest | ConvertTo-Json -Depth 20 | Set-Content -Path $snapPath -Encoding UTF8
+            [void]$artifacts.Add((New-RangerArtifactRecord -Type 'as-built-snapshot' -RelativePath ([System.IO.Path]::GetRelativePath($PackageRoot, $snapPath)) -Status generated -Audience 'technical'))
+        } catch {
+            Write-RangerLog -Level warn -Message "as-built-snapshot export failed: $($_.Exception.Message)"
+        }
+    }
+
     # v2.5.0 (#80): PowerPoint deck output.
     if ('pptx' -in $normalizedFormats -and (Get-Command -Name 'New-RangerPptxDeck' -ErrorAction SilentlyContinue)) {
         try {
@@ -741,6 +754,20 @@ function New-RangerReportPayload {
                 type    = 'table'
                 headers = @('Name', 'Endpoint', 'Allowed Features', 'State')
                 rows    = $gwRows
+            })
+        }
+    }
+
+    # v2.7.0: design record comparison (Export-AzureLocalRangerReport -DesignPath).
+    if ($Tier -ne 'executive' -and $Manifest.domains.designComparison) {
+        $dcmp = $Manifest.domains.designComparison
+        $dcRows = @(@($dcmp.findings) | Where-Object { $_ -and $_.status -ne 'match' } | ForEach-Object { ,@([string]$_.area, [string]$_.key, [string]$_.design, [string]$_.asBuilt, [string]$_.status, [string]$_.severity) })
+        if ($dcRows.Count -gt 0) {
+            [void]$sections.Add([ordered]@{
+                heading = "Design vs as-built ($($dcmp.summary.match) match, $($dcmp.summary.drift) drift, $($dcmp.summary.missing) missing)"
+                type    = 'table'
+                headers = @('Area', 'Item', 'Design', 'As-built', 'Status', 'Severity')
+                rows    = $dcRows
             })
         }
     }
