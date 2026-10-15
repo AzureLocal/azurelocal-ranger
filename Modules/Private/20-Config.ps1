@@ -75,6 +75,10 @@ function Get-RangerDefaultConfig {
             # Issue #76: enable Spectre.Console live progress bars; suppressed automatically
             # in CI and Unattended mode even when set to $true.
             showProgress    = $true
+            # v2.7.0: pseudonymise identifiers in every output (see docs/operator/redaction.md).
+            redact          = $false
+            redactMapPath   = ''
+            redactTerms     = @()
         }
         behavior = [ordered]@{
             promptForMissingCredentials    = $true
@@ -169,6 +173,9 @@ output:
   rootPath: 'C:\AzureLocalRanger'        # Output directory; each run creates a dated sub-folder
   diagramFormat: svg                     # Options: svg | png
   keepRawEvidence: true                  # Keep raw JSON evidence alongside reports
+  redact: false                          # true = pseudonymise IPs, MACs, hostnames, serials, GUIDs, resource groups, UPNs in every output
+  redactMapPath: ''                      # Optional private file that reverses the redaction (keep it out of shared packages)
+  redactTerms: []                        # Extra words to remove everywhere (for example a customer short name)
 
 behavior:
   promptForMissingCredentials: true       # Prompt interactively when a credential cannot be resolved
@@ -576,6 +583,21 @@ function Set-RangerStructuralOverrides {
         if (-not ($Config.output -is [System.Collections.IDictionary])) { $Config.output = [ordered]@{} }
         $Config.output.showProgress = [bool]$StructuralOverrides['ShowProgress']
     }
+
+    # v2.7.0: redaction switches
+    if ($StructuralOverrides.ContainsKey('Redact')) {
+        if (-not ($Config.output -is [System.Collections.IDictionary])) { $Config.output = [ordered]@{} }
+        $Config.output.redact = [bool]$StructuralOverrides['Redact']
+    }
+    if ($StructuralOverrides.ContainsKey('RedactMapPath') -and -not [string]::IsNullOrWhiteSpace($StructuralOverrides['RedactMapPath'])) {
+        if (-not ($Config.output -is [System.Collections.IDictionary])) { $Config.output = [ordered]@{} }
+        $Config.output.redactMapPath = [string]$StructuralOverrides['RedactMapPath']
+    }
+    if ($StructuralOverrides.ContainsKey('RedactTerm') -and @($StructuralOverrides['RedactTerm']).Count -gt 0) {
+        if (-not ($Config.output -is [System.Collections.IDictionary])) { $Config.output = [ordered]@{} }
+        $Config.output.redactTerms = @($StructuralOverrides['RedactTerm'])
+    }
+    if ($StructuralOverrides.ContainsKey('RedactSeed')) { $script:RangerRedactSeed = [string]$StructuralOverrides['RedactSeed'] }
 
     # Issue #171: output section overrides
     if ($StructuralOverrides.ContainsKey('OutputMode') -and -not [string]::IsNullOrWhiteSpace($StructuralOverrides['OutputMode'])) {
@@ -1233,7 +1255,7 @@ function Test-RangerConfiguration {
         $errors.Add("Output mode '$($Config.output.mode)' is not supported.")
     }
 
-    $supportedFormats = @('html', 'markdown', 'md', 'svg', 'drawio', 'xml', 'json', 'docx', 'xlsx', 'pdf', 'powerbi', 'pptx', 'json-evidence')
+    $supportedFormats = @('html', 'markdown', 'md', 'svg', 'drawio', 'xml', 'json', 'docx', 'xlsx', 'pdf', 'powerbi', 'pptx', 'json-evidence', 'as-built-snapshot')
     foreach ($format in @($Config.output.formats)) {
         if ($format -notin $supportedFormats) {
             $errors.Add("Output format '$format' is not supported.")

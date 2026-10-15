@@ -143,7 +143,9 @@ function New-RangerPackageRoot {
 
     $rootPath = if ($OutputPathOverride) { $OutputPathOverride } else { $Config.output.rootPath }
     $resolvedRoot = Resolve-RangerPath -Path $rootPath -BasePath $BasePath
-    $packageName = '{0}-{1}-{2}' -f (Get-RangerSafeName -Value ($Config.environment.name)), (Get-RangerSafeName -Value $Config.output.mode), (Get-RangerTimestamp)
+    # v2.7.0: a redacted run must not leak the environment name through the package folder name.
+    $packageLabel = if ($Config.output -and [bool]$Config.output.redact) { 'ranger-redacted' } else { $Config.environment.name }
+    $packageName = '{0}-{1}-{2}' -f (Get-RangerSafeName -Value $packageLabel), (Get-RangerSafeName -Value $Config.output.mode), (Get-RangerTimestamp)
     $packageRoot = Join-Path -Path $resolvedRoot -ChildPath $packageName
     New-Item -ItemType Directory -Path $packageRoot -Force | Out-Null
     return $packageRoot
@@ -673,6 +675,15 @@ function Invoke-RangerDiscoveryRuntime {
     $transcriptPath = Join-Path -Path $packageRoot -ChildPath 'ranger.transcript.log'
     $manifest = $null
     $manifestPath = $null
+    # v2.7.0: redaction state (see Modules/Core/40-Redaction.ps1)
+    $redactEnabled = $false
+    try { $redactEnabled = [bool]$config.output.redact } catch { $redactEnabled = $false }
+    $redactCtx = $null
+    $manifestRedacted = $false
+    if ($redactEnabled) {
+        $config.output.keepRawEvidence = $false   # raw evidence is un-pseudonymised inventory; never kept in a redacted run
+        Write-RangerLog -Level info -Message 'Redaction is ON: identifiers are pseudonymised before any report is rendered; raw evidence is not kept.'
+    }
     $manifestValidation = $null
     $driftReport = $null
     $runStatusPath = $null
@@ -985,6 +996,14 @@ function Invoke-RangerDiscoveryRuntime {
             }
         }
 
+        if ($redactEnabled) {
+            $redactSeedValue = if (-not [string]::IsNullOrWhiteSpace([string]$script:RangerRedactSeed)) { [string]$script:RangerRedactSeed } else { [guid]::NewGuid().ToString('N') }
+            $redactCtx = New-RangerRedactionContext -Seed $redactSeedValue
+            $manifest = ConvertTo-RangerRedactedManifest -Manifest $manifest -Context $redactCtx -Term @($config.output.redactTerms)
+            $manifestRedacted = $true
+            Write-RangerLog -Level info -Message ('Redaction applied to the manifest ({0} identifiers pseudonymised).' -f $redactCtx['Map'].Count)
+        }
+
         Save-RangerManifest -Manifest $manifest -Path $manifestPath
         $manifest.artifacts += @(New-RangerArtifactRecord -Type 'manifest-json' -RelativePath ([System.IO.Path]::GetRelativePath($packageRoot, $manifestPath)) -Status generated -Audience 'all')
 
@@ -1007,6 +1026,11 @@ function Invoke-RangerDiscoveryRuntime {
         if ($logPath -and (Test-Path -LiteralPath $logPath)) {
             Write-RangerLog -Level info -Message "Run complete — package: $(Split-Path -Leaf $packageRoot)"
             $manifest.artifacts += @(New-RangerArtifactRecord -Type 'run-log' -RelativePath ([System.IO.Path]::GetRelativePath($packageRoot, $logPath)) -Status generated -Audience 'all')
+        }
+
+        # v2.7.0: sweep text artefacts (drift report, run status, log) before anything can be published.
+        if ($redactCtx) {
+            $null = Protect-RangerPackageTextFiles -Context $redactCtx -PackageRoot $packageRoot
         }
 
         # v2.3.0 (#244 / #245): optional cloud publishing after the package is finalised.
@@ -1081,6 +1105,12 @@ function Invoke-RangerDiscoveryRuntime {
             $runStatusPath = Write-RangerJsonArtifact -PackageRoot $packageRoot -RelativePath 'run-status.json' -Content $failureRunStatus
 
             if ($manifest) {
+                if ($redactEnabled -and -not $manifestRedacted) {
+                    # A failed run must not leave an un-pseudonymised partial manifest behind.
+                    if (-not $redactCtx) { $redactCtx = New-RangerRedactionContext -Seed $(if ($script:RangerRedactSeed) { [string]$script:RangerRedactSeed } else { [guid]::NewGuid().ToString('N') }) }
+                    $manifest = ConvertTo-RangerRedactedManifest -Manifest $manifest -Context $redactCtx -Term @($config.output.redactTerms)
+                    $manifestRedacted = $true
+                }
                 if (-not @($manifest.artifacts | Where-Object { $_.type -eq 'run-status' -and $_.relativePath -eq ([System.IO.Path]::GetRelativePath($packageRoot, $runStatusPath)) }).Count) {
                     $manifest.artifacts += @(New-RangerArtifactRecord -Type 'run-status' -RelativePath ([System.IO.Path]::GetRelativePath($packageRoot, $runStatusPath)) -Status generated -Audience 'all')
                 }
@@ -1108,6 +1138,22 @@ function Invoke-RangerDiscoveryRuntime {
             catch {
             }
         }
+
+        # v2.7.0: final redaction sweep (the log and transcript were merged just above) and optional private map.
+        if ($redactCtx -and $packageRoot) {
+            try {
+                $null = Protect-RangerPackageTextFiles -Context $redactCtx -PackageRoot $packageRoot
+                if (-not [string]::IsNullOrWhiteSpace([string]$config.output.redactMapPath)) {
+                    $mapBase = if ($manifestPath) { Split-Path -Parent $manifestPath } else { $packageRoot }
+                    $mapWritten = Write-RangerRedactionMap -Context $redactCtx -Path ([string]$config.output.redactMapPath) -BaseDirectory $mapBase
+                    Write-Host "[Ranger] Redaction map (PRIVATE, keep out of shared packages) -> $mapWritten"
+                }
+            }
+            catch {
+                Microsoft.PowerShell.Utility\Write-Warning "Redaction sweep warning: $($_.Exception.Message)"
+            }
+        }
+        $script:RangerRedactSeed = $null
 
         # Restore whatever Write-Warning / Write-Verbose existed before the run
         if ($script:_rangerPrevWriteWarning) {

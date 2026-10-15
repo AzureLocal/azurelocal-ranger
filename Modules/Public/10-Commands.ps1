@@ -112,6 +112,24 @@ function Invoke-AzureLocalRanger {
     .PARAMETER ResourceGroupLocation
         Azure region for the resource group. Overrides config targets.azure.location when needed.
 
+    .PARAMETER Redact
+        Pseudonymise infrastructure identifiers (IPv4/IPv6, MAC, hostnames and FQDNs, BMC addresses, serial and
+        service tags, subscription/tenant/object GUIDs, resource group names, UPNs) in every output the run
+        writes. Pseudonyms are consistent within the run. Raw evidence is not kept in a redacted run.
+        Overrides config output.redact. See docs/operator/redaction.md.
+
+    .PARAMETER RedactMapPath
+        Write the private mapping file that reverses the redaction to this path (relative paths are placed next
+        to the manifest). Only written when this parameter or config output.redactMapPath is set. Keep the file
+        out of any shared or published package.
+
+    .PARAMETER RedactTerm
+        Extra words that must disappear from every output (for example a customer short name embedded in
+        resource names). Replaced everywhere, including inside longer names.
+
+    .PARAMETER RedactSeed
+        Optional seed that makes GUID and serial pseudonyms reproducible across runs.
+
     .OUTPUTS
         System.Collections.Hashtable — the completed run manifest. Also writes report files
         to the output directory.
@@ -210,7 +228,13 @@ function Invoke-AzureLocalRanger {
 
         # Issue #314: pass switch/firewall config export file paths directly without a full config file.
         # Populates domains.hints.networkDeviceConfigs before the networking collector runs.
-        [string[]]$NetworkDeviceConfigs
+        [string[]]$NetworkDeviceConfigs,
+
+        # v2.7.0: redaction (pseudonymise identifiers in every output format)
+        [switch]$Redact,
+        [string]$RedactMapPath,
+        [string[]]$RedactTerm,
+        [string]$RedactSeed
     )
 
     # #211: -Wizard dispatches to Invoke-RangerWizard, which already handles
@@ -268,6 +292,10 @@ function Invoke-AzureLocalRanger {
     if ($PSBoundParameters.ContainsKey('TimeoutSeconds'))    { $structuralOverrides['TimeoutSeconds']    = $TimeoutSeconds }
     if ($PSBoundParameters.ContainsKey('AzureMethod'))       { $structuralOverrides['AzureMethod']       = $AzureMethod }
     if ($PSBoundParameters.ContainsKey('SkipPreCheck'))          { $structuralOverrides['SkipPreCheck']          = [bool]$SkipPreCheck }
+    if ($PSBoundParameters.ContainsKey('Redact'))           { $structuralOverrides['Redact']           = [bool]$Redact }
+    if ($PSBoundParameters.ContainsKey('RedactMapPath'))    { $structuralOverrides['RedactMapPath']    = $RedactMapPath }
+    if ($PSBoundParameters.ContainsKey('RedactTerm'))       { $structuralOverrides['RedactTerm']       = $RedactTerm }
+    if ($PSBoundParameters.ContainsKey('RedactSeed'))       { $structuralOverrides['RedactSeed']       = $RedactSeed }
     if ($PSBoundParameters.ContainsKey('NetworkDeviceConfigs') -and @($NetworkDeviceConfigs).Count -gt 0) {
         $structuralOverrides['NetworkDeviceConfigs'] = $NetworkDeviceConfigs
     }
@@ -387,8 +415,27 @@ function Export-AzureLocalRangerReport {
         Report formats to generate. Accepted values include html, markdown, docx,
         xlsx, pdf, svg, and drawio. Defaults to html, markdown, svg.
 
+    .PARAMETER Redact
+        Pseudonymise identifiers (IPs, MACs, hostnames, serials, GUIDs, resource groups, UPNs) before rendering.
+        The source manifest is never modified. When -OutputPath is omitted a redacted run writes to a
+        'redacted' folder next to the manifest, and a redacted copy of the manifest is written to
+        'manifest\audit-manifest.redacted.json' in the output folder.
+
+    .PARAMETER RedactMapPath
+        Write the private reverse-mapping file here (relative paths resolve against the output folder).
+        Only written when this parameter is supplied.
+
+    .PARAMETER RedactTerm
+        Extra words to remove everywhere, including inside longer names.
+
+    .PARAMETER RedactSeed
+        Optional seed that makes GUID and serial pseudonyms reproducible.
+
     .OUTPUTS
         None. Reports are written to the output directory.
+
+    .EXAMPLE
+        Export-AzureLocalRangerReport -ManifestPath .\audit-manifest.json -Redact -RedactMapPath .\private-map.json
 
     .EXAMPLE
         Export-AzureLocalRangerReport -ManifestPath 'C:\AzureLocalRanger\2025-01-15\ranger-manifest.json'
@@ -405,7 +452,11 @@ function Export-AzureLocalRangerReport {
         [string]$ManifestPath,
 
         [string]$OutputPath,
-        [string[]]$Formats = @('html', 'markdown', 'svg')
+        [string[]]$Formats = @('html', 'markdown', 'svg'),
+        [switch]$Redact,
+        [string]$RedactMapPath,
+        [string[]]$RedactTerm,
+        [string]$RedactSeed
     )
 
     $resolvedManifestPath = Resolve-RangerPath -Path $ManifestPath
@@ -414,7 +465,24 @@ function Export-AzureLocalRangerReport {
     }
 
     $manifest = Get-Content -Path $resolvedManifestPath -Raw | ConvertFrom-Json -AsHashtable -Depth 100
-    $packageRoot = if ($OutputPath) { Resolve-RangerPath -Path $OutputPath } else { Split-Path -Parent $resolvedManifestPath }
+    $packageRoot = if ($OutputPath) { Resolve-RangerPath -Path $OutputPath }
+    elseif ($Redact) { Join-Path -Path (Split-Path -Parent $resolvedManifestPath) -ChildPath 'redacted' }
+    else { Split-Path -Parent $resolvedManifestPath }
+
+    if ($Redact) {
+        # Never write redacted output on top of the source package.
+        if ((Split-Path -Parent $resolvedManifestPath) -eq $packageRoot) {
+            throw 'With -Redact, -OutputPath must differ from the folder that holds the source manifest.'
+        }
+        $redactCtx = if ($RedactSeed) { New-RangerRedactionContext -Seed $RedactSeed } else { New-RangerRedactionContext }
+        $manifest = ConvertTo-RangerRedactedManifest -Manifest (ConvertTo-RangerHashtable -InputObject $manifest) -Context $redactCtx -Term @($RedactTerm)
+        New-Item -ItemType Directory -Path (Join-Path $packageRoot 'manifest') -Force | Out-Null
+        $manifest | ConvertTo-Json -Depth 100 | Set-Content -Path (Join-Path $packageRoot 'manifest\audit-manifest.redacted.json') -Encoding UTF8
+        if ($RedactMapPath) {
+            $mapWritten = Write-RangerRedactionMap -Context $redactCtx -Path $RedactMapPath -BaseDirectory $packageRoot
+            Write-Verbose "Redaction map written to $mapWritten"
+        }
+    }
 
     # v2.0.0 (#229): json-evidence is a lightweight inventory-only export — no
     # scoring, no run metadata. Handled here so it does not require a render pass.
@@ -426,6 +494,10 @@ function Export-AzureLocalRangerReport {
     }
     if ($jsonEvidenceRequested -and (Get-Command -Name 'Write-RangerJsonEvidenceExport' -ErrorAction SilentlyContinue)) {
         $null = Write-RangerJsonEvidenceExport -Manifest (ConvertTo-RangerHashtable -InputObject $manifest) -PackageRoot $packageRoot
+    }
+
+    if ($Redact) {
+        $null = Protect-RangerPackageTextFiles -Context $redactCtx -PackageRoot $packageRoot -ExcludeFullPath @($mapWritten)
     }
 
     return $rendered
@@ -820,6 +892,17 @@ function Publish-RangerRun {
         `keyvault://<vault>/<secret>` reference resolved via the v1.4.0 Key Vault resolver.
         Only used when `AuthMethod=sasFromKeyVault`.
 
+    .PARAMETER Redact
+        Publish a pseudonymised copy of the package: the manifest is redacted, every report format found in
+        the package is re-rendered from the redacted manifest, and text files are swept. The original package
+        on disk is not modified and no mapping file is created or uploaded.
+
+    .PARAMETER RedactTerm
+        Extra words to remove everywhere in the published copy.
+
+    .PARAMETER RedactSeed
+        Optional seed for reproducible GUID and serial pseudonyms.
+
     .PARAMETER Offline
         Do not call Azure. Simulates upload URIs and returns the computed plan. Used by the
         Pester suite and fixture-mode walkthroughs.
@@ -841,14 +924,23 @@ function Publish-RangerRun {
         [ValidateSet('default','managedIdentity','entraRbac','sasFromKeyVault')]
         [string]$AuthMethod,
         [string]$SasRef,
-        [switch]$Offline
+        [switch]$Offline,
+
+        # v2.7.0: publish a pseudonymised copy of the package instead of the original files.
+        [switch]$Redact,
+        [string[]]$RedactTerm,
+        [string]$RedactSeed
     )
 
     $resolvedPackage = Resolve-RangerPath -Path $PackagePath
     if (-not (Test-Path -Path $resolvedPackage -PathType Container)) {
         throw "Ranger package not found: $resolvedPackage"
     }
+    # Packages written by Invoke-AzureLocalRanger keep the manifest in manifest\; older/hand-made packages keep it at the root.
     $manifestPath = Join-Path $resolvedPackage 'audit-manifest.json'
+    if (-not (Test-Path -Path $manifestPath -PathType Leaf)) {
+        $manifestPath = Join-Path $resolvedPackage 'manifest\audit-manifest.json'
+    }
     if (-not (Test-Path -Path $manifestPath -PathType Leaf)) {
         throw "audit-manifest.json not found in package: $resolvedPackage"
     }
@@ -893,9 +985,23 @@ function Publish-RangerRun {
     $resolvedHash = @{}
     foreach ($k in $resolved.Keys) { $resolvedHash[[string]$k] = $resolved[$k] }
 
-    $result = Invoke-RangerBlobPublish -Manifest $manifest -PackagePath $resolvedPackage -RemoteStorageConfig $resolvedHash -Offline:$Offline
+    $publishPackage = $resolvedPackage
+    $publishManifest = $manifest
+    $redactTemp = $null
+    if ($Redact) {
+        $redactTemp = New-RangerRedactedPackageCopy -Manifest $manifest -PackagePath $resolvedPackage -Term $RedactTerm -Seed $RedactSeed
+        $publishPackage = $redactTemp.PackagePath
+        $publishManifest = $redactTemp.Manifest
+    }
 
-    # Write cloudPublish back to the manifest on disk so subsequent runs / LAW sinks see the result.
+    try {
+        $result = Invoke-RangerBlobPublish -Manifest $publishManifest -PackagePath $publishPackage -RemoteStorageConfig $resolvedHash -Offline:$Offline
+    }
+    finally {
+        if ($redactTemp -and (Test-Path -LiteralPath $redactTemp.PackagePath)) { Remove-Item -LiteralPath $redactTemp.PackagePath -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    # Write cloudPublish back to the ORIGINAL manifest on disk (never the redacted copy) so subsequent runs / LAW sinks see the result.
     $manifest.run = $manifest.run ?? [ordered]@{}
     $manifest.run.cloudPublish = $result
     ($manifest | ConvertTo-Json -Depth 100) | Set-Content -Path $manifestPath -Encoding UTF8
