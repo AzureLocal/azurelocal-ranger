@@ -1,0 +1,104 @@
+# Checks for the module: static analysis, manifest, Pester (sharded, one process per test file) and a Markdown link check.
+# Nothing here touches Azure or a cluster; the Pester suites run on fixtures and mocks.
+# Actions are pinned to full commit SHAs (the comment names the release); bump them with Dependabot or by hand.
+# The same checks run locally:
+#   pwsh -File scripts/ci/Invoke-RangerCi.ps1 -Check All
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyzer:
+    name: PSScriptAnalyzer
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser -Force
+      - name: Analyze the module (0 errors and 0 warnings after the settings file)
+        shell: pwsh
+        run: ./scripts/ci/Invoke-RangerCi.ps1 -Check Analyzer -ResultPath analyzer.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: analyzer
+          path: analyzer.json
+          if-no-files-found: ignore
+
+  manifest:
+    name: Module manifest
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test-ModuleManifest and import
+        shell: pwsh
+        run: ./scripts/ci/Invoke-RangerCi.ps1 -Check Manifest
+
+  links:
+    name: Markdown links
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check relative Markdown links
+        shell: pwsh
+        run: ./scripts/ci/Invoke-RangerCi.ps1 -Check Links
+
+  pester:
+    name: Pester (${{ matrix.shard }})
+    runs-on: windows-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: outputs-and-redaction
+            files: EndToEnd.Tests.ps1,Outputs.Tests.ps1,Redaction.Tests.ps1
+          - shard: config-and-execution
+            files: Config.Tests.ps1,Execution.Tests.ps1,DriftDetection.Tests.ps1,MonitoringCollector.Tests.ps1,NetworkDevice.Tests.ps1
+          - shard: runtime-and-releases
+            files: Runtime.Tests.ps1,V21PreflightHardening.Tests.ps1,V22WafCompliance.Tests.ps1,V23CloudPublishing.Tests.ps1
+          - shard: platform-and-design
+            files: Simulation.Tests.ps1,StorageNetworkingCollector.Tests.ps1,V25ExtendedPlatform.Tests.ps1,V2Features.Tests.ps1,WorkloadIdentityAzureCollector.Tests.ps1,Platform2609.Tests.ps1,DesignCompare.Tests.ps1,Hardening.Tests.ps1,NicBridge.Tests.ps1,Docs.Tests.ps1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Pester and powershell-yaml
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          # -SkipPublisherCheck: the runner image ships Pester 3.4 signed by Microsoft.
+          Install-Module Pester -RequiredVersion 5.9.1 -Scope CurrentUser -Force -SkipPublisherCheck
+          Install-Module powershell-yaml -RequiredVersion 0.4.12 -Scope CurrentUser -Force
+      - name: Run the shard (one PowerShell process per test file)
+        shell: pwsh
+        run: ./scripts/ci/Invoke-RangerCi.ps1 -Check Pester -TestFile ${{ matrix.files }} -ResultPath pester-${{ matrix.shard }}.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: pester-${{ matrix.shard }}
+          path: pester-${{ matrix.shard }}.json
+          if-no-files-found: ignore

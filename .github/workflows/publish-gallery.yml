@@ -1,0 +1,53 @@
+# Publishes AzureLocalRanger to the PowerShell Gallery when a GitHub release is published.
+#
+# NOT CONFIGURED ON PURPOSE. Before the first release the repository owner must:
+#   1. create a GitHub environment named 'psgallery' (add required reviewers so a person approves each publish);
+#   2. add the environment secret PSGALLERY_API_KEY (a PowerShell Gallery API key scoped to the AzureLocalRanger package).
+# Without the secret the job stops with an error before anything is uploaded. Nothing here stores or prints the key.
+name: publish-gallery
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Validate and stage only; do not publish'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    environment: psgallery
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate the manifest and that the tag matches it
+        shell: pwsh
+        run: |
+          $m = Test-ModuleManifest -Path ./AzureLocalRanger.psd1
+          $tag = '${{ github.event.release.tag_name }}'
+          if ($tag -and ($tag.TrimStart('v') -ne $m.Version.ToString())) { throw "Release tag '$tag' does not match module version '$($m.Version)'." }
+          Write-Host "Module version $($m.Version)"
+      - name: Stage the module files
+        shell: pwsh
+        run: |
+          $stage = Join-Path $env:RUNNER_TEMP 'AzureLocalRanger'
+          New-Item -ItemType Directory -Path $stage | Out-Null
+          foreach ($item in 'AzureLocalRanger.psd1', 'AzureLocalRanger.psm1', 'LICENSE', 'README.md', 'CHANGELOG.md', 'Modules', 'en-US') { Copy-Item -Path $item -Destination $stage -Recurse }
+          Test-ModuleManifest -Path (Join-Path $stage 'AzureLocalRanger.psd1') | Out-Null
+          "STAGE=$stage" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Publish to the PowerShell Gallery
+        if: ${{ github.event_name == 'release' || inputs.dry-run == false }}
+        shell: pwsh
+        env:
+          PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:PSGALLERY_API_KEY)) { throw 'PSGALLERY_API_KEY is not configured for the psgallery environment. See the header of this workflow.' }
+          Publish-Module -Path $env:STAGE -NuGetApiKey $env:PSGALLERY_API_KEY -Repository PSGallery -Verbose
