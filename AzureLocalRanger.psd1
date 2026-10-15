@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '2.6.6'
+    ModuleVersion     = '2.7.0' # x-release-please-version
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
@@ -62,6 +62,17 @@
                 'Az.ConnectedMachine'
             )
             ReleaseNotes = @'
+## v2.7.0 — Redaction, design comparison and Azure Local 12.2609 (latest) evidence
+
+### Added
+- **Redaction** — `-Redact` (with `-RedactMapPath`, `-RedactTerm`, `-RedactSeed`) pseudonymises IPs, MACs, hostnames, serials, GUIDs, resource groups and UPNs in every output format; the reverse map is written only on request.
+- **Design versus as-built** — `Compare-RangerDesign`, `ConvertTo-RangerAsBuiltSnapshot` and `-Formats as-built-snapshot` (`as-built-snapshot.v1`, shared with Azure Local Trailwright).
+- **Azure Local 12.2609 (latest) evidence** — Arc gateway (the collector the v2.0.0 notes listed but never shipped), security baseline score, Secure Boot 2023 certificate status, key backup candidates, local identity, private path, rack aware zones, SBE detail, SAN indicators.
+- Degraded collectors in the manifest, manifest JSON Schema, per-collector reference pages, GitHub CI, release-please and a gated PSGallery publish job.
+
+### Changed
+- Empty catch blocks log at debug level and mark the collector degraded; documentation links point at azurelocal.cloud.
+
 ## v2.6.6 — Subscription-Scoped Discovery & Auth-Context Hardening
 
 Discovery-scoping and authentication-ordering hardening on top of v2.6.5.

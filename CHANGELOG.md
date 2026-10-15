@@ -8,6 +8,36 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+Targets v2.7.0. The module version in `AzureLocalRanger.psd1` is already 2.7.0; the tag and the PowerShell Gallery publish are the owner's step.
+
+### Added
+
+- **Redaction** — `-Redact`, `-RedactMapPath`, `-RedactTerm` and `-RedactSeed` on `Invoke-AzureLocalRanger`, `Export-AzureLocalRangerReport` and (`-Redact`, `-RedactTerm`, `-RedactSeed`) `Publish-RangerRun`, plus config keys `output.redact`, `output.redactMapPath` and `output.redactTerms`. IPv4/IPv6, MAC, hostnames and FQDNs, BMC addresses, serial and service tags, GUIDs, resource group names, UPNs, storage account and vault names, DOMAIN\user accounts, certificate subjects and SAS signatures get consistent, idempotent pseudonyms in every output format (HTML, Markdown, JSON, JSON evidence, SVG, draw.io, DOCX, XLSX, PDF, Power BI, PPTX) and in file names. The reverse map is written only when `-RedactMapPath` is given. See `docs/operator/redaction.md`.
+- **Design versus as-built** — `Compare-RangerDesign` compares a manifest with the deploy automation environment file or Trailwright's `infrastructure.yml` and returns match / drift / missing / not-captured rows with severity and Learn links; `Export-AzureLocalRangerReport -DesignPath` adds a **Design vs as-built** section to the reports. `ConvertTo-RangerAsBuiltSnapshot` and `-Formats as-built-snapshot` export `as-built-snapshot.v1` (JSON Schema in `docs/reference/`). See `docs/reference/design-vs-as-built.md`.
+- **Azure Local 12.2609 (latest) platform evidence** — Arc gateway resources and per-node routing, security baseline compliance score, Secure Boot 2023 certificate status, backup key vault candidates (automatic key backup, preview), local identity with Key Vault and internal DNS (preview), private path indicators, rack aware cluster zones, SBE and OEM update detail, and disaggregated or SAN indicators. See `docs/reference/platform-2609-evidence.md`.
+- **Degraded collectors** — the collector entry in the manifest gains `degraded`, `degradationCount` and `degradations`; a degraded collector adds an informational finding and `run-status.json` counts them.
+- **Manifest JSON Schema** (`docs/reference/manifest.schema.json`, #266) and generated per-collector reference pages (`docs/reference/collectors/`, #269).
+- **CI** — `.github/workflows/ci.yml` (PSScriptAnalyzer, manifest, Markdown links and sharded Pester), `release-please.yml` and a `publish-gallery.yml` that needs an approved `psgallery` environment and the `PSGALLERY_API_KEY` secret (not configured). Actions are pinned to commit SHAs. `scripts/ci/Invoke-RangerCi.ps1` runs the same checks locally.
+- `samples/configs/ranger.from-environment.ps1` builds a Ranger config from the deploy automation environment file.
+- Issue templates for bug reports, feature requests and documentation issues.
+- PowerShell compatibility statement (`docs/reference/powershell-compatibility.md`): PowerShell 7 (Core) only, checked by `Test-ModuleManifest` in CI.
+
+### Changed
+
+- Empty `catch` blocks (35) now log the collector, source and error at debug level through `Write-RangerSwallowedError`; failed `Invoke-RangerSafeAction` reads count too.
+- Internal helper renames for approved verbs: `ConvertTo-RangerNormalizedConfiguration`, `Set-RangerCompanionConfigurationFallbacks`, `Read-WizardValue`, `Read-WizardGuid`, `Read-WizardList`, `Read-WizardChoice`.
+- `New-AzureLocalRangerConfig` supports `-WhatIf` and `-Confirm`.
+- `Publish-RangerRun` finds `manifest\audit-manifest.json` in packages written by `Invoke-AzureLocalRanger` (it only looked at the package root).
+- The generated YAML header, the command help and `samples/configs/ranger.yml` point at https://azurelocal.cloud/azurelocal-ranger instead of azurelocal.github.io.
+- The documentation site uses clean URLs and also emits `<route>/index.html`, so slash routes resolve.
+- `.release-please-manifest.json` records 2.6.6 (it said 0.0.0).
+
+### Fixed
+
+- **Arc gateway collector** — the v2.0.0 notes (#220) listed an Arc gateway collector, but only the report layer, the permission probe and the synthetic fixture referenced `arcGateways`; no collector populated it. It is implemented now (see above).
+- ProgressDisplay: an invalid `_ = $pct` statement in `Update-RangerProgressCollectorDone` and an invalid path in `Write-RangerProgressSummary` were hidden by silent catches; both fixed and covered by tests. The roadmap text that called the file a non-functional stub with a syntax error was stale and is corrected.
+- Three broken links in `CONTRIBUTING.md` (the issue templates did not exist).
+- PSScriptAnalyzer: 0 errors and 0 warnings with the checked-in settings (unused variables removed, `$profile` and `$Args` no longer assigned, credential-map parameters suppressed with a justification).
 ## [2.6.6] — Subscription-Scoped Discovery & Auth-Context Hardening (2026-07-11)
 
 ### Changed
