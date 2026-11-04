@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and 
 
 Pre-release versions start at `0.5.0`. The first stable PSGallery release will be `1.0.0` once live-estate validation is complete.
 
+## [2.7.1](https://github.com/AzureLocal/azurelocal-ranger/compare/v2.7.0...v2.7.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* **reports:** avoid launching Edge during browser discovery ([cedab86](https://github.com/AzureLocal/azurelocal-ranger/commit/cedab86cababc2db01b3329c27f38680a6eba119))
+
 ## [2.7.0](https://github.com/AzureLocal/azurelocal-ranger/compare/v2.6.6...v2.7.0) (2026-10-16)
 
 
