@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AzureLocalRanger.psm1'
-    ModuleVersion     = '2.7.0' # x-release-please-version
+    ModuleVersion     = '2.7.1' # x-release-please-version
     CompatiblePSEditions = @('Core')
     GUID              = '8bc325c2-9b7f-46f9-b102-ef29e92a15b8'
     Author            = 'Azure Local Cloud'
