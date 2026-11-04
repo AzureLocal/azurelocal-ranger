@@ -141,6 +141,13 @@ Describe 'Redaction pseudonymiser' {
 
 Describe 'Redaction across every output format' {
     BeforeAll {
+        # Compressed browser PDFs contain arbitrary binary bytes, not searchable text.
+        # Check the browser's input, then exercise the searchable fallback PDF writer.
+        Mock Invoke-RangerHeadlessPdf {
+            param($HtmlPath)
+            (Get-Content -LiteralPath $HtmlPath -Raw) | Should -Not -Match '(?i)\biic\b'
+            return $false
+        } -ModuleName AzureLocalRanger
         $script:manifestPath = Join-Path $script:fixtureRoot 'synthetic-manifest.json'
         $script:original = Get-Content $script:manifestPath -Raw | ConvertFrom-Json -AsHashtable
         $script:identifiers = script:Get-OriginalIdentifiers -Manifest $script:original
@@ -154,6 +161,10 @@ Describe 'Redaction across every output format' {
 
     It 'found a meaningful set of original identifiers to look for' {
         $script:identifiers.Count | Should -BeGreaterThan 20
+    }
+
+    It 'supplied redacted HTML to the browser renderer for all three reports' {
+        Should -Invoke Invoke-RangerHeadlessPdf -ModuleName AzureLocalRanger -Times 3 -Exactly -Scope Describe
     }
 
     It 'produced every requested format plus the redacted manifest' {

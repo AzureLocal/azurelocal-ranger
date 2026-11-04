@@ -31,6 +31,10 @@ Pre-release versions start at `0.5.0`. The first stable PSGallery release will b
 
 ## [Unreleased]
 
+### Fixed
+
+- Read headless browser version metadata without launching the browser, preventing Windows Edge discovery from hanging PDF reports and CI.
+
 Targets v2.7.0. The module version in `AzureLocalRanger.psd1` is already 2.7.0; the tag and the PowerShell Gallery publish are the owner's step.
 
 ### Added

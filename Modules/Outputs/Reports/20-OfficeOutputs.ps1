@@ -458,8 +458,8 @@ function Resolve-RangerHeadlessBrowser {
 
             $ver = $null
             try {
-                $verOutput = & $path --version 2>$null
-                if ($verOutput) { $ver = ($verOutput | Select-Object -First 1).ToString().Trim() }
+                # Windows GUI browsers can stay open indefinitely when invoked with --version.
+                $ver = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($path).ProductVersion
             } catch { Write-RangerSwallowedError -Source 'Resolve-RangerHeadlessBrowser' -ErrorRecord $_ }
 
             return @{ Path = $path; Name = $c.Name; Version = $ver }

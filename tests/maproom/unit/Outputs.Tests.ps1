@@ -4,6 +4,25 @@ BeforeAll {
     Import-Module (Join-Path $script:repoRoot 'AzureLocalRanger.psd1') -Force
 }
 
+Describe 'Headless browser discovery' {
+    It 'reads browser metadata without executing the browser' {
+        $browserPath = Join-Path $TestDrive 'browser-probe.ps1'
+        $markerPath = Join-Path $TestDrive 'browser-started.txt'
+        "Set-Content -LiteralPath '$markerPath' -Value 'started'" | Set-Content -LiteralPath $browserPath
+
+        InModuleScope AzureLocalRanger {
+            param($BrowserPath)
+            Mock Get-Command { [pscustomobject]@{ Source = $BrowserPath } } -ParameterFilter { $Name -eq 'msedge' }
+
+            $browser = Resolve-RangerHeadlessBrowser
+            $browser.Path | Should -Be $BrowserPath
+            $browser.Name | Should -Be 'msedge'
+        } -Parameters @{ BrowserPath = $browserPath }
+
+        Test-Path -LiteralPath $markerPath | Should -BeFalse
+    }
+}
+
 Describe 'Azure Local Ranger cached outputs' {
     It 'renders reports and diagrams from a saved manifest' {
         $outputRoot = Join-Path $TestDrive 'rendered-package'
