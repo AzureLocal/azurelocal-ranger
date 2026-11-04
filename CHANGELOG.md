@@ -6,6 +6,29 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and 
 
 Pre-release versions start at `0.5.0`. The first stable PSGallery release will be `1.0.0` once live-estate validation is complete.
 
+## [2.7.0](https://github.com/AzureLocal/azurelocal-ranger/compare/v2.6.6...v2.7.0) (2026-10-16)
+
+
+### Features
+
+* **claude:** add Claude Code scaffold ([aa0a43c](https://github.com/AzureLocal/azurelocal-ranger/commit/aa0a43cac25668f01abb0e0fb62ce7ac079b807f))
+* **collectors:** Azure Local 12.2609 platform evidence and the missing Arc gateway collector ([1ceb630](https://github.com/AzureLocal/azurelocal-ranger/commit/1ceb630bf75769026ed8508de23f6304afa5db0e))
+* **design:** Compare-RangerDesign and the as-built-snapshot.v1 export ([c30bc25](https://github.com/AzureLocal/azurelocal-ranger/commit/c30bc25353070e30e79747bc87e52a3c9c94d007))
+* **redaction:** -Redact pseudonymises identifiers in every output format ([f13089f](https://github.com/AzureLocal/azurelocal-ranger/commit/f13089fc26feab215f836c264e63246def699dc0))
+* **redaction:** cover guest VM names, registered organisation and tenant display names ([3d39035](https://github.com/AzureLocal/azurelocal-ranger/commit/3d390358b4cfc3f1ac41b5da98d5aac319c2a87c))
+* **redaction:** secrets, down-level accounts, link-local and certificate subject rules from the adversarial review ([7e0c7d7](https://github.com/AzureLocal/azurelocal-ranger/commit/7e0c7d7f912b0581cc78d43311749e8e783f5e32))
+* **samples:** ranger.from-environment.ps1 builds a Ranger config from the deploy automation environment file ([1aba2ea](https://github.com/AzureLocal/azurelocal-ranger/commit/1aba2eadbd4ff913d8e99fcbbdbae8262f4a760f))
+
+
+### Bug Fixes
+
+* **docs:** inject base path and convert mkdocs admonitions AB[#4945](https://github.com/AzureLocal/azurelocal-ranger/issues/4945) ([74b24f9](https://github.com/AzureLocal/azurelocal-ranger/commit/74b24f927a55d02a4c318a52ab9aafce157e4783))
+* **docs:** restore branding and ignore dead links AB[#4945](https://github.com/AzureLocal/azurelocal-ranger/issues/4945) ([50783a8](https://github.com/AzureLocal/azurelocal-ranger/commit/50783a865f830caf72a35fa8cfc7591c4d5c9b33))
+* **docs:** restore custom navigation, logos, and github links AB[#4945](https://github.com/AzureLocal/azurelocal-ranger/issues/4945) ([42e15d4](https://github.com/AzureLocal/azurelocal-ranger/commit/42e15d4eab1cbf7194b848fe9a73e3f0ccd1670e))
+* **hooks:** substitute {{REPO_ROOT}} placeholder in hook scripts ([555a539](https://github.com/AzureLocal/azurelocal-ranger/commit/555a5392a2f0466303e70c0203af5d08e31cc662))
+* **reports:** render the 12.2609 posture table from an array (a generic List broke report rendering) ([572c87b](https://github.com/AzureLocal/azurelocal-ranger/commit/572c87b08d353513537e2dabc672ea674f7fa3af))
+* **runtime:** log non-fatal errors instead of swallowing them and flag degraded collectors ([c67bd0c](https://github.com/AzureLocal/azurelocal-ranger/commit/c67bd0ca515deb1173365f0f456d7382b80af24e))
+
 ## [Unreleased]
 
 Targets v2.7.0. The module version in `AzureLocalRanger.psd1` is already 2.7.0; the tag and the PowerShell Gallery publish are the owner's step.
