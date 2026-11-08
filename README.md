@@ -13,7 +13,7 @@ Documentation: [azurelocal.cloud](https://azurelocal.cloud) | Solutions: [Azure 
 
 Azure Local Ranger is a read-only discovery, documentation, audit, and reporting solution for Azure Local. It builds a manifest-first view of one deployment: the physical platform, the cluster fabric, hosted workloads, and the Azure resources that represent, manage, monitor, or extend that environment.
 
-AzureLocalRanger `2.6.6` is the current release. Install from PSGallery or import from source while developing locally.
+AzureLocalRanger `2.7.1` is the current release. Install from PSGallery or import from source while developing locally.
 
 ## What Ranger Covers
 
@@ -37,6 +37,20 @@ Import-Module AzureLocalRanger
 Connect-AzAccount                 # once per session
 ```
 
+## Prerequisites
+
+Full checklist: [Prerequisites Guide](docs/prerequisites.md). Run `Test-AzureLocalRangerPrerequisites` to check the machine (add `-InstallPrerequisites` from an elevated session to install what is missing).
+
+| Area | Requirement |
+|---|---|
+| PowerShell | PowerShell 7.0 or later (`PowerShellVersion = '7.0'`, `CompatiblePSEditions = Core`). Windows PowerShell 5.1 is not supported |
+| Execution host | A Windows management workstation or jump box (Windows Server or Windows 10/11, including AVD multi-session). Not designed to run on a cluster node |
+| Required modules | `Az.Accounts` 2.13.0 or later, `Az.Resources` 6.0.0 or later, `Az.KeyVault` 4.0.0 or later, `Az.ConnectedMachine` 0.7.0 or later (versions are the minimums the startup module check enforces) |
+| Optional modules | `Az.StackHCI` 2.0.0+, `Az.ResourceGraph` 0.13.0+, `Az.Storage` (Azure Blob publishing), `Az.Advisor` (WAF Advisor recommendations), `PwshSpectreConsole` (progress display), RSAT ActiveDirectory (only for AD collection), GroupPolicy tools (GPO posture), Azure CLI (fallback when `useAzureCliFallback` is on) |
+| Azure permissions | Reader on the subscription or resource group of the cluster; Key Vault secret read (`Key Vault Secrets User` or an access policy) when `keyvault://` credential references are used. `Test-RangerPermissions` audits RBAC and provider registration before a run |
+| Cluster access | Local administrator or equivalent read access over WinRM to every node; Active Directory read for domain-joined environments |
+| Network ports | TCP 5985/5986 (WinRM) to nodes; TCP 443 to Azure Resource Manager, Azure Arc, Key Vault and monitoring endpoints; TCP 389/636 to a domain controller for AD collection; TCP 443 to each BMC (Redfish) only when hardware discovery is enabled (BMC credentials required; Dell iDRAC is the supported Redfish path) |
+| Credentials | Never stored in the config file. Use `keyvault://<vault>/<secret>` references, the runtime prompt, or an Azure managed identity. Azure auth methods: existing context, runtime prompt, service principal, managed identity, device code, Azure CLI |
 ## Quick Start
 
 Three ways to run Ranger, ranked. Pick the one that matches how thorough you want to be.

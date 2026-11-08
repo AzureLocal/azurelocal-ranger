@@ -9,18 +9,24 @@ This is the canonical prerequisites guide for AzureLocalRanger. It covers requir
 - Active Directory read permissions when the environment is domain-joined.
 - Azure RBAC Reader on the subscription or resource group being scanned.
 - Azure Key Vault secret-read access when `passwordRef` values use `keyvault://` URIs.
+- BMC (Redfish) credential when hardware discovery is enabled; keep it in Key Vault, never in the config file.
+- Elevated (Administrator) session only when running `Test-AzureLocalRangerPrerequisites -InstallPrerequisites`.
 
 ## Required Modules and Tools
 
 | Item | Required | Notes |
 |---|---|---|
 | PowerShell 7.x | Yes | Ranger targets PowerShell 7 and `CompatiblePSEditions = Core` |
-| `Az.Accounts` | Yes | Azure authentication |
-| `Az.Resources` | Yes | Azure resource inventory |
+| `Az.Accounts` (2.13.0+) | Yes | Azure authentication |
+| `Az.Resources` (6.0.0+) | Yes | Azure resource inventory |
+| `Az.KeyVault` (4.0.0+) | Yes | Resolves `keyvault://` credential references (Azure CLI is the fallback) |
+| `Az.ConnectedMachine` (0.7.0+) | Yes (startup check) | Arc Run Command transport when WinRM is blocked |
+| `Az.StackHCI` (2.0.0+), `Az.ResourceGraph` (0.13.0+) | Optional | Cluster-level operations and faster ARM discovery |
+| `Az.Storage`, `Az.Advisor` | Optional | Azure Blob publishing; WAF Advisor recommendations |
 | RSAT ActiveDirectory | When AD queries are needed | Required for domain-backed identity collection |
 | GroupPolicy tools | Optional | Used when GPO posture is collected |
 | Azure CLI | Optional | Fallback when `useAzureCliFallback` is enabled |
-| ImportExcel | No | Not required; XLSX output is generated without Excel automation |
+| ImportExcel (7.8.0+) | No | Checked as optional by the startup module check; XLSX output is generated without Excel automation |
 
 ## Viewer and Consumer Tools
 
@@ -38,6 +44,7 @@ This is the canonical prerequisites guide for AzureLocalRanger. It covers requir
 - WinRM: TCP `5985` or `5986` to cluster nodes.
 - LDAP or LDAPS: TCP `389` or `636` to at least one domain controller when AD collection is required.
 - HTTPS: TCP `443` to Azure Resource Manager, Azure Arc, Key Vault, and monitoring endpoints.
+- Redfish: TCP `443` to each BMC (for example Dell iDRAC) only when hardware discovery is enabled; a BMC credential is then required.
 - No requirement to reach switches, firewalls, or OpenGear devices from the execution host unless you explicitly opt into those targets.
 
 ## Quick-Check Script
