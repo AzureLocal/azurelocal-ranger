@@ -30,7 +30,7 @@ Skipped when no cluster transport is reachable (connectivity matrix) and the col
 
 The collector status in the manifest is one of `success`, `partial`, `failed`, `skipped` or `not-applicable`. Since v2.7.0 the entry also carries `degraded`, `degradationCount` and `degradations` (source and message of every non-fatal read that failed), and a degraded collector adds an informational finding. Debug-level detail is in `ranger.log`.
 
-## Azure Local 12.2609 (latest) coverage
+## Azure Local 12.2609 coverage (unchanged in 12.2611, the latest)
 
 | Item | Manifest path | Microsoft Learn |
 | --- | --- | --- |

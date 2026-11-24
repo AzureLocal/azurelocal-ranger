@@ -110,6 +110,23 @@ Set-Location .\azurelocal-ranger
 Import-Module .\AzureLocalRanger.psd1 -Force
 ```
 
+## Where Ranger fits in the Azure Local tool chain
+
+Ranger is the **day 2** tool: it reads a running cluster and says whether it still matches the design. It is read-only. After the deployment it is **compare-only**: the drift report is the output, and nothing is written back to `infrastructure.yml` or the registry.
+
+```text
+Surveyor (sizing handoff) -> Trailwright (infrastructure.yml) -> hardware discovery -> ZTP -> toolkit OS configuration, gate, ARM deploy -> Ranger (as-built, drift) -> Sonar / S2D Cartographer / Load Tools
+```
+
+| Direction | What | Name |
+|---|---|---|
+| In (design) | The environment file the whole chain shares | `infrastructure.yml` (schema 5) or its ranger cut. `-InfrastructureFile` on `Invoke-AzureLocalRanger`, `Test-RangerPermissions` and `Test-AzureLocalRangerPrerequisites` resolves the cluster, nodes, BMC endpoints and Azure scope; a value in your Ranger config file or a parameter wins. `Compare-RangerDesign -DesignPath` reads it as the design record |
+| In (older files) | Trailwright schema 4 `infrastructure.yml`, the retired deploy automation `environment.yml` | Still read for one more release, with a warning |
+| Out | The as-built record | `audit-manifest.json` and the HTML, Excel and Word reports under `C:\AzureLocalRanger\<environment>-<mode>-<timestamp>\`, and `as-built-snapshot.v1` |
+| Out | The drift report | `design-comparison.json` and `design-comparison.html` from `Compare-RangerDesign` (`design-comparison.v1`: match, drift, missing, not captured, not comparable) |
+
+The deployment tools write the file (Trailwright, the toolkit's discovery write-back); Ranger only reads it. The newest platform evidence Ranger collects was added in Azure Local 12.2609 and carries into 12.2611.1004.9 (OS 26100.33822), the current release.
+
 ## Commands
 
 | Command | Purpose |

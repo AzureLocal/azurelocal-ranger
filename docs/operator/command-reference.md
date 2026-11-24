@@ -199,7 +199,7 @@ Get-RangerRemediation -ManifestPath .\audit-manifest.json -Commit -IncludeDepend
 | `-DesignPath` | `string` | Yes | The design record: the instance's `infrastructure.yml` (schema 5), or its ranger cut (YAML or JSON) |
 | `-DesignKind` | `string` | No | `auto` (default), `infrastructure` (schema 5; a schema 4 Trailwright export is still read, with a warning), `environment` (the retired environment file, read with a warning for one more release) or `snapshot` |
 | `-OutputPath` | `string` | No | Folder for `design-comparison.json` and `design-comparison.html` |
-| `-Release` | `string` | No | Deployed release build (for example `12.2609.1003.7`) when the manifest does not carry it |
+| `-Release` | `string` | No | Deployed release build (for example `12.2611.1004.9`) when the manifest does not carry it |
 
 Returns `design-comparison.v1`: a summary (match, drift, missing, not captured, not comparable, errors, warnings, coverage) and one finding row per compared item with status, severity and a Learn link. A design record that holds no section Ranger compares (a file cut for another tool) gives one `not-comparable` row and `summary.comparable: false`, not an empty clean table. Ranger is compare-only after the deployment: the comparison is the drift report, and nothing is written back to the file or the registry. Field mapping: [Design versus as-built](../reference/design-vs-as-built.md).
 
@@ -228,20 +228,20 @@ v2.5.0 (#129). Run Ranger across every cluster in an estate config file and emit
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `-ConfigPath` | `string` | One of `ConfigPath` / `ConfigObject` | Path to an estate config YAML or JSON file |
-| `-ConfigObject` | `hashtable` | One of `ConfigPath` / `ConfigObject` | In-memory estate config |
-| `-OutputPath` | `string` | No | Override `output.rootPath` from the estate config |
-| `-ClusterCredential` | `PSCredential` | No | Shared cluster WinRM credential applied to all clusters |
-| `-DomainCredential` | `PSCredential` | No | Shared domain credential |
-| `-Unattended` | `switch` | No | Suppress interactive prompts |
+| `-ConfigPath` | `string` | One of `ConfigPath` / `Targets` | Path to an estate config YAML or JSON file with an `estate.targets` list (YAML needs `powershell-yaml`) |
+| `-Targets` | `object[]` | One of `ConfigPath` / `Targets` | The per-cluster blocks in memory (each has a `clusterName` and a `configPath`) |
+| `-OutputRoot` | `string` | No | Folder for the `estate-<timestamp>` run folder. Default: the current folder |
+| `-FixtureMode` | `switch` | No | Run each cluster from fixtures instead of a live cluster |
+| `-ContinueOnClusterError` | `switch` | No | Go on with the next cluster when one fails |
+
+The command has no `-ClusterCredential`, `-DomainCredential` or `-Unattended` parameter. Each target in `estate.targets` has a `clusterName` and a `configPath` (that cluster's own Ranger config); the cluster's credentials come from that config.
 
 ```powershell
 # Run estate rollup
 Invoke-AzureLocalRangerEstate -ConfigPath C:\ranger\estate.yml
 
-# Unattended with shared credential
-$cred = Get-Credential
-Invoke-AzureLocalRangerEstate -ConfigPath C:\ranger\estate.yml -ClusterCredential $cred -Unattended
+# Write to a chosen folder and keep going when one cluster fails
+Invoke-AzureLocalRangerEstate -ConfigPath C:\ranger\estate.yml -OutputRoot C:\ranger\out -ContinueOnClusterError
 ```
 
 Estate config structure:
@@ -288,6 +288,17 @@ Import-RangerManualEvidence `
   -EvidencePath .\network-inventory.json `
   -Source 'manual-network-inventory'
 ```
+
+## Test-RangerPermissions
+
+The pre-run RBAC and resource-provider audit that `Invoke-AzureLocalRanger` runs by default (`-SkipPreCheck` turns it off). Returns `OverallReadiness` = `Full`, `Partial` or `Insufficient`.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `-ConfigPath` | `string` | No | Ranger YAML or JSON config |
+| `-ConfigObject` | `hashtable` / object | No | In-memory config, merged over the defaults |
+| `-InfrastructureFile` | `string` | No | An `infrastructure.yml` (schema 5): the audit checks the scope it resolves (subscription, resource group, Key Vault references) |
+| `-OutputFormat` | `string` | No | `console` (default), `json` or `markdown` |
 
 ## Test-AzureLocalRangerPrerequisites
 
