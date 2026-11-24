@@ -153,6 +153,31 @@ function Resolve-RangerEsuOsEligibility {
     }
 }
 
+function Invoke-RangerWorkloadStep {
+    <#
+    .SYNOPSIS
+        Runs one workload-identity-azure collection step through Invoke-RangerSafeAction
+        and logs when it starts and how long it took, so a slow step is visible in
+        ranger.log while the run is still going.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Label,
+
+        [AllowNull()]
+        $DefaultValue = $null,
+
+        [Parameter(Mandatory = $true)]
+        [scriptblock]$ScriptBlock
+    )
+
+    $rangerStepTimer = [System.Diagnostics.Stopwatch]::StartNew()
+    Write-RangerLog -Level info -Message "WorkloadIdentityCollector: '$Label' starting"
+    $rangerStepResult = Invoke-RangerSafeAction -Label $Label -DefaultValue $DefaultValue -ScriptBlock $ScriptBlock
+    Write-RangerLog -Level info -Message ("WorkloadIdentityCollector: '{0}' finished in {1:N1}s" -f $Label, $rangerStepTimer.Elapsed.TotalSeconds)
+    return $rangerStepResult
+}
+
 function Invoke-RangerWorkloadIdentityAzureCollector {
     [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param(
@@ -174,16 +199,25 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
         return ConvertTo-RangerHashtable -InputObject $fixture
     }
 
+    # Per-call limits so one slow node or Azure call cannot hold the whole run.
+    # behavior.timeoutSeconds still wins when it is larger.
+    $configuredTimeoutSeconds  = if ($Config.behavior -and $Config.behavior.timeoutSeconds -gt 0) { [int]$Config.behavior.timeoutSeconds } else { 0 }
+    $azureQueryTimeoutSeconds  = [math]::Max(180, $configuredTimeoutSeconds)
+    $clusterStepTimeoutSeconds = [math]::Max(600, $configuredTimeoutSeconds)
+    $vmInventoryTimeoutSeconds = [math]::Max(1200, $configuredTimeoutSeconds)
+    Write-RangerLog -Level info -Message "WorkloadIdentityCollector: limits per call - Azure query ${azureQueryTimeoutSeconds}s, cluster step ${clusterStepTimeoutSeconds}s, VM inventory ${vmInventoryTimeoutSeconds}s"
+
     # Issue #111: auto-detect domain context before running AD queries
+    $rangerStepTimer = [System.Diagnostics.Stopwatch]::StartNew()
     $arcResource  = Resolve-RangerClusterArcResource -Config $Config
     $domainCtx    = Resolve-RangerDomainContext -Config $Config -ArcResource $arcResource -ClusterCredential $CredentialMap.cluster
     $domainFqdn   = if ($domainCtx.FQDN) { [string]$domainCtx.FQDN } else { '' }
     $isWorkgroup  = [bool]$domainCtx.IsWorkgroup
-    Write-RangerLog -Level info -Message "WorkloadIdentityCollector: domain context — FQDN='$domainFqdn', source='$($domainCtx.ResolvedBy)', workgroup=$isWorkgroup"
+    Write-RangerLog -Level info -Message ("WorkloadIdentityCollector: domain context — FQDN='$domainFqdn', source='$($domainCtx.ResolvedBy)', workgroup=$isWorkgroup ({0:N1}s)" -f $rangerStepTimer.Elapsed.TotalSeconds)
 
     $vmSnapshots = @(
-        Invoke-RangerSafeAction -Label 'VM inventory snapshot' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'VM inventory snapshot' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -HardTimeoutSeconds $vmInventoryTimeoutSeconds -ScriptBlock {
                 if (-not (Get-Command -Name Get-VM -ErrorAction SilentlyContinue)) {
                     return @()
                 }
@@ -320,8 +354,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
     ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
 
     $identitySnapshots = @(
-        Invoke-RangerSafeAction -Label 'Identity and security snapshot' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -ArgumentList @($domainFqdn, $isWorkgroup) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'Identity and security snapshot' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -HardTimeoutSeconds $clusterStepTimeoutSeconds -ArgumentList @($domainFqdn, $isWorkgroup) -ScriptBlock {
                 param($resolvedDomainFqdn, $resolvedIsWorkgroup)
 
                 $computerSystem = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue
@@ -510,13 +544,16 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
         }
     )
 
+    $rangerStepTimer = [System.Diagnostics.Stopwatch]::StartNew()
+    Write-RangerLog -Level info -Message "WorkloadIdentityCollector: 'Azure resource inventory' starting"
     $azureResources = @(
         Get-RangerAzureResources -Config $Config -AzureCredentialSettings $CredentialMap.azure
     )
+    Write-RangerLog -Level info -Message ("WorkloadIdentityCollector: 'Azure resource inventory' finished in {0:N1}s ({1} resource(s))" -f $rangerStepTimer.Elapsed.TotalSeconds, $azureResources.Count)
 
     $policyAssignments = @(
-        Invoke-RangerSafeAction -Label 'Azure policy assignment snapshot' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'Azure policy assignment snapshot' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
 
                 if (-not (Get-Command -Name Get-AzPolicyAssignment -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($SubscriptionId) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) {
@@ -531,8 +568,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # ARB appliance detail (k8s version, infra config, health)
     $arbDetail = @(
-        Invoke-RangerSafeAction -Label 'ARB appliance detail' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'ARB appliance detail' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if (-not (Get-Command -Name Get-AzResourceBridgeAppliance -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
                 Get-AzResourceBridgeAppliance -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue |
@@ -543,8 +580,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # AKS clusters on Arc
     $aksClusters = @(
-        Invoke-RangerSafeAction -Label 'AKS Arc cluster inventory' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'AKS Arc cluster inventory' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if (-not (Get-Command -Name Get-AzAksCluster -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
                 $clusters = @(Get-AzAksCluster -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue)
@@ -574,8 +611,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # Azure Policy compliance states
     $policyComplianceStates = @(
-        Invoke-RangerSafeAction -Label 'Azure Policy compliance state' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'Azure Policy compliance state' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if (-not (Get-Command -Name Get-AzPolicyState -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
                 Get-AzPolicyState -ResourceGroupName $ResourceGroup -Top 200 -ErrorAction SilentlyContinue |
@@ -587,9 +624,9 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
     # Azure Site Recovery / ASR replicated items
     $vaults = @($azureResources | Where-Object { $_.ResourceType -match 'Microsoft.RecoveryServices/vaults' })
     $asrItems = @(
-        Invoke-RangerSafeAction -Label 'ASR replicated item inventory' -DefaultValue @() -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'ASR replicated item inventory' -DefaultValue @() -ScriptBlock {
             if ($vaults.Count -eq 0) { return @() }
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if (-not (Get-Command -Name Get-AzRecoveryServicesVault -ErrorAction SilentlyContinue)) { return @() }
                 $vaultList = @(Get-AzRecoveryServicesVault -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue)
@@ -629,9 +666,9 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # Azure Backup protected items
     $backupItems = @(
-        Invoke-RangerSafeAction -Label 'Azure Backup protected item inventory' -DefaultValue @() -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'Azure Backup protected item inventory' -DefaultValue @() -ScriptBlock {
             if ($vaults.Count -eq 0) { return @() }
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if (-not (Get-Command -Name Get-AzRecoveryServicesVault -ErrorAction SilentlyContinue)) { return @() }
                 $vaultList = @(Get-AzRecoveryServicesVault -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue)
@@ -672,8 +709,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # Issue #63: VM image gallery (marketplace + local gallery images)
     $vmImages = @(
-        Invoke-RangerSafeAction -Label 'HCI VM image gallery' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'HCI VM image gallery' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if ([string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
                 $imgResult = New-Object System.Collections.ArrayList
@@ -690,8 +727,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # Issue #63: ISO file discovery on CSV paths
     $isoImages = @(
-        Invoke-RangerSafeAction -Label 'ISO file discovery on CSV' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'ISO file discovery on CSV' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerClusterCommand -Config $Config -Credential $CredentialMap.cluster -HardTimeoutSeconds $clusterStepTimeoutSeconds -ScriptBlock {
                 try {
                     @(Get-ChildItem -Path 'C:\ClusterStorage' -Filter '*.iso' -Recurse -Depth 3 -ErrorAction SilentlyContinue | Select-Object -First 50 | ForEach-Object {
                         [ordered]@{ name = $_.Name; fullPath = $_.FullName; sizeGiB = [math]::Round($_.Length / 1GB, 2); lastWriteTime = $_.LastWriteTime }
@@ -703,8 +740,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # Issue #64: Azure RBAC assignments at HCI resource group scope
     $rbacAssignments = @(
-        Invoke-RangerSafeAction -Label 'Azure RBAC assignments (HCI scope)' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'Azure RBAC assignments (HCI scope)' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if (-not (Get-Command -Name Get-AzRoleAssignment -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($SubscriptionId) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
                 $scope = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup"
@@ -715,8 +752,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # Issue #64: Defender for Cloud pricing and enablement
     $defenderForCloud = @(
-        Invoke-RangerSafeAction -Label 'Defender for Cloud posture' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'Defender for Cloud posture' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if (-not (Get-Command -Name Get-AzSecurityPricing -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($SubscriptionId)) { return @() }
                 @(Get-AzSecurityPricing -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'VirtualMachines|HybridCompute|Servers' } | Select-Object Name, PricingTier, FreeTrialRemainingTime)
@@ -726,8 +763,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # Issue #65: Arc Connected Machine detail per node (agent version, status)
     $arcMachineDetail = @(
-        Invoke-RangerSafeAction -Label 'Arc Connected Machine detail' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'Arc Connected Machine detail' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if (-not (Get-Command -Name Get-AzConnectedMachine -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
                 @(Get-AzConnectedMachine -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue | ForEach-Object {
@@ -752,8 +789,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
     )
 
     $arcEsuProfiles = @(
-        Invoke-RangerSafeAction -Label 'Arc ESU license profile' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'Arc ESU license profile' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
 
                 if (-not (Get-Command -Name Get-AzConnectedMachine -ErrorAction SilentlyContinue) -or
@@ -810,8 +847,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # Issue #65: Arc extension detail per machine (publisher, version, provisioning state, auto-upgrade)
     $arcExtensionsDetail = @(
-        Invoke-RangerSafeAction -Label 'Arc extension detail' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'Arc extension detail' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if (-not (Get-Command -Name Get-AzConnectedMachineExtension -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
                 $machineList = @(try { Get-AzConnectedMachine -ResourceGroupName $ResourceGroup -ErrorAction Stop | Select-Object Name } catch { @() })
@@ -837,8 +874,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # Issue #65: Resource provider registration state for Microsoft.AzureStackHCI
     $resourceProviders = @(
-        Invoke-RangerSafeAction -Label 'HCI resource provider registration' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'HCI resource provider registration' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId) -ScriptBlock {
                 param($SubscriptionId)
                 if (-not (Get-Command -Name Get-AzResourceProvider -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($SubscriptionId)) { return @() }
                 @(Get-AzResourceProvider -ProviderNamespace 'Microsoft.AzureStackHCI' -ErrorAction SilentlyContinue | Select-Object ProviderNamespace, RegistrationState, ResourceTypes | ForEach-Object {
@@ -850,8 +887,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # Issue #65: HCI VM management plane resources (storageContainers, logicalNetworks, etc.)
     $vmManagementResources = @(
-        Invoke-RangerSafeAction -Label 'HCI VM management plane resources' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'HCI VM management plane resources' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if ([string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
                 $hciTypes = @(
@@ -875,8 +912,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # Issue #66: Arc Data Services inventory (dataControllers, sqlManagedInstances, postgresInstances)
     $arcDataServices = @(
-        Invoke-RangerSafeAction -Label 'Arc Data Services inventory' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'Arc Data Services inventory' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if ([string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
                 $dsResult = New-Object System.Collections.ArrayList
@@ -890,8 +927,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # Issue #66: IoT Operations inventory
     $iotOperations = @(
-        Invoke-RangerSafeAction -Label 'IoT Operations inventory' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'IoT Operations inventory' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if ([string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
                 $iotResult = New-Object System.Collections.ArrayList
@@ -904,8 +941,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # Issue #66: Cost and licensing signals (subscription type, billing model)
     $costLicensing = @(
-        Invoke-RangerSafeAction -Label 'Cost and licensing snapshot' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'Cost and licensing snapshot' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if (-not (Get-Command -Name Get-AzSubscription -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($SubscriptionId)) { return @() }
                 $sub = Get-AzSubscription -SubscriptionId $SubscriptionId -ErrorAction SilentlyContinue
@@ -933,8 +970,8 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # Issue #72: Policy exemptions at resource group scope
     $policyExemptions = @(
-        Invoke-RangerSafeAction -Label 'Azure Policy exemption snapshot' -DefaultValue @() -ScriptBlock {
-            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
+        Invoke-RangerWorkloadStep -Label 'Azure Policy exemption snapshot' -DefaultValue @() -ScriptBlock {
+            Invoke-RangerAzureQuery -AzureCredentialSettings $CredentialMap.azure -TimeoutSeconds $azureQueryTimeoutSeconds -ArgumentList @($Config.targets.azure.subscriptionId, $Config.targets.azure.resourceGroup) -ScriptBlock {
                 param($SubscriptionId, $ResourceGroup)
                 if (-not (Get-Command -Name Get-AzPolicyExemption -ErrorAction SilentlyContinue) -or [string]::IsNullOrWhiteSpace($ResourceGroup)) { return @() }
                 $scope = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup"
@@ -1034,7 +1071,7 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
 
     # v2.7.0: Azure Local platform evidence added in 12.2609 (still current in 12.2611) - Arc gateway, security baseline score, Secure Boot 2023
     # certificates, key backup candidates, local identity and private path indicators. Read-only; see 45-Platform2609Evidence.ps1.
-    $platform2609 = Invoke-RangerSafeAction -Label 'Azure Local 12.2609 platform evidence' -DefaultValue ([ordered]@{}) -ScriptBlock {
+    $platform2609 = Invoke-RangerWorkloadStep -Label 'Azure Local 12.2609 platform evidence' -DefaultValue ([ordered]@{}) -ScriptBlock {
         Invoke-RangerPlatform2609Evidence -Config $Config -CredentialMap $CredentialMap -AzureResources @($azureResources) -ArcMachines @($arcMachines) -IdentitySnapshots @($identitySnapshots)
     }
     if (-not $platform2609) { $platform2609 = [ordered]@{} }

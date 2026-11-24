@@ -167,10 +167,13 @@ function Update-RangerStorageDomainAnalysis {
         [System.Collections.IDictionary]$StorageDomain
     )
 
-    $pools = @($StorageDomain.pools)
-    $physicalDisks = @($StorageDomain.physicalDisks)
-    $virtualDisks = @($StorageDomain.virtualDisks)
-    $volumes = @($StorageDomain.volumes)
+    # A failed storage snapshot (for example, no reachable WinRM target) leaves these
+    # collections $null, and @($null) is a one-element array holding $null, which made
+    # the indexing below throw "Cannot index into a null array". Keep only real records.
+    $pools = @($StorageDomain.pools | Where-Object { $_ -is [System.Collections.IDictionary] })
+    $physicalDisks = @($StorageDomain.physicalDisks | Where-Object { $_ -is [System.Collections.IDictionary] })
+    $virtualDisks = @($StorageDomain.virtualDisks | Where-Object { $_ -is [System.Collections.IDictionary] })
+    $volumes = @($StorageDomain.volumes | Where-Object { $_ -is [System.Collections.IDictionary] })
 
     foreach ($pool in $pools) {
         $pool['sizeGiB'] = ConvertTo-RangerGiBValue -Value ($pool['sizeGiB'] ?? $pool['size'])

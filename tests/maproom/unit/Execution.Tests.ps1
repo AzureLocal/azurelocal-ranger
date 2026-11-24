@@ -392,3 +392,118 @@ Describe 'Get-RangerRemoteCredentialCandidates — ordering' {
         }
     }
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Azure sign-in fail-fast: a tenant mismatch on existing-context must stop once
+# with a clear message, never retry or prompt on every Azure query.
+# ─────────────────────────────────────────────────────────────────────────────
+Describe 'Connect-RangerAzureContext — fail fast' {
+
+    It 'returns false once with a clear warning when existing-context is signed in to another tenant, then skips silently' {
+        InModuleScope AzureLocalRanger {
+            Reset-RangerAzureAuthState
+            Mock Get-AzContext {
+                [pscustomobject]@{
+                    Tenant       = [pscustomobject]@{ Id = '11111111-1111-1111-1111-111111111111' }
+                    Subscription = [pscustomobject]@{ Id = '33333333-3333-3333-3333-333333333333' }
+                    Account      = [pscustomobject]@{ Id = 'operator@contoso.com' }
+                }
+            }
+            Mock Connect-AzAccount { }
+            Mock Write-RangerLog { }
+
+            $settings = [ordered]@{
+                method         = 'existing-context'
+                tenantId       = '22222222-2222-2222-2222-222222222222'
+                subscriptionId = '33333333-3333-3333-3333-333333333333'
+            }
+
+            1..5 | ForEach-Object { Connect-RangerAzureContext -AzureCredentialSettings $settings | Should -BeFalse }
+
+            Should -Invoke Connect-AzAccount -Times 0 -Exactly
+            Should -Invoke Write-RangerLog -Times 1 -Exactly -ParameterFilter { $Level -eq 'warn' -and $Message -like '*Azure queries are skipped for this run*22222222-2222-2222-2222-222222222222*' }
+            Reset-RangerAzureAuthState
+        }
+    }
+
+    It 'remembers a failed sign-in so later queries do not try again' {
+        InModuleScope AzureLocalRanger {
+            Reset-RangerAzureAuthState
+            Mock Get-AzContext { $null }
+            Mock Test-RangerAzureCliAuthenticated { $false }
+            Mock Write-RangerLog { }
+
+            $settings = [ordered]@{ method = 'azure-cli'; tenantId = '22222222-2222-2222-2222-222222222222' }
+
+            { Connect-RangerAzureContext -AzureCredentialSettings $settings } | Should -Throw '*az login*'
+            Connect-RangerAzureContext -AzureCredentialSettings $settings | Should -BeFalse
+            Should -Invoke Test-RangerAzureCliAuthenticated -Times 1 -Exactly
+            Reset-RangerAzureAuthState
+        }
+    }
+}
+
+Describe 'Invoke-RangerAzureQuery — per-call timeout' {
+
+    It 'abandons a query that overruns its limit with a TimeoutException' {
+        InModuleScope AzureLocalRanger {
+            Mock Connect-RangerAzureContext { $true }
+            $timer = [System.Diagnostics.Stopwatch]::StartNew()
+            { Invoke-RangerAzureQuery -TimeoutSeconds 2 -Label 'slow test query' -ArgumentList @(60) -ScriptBlock { param($Seconds) Start-Sleep -Seconds $Seconds } } |
+                Should -Throw -ExceptionType ([System.TimeoutException])
+            $timer.Elapsed.TotalSeconds | Should -BeLessThan 30
+        }
+    }
+
+    It 'returns the query output when it finishes in time' {
+        InModuleScope AzureLocalRanger {
+            Mock Connect-RangerAzureContext { $true }
+            $result = @(Invoke-RangerAzureQuery -TimeoutSeconds 30 -ArgumentList @('rg-test') -ScriptBlock { param($ResourceGroup) [ordered]@{ resourceGroup = $ResourceGroup } })
+            $result.Count | Should -Be 1
+            $result[0].resourceGroup | Should -Be 'rg-test'
+        }
+    }
+}
+
+Describe 'Invoke-RangerRemoteCommand — hard timeout' {
+
+    It 'stops waiting for a node that overruns, without retrying it, and hands the stop to the background' {
+        InModuleScope AzureLocalRanger {
+            Mock Test-RangerWinRmTarget { [ordered]@{ Reachable = $true; Transport = 'http'; Port = 5985; Message = 'ok' } }
+            Mock Start-RangerRemoteJob { Start-ThreadJob -ScriptBlock { Start-Sleep -Seconds 120 } }
+
+            $timer = [System.Diagnostics.Stopwatch]::StartNew()
+            { Invoke-RangerRemoteCommand -ComputerName 'node01' -ScriptBlock { 'never' } -RetryCount 2 -TransportMode winrm -HardTimeoutSeconds 2 } |
+                Should -Throw '*did not finish within 2 seconds*'
+            $timer.Elapsed.TotalSeconds | Should -BeLessThan 30
+            Should -Invoke Start-RangerRemoteJob -Times 1 -Exactly
+
+            $deadline = (Get-Date).AddSeconds(30)
+            do { Start-Sleep -Milliseconds 500; Clear-RangerBackgroundWork } while ($script:RangerBackgroundWork.Count -gt 0 -and (Get-Date) -lt $deadline)
+            $script:RangerBackgroundWork.Count | Should -Be 0
+        }
+    }
+
+    It 'returns the node output when the command finishes inside the limit' {
+        InModuleScope AzureLocalRanger {
+            Mock Test-RangerWinRmTarget { [ordered]@{ Reachable = $true; Transport = 'http'; Port = 5985; Message = 'ok' } }
+            Mock Start-RangerRemoteJob { Start-ThreadJob -ScriptBlock { 'node-output' } }
+
+            $result = @(Invoke-RangerRemoteCommand -ComputerName 'node01' -ScriptBlock { 'ignored' } -TransportMode winrm -HardTimeoutSeconds 30)
+            $result | Should -Be @('node-output')
+        }
+    }
+}
+
+Describe 'Invoke-RangerTimedScriptBlock — cleanup' {
+
+    It 'disposes the abandoned runspace once its stop has gone through' {
+        InModuleScope AzureLocalRanger {
+            { Invoke-RangerTimedScriptBlock -ScriptBlock { Start-Sleep -Seconds 120 } -TimeoutSeconds 1 -Label 'cleanup test' } | Should -Throw -ExceptionType ([System.TimeoutException])
+
+            $deadline = (Get-Date).AddSeconds(30)
+            do { Start-Sleep -Milliseconds 500; Clear-RangerBackgroundWork } while ($script:RangerBackgroundWork.Count -gt 0 -and (Get-Date) -lt $deadline)
+            $script:RangerBackgroundWork.Count | Should -Be 0
+        }
+    }
+}

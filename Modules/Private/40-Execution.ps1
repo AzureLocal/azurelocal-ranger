@@ -348,7 +348,12 @@ function Invoke-RangerRemoteCommand {
 
         # Arc transport context — required when TransportMode is 'arc' or 'auto' fallback
         [string]$ArcResourceGroup,
-        [string]$ArcSubscriptionId
+        [string]$ArcSubscriptionId,
+
+        # Wall-clock limit for the WinRM command on each node, in seconds. When set,
+        # the command runs as a job and is stopped if it overruns, so one slow or
+        # unresponsive node cannot hold the whole run. 0 keeps the inline call.
+        [int]$HardTimeoutSeconds = 0
     )
 
     # ── Arc-only path ──────────────────────────────────────────────────────────
@@ -413,6 +418,11 @@ function Invoke-RangerRemoteCommand {
 
     $targetGroups = @($reachableStates | Group-Object -Property { $_.state.Transport })
 
+    # The retry block below is a closure that cannot see module functions by name;
+    # a resolved command keeps its module binding, so capture the ones it needs here.
+    $rangerStartBackgroundWork = Get-RangerCommandReference -Name 'Start-RangerBackgroundWork'
+    $rangerStartRemoteJob = Get-RangerCommandReference -Name 'Start-RangerRemoteJob'
+
     $retryBlock = {
         $results = New-Object System.Collections.Generic.List[object]
         $rangerLogPath = $script:RangerLogPath
@@ -453,7 +463,37 @@ function Invoke-RangerRemoteCommand {
                 # Issue #159: catch at the innermost frame so the exception is re-thrown once
                 # rather than propagating through multiple layers and duplicating transcript entries.
                 try {
-                    $rangerRemoteResult = Invoke-Command @invokeParams -WarningAction SilentlyContinue -WarningVariable +rangerRemoteWarnings -ErrorAction Stop
+                    if ($HardTimeoutSeconds -gt 0) {
+                        $rangerRemoteJob = & $rangerStartRemoteJob -InvokeParams $invokeParams
+                        $rangerRemoteJobHandedOff = $false
+                        try {
+                            if (-not (Wait-Job -Job $rangerRemoteJob -Timeout $HardTimeoutSeconds)) {
+                                # Stopping a remote job can itself block on an unresponsive node,
+                                # so the stop runs in its own runspace and is not waited for.
+                                # If even that cannot start, the job is abandoned rather than stopped
+                                # here: a foreground Stop-Job/Remove-Job could block past the limit.
+                                $rangerRemoteJobHandedOff = $true
+                                try {
+                                    & $rangerStartBackgroundWork -ScriptText 'param($Job) try { $Job.StopJob() } finally { $Job.Dispose() }' -ArgumentList @(, $rangerRemoteJob) -Label "Stop remote job on '$nodeTarget'"
+                                }
+                                catch {
+                                    Write-Debug "Background stop of the remote job on '$nodeTarget' could not start; the job is abandoned: $($_.Exception.Message)"
+                                }
+                                # OperationCanceledException is deliberately not in the transient
+                                # list, so a command that overran is not retried for another full term.
+                                throw [System.OperationCanceledException]::new("Remote command on '$nodeTarget' did not finish within $HardTimeoutSeconds seconds and was stopped.")
+                            }
+                            $rangerRemoteResult = Receive-Job -Job $rangerRemoteJob -WarningAction SilentlyContinue -WarningVariable +rangerRemoteWarnings -ErrorAction Stop
+                        }
+                        finally {
+                            if (-not $rangerRemoteJobHandedOff) {
+                                Remove-Job -Job $rangerRemoteJob -Force -ErrorAction SilentlyContinue
+                            }
+                        }
+                    }
+                    else {
+                        $rangerRemoteResult = Invoke-Command @invokeParams -WarningAction SilentlyContinue -WarningVariable +rangerRemoteWarnings -ErrorAction Stop
+                    }
                     $succeededNodes++
                     foreach ($item in @($rangerRemoteResult)) {
                         [void]$results.Add($item)
@@ -764,6 +804,20 @@ function Connect-RangerAzureContext {
     # (when one was specified), reuse it rather than re-authenticating. This
     # avoids MFA prompts on repeated runs. #200.
     $context = Get-AzContext -ErrorAction SilentlyContinue
+    $contextTenantId = if ($context -and $context.Tenant -and $context.Tenant.Id) { [string]$context.Tenant.Id } else { '' }
+
+    # Fail fast: once an authentication attempt has failed for this exact method,
+    # requested tenant/subscription and current context, every later Azure query in
+    # the run returns at once instead of retrying (and re-logging) on each call.
+    if ($null -eq $script:RangerAzureAuthFailures) {
+        $script:RangerAzureAuthFailures = @{}
+    }
+    $authFailureKey = '{0}|{1}|{2}|{3}' -f $method, [string]$settings.tenantId, [string]$settings.subscriptionId, $contextTenantId
+    if ($script:RangerAzureAuthFailures.ContainsKey($authFailureKey)) {
+        Write-RangerLog -Level debug -Message "Connect-RangerAzureContext: skipping Azure query; authentication already failed this run ($($script:RangerAzureAuthFailures[$authFailureKey]))."
+        return $false
+    }
+
     if ($context) {
         $tenantMatches = $true
         if ($settings.tenantId -and $context.Tenant -and $context.Tenant.Id) {
@@ -781,121 +835,157 @@ function Connect-RangerAzureContext {
             return $true
         }
 
-        Write-RangerLog -Level info -Message "Existing Az context tenant '$($context.Tenant.Id)' does not match requested '$($settings.tenantId)' — re-authenticating via $method."
-    }
-
-    switch ($method) {
-        'managed-identity' {
-            $connectParams = @{ Identity = $true; ErrorAction = 'Stop' }
-            if ($settings.clientId)        { $connectParams.AccountId    = $settings.clientId }
-            if ($settings.subscriptionId)  { $connectParams.Subscription = $settings.subscriptionId }
-            if ($settings.tenantId)        { $connectParams.Tenant       = $settings.tenantId }
-            if ($azureEnvironment)         { $connectParams.Environment  = $azureEnvironment }
-            Connect-AzAccount @connectParams | Out-Null
-            return $true
-        }
-        'device-code' {
-            $connectParams = @{ UseDeviceAuthentication = $true; ErrorAction = 'Stop' }
-            if ($settings.tenantId)        { $connectParams.Tenant       = $settings.tenantId }
-            if ($settings.subscriptionId)  { $connectParams.Subscription = $settings.subscriptionId }
-            if ($azureEnvironment)         { $connectParams.Environment  = $azureEnvironment }
-            Connect-AzAccount @connectParams | Out-Null
-            return $true
-        }
-        'service-principal' {
-            if (-not $settings.clientSecretSecureString) {
-                throw 'Azure service-principal authentication requires a resolved client secret.'
-            }
-
-            $credential = [PSCredential]::new([string]$settings.clientId, $settings.clientSecretSecureString)
-            $connectParams = @{
-                ServicePrincipal = $true
-                Tenant           = $settings.tenantId
-                Credential       = $credential
-                ErrorAction      = 'Stop'
-            }
-            if ($settings.subscriptionId)  { $connectParams.Subscription = $settings.subscriptionId }
-            if ($azureEnvironment)         { $connectParams.Environment  = $azureEnvironment }
-            Connect-AzAccount @connectParams | Out-Null
-            return $true
-        }
-        'service-principal-cert' {
-            # v1.6.0 (#200): SPN + certificate auth. Accept either a certificate
-            # thumbprint from the local store or a path to a PFX/PEM file.
-            if ([string]::IsNullOrWhiteSpace([string]$settings.clientId)) {
-                throw 'Azure service-principal-cert authentication requires credentials.azure.clientId.'
-            }
-            if ([string]::IsNullOrWhiteSpace([string]$settings.tenantId)) {
-                throw 'Azure service-principal-cert authentication requires a tenantId.'
-            }
-            $connectParams = @{
-                ServicePrincipal  = $true
-                ApplicationId     = [string]$settings.clientId
-                Tenant            = [string]$settings.tenantId
-                ErrorAction       = 'Stop'
-            }
-            if ($settings.certificateThumbprint) {
-                $connectParams.CertificateThumbprint = [string]$settings.certificateThumbprint
-            }
-            elseif ($settings.certificatePath) {
-                if (-not (Test-Path -Path ([string]$settings.certificatePath) -PathType Leaf)) {
-                    throw "Certificate file not found: $($settings.certificatePath)"
-                }
-                $connectParams.CertificatePath = [string]$settings.certificatePath
-                if ($settings.certificatePassword) {
-                    $connectParams.CertificatePassword = $settings.certificatePassword
-                }
-            }
-            else {
-                throw 'Azure service-principal-cert authentication requires certificateThumbprint or certificatePath.'
-            }
-            if ($settings.subscriptionId) { $connectParams.Subscription = $settings.subscriptionId }
-            if ($azureEnvironment)        { $connectParams.Environment  = $azureEnvironment }
-            Connect-AzAccount @connectParams | Out-Null
-            return $true
-        }
-        'azure-cli' {
-            if (-not (Test-RangerAzureCliAuthenticated)) {
-                throw "Azure CLI authentication was selected, but 'az account show' failed. Run 'az login' and retry."
-            }
-
-            $accountJson = (& az account show --output json 2>$null) -join [Environment]::NewLine
-            if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($accountJson)) {
-                throw 'Azure CLI did not return an active account.'
-            }
-            $account = $accountJson | ConvertFrom-Json
-
-            $tokenArgs = @('account', 'get-access-token', '--resource', 'https://management.azure.com/', '--output', 'json')
-            if ($settings.subscriptionId) { $tokenArgs += @('--subscription', [string]$settings.subscriptionId) }
-            $tokenJson = (& az @tokenArgs 2>$null) -join [Environment]::NewLine
-            if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($tokenJson)) {
-                throw 'Azure CLI could not obtain an Azure Resource Manager access token for the requested subscription.'
-            }
-            $token = $tokenJson | ConvertFrom-Json
-
-            $tenantId = if ($settings.tenantId) { [string]$settings.tenantId } else { [string]$account.tenantId }
-            $accountId = if ($account.user -and $account.user.name) { [string]$account.user.name } else { [string]$account.name }
-            $accessToken = [string]$token.accessToken
-            if ([string]::IsNullOrWhiteSpace($tenantId) -or [string]::IsNullOrWhiteSpace($accountId) -or [string]::IsNullOrWhiteSpace($accessToken)) {
-                throw 'Azure CLI account/token output was missing tenantId, account identity, or accessToken.'
-            }
-
-            $accessTokenType = (Get-Command Connect-AzAccount -ErrorAction Stop).Parameters['AccessToken'].ParameterType
-            $connectParams = @{
-                AccessToken = if ($accessTokenType -eq [securestring]) { ConvertTo-SecureString $accessToken -AsPlainText -Force } else { $accessToken }
-                AccountId   = $accountId
-                Tenant      = $tenantId
-                ErrorAction = 'Stop'
-            }
-            if ($settings.subscriptionId) { $connectParams.Subscription = [string]$settings.subscriptionId }
-            if ($azureEnvironment)        { $connectParams.Environment  = $azureEnvironment }
-            Connect-AzAccount @connectParams | Out-Null
-            return $true
-        }
-        default {
+        if ($method -eq 'existing-context') {
+            # existing-context has no credential of its own to switch tenants with, and
+            # Ranger never starts an interactive sign-in. Say so once and stop.
+            $reason = "the signed-in Az context is for tenant '$contextTenantId' but the configuration asks for tenant '$($settings.tenantId)'"
+            $script:RangerAzureAuthFailures[$authFailureKey] = $reason
+            Write-RangerLog -Level warn -Message "Azure queries are skipped for this run: $reason. The 'existing-context' method cannot switch tenants without signing in. Run Connect-AzAccount -Tenant '$($settings.tenantId)' (or set credentials.azure.method to azure-cli, service-principal, service-principal-cert or managed-identity) and run Ranger again."
             return $false
         }
+
+        Write-RangerLog -Level info -Message "Existing Az context tenant '$contextTenantId' does not match requested '$($settings.tenantId)' — re-authenticating via $method."
     }
+    elseif ($method -eq 'existing-context') {
+        $reason = 'no Az context is signed in'
+        $script:RangerAzureAuthFailures[$authFailureKey] = $reason
+        Write-RangerLog -Level warn -Message "Azure queries are skipped for this run: $reason and the 'existing-context' method does not sign in. Run Connect-AzAccount (or choose another credentials.azure.method) and run Ranger again."
+        return $false
+    }
+
+    try {
+        switch ($method) {
+            'managed-identity' {
+                $connectParams = @{ Identity = $true; ErrorAction = 'Stop' }
+                if ($settings.clientId)        { $connectParams.AccountId    = $settings.clientId }
+                if ($settings.subscriptionId)  { $connectParams.Subscription = $settings.subscriptionId }
+                if ($settings.tenantId)        { $connectParams.Tenant       = $settings.tenantId }
+                if ($azureEnvironment)         { $connectParams.Environment  = $azureEnvironment }
+                Connect-AzAccount @connectParams | Out-Null
+                return $true
+            }
+            'device-code' {
+                $connectParams = @{ UseDeviceAuthentication = $true; ErrorAction = 'Stop' }
+                if ($settings.tenantId)        { $connectParams.Tenant       = $settings.tenantId }
+                if ($settings.subscriptionId)  { $connectParams.Subscription = $settings.subscriptionId }
+                if ($azureEnvironment)         { $connectParams.Environment  = $azureEnvironment }
+                Connect-AzAccount @connectParams | Out-Null
+                return $true
+            }
+            'service-principal' {
+                if (-not $settings.clientSecretSecureString) {
+                    throw 'Azure service-principal authentication requires a resolved client secret.'
+                }
+
+                $credential = [PSCredential]::new([string]$settings.clientId, $settings.clientSecretSecureString)
+                $connectParams = @{
+                    ServicePrincipal = $true
+                    Tenant           = $settings.tenantId
+                    Credential       = $credential
+                    ErrorAction      = 'Stop'
+                }
+                if ($settings.subscriptionId)  { $connectParams.Subscription = $settings.subscriptionId }
+                if ($azureEnvironment)         { $connectParams.Environment  = $azureEnvironment }
+                Connect-AzAccount @connectParams | Out-Null
+                return $true
+            }
+            'service-principal-cert' {
+                # v1.6.0 (#200): SPN + certificate auth. Accept either a certificate
+                # thumbprint from the local store or a path to a PFX/PEM file.
+                if ([string]::IsNullOrWhiteSpace([string]$settings.clientId)) {
+                    throw 'Azure service-principal-cert authentication requires credentials.azure.clientId.'
+                }
+                if ([string]::IsNullOrWhiteSpace([string]$settings.tenantId)) {
+                    throw 'Azure service-principal-cert authentication requires a tenantId.'
+                }
+                $connectParams = @{
+                    ServicePrincipal  = $true
+                    ApplicationId     = [string]$settings.clientId
+                    Tenant            = [string]$settings.tenantId
+                    ErrorAction       = 'Stop'
+                }
+                if ($settings.certificateThumbprint) {
+                    $connectParams.CertificateThumbprint = [string]$settings.certificateThumbprint
+                }
+                elseif ($settings.certificatePath) {
+                    if (-not (Test-Path -Path ([string]$settings.certificatePath) -PathType Leaf)) {
+                        throw "Certificate file not found: $($settings.certificatePath)"
+                    }
+                    $connectParams.CertificatePath = [string]$settings.certificatePath
+                    if ($settings.certificatePassword) {
+                        $connectParams.CertificatePassword = $settings.certificatePassword
+                    }
+                }
+                else {
+                    throw 'Azure service-principal-cert authentication requires certificateThumbprint or certificatePath.'
+                }
+                if ($settings.subscriptionId) { $connectParams.Subscription = $settings.subscriptionId }
+                if ($azureEnvironment)        { $connectParams.Environment  = $azureEnvironment }
+                Connect-AzAccount @connectParams | Out-Null
+                return $true
+            }
+            'azure-cli' {
+                if (-not (Test-RangerAzureCliAuthenticated)) {
+                    throw "Azure CLI authentication was selected, but 'az account show' failed. Run 'az login' and retry."
+                }
+
+                $accountJson = (& az account show --output json 2>$null) -join [Environment]::NewLine
+                if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($accountJson)) {
+                    throw 'Azure CLI did not return an active account.'
+                }
+                $account = $accountJson | ConvertFrom-Json
+
+                $tokenArgs = @('account', 'get-access-token', '--resource', 'https://management.azure.com/', '--output', 'json')
+                if ($settings.subscriptionId) { $tokenArgs += @('--subscription', [string]$settings.subscriptionId) }
+                $tokenJson = (& az @tokenArgs 2>$null) -join [Environment]::NewLine
+                if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($tokenJson)) {
+                    throw 'Azure CLI could not obtain an Azure Resource Manager access token for the requested subscription.'
+                }
+                $token = $tokenJson | ConvertFrom-Json
+
+                $tenantId = if ($settings.tenantId) { [string]$settings.tenantId } else { [string]$account.tenantId }
+                $accountId = if ($account.user -and $account.user.name) { [string]$account.user.name } else { [string]$account.name }
+                $accessToken = [string]$token.accessToken
+                if ([string]::IsNullOrWhiteSpace($tenantId) -or [string]::IsNullOrWhiteSpace($accountId) -or [string]::IsNullOrWhiteSpace($accessToken)) {
+                    throw 'Azure CLI account/token output was missing tenantId, account identity, or accessToken.'
+                }
+
+                $accessTokenType = (Get-Command Connect-AzAccount -ErrorAction Stop).Parameters['AccessToken'].ParameterType
+                $connectParams = @{
+                    AccessToken = if ($accessTokenType -eq [securestring]) { ConvertTo-SecureString $accessToken -AsPlainText -Force } else { $accessToken }
+                    AccountId   = $accountId
+                    Tenant      = $tenantId
+                    ErrorAction = 'Stop'
+                }
+                if ($settings.subscriptionId) { $connectParams.Subscription = [string]$settings.subscriptionId }
+                if ($azureEnvironment)        { $connectParams.Environment  = $azureEnvironment }
+                Connect-AzAccount @connectParams | Out-Null
+                return $true
+            }
+            default {
+                return $false
+            }
+        }
+    }
+    catch {
+        # Remember the failure so the rest of the run does not try (or prompt) again
+        # for every Azure query; the first caller still sees the original error.
+        $script:RangerAzureAuthFailures[$authFailureKey] = "Azure sign-in via '$method' failed: $($_.Exception.Message)"
+        throw
+    }
+}
+
+function Reset-RangerAzureAuthState {
+    <#
+    .SYNOPSIS
+        Clears the per-run cache of failed Azure sign-in attempts used by
+        Connect-RangerAzureContext. Called at the start and end of every run.
+    #>
+    [CmdletBinding(SupportsShouldProcess = $false)]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Resets in-memory module state only.')]
+    param()
+
+    $script:RangerAzureAuthFailures = @{}
 }
 
 function Export-RangerAzureContext {
@@ -989,14 +1079,230 @@ function Invoke-RangerAzureQuery {
         [scriptblock]$ScriptBlock,
 
         [object[]]$ArgumentList,
-        $AzureCredentialSettings
+        $AzureCredentialSettings,
+
+        # Wall-clock limit for the query, in seconds. 0 (the default) runs the script
+        # block inline as before. When set, the query runs in its own runspace in this
+        # process (the Az context is process-wide, so it is shared) and is abandoned with
+        # a TimeoutException if it overruns, instead of holding the collector.
+        [int]$TimeoutSeconds = 0,
+
+        # Name used in the timeout message and progress log.
+        [string]$Label = 'Azure query'
     )
 
     if (-not (Connect-RangerAzureContext -AzureCredentialSettings $AzureCredentialSettings)) {
         return $null
     }
 
-    & $ScriptBlock @ArgumentList
+    if ($TimeoutSeconds -le 0) {
+        return (& $ScriptBlock @ArgumentList)
+    }
+
+    return Invoke-RangerTimedScriptBlock -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList -TimeoutSeconds $TimeoutSeconds -Label $Label
+}
+
+function Invoke-RangerTimedScriptBlock {
+    <#
+    .SYNOPSIS
+        Runs a script block in a separate runspace in this process and gives up on it
+        after TimeoutSeconds.
+    .DESCRIPTION
+        The script block is re-created from its text, so it does not see the caller's
+        variables: pass everything it needs through ArgumentList. When the text calls
+        Ranger helpers, the runspace imports this module first and runs the block in
+        the module's scope. On timeout the runspace is told to stop without waiting
+        (a blocked network call may ignore the stop for a long time) and a
+        TimeoutException is thrown.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [scriptblock]$ScriptBlock,
+
+        [object[]]$ArgumentList,
+
+        [Parameter(Mandatory = $true)]
+        [int]$TimeoutSeconds,
+
+        [string]$Label = 'Timed action'
+    )
+
+    $scriptText = $ScriptBlock.ToString()
+    $modulePath = $null
+    if ($scriptText -match '\b[A-Za-z]+-Ranger[A-Za-z0-9]+\b') {
+        $moduleInfo = $ExecutionContext.SessionState.Module
+        if ($moduleInfo) {
+            $manifest = Join-Path -Path $moduleInfo.ModuleBase -ChildPath 'AzureLocalRanger.psd1'
+            $modulePath = if (Test-Path -Path $manifest -PathType Leaf) { $manifest } else { $moduleInfo.Path }
+        }
+    }
+
+    $runspace = [runspacefactory]::CreateRunspace()
+    $runspace.Open()
+    $shell = [powershell]::Create()
+    $shell.Runspace = $runspace
+
+    if ($modulePath) {
+        [void]$shell.AddScript({
+            param($RangerModulePath, $RangerScriptText, $RangerArguments)
+            $rangerModule = Import-Module -Name $RangerModulePath -PassThru -ErrorAction Stop -WarningAction SilentlyContinue
+            & $rangerModule ([scriptblock]::Create($RangerScriptText)) @RangerArguments
+        }.ToString())
+        [void]$shell.AddArgument($modulePath)
+        [void]$shell.AddArgument($scriptText)
+        [void]$shell.AddArgument(@($ArgumentList))
+    }
+    else {
+        [void]$shell.AddScript($scriptText)
+        foreach ($argument in @($ArgumentList)) {
+            [void]$shell.AddArgument($argument)
+        }
+    }
+
+    $abandoned = $false
+    try {
+        $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+        $asyncResult = $shell.BeginInvoke()
+        if (-not $asyncResult.AsyncWaitHandle.WaitOne([TimeSpan]::FromSeconds($TimeoutSeconds))) {
+            # Ask it to stop without waiting, and hand it to the background list so it is
+            # disposed once the stop has gone through (Clear-RangerBackgroundWork).
+            try { [void]$shell.BeginStop($null, $null) } catch { Write-RangerSwallowedError -Source 'Invoke-RangerTimedScriptBlock' -ErrorRecord $_ }
+            Add-RangerBackgroundWork -Shell $shell -Runspace $runspace -Label $Label
+            $abandoned = $true
+            throw [System.TimeoutException]::new("$Label did not finish within $TimeoutSeconds seconds and was abandoned.")
+        }
+
+        $output = $shell.EndInvoke($asyncResult)
+        foreach ($record in @($shell.Streams.Error)) {
+            Write-RangerLog -Level debug -Message "${Label}: $($record.Exception.Message)"
+        }
+        Write-RangerLog -Level debug -Message ("{0} finished in {1:N1}s in its own runspace" -f $Label, $stopwatch.Elapsed.TotalSeconds)
+        foreach ($item in $output) {
+            $item
+        }
+    }
+    finally {
+        if (-not $abandoned) {
+            $shell.Dispose()
+            $runspace.Dispose()
+        }
+        Clear-RangerBackgroundWork
+    }
+}
+
+function Get-RangerCommandReference {
+    <#
+    .SYNOPSIS
+        Returns a module command as an invocable object for use inside closures
+        (GetNewClosure), which cannot resolve module functions by name. An alias
+        (for example a Pester mock) is resolved to the command it points at.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name
+    )
+
+    $command = $ExecutionContext.InvokeCommand.GetCommand($Name, [System.Management.Automation.CommandTypes]'Alias,Function')
+    if ($command -is [System.Management.Automation.AliasInfo]) {
+        $command = $command.ResolvedCommand
+    }
+    return $command
+}
+
+function Start-RangerRemoteJob {
+    <#
+    .SYNOPSIS
+        Starts Invoke-Command as a job for one node (hard-timeout path of
+        Invoke-RangerRemoteCommand).
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [hashtable]$InvokeParams
+    )
+
+    return Invoke-Command @InvokeParams -AsJob -ErrorAction Stop
+}
+
+function Add-RangerBackgroundWork {
+    <#
+    .SYNOPSIS
+        Records a PowerShell instance (and its runspace) that Ranger stopped waiting for,
+        so Clear-RangerBackgroundWork can dispose it once it has finished or stopped.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [powershell]$Shell,
+
+        [Parameter(Mandatory = $true)]
+        [System.Management.Automation.Runspaces.Runspace]$Runspace,
+
+        [string]$Label
+    )
+
+    if ($null -eq $script:RangerBackgroundWork) {
+        $script:RangerBackgroundWork = [System.Collections.Generic.List[object]]::new()
+    }
+    $script:RangerBackgroundWork.Add([pscustomobject]@{ Shell = $Shell; Runspace = $Runspace; Label = $Label })
+}
+
+function Start-RangerBackgroundWork {
+    <#
+    .SYNOPSIS
+        Runs a short script in its own runspace without waiting for it (for cleanup that
+        may block, such as stopping a remote job) and records it for later disposal.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ScriptText,
+
+        [object[]]$ArgumentList,
+
+        [string]$Label = 'Background cleanup'
+    )
+
+    $runspace = [runspacefactory]::CreateRunspace()
+    $runspace.Open()
+    $shell = [powershell]::Create()
+    $shell.Runspace = $runspace
+    [void]$shell.AddScript($ScriptText)
+    foreach ($argument in @($ArgumentList)) {
+        [void]$shell.AddArgument($argument)
+    }
+    [void]$shell.BeginInvoke()
+    Add-RangerBackgroundWork -Shell $shell -Runspace $runspace -Label $Label
+}
+
+function Clear-RangerBackgroundWork {
+    <#
+    .SYNOPSIS
+        Disposes recorded background work that has finished, failed or stopped. Work
+        that is still running is left alone and checked again on the next call.
+    #>
+    [CmdletBinding(SupportsShouldProcess = $false)]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Disposes in-memory runspaces only.')]
+    param()
+
+    if ($null -eq $script:RangerBackgroundWork -or $script:RangerBackgroundWork.Count -eq 0) {
+        return
+    }
+
+    $finishedStates = @(
+        [System.Management.Automation.PSInvocationState]::Completed,
+        [System.Management.Automation.PSInvocationState]::Failed,
+        [System.Management.Automation.PSInvocationState]::Stopped
+    )
+    foreach ($work in @($script:RangerBackgroundWork)) {
+        if ($work.Shell.InvocationStateInfo.State -in $finishedStates) {
+            try {
+                $work.Shell.Dispose()
+                $work.Runspace.Dispose()
+            }
+            catch {
+                Write-RangerSwallowedError -Source 'Clear-RangerBackgroundWork' -ErrorRecord $_
+            }
+            [void]$script:RangerBackgroundWork.Remove($work)
+        }
+    }
 }
 
 function Test-RangerAzureCliAuthenticated {

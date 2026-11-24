@@ -127,3 +127,24 @@ Describe 'Azure Local Ranger storage analysis' {
         }
     }
 }
+
+Describe 'Update-RangerStorageDomainAnalysis — empty snapshot' {
+    It 'does not throw when the storage snapshot failed and every collection is null' {
+        InModuleScope AzureLocalRanger {
+            $storageDomain = [ordered]@{
+                pools         = $null
+                physicalDisks = $null
+                virtualDisks  = $null
+                volumes       = $null
+                csvs          = $null
+            }
+
+            $result = Update-RangerStorageDomainAnalysis -StorageDomain $storageDomain
+
+            $result.summary.poolCount | Should -Be 0
+            $result.summary.physicalDiskCount | Should -Be 0
+            $result.summary.volumeCount | Should -Be 0
+            @($result.poolAnalysis).Where({ $null -ne $_ }).Count | Should -Be 0
+        }
+    }
+}

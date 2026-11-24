@@ -581,6 +581,8 @@ function Invoke-RangerDiscoveryRuntime {
 
     # v1.6.0 (#206): initialise the skipped-resources tracker for this run.
     Reset-RangerSkippedResources
+    # Start every run with a clean record of failed Azure sign-ins (fail-fast cache).
+    Reset-RangerAzureAuthState
 
     # v1.6.0 (#212): pre-run permission audit. Runs by default; skip when
     # behavior.skipPreCheck is true (set by -SkipPreCheck parameter or config)
@@ -1187,5 +1189,8 @@ function Invoke-RangerDiscoveryRuntime {
         $script:RangerRetryDetails = $null
         $script:RangerWinRmProbeCache = $null
         $script:RangerBehaviorRetryCount = $null
+        $script:RangerAzureAuthFailures = $null
+        # Dispose any timed-out work that has stopped since; anything still running is left to the process.
+        try { Clear-RangerBackgroundWork } catch { Write-Debug "Background work cleanup failed (ignored): $($_.Exception.Message)" }
     }
 }

@@ -67,7 +67,11 @@ function Invoke-RangerClusterCommand {
         [PSCredential]$Credential,
         [object[]]$ArgumentList,
         [string]$NodeName,
-        [switch]$SingleTarget
+        [switch]$SingleTarget,
+
+        # Wall-clock limit for the command on each node, in seconds. 0 (the default)
+        # keeps the previous behaviour: no limit beyond the WinRM session options.
+        [int]$HardTimeoutSeconds = 0
     )
 
     $targets = if (-not [string]::IsNullOrWhiteSpace($NodeName)) {
@@ -100,6 +104,9 @@ function Invoke-RangerClusterCommand {
         TransportMode     = $transportMode
         ArcResourceGroup  = $arcRg
         ArcSubscriptionId = $arcSubId
+    }
+    if ($HardTimeoutSeconds -gt 0) {
+        $remoteParams.HardTimeoutSeconds = $HardTimeoutSeconds
     }
 
     return Invoke-RangerRemoteCommand @remoteParams
