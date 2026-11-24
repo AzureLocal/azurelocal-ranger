@@ -1,8 +1,8 @@
 # Design versus as-built comparison (v2.7.0).
 #
 #   ConvertTo-RangerAsBuiltSnapshot  manifest  -> 'as-built-snapshot.v1' (also Export-AzureLocalRangerReport -Formats as-built-snapshot)
-#   ConvertFrom-RangerDesignRecord   design    -> the same canonical shape (environment file, Trailwright infrastructure.yml or a snapshot)
-#   Compare-RangerDesign             both      -> findings table (match / drift / missing / extra / not-captured) with severity and Learn links
+#   ConvertFrom-RangerDesignRecord   design    -> the same canonical shape (the toolkit's infrastructure.yml, schema 5; the retired environment file and schema 4 export for one more release; or a snapshot)
+#   Compare-RangerDesign             both      -> findings table (match / drift / missing / not-captured / not-comparable) with severity and Learn links
 #
 # The as-built-snapshot.v1 core (schema, capturedAt, source, cluster.name/release, identity, witness, nodes, vlans,
 # intents, volumes, dnsServers) is the contract Azure Local Trailwright's As-built compare reads; the additional
@@ -296,6 +296,166 @@ function Get-RangerDesignRedactionLiterals {
     return $lits.ToArray()
 }
 
+function ConvertTo-RangerResiliencyName {
+    # A design resiliency value in the snapshot's spelling: two_way, two-way-mirror and two-way are all 'two-way'.
+    # Any other value passes through in the same spelling (never null for a value that was written).
+    param([AllowNull()]$Value)
+    $x = ([string]$Value).Trim().ToLowerInvariant() -replace '[_\s]+', '-'
+    if (-not $x) { return $null }
+    return ($x -replace '-mirror$', '')
+}
+
+function ConvertTo-RangerWitnessName {
+    # cloud, file_share / fileshare and none, in the snapshot's spelling (cloud, file-share, none).
+    param([AllowNull()]$Value)
+    $x = ([string]$Value).ToLowerInvariant()
+    if ($x -match 'cloud') { return 'cloud' }
+    if ($x -match 'file') { return 'file-share' }
+    if ($x) { return 'none' }
+    return $null
+}
+
+function Test-RangerInfrastructureSchema5 {
+    # True for the toolkit's infrastructure.yml (schema 5); false for the Trailwright schema 4 export (azure_platform / compute).
+    param([Parameter(Mandatory)][System.Collections.IDictionary]$Record)
+    if ($Record.Contains('azure_platform') -or $Record.Contains('compute')) { return $false }
+    $v = [string](Get-RangerNested $Record '_metadata', 'schema_version')
+    if ($v) { return ($v -match '^5\.') }
+    return ($Record.Contains('scenario') -or $Record['cluster'] -is [System.Collections.IDictionary])
+}
+
+function Get-RangerInfrastructureNodeIp {
+    # nodes[].management.ip_address (schema 5.0 / 5.1), else the nodes[].network_adapters[] port with the role management (5.2 and later).
+    param([Parameter(Mandatory)][System.Collections.IDictionary]$Node)
+    $ip = Get-RangerNested $Node 'management', 'ip_address'
+    if ($ip) { return [string]$ip }
+    foreach ($a in @($Node['network_adapters'])) {
+        if ($a -isnot [System.Collections.IDictionary]) { continue }
+        $roles = @(@($a['roles']) | ForEach-Object { ([string]$_).ToLowerInvariant() })
+        if ('management' -in $roles -and $a['ip_address']) { return [string]$a['ip_address'] }
+    }
+    return $null
+}
+
+function ConvertFrom-RangerInfrastructureRecord {
+    <#
+    .SYNOPSIS
+        Reads the toolkit's infrastructure.yml (schema 5) as a design record in the snapshot shape.
+    .DESCRIPTION
+        The keys Ranger reads (registry used_by ranger): cluster.name, cluster.witness.type, deployment.solution_version
+        (else provisioning.os_version), hardware.sbe.version, scenario.identity, identity.active_directory.domain_fqdn,
+        azure.subscription_id and resource_group, nodes[] (name, serial_number, bmc.ip_address and type,
+        management.ip_address or the management network_adapters[] port, storage_ips), networking.management (dns_servers,
+        vlan_id), networking.vlans[], networking.intents[], networking.logical_networks[], storage.volumes[] and sdn.
+        A file cut for another tool (_metadata.scope ztp, for example) holds fewer of them; the rows follow what is there.
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][System.Collections.IDictionary]$Record)
+
+    $r = $Record
+    $snap = [ordered]@{ schema = 'as-built-snapshot.v1'; _kind = 'infrastructure' }
+    $idMap = @{ 'active_directory' = 'active-directory'; 'local_identity' = 'local-identity-key-vault' }
+
+    $cluster = [ordered]@{}
+    $name = Get-RangerNested $r 'cluster', 'name'
+    if ($name) { $cluster['name'] = [string]$name }
+    # The release: the solution version the nodes run, else the pinned solution version of the OS provisioning (12.<train>.<build>.<revision>).
+    $release = Get-RangerNested $r 'deployment', 'solution_version'
+    if (-not $release) {
+        $osVersion = [string](Get-RangerNested $r 'provisioning', 'os_version')
+        if ($osVersion -match '^\d+\.\d{4}\.\d+\.\d+$') { $release = $osVersion }
+    }
+    if ($release) { $cluster['release'] = [string]$release }
+    $sbe = Get-RangerNested $r 'hardware', 'sbe', 'version'
+    if ($sbe) { $cluster['sbeVersion'] = [string]$sbe }
+    if ($cluster.Count) { $snap['cluster'] = $cluster }
+
+    $az = [ordered]@{}
+    if ((Get-RangerNested $r 'azure', 'subscription_id')) { $az['subscriptionId'] = [string](Get-RangerNested $r 'azure', 'subscription_id') }
+    if ((Get-RangerNested $r 'azure', 'resource_group')) { $az['resourceGroup'] = [string](Get-RangerNested $r 'azure', 'resource_group') }
+    if ($az.Count) { $snap['azure'] = $az }
+
+    $identity = [string](Get-RangerNested $r 'scenario', 'identity')
+    if ($identity) {
+        $model = if ($idMap.ContainsKey($identity.ToLowerInvariant())) { $idMap[$identity.ToLowerInvariant()] } else { $identity.ToLowerInvariant() -replace '_', '-' }
+        $snap['identity'] = [ordered]@{ model = $model }
+        $domain = Get-RangerNested $r 'identity', 'active_directory', 'domain_fqdn'
+        if ($domain -and $model -eq 'active-directory') { $snap['identity']['domain'] = [string]$domain }
+    }
+
+    $witness = ConvertTo-RangerWitnessName (Get-RangerNested $r 'cluster', 'witness', 'type')
+    if ($witness) { $snap['witness'] = [ordered]@{ type = $witness } }
+
+    $nodeList = @(@($r['nodes']) | Where-Object { $_ -is [System.Collections.IDictionary] })
+    if ($nodeList.Count) {
+        $snap['nodes'] = @($nodeList | ForEach-Object {
+                $n = [ordered]@{ name = [string]$_['name'] }
+                $ip = Get-RangerInfrastructureNodeIp -Node $_
+                if ($ip) { $n['managementIp'] = $ip }
+                if ($_['serial_number']) { $n['serial'] = [string]$_['serial_number'] }
+                if ((Get-RangerNested $_ 'bmc', 'ip_address')) { $n['bmcIp'] = [string](Get-RangerNested $_ 'bmc', 'ip_address') }
+                if ((Get-RangerNested $_ 'bmc', 'type')) { $n['bmcType'] = ([string](Get-RangerNested $_ 'bmc', 'type')).ToLowerInvariant() }
+                if ($_['storage_ips']) { $n['storageIps'] = @(@($_['storage_ips']) | Where-Object { $_ } | ForEach-Object { [string]$_ }) }
+                $n
+            })
+    }
+
+    # VLANs: networking.vlans[] plus the tagged management VLAN (vlan_id 0 is untagged).
+    $vlans = New-Object System.Collections.Generic.List[object]
+    foreach ($v in @(Get-RangerNested $r 'networking', 'vlans')) {
+        if ($v -is [System.Collections.IDictionary] -and $null -ne $v['id']) { $vlans.Add([ordered]@{ id = [int]$v['id']; name = [string]$v['name'] }) }
+    }
+    $mgmtVlan = Get-RangerNested $r 'networking', 'management', 'vlan_id'
+    if ($mgmtVlan -and [int]$mgmtVlan -gt 0 -and -not @($vlans | Where-Object { $_.id -eq [int]$mgmtVlan })) { $vlans.Add([ordered]@{ id = [int]$mgmtVlan; name = 'management' }) }
+    if ($vlans.Count) { $snap['vlans'] = @($vlans.ToArray() | Sort-Object { $_.id }) }
+
+    # Intents: the adapter names are the port names of the file; a port with os_name_override is named by the OS under that name.
+    $intentList = @(@(Get-RangerNested $r 'networking', 'intents') | Where-Object { $_ -is [System.Collections.IDictionary] })
+    if ($intentList.Count) {
+        $osNames = @{}
+        $firstNode = $nodeList | Select-Object -First 1
+        foreach ($a in @($(if ($firstNode) { $firstNode['network_adapters'] }))) {
+            if ($a -is [System.Collections.IDictionary] -and $a['name'] -and $a['os_name_override']) { $osNames[[string]$a['name']] = [string]$a['os_name_override'] }
+        }
+        $snap['intents'] = @($intentList | ForEach-Object {
+                [ordered]@{
+                    name     = [string]$_['name']
+                    traffic  = @(@($_['traffic']) | Where-Object { $_ } | ForEach-Object { ([string]$_).ToLowerInvariant() })
+                    adapters = @(@($_['adapters']) | Where-Object { $_ } | ForEach-Object { if ($osNames.ContainsKey([string]$_)) { $osNames[[string]$_] } else { [string]$_ } })
+                }
+            })
+    }
+
+    $dns = Get-RangerNested $r 'networking', 'management', 'dns_servers'
+    if ($dns) { $snap['dnsServers'] = @(@($dns) | Where-Object { $_ } | ForEach-Object { [string]$_ }) }
+
+    $volumeList = @(@(Get-RangerNested $r 'storage', 'volumes') | Where-Object { $_ -is [System.Collections.IDictionary] })
+    if ($volumeList.Count) {
+        $snap['volumes'] = @($volumeList | ForEach-Object {
+                $v = [ordered]@{ name = [string]$_['name'] }
+                if ($null -ne $_['size_gib']) { $v['sizeGiB'] = [double]$_['size_gib'] }
+                $res = ConvertTo-RangerResiliencyName $_['resiliency']
+                if ($res) { $v['resiliency'] = $res }
+                $v
+            })
+    }
+
+    $sdn = [ordered]@{}
+    if ($null -ne (Get-RangerNested $r 'sdn', 'enabled')) { $sdn['enabled'] = [bool](Get-RangerNested $r 'sdn', 'enabled') }
+    if ((Get-RangerNested $r 'sdn', 'prefix')) { $sdn['prefix'] = [string](Get-RangerNested $r 'sdn', 'prefix') }
+    $lnets = @(@(Get-RangerNested $r 'networking', 'logical_networks') | Where-Object { $_ -is [System.Collections.IDictionary] })
+    if ($lnets.Count) {
+        $sdn['logicalNetworks'] = @($lnets | ForEach-Object {
+                $l = [ordered]@{ name = [string]$_['name'] }
+                if ($null -ne $_['vlan_id']) { $l['vlan'] = [int]$_['vlan_id'] }
+                if ($_['address_prefix']) { $l['subnet'] = [string]$_['address_prefix'] }
+                $l
+            })
+    }
+    if ($sdn.Count) { $snap['sdn'] = $sdn }
+    return $snap
+}
+
 function ConvertFrom-RangerDesignRecord {
     <#
     .SYNOPSIS
@@ -305,7 +465,8 @@ function ConvertFrom-RangerDesignRecord {
     .PARAMETER InputObject
         An already parsed dictionary.
     .PARAMETER Kind
-        auto (default), environment (deploy automation environment file), infrastructure (Trailwright infrastructure.yml) or snapshot.
+        auto (default), infrastructure (the toolkit's infrastructure.yml, schema 5; a Trailwright schema 4 export is still read, with a warning),
+        environment (the retired deploy automation environment file; read with a warning for one more release) or snapshot.
     #>
     [CmdletBinding()]
     param(
@@ -324,16 +485,20 @@ function ConvertFrom-RangerDesignRecord {
 
     if ($Kind -eq 'auto') {
         $Kind = if ($r['schema'] -eq 'as-built-snapshot.v1') { 'snapshot' }
-        elseif ($r.Contains('_metadata') -or $r.Contains('azure_platform') -or $r.Contains('compute')) { 'infrastructure' }
+        elseif ($r.Contains('_metadata') -or $r.Contains('azure_platform') -or $r.Contains('compute') -or $r.Contains('scenario')) { 'infrastructure' }
         elseif ($r.Contains('nodes') -or $r.Contains('cluster_name') -or $r.Contains('intents')) { 'environment' }
         else { throw 'Cannot tell the design record kind. Pass -Kind environment, infrastructure or snapshot.' }
     }
     if ($Kind -eq 'snapshot') { $r['_kind'] = 'snapshot'; return $r }
 
     $idMap = @{ 'local-identity-keyvault' = 'local-identity-key-vault'; 'local-identity-key-vault' = 'local-identity-key-vault'; 'local-identity' = 'local-identity-key-vault'; 'ad-joined' = 'active-directory'; 'active-directory' = 'active-directory'; 'hybrid' = 'active-directory' }
-    $resMap = @{ 'two-way-mirror' = 'two-way'; 'three-way-mirror' = 'three-way'; 'nested-two-way-mirror' = 'nested-two-way'; 'two-way' = 'two-way'; 'three-way' = 'three-way'; 'four-way' = 'four-way'; 'four-way-mirror' = 'four-way'; 'parity' = 'parity'; 'nested-two-way' = 'nested-two-way' }
-    $witMap = { param($v) $x = ([string]$v).ToLowerInvariant(); if ($x -match 'cloud') { 'cloud' } elseif ($x -match 'file') { 'file-share' } elseif ($x) { 'none' } else { $null } }
+    $witMap = { param($v) ConvertTo-RangerWitnessName $v }
     $snap = [ordered]@{ schema = 'as-built-snapshot.v1'; _kind = $Kind }
+
+    # Schema 5 infrastructure.yml (the toolkit's one environment file); the schema 4 Trailwright export below is a one-release reader.
+    if ($Kind -eq 'infrastructure' -and (Test-RangerInfrastructureSchema5 -Record $r)) { return ConvertFrom-RangerInfrastructureRecord -Record $r }
+    if ($Kind -eq 'infrastructure') { Write-Warning 'Design record: a Trailwright infrastructure.yml of schema 4 is read by a reader that will be removed in the next release. Export the design again from Trailwright (schema 5) and pass that file.' }
+    if ($Kind -eq 'environment') { Write-Warning 'Design record: the deploy automation environment file (environment.yml) is retired in favour of infrastructure.yml and this reader will be removed in the next release. Pass the infrastructure.yml of the instance.' }
 
     if ($Kind -eq 'environment') {
         $cluster = [ordered]@{}
@@ -377,7 +542,7 @@ function ConvertFrom-RangerDesignRecord {
         }
         if ($r['ip_plan'] -is [System.Collections.IDictionary] -and (Get-RangerNested $r 'ip_plan','dns_servers')) { $snap['dnsServers'] = @(@((Get-RangerNested $r 'ip_plan','dns_servers')) | ForEach-Object { [string]$_ }) }
         if ($r['storage'] -is [System.Collections.IDictionary] -and (Get-RangerNested $r 'storage','volumes')) {
-            $snap['volumes'] = @(@((Get-RangerNested $r 'storage','volumes')) | ForEach-Object { [ordered]@{ name = [string]$_['name']; sizeGiB = [double]$_['size_gb']; resiliency = $resMap[[string]$_['resiliency']] } })
+            $snap['volumes'] = @(@((Get-RangerNested $r 'storage','volumes')) | ForEach-Object { [ordered]@{ name = [string]$_['name']; sizeGiB = [double]$_['size_gb']; resiliency = (ConvertTo-RangerResiliencyName $_['resiliency']) } })
         }
         if ($r['sdn'] -is [System.Collections.IDictionary] -or $r['logical_networks']) {
             $sdn = [ordered]@{}
@@ -413,7 +578,7 @@ function ConvertFrom-RangerDesignRecord {
         }
         if ((Get-RangerNested $r 'infrastructure_network','dns_servers')) { $snap['dnsServers'] = @(@((Get-RangerNested $r 'infrastructure_network','dns_servers')) | ForEach-Object { [string]$_ }) }
         if ((Get-RangerNested $r 'storage','volumes')) {
-            $snap['volumes'] = @(@((Get-RangerNested $r 'storage','volumes')) | ForEach-Object { [ordered]@{ name = [string]$_['name']; sizeGiB = [double]$_['size_gib']; resiliency = $resMap[[string]$_['resiliency']] } })
+            $snap['volumes'] = @(@((Get-RangerNested $r 'storage','volumes')) | ForEach-Object { [ordered]@{ name = [string]$_['name']; sizeGiB = [double]$_['size_gib']; resiliency = (ConvertTo-RangerResiliencyName $_['resiliency']) } })
         }
         if ($r['sdn'] -is [System.Collections.IDictionary]) {
             $sdn = [ordered]@{ enabled = [bool](Get-RangerNested $r 'sdn','enabled') }
@@ -509,6 +674,7 @@ function Compare-RangerDesign {
     & $scalar 'azure' 'subscriptionId' (Get-RangerNested $design 'azure','subscriptionId') (Get-RangerNested $Snapshot 'azure','subscriptionId') $true $null $null
     & $scalar 'azure' 'resourceGroup' (Get-RangerNested $design 'azure','resourceGroup') (Get-RangerNested $Snapshot 'azure','resourceGroup') $false $null $null
     & $scalar 'identity' 'model' (Get-RangerNested $design 'identity','model') (Get-RangerNested $Snapshot 'identity','model') $true $L.identity $null
+    & $scalar 'identity' 'domain' (Get-RangerNested $design 'identity','domain') (Get-RangerNested $Snapshot 'identity','domain') $false $L.identity $null
     & $scalar 'witness' 'type' (Get-RangerNested $design 'witness','type') (Get-RangerNested $Snapshot 'witness','type') $true $L.witness $null
 
     $dn = @($design['nodes'] | Where-Object { $_ }); $an = @($Snapshot['nodes'] | Where-Object { $_ })
@@ -523,6 +689,7 @@ function Compare-RangerDesign {
                 & $scalar 'nodes' "$($n['name']).managementIp" $n['managementIp'] $b['managementIp'] $false $null $null
                 & $scalar 'nodes' "$($n['name']).serial" $n['serial'] $b['serial'] $false $null $null
                 & $scalar 'nodes' "$($n['name']).bmcIp" $n['bmcIp'] $b['bmcIp'] $false $null $null
+                & $scalar 'nodes' "$($n['name']).bmcType" $n['bmcType'] $b['bmcType'] $false $null $null
                 if ($n['storageIps']) {
                     if (-not $b['storageIps']) { & $addRow (New-RangerDesignRow 'nodes' "$($n['name']).storageIps" (@($n['storageIps']) -join ', ') $null 'not-captured' 'info' $null 'The as-built snapshot has no storage IPs for this node.') }
                     elseif (Compare-RangerSets $n['storageIps'] $b['storageIps']) { & $addRow (New-RangerDesignRow 'nodes' "$($n['name']).storageIps" (@($n['storageIps']) -join ', ') (@($b['storageIps']) -join ', ') 'match' 'ok' $null $null) }
@@ -619,6 +786,12 @@ function Compare-RangerDesign {
         }
     }
 
+    # A design record with no section Ranger compares (a file cut for another tool, a stub) says nothing about the build:
+    # report that instead of a clean, empty table.
+    $comparable = $rows.Count -gt 0
+    if (-not $comparable) {
+        & $addRow (New-RangerDesignRow 'design' 'record' ([string]$design['_kind']) $null 'not-comparable' 'warning' $null 'The design record holds no section Ranger compares (cluster, release, identity, witness, nodes, VLANs, intents, volumes, DNS, SDN). Pass the infrastructure.yml of the instance, or its ranger cut (New-InfrastructureArtifacts.ps1 -Cut ranger).')
+    }
     $all = $rows.ToArray()
     $summary = [ordered]@{
         total       = $all.Count
@@ -628,8 +801,10 @@ function Compare-RangerDesign {
         notCaptured = @($all | Where-Object { $_.status -eq 'not-captured' }).Count
         errors      = @($all | Where-Object { $_.severity -eq 'error' }).Count
         warnings    = @($all | Where-Object { $_.severity -eq 'warning' }).Count
+        comparable  = $comparable
+        notComparable = @($all | Where-Object { $_.status -eq 'not-comparable' }).Count
         # Share of design items the as-built snapshot could actually be compared on (red-team review: report coverage separately).
-        coveragePercent = if ($all.Count -gt 0) { [math]::Round(100.0 * ($all.Count - @($all | Where-Object { $_.status -eq 'not-captured' }).Count) / $all.Count, 1) } else { $null }
+        coveragePercent = if (-not $comparable) { 0.0 } elseif ($all.Count -gt 0) { [math]::Round(100.0 * ($all.Count - @($all | Where-Object { $_.status -eq 'not-captured' }).Count) / $all.Count, 1) } else { $null }
     }
     $result = [ordered]@{
         schema         = 'design-comparison.v1'
@@ -664,7 +839,7 @@ function New-RangerDesignComparisonHtml {
     @"
 <section class="design-comparison">
 <h2>Design vs as-built</h2>
-<p>$($s['match']) match, $($s['drift']) drift, $($s['missing']) missing, $($s['notCaptured']) not captured ($($s['errors']) errors, $($s['warnings']) warnings).</p>
+<p>$($s['match']) match, $($s['drift']) drift, $($s['missing']) missing, $($s['notCaptured']) not captured$(if ($s['notComparable']) { ", $($s['notComparable']) not comparable" }) ($($s['errors']) errors, $($s['warnings']) warnings).</p>
 <table>
 <thead><tr><th>Area</th><th>Item</th><th>Design</th><th>As-built</th><th>Status</th><th>Severity</th><th>Reference</th></tr></thead>
 <tbody>

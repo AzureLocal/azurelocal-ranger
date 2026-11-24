@@ -1,0 +1,84 @@
+_metadata:
+  schema_version: 5.6.28
+  scope: full
+  file_version: 1.0.0
+  generated_by: azurelocal-trailwright
+scenario:
+  identity: local_identity
+  storage_architecture: s2d
+  storage_connectivity: switched
+  topology: standard
+  connectivity: connected
+  cloud: public
+  outbound_path: direct
+  os_install: iso
+  deploy_method: portal
+environment:
+  name: improbability-cloud-imp-hq1-3-node-all-nv
+azure:
+  location: eastus
+cluster:
+  name: improbability-cloud-imp-hq1-3-node-all-nvme
+  witness:
+    type: none
+nodes:
+  - name: node1
+  - name: node2
+  - name: node3
+hardware:
+  cpu_cores: 64
+  memory_gib: 768
+  sbe:
+    requirement: vendor
+    delivery: skip
+  drives:
+    capacity:
+      media: nvme
+      count: 8
+      size_tb: 7.68
+networking:
+  management:
+    vlan_id: 0
+    use_dhcp: false
+  storage:
+    auto_ip: true
+    tor_switches: 2
+    layout: dedicated
+identity:
+  local_identity:
+    dns_server_config: use_dns_server
+storage:
+  configuration_mode: express
+  volumes:
+    - name: vol-workloads-01
+      size_gib: 11641
+      resiliency: three_way
+    - name: vol-workloads-02
+      size_gib: 11641
+      resiliency: three_way
+    - name: vol-sql-01
+      size_gib: 7450
+      resiliency: three_way
+security:
+  level: recommended
+  drift_control: true
+  credential_guard: true
+  smb_signing: true
+  smb_cluster_encryption: false
+  bitlocker_boot_volume: true
+  bitlocker_data_volumes: true
+  wdac: true
+  telemetry:
+    streaming_data: true
+    episodic_data_upload: true
+    eu_location: false
+sdn:
+  enabled: false
+operations:
+  update_method: portal
+  backup:
+    enabled: false
+  disaster_recovery:
+    method: none
+  monitoring:
+    enabled: false

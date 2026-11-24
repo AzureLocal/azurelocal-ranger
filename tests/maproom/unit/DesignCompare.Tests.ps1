@@ -5,6 +5,9 @@ BeforeAll {
     $script:manifestPath = Join-Path $script:fixtureRoot 'synthetic-manifest.json'
     $script:envPath = Join-Path $script:fixtureRoot 'design\environment.example.yml'
     $script:infraPath = Join-Path $script:fixtureRoot 'design\infrastructure.example.yml'
+    $script:ztpPath = Join-Path $script:fixtureRoot 'design\infrastructure.ztp.example.yml'
+    $script:twPath = Join-Path $script:fixtureRoot 'design\infrastructure.trailwright-export.yml'
+    $script:infraV4Path = Join-Path $script:fixtureRoot 'design\infrastructure.schema4.example.yml'
     $script:schemaPath = Join-Path $script:repoRoot 'docs\reference\as-built-snapshot.v1.schema.json'
 
     # A manifest in the shape the real collectors write (per-node networking, Get-NetIntent flags, copies for resiliency).
@@ -112,8 +115,8 @@ Describe 'design record readers' {
         ($d.intents | Where-Object name -eq 'Storage').jumbo | Should -Be 9014
     }
 
-    It 'normalises a Trailwright infrastructure.yml' {
-        $d = InModuleScope AzureLocalRanger -Parameters @{ p = $script:infraPath } { param($p) ConvertFrom-RangerDesignRecord -Path $p }
+    It 'still reads a Trailwright infrastructure.yml of schema 4 (one-release reader, with a warning)' {
+        $d = InModuleScope AzureLocalRanger -Parameters @{ p = $script:infraV4Path } { param($p) ConvertFrom-RangerDesignRecord -Path $p -WarningAction SilentlyContinue }
         $d._kind | Should -Be 'infrastructure'
         $d.cluster.name | Should -Be 'azlocal-iic-01'
         $d.azure.resourceGroup | Should -Be 'rg-iic-compute-01'
@@ -177,9 +180,9 @@ Describe 'Compare-RangerDesign' {
         (& $row 'volumes' 'Infrastructure_1').severity | Should -Be 'info'
     }
 
-    It 'Trailwright infrastructure.yml: a release train matches the 12.<train> build' {
+    It 'Trailwright schema 4 infrastructure.yml: a release train matches the 12.<train> build' {
         $m = script:New-RealShapeManifest
-        $r = Compare-RangerDesign -Manifest $m -DesignPath $script:infraPath
+        $r = Compare-RangerDesign -Manifest $m -DesignPath $script:infraV4Path
         ($r.findings | Where-Object { $_.area -eq 'cluster' -and $_.key -eq 'release' }).status | Should -Be 'match'
         ($r.findings | Where-Object { $_.area -eq 'azure' -and $_.key -eq 'resourceGroup' }).status | Should -Be 'match'
         ($r.findings | Where-Object { $_.area -eq 'nodes' -and $_.key -eq 'azl-iic-n03' }).status | Should -Be 'missing'
@@ -210,5 +213,157 @@ Describe 'Compare-RangerDesign' {
         (Get-Command Compare-RangerDesign).Source | Should -Be 'AzureLocalRanger'
         (Get-Command ConvertTo-RangerAsBuiltSnapshot).Source | Should -Be 'AzureLocalRanger'
         (Test-ModuleManifest (Join-Path $script:repoRoot 'AzureLocalRanger.psd1')).ExportedFunctions.Keys | Should -Contain 'Compare-RangerDesign'
+    }
+}
+
+Describe 'infrastructure.yml (schema 5) as the design record' {
+    It 'reads cluster, release, identity, witness, nodes, serials, BMC, Azure scope, VLANs, intents, DNS, volumes and SDN from the registry example' {
+        $d = InModuleScope AzureLocalRanger -Parameters @{ p = $script:infraPath } { param($p) ConvertFrom-RangerDesignRecord -Path $p }
+        $d._kind | Should -Be 'infrastructure'
+        $d.cluster.name | Should -Be 'iic-azl-01'
+        $d.cluster.release | Should -Be '12.2611.1004.9'
+        $d.azure.resourceGroup | Should -Be 'rg-iic-azl-01'
+        $d.azure.subscriptionId | Should -Be '00000000-0000-0000-0000-000000000000'
+        $d.identity.model | Should -Be 'active-directory'
+        $d.identity.domain | Should -Be 'improbability.cloud'
+        $d.witness.type | Should -Be 'cloud'
+        @($d.nodes).Count | Should -Be 2
+        $n1 = $d.nodes | Where-Object name -eq 'iic-azl-n01'
+        $n1.serial | Should -Be 'SERIAL01'
+        $n1.managementIp | Should -Be '192.0.2.11'
+        $n1.bmcIp | Should -Be '198.51.100.11'
+        $n1.bmcType | Should -Be 'idrac'
+        @($d.vlans | ForEach-Object { $_.id }) | Should -Contain 711
+        @($d.vlans | ForEach-Object { $_.id }) | Should -Contain 2204
+        $storage = $d.intents | Where-Object name -eq 'compute_storage'
+        $storage.traffic | Should -Be @('compute', 'storage')
+        $storage.adapters | Should -Be @('Port3', 'Port4')
+        $d.dnsServers | Should -Be @('192.0.2.4', '192.0.2.5')
+        $v = $d.volumes | Where-Object name -eq 'vol-workloads-01'
+        $v.sizeGiB | Should -Be 4096
+        $v.resiliency | Should -Be 'two-way'
+        $d.sdn.enabled | Should -BeFalse
+        ($d.sdn.logicalNetworks | Where-Object name -eq 'lnet-workloads').vlan | Should -Be 2204
+    }
+
+    It 'maps every registry resiliency value, and never leaves a written value null' {
+        InModuleScope AzureLocalRanger {
+            ConvertTo-RangerResiliencyName 'two_way' | Should -Be 'two-way'
+            ConvertTo-RangerResiliencyName 'three_way' | Should -Be 'three-way'
+            ConvertTo-RangerResiliencyName 'four_way' | Should -Be 'four-way'
+            ConvertTo-RangerResiliencyName 'nested_two_way' | Should -Be 'nested-two-way'
+            ConvertTo-RangerResiliencyName 'parity' | Should -Be 'parity'
+            ConvertTo-RangerResiliencyName 'two-way-mirror' | Should -Be 'two-way'
+            ConvertTo-RangerResiliencyName 'mirror_accelerated_parity' | Should -Be 'mirror-accelerated-parity'
+            ConvertTo-RangerResiliencyName 'nested_mirror_accelerated_parity' | Should -Be 'nested-mirror-accelerated-parity'
+            ConvertTo-RangerResiliencyName $null | Should -BeNullOrEmpty
+        }
+    }
+
+    It 'reads the management address of a 5.2+ file from the management network adapter, and the BMC of a ZTP-scope file' {
+        $d = InModuleScope AzureLocalRanger -Parameters @{ p = $script:ztpPath } { param($p) ConvertFrom-RangerDesignRecord -Path $p }
+        $d._kind | Should -Be 'infrastructure'
+        $d.cluster.release | Should -Be '12.2611.1004.9'
+        $n2 = $d.nodes | Where-Object name -eq 'iic-azl-n02'
+        $n2.managementIp | Should -Be '192.0.2.12'
+        $n2.serial | Should -Be 'SERIAL02'
+        $n2.bmcIp | Should -Be '198.51.100.12'
+        $d.dnsServers | Should -Be @('192.0.2.30', '192.0.2.31')
+    }
+
+    It 'reads a Trailwright schema 5 export: local identity, no witness, three-way volumes (resiliency is never null)' {
+        $d = InModuleScope AzureLocalRanger -Parameters @{ p = $script:twPath } { param($p) ConvertFrom-RangerDesignRecord -Path $p }
+        $d.identity.model | Should -Be 'local-identity-key-vault'
+        $d.identity.domain | Should -BeNullOrEmpty
+        $d.witness.type | Should -Be 'none'
+        @($d.nodes).Count | Should -Be 3
+        @($d.volumes).Count | Should -Be 3
+        foreach ($v in $d.volumes) { $v.resiliency | Should -Be 'three-way' }
+    }
+
+    It 'compares the registry example with itself: every row matches and the rows cover cluster, release, identity, witness, nodes, serial, BMC and Azure scope' {
+        $snap = InModuleScope AzureLocalRanger -Parameters @{ p = $script:infraPath } { param($p) ConvertFrom-RangerDesignRecord -Path $p }
+        $r = Compare-RangerDesign -Snapshot $snap -DesignPath $script:infraPath
+        $r.designKind | Should -Be 'infrastructure'
+        $r.summary.comparable | Should -BeTrue
+        $r.summary.drift | Should -Be 0
+        $r.summary.missing | Should -Be 0
+        $r.summary.errors | Should -Be 0
+        $row = { param($area, $key) $r.findings | Where-Object { $_.area -eq $area -and $_.key -eq $key } | Select-Object -First 1 }
+        (& $row 'cluster' 'name').status | Should -Be 'match'
+        (& $row 'cluster' 'release').status | Should -Be 'match'
+        (& $row 'identity' 'model').status | Should -Be 'match'
+        (& $row 'identity' 'domain').status | Should -Be 'match'
+        (& $row 'witness' 'type').status | Should -Be 'match'
+        (& $row 'nodes' 'iic-azl-n01').status | Should -Be 'match'
+        (& $row 'nodes' 'iic-azl-n01.serial').status | Should -Be 'match'
+        (& $row 'nodes' 'iic-azl-n01.bmcIp').status | Should -Be 'match'
+        (& $row 'nodes' 'iic-azl-n01.bmcType').status | Should -Be 'match'
+        (& $row 'nodes' 'iic-azl-n01.managementIp').status | Should -Be 'match'
+        (& $row 'azure' 'subscriptionId').status | Should -Be 'match'
+        (& $row 'azure' 'resourceGroup').status | Should -Be 'match'
+        (& $row 'volumes' 'vol-workloads-01.resiliency').status | Should -Be 'match'
+        (& $row 'volumes' 'vol-workloads-01.resiliency').design | Should -Be 'two-way'
+    }
+
+    It 'compares the registry example with the Ranger manifest: the build is another instance, so cluster, nodes and Azure scope show as drift or missing' {
+        $r = Compare-RangerDesign -ManifestPath $script:manifestPath -DesignPath $script:infraPath
+        $row = { param($area, $key) $r.findings | Where-Object { $_.area -eq $area -and $_.key -eq $key } | Select-Object -First 1 }
+        (& $row 'cluster' 'name').status | Should -Be 'drift'
+        (& $row 'cluster' 'release').status | Should -Be 'not-captured'
+        (& $row 'identity' 'model').status | Should -Be 'match'
+        (& $row 'witness' 'type').status | Should -Be 'match'
+        (& $row 'nodes' 'iic-azl-n01').status | Should -Be 'missing'
+        (& $row 'azure' 'subscriptionId').status | Should -Be 'drift'
+        (& $row 'azure' 'subscriptionId').severity | Should -Be 'error'
+        $r.summary.errors | Should -BeGreaterThan 0
+    }
+
+    It 'matches a node set, release and serials against a real-shaped manifest when the design names the same machines' {
+        $m = script:New-RealShapeManifest
+        $design = [ordered]@{
+            _metadata    = [ordered]@{ schema_version = '5.6.0' }
+            scenario     = [ordered]@{ identity = 'local_identity' }
+            cluster      = [ordered]@{ name = 'azlocal-iic-01'; witness = [ordered]@{ type = 'cloud' } }
+            provisioning = [ordered]@{ os_version = '12.2609.1003.7' }
+            nodes        = @(
+                [ordered]@{ name = 'azl-iic-n01'; serial_number = 'ABC1234'; management = [ordered]@{ ip_address = '10.0.0.11' }; bmc = [ordered]@{ type = 'idrac' } },
+                [ordered]@{ name = 'azl-iic-n02'; serial_number = 'SER-0002'; management = [ordered]@{ ip_address = '10.0.0.12' }; bmc = [ordered]@{ type = 'ilo' } }
+            )
+            storage      = [ordered]@{ volumes = @([ordered]@{ name = 'csv-iic-azlocal-01-vmstore-01'; size_gib = 2000; resiliency = 'three_way' }) }
+        }
+        $p = Join-Path $TestDrive 'design-v5.json'
+        $design | ConvertTo-Json -Depth 10 | Set-Content $p
+        $r = Compare-RangerDesign -Manifest $m -DesignPath $p
+        $row = { param($area, $key) $r.findings | Where-Object { $_.area -eq $area -and $_.key -eq $key } | Select-Object -First 1 }
+        (& $row 'cluster' 'name').status | Should -Be 'match'
+        (& $row 'cluster' 'release').status | Should -Be 'match'
+        (& $row 'identity' 'model').status | Should -Be 'match'
+        (& $row 'nodes' 'azl-iic-n01.serial').status | Should -Be 'match'
+        (& $row 'nodes' 'azl-iic-n01.managementIp').status | Should -Be 'match'
+        (& $row 'nodes' 'azl-iic-n01.bmcType').status | Should -Be 'match'
+        (& $row 'nodes' 'azl-iic-n02.bmcType').status | Should -Be 'match'
+        (& $row 'volumes' 'csv-iic-azlocal-01-vmstore-01.resiliency').status | Should -Be 'match'
+    }
+
+    It 'says not comparable when the design record holds no section Ranger compares' {
+        $p = Join-Path $TestDrive 'stub-v5.json'
+        '{ "_metadata": { "schema_version": "5.6.0", "scope": "other" }, "scenario": { "os_install": "simplified" }, "tags": { "Owner": "x" } }' | Set-Content $p
+        $r = Compare-RangerDesign -ManifestPath $script:manifestPath -DesignPath $p
+        $r.summary.comparable | Should -BeFalse
+        $r.summary.notComparable | Should -Be 1
+        $r.summary.coveragePercent | Should -Be 0
+        @($r.findings).Count | Should -Be 1
+        $r.findings[0].status | Should -Be 'not-comparable'
+        $r.findings[0].severity | Should -Be 'warning'
+        $html = InModuleScope AzureLocalRanger -Parameters @{ r = $r } { param($r) New-RangerDesignComparisonHtml -Comparison $r }
+        $html | Should -Match '1 not comparable'
+    }
+
+    It 'warns that the retired environment file and the schema 4 export have a one-release reader' {
+        $w1 = InModuleScope AzureLocalRanger -Parameters @{ p = $script:envPath } { param($p) $null = ConvertFrom-RangerDesignRecord -Path $p; $null } 3>&1 | Out-String
+        $w1 | Should -Match 'environment.yml'
+        $w2 = InModuleScope AzureLocalRanger -Parameters @{ p = $script:infraV4Path } { param($p) $null = ConvertFrom-RangerDesignRecord -Path $p; $null } 3>&1 | Out-String
+        $w2 | Should -Match 'schema 4'
     }
 }
