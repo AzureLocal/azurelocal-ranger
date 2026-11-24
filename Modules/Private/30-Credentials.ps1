@@ -227,11 +227,16 @@ function Resolve-RangerCredentialDefinition {
         return $CredentialBlock
     }
 
-    if ($CredentialBlock -and $CredentialBlock.username) {
+    if ($CredentialBlock -and ($CredentialBlock.username -or $CredentialBlock.usernameRef)) {
         try {
+            # usernameRef: a keyvault:// reference to the account name (the infrastructure.yml keeps hardware.bmc.username that way).
+            $accountName = [string]$CredentialBlock.username
+            if (-not $accountName) {
+                $accountName = [System.Net.NetworkCredential]::new('', (Get-RangerSecretFromUri -Uri $CredentialBlock.usernameRef)).Password
+            }
             $password = Resolve-RangerPasswordValue -CredentialBlock $CredentialBlock
             if ($password) {
-                return [PSCredential]::new([string]$CredentialBlock.username, $password)
+                return [PSCredential]::new($accountName, $password)
             }
         }
         catch {

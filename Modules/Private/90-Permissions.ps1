@@ -328,8 +328,10 @@ function Invoke-RangerPermissionAudit {
     $kvRefs = New-Object System.Collections.Generic.List[string]
     foreach ($credName in @('cluster', 'domain', 'bmc', 'firewall', 'switch')) {
         $block = $Config.credentials[$credName]
-        if ($block -and $block.passwordRef -is [string] -and $block.passwordRef.StartsWith('keyvault://')) {
-            [void]$kvRefs.Add([string]$block.passwordRef)
+        foreach ($refName in @('passwordRef', 'usernameRef')) {
+            if ($block -and $block.$refName -is [string] -and $block.$refName.StartsWith('keyvault://')) {
+                [void]$kvRefs.Add([string]$block.$refName)
+            }
         }
     }
     if ($Config.credentials.azure -and $Config.credentials.azure.clientSecretRef -is [string] -and $Config.credentials.azure.clientSecretRef.StartsWith('keyvault://')) {

@@ -55,123 +55,110 @@ Describe 'Azure Local Ranger configuration helpers' {
         } -Parameters @{ ConfigPath = $path }
     }
 
-    It 'hydrates BMC endpoints from sibling variables.yml when the Ranger config leaves them empty' {
-        $fixtureRoot = Join-Path $TestDrive 'bmc-fallback'
-        New-Item -ItemType Directory -Path $fixtureRoot -Force | Out-Null
-        $configPath = Join-Path $fixtureRoot 'ranger-config.yml'
-        $variablesPath = Join-Path $fixtureRoot 'variables.yml'
-
-        @'
-environment:
-  name: tplabs
-targets:
-  cluster:
-    fqdn: tplabs-clus01.azrl.mgmt
-    nodes:
-      - tplabs-01-n01.azrl.mgmt
-  azure:
-    subscriptionId: 22222222-2222-2222-2222-222222222222
-    resourceGroup: rg-tplabs
-    tenantId: 33333333-3333-3333-3333-333333333333
-  bmc:
-    endpoints: []
-credentials:
-  azure:
-    method: existing-context
-    useAzureCliFallback: true
-  bmc:
-    username: idrac_azl_admin
-    passwordRef: keyvault://kv-ranger/idrac-password
-domains:
-  include: []
-  exclude: []
-  hints:
-    fixtures: {}
-output:
-  mode: current-state
-  formats:
-    - html
-behavior:
-  promptForMissingCredentials: false
-'@ | Set-Content -Path $configPath -Encoding UTF8
-
-        @'
-security:
-  infrastructure_credentials:
-    idrac:
-      devices:
-        - tplabs-01-n01 (192.168.214.11)
-        - tplabs-01-n02 (192.168.214.12)
-'@ | Set-Content -Path $variablesPath -Encoding UTF8
-
-        InModuleScope AzureLocalRanger {
-            param($Path)
-
-            $config = Import-RangerConfiguration -ConfigPath $Path
+    It 'resolves the cluster, nodes, BMC endpoints and Azure scope from infrastructure.yml (G2)' {
+        $infra = Join-Path $script:repoRoot 'tests\maproom\Fixtures\design\infrastructure.example.yml'
+        InModuleScope AzureLocalRanger -Parameters @{ Infra = $infra } {
+            param($Infra)
+            $config = Import-RangerConfiguration -InfrastructureFile $Infra
+            $config.environment.name | Should -Be 'iic-azl-01'
+            $config.environment.clusterName | Should -Be 'iic-azl-01'
+            $config.targets.cluster.fqdn | Should -Be 'iic-azl-01.improbability.cloud'
+            @($config.targets.cluster.nodes) | Should -Be @('iic-azl-n01.improbability.cloud', 'iic-azl-n02.improbability.cloud')
+            $config.targets.azure.resourceGroup | Should -Be 'rg-iic-azl-01'
+            $config.targets.azure.subscriptionId | Should -Be '00000000-0000-0000-0000-000000000000'
+            $config.targets.azure.tenantId | Should -Be '00000000-0000-0000-0000-000000000000'
             @($config.targets.bmc.endpoints).Count | Should -Be 2
-            $config.targets.bmc.endpoints[0].host | Should -Be '192.168.214.11'
-            $config.targets.bmc.endpoints[0].node | Should -Be 'tplabs-01-n01'
-            $config.targets.bmc.endpoints[1].host | Should -Be '192.168.214.12'
-            $config.targets.bmc.endpoints[1].node | Should -Be 'tplabs-01-n02'
+            $config.targets.bmc.endpoints[0].host | Should -Be '198.51.100.11'
+            $config.targets.bmc.endpoints[0].node | Should -Be 'iic-azl-n01'
+            $config.targets.bmc.endpoints[1].host | Should -Be '198.51.100.12'
             Test-RangerTargetConfigured -Config $config -TargetName 'bmc' | Should -BeTrue
-        } -Parameters @{ Path = $configPath }
+            # hardware.bmc.username and password are Key Vault references: Ranger resolves them when the credential is needed.
+            $config.credentials.bmc.usernameRef | Should -Be 'keyvault://kv-iic-mgmt-01/bmc-username'
+            $config.credentials.bmc.passwordRef | Should -Be 'keyvault://kv-iic-mgmt-01/bmc-password'
+            (Test-RangerConfiguration -Config $config -PassThru).Errors | Where-Object { $_ -match 'Key Vault' } | Should -BeNullOrEmpty
+        }
     }
 
-    It 'preserves explicit BMC endpoints from Ranger config over sibling variables.yml fallback data' {
-        $fixtureRoot = Join-Path $TestDrive 'bmc-explicit'
+    It 'reads the nodes and BMC endpoints of a ZTP-scope file and leaves what it does not hold empty' {
+        $ztp = Join-Path $script:repoRoot 'tests\maproom\Fixtures\design\infrastructure.ztp.example.yml'
+        InModuleScope AzureLocalRanger -Parameters @{ Ztp = $ztp } {
+            param($Ztp)
+            $config = Import-RangerConfiguration -InfrastructureFile $Ztp
+            @($config.targets.cluster.nodes) | Should -Be @('iic-azl-n01', 'iic-azl-n02')
+            $config.targets.cluster.fqdn | Should -BeNullOrEmpty
+            $config.environment.clusterName | Should -BeNullOrEmpty
+            @($config.targets.bmc.endpoints).Count | Should -Be 2
+            $config.targets.azure.resourceGroup | Should -Be 'rg-iic-azl-01'
+        }
+    }
+
+    It 'a Ranger configuration file or object wins over infrastructure.yml, which only fills what is empty' {
+        $infra = Join-Path $script:repoRoot 'tests\maproom\Fixtures\design\infrastructure.example.yml'
+        InModuleScope AzureLocalRanger -Parameters @{ Infra = $infra } {
+            param($Infra)
+            $own = @{
+                targets     = @{
+                    cluster = @{ fqdn = 'own-cluster.example.test'; nodes = @('own-n01.example.test') }
+                    bmc     = @{ endpoints = @(@{ host = '203.0.113.9'; node = 'own-n01' }) }
+                }
+                credentials = @{ bmc = @{ username = 'root'; passwordRef = 'keyvault://kv-own/bmc' } }
+            }
+            $config = Import-RangerConfiguration -ConfigObject $own -InfrastructureFile $Infra
+            $config.targets.cluster.fqdn | Should -Be 'own-cluster.example.test'
+            @($config.targets.cluster.nodes) | Should -Be @('own-n01.example.test')
+            @($config.targets.bmc.endpoints).Count | Should -Be 1
+            $config.targets.bmc.endpoints[0].host | Should -Be '203.0.113.9'
+            $config.credentials.bmc.username | Should -Be 'root'
+            $config.credentials.bmc.passwordRef | Should -Be 'keyvault://kv-own/bmc'
+            $config.credentials.bmc.usernameRef | Should -BeNullOrEmpty
+            # what the file adds
+            $config.targets.azure.resourceGroup | Should -Be 'rg-iic-azl-01'
+            $config.environment.clusterName | Should -Be 'iic-azl-01'
+        }
+    }
+
+    It 'names the nodes without a domain when the instance uses local identity' {
+        $tw = Join-Path $script:repoRoot 'tests\maproom\Fixtures\design\infrastructure.trailwright-export.yml'
+        InModuleScope AzureLocalRanger -Parameters @{ Tw = $tw } {
+            param($Tw)
+            $config = Import-RangerConfiguration -InfrastructureFile $Tw
+            @($config.targets.cluster.nodes) | Should -Be @('node1', 'node2', 'node3')
+            $config.targets.cluster.fqdn | Should -Be 'improbability-cloud-imp-hq1-3-node-all-nvme'
+            @($config.targets.bmc.endpoints).Count | Should -Be 0
+        }
+    }
+
+    It 'refuses a file that is not a schema 5 infrastructure.yml, and a missing file' {
+        $old = Join-Path $script:repoRoot 'tests\maproom\Fixtures\design\infrastructure.schema4.example.yml'
+        $legacy = Join-Path $script:repoRoot 'tests\maproom\Fixtures\design\environment.example.yml'
+        InModuleScope AzureLocalRanger -Parameters @{ Old = $old; Legacy = $legacy; Missing = (Join-Path $TestDrive 'nope.yml') } {
+            param($Old, $Legacy, $Missing)
+            { Import-RangerConfiguration -InfrastructureFile $Old } | Should -Throw '*schema 5*'
+            { Import-RangerConfiguration -InfrastructureFile $Legacy } | Should -Throw '*schema 5*'
+            { Import-RangerConfiguration -InfrastructureFile $Missing } | Should -Throw '*not found*'
+        }
+    }
+
+    It 'no longer reads a sibling variables.yml for BMC endpoints' {
+        $fixtureRoot = Join-Path $TestDrive 'no-companion'
         New-Item -ItemType Directory -Path $fixtureRoot -Force | Out-Null
         $configPath = Join-Path $fixtureRoot 'ranger-config.yml'
-        $variablesPath = Join-Path $fixtureRoot 'variables.yml'
-
-        @'
-environment:
-  name: tplabs
-targets:
-  cluster:
-    fqdn: tplabs-clus01.azrl.mgmt
-    nodes:
-      - tplabs-01-n01.azrl.mgmt
-  azure:
-    subscriptionId: 22222222-2222-2222-2222-222222222222
-    resourceGroup: rg-tplabs
-    tenantId: 33333333-3333-3333-3333-333333333333
-  bmc:
-    endpoints:
-      - host: idrac-node-01.azrl.mgmt
-        node: tplabs-01-n01
-credentials:
-  azure:
-    method: existing-context
-    useAzureCliFallback: true
-domains:
-  include: []
-  exclude: []
-  hints:
-    fixtures: {}
-output:
-  mode: current-state
-  formats:
-    - html
-behavior:
-  promptForMissingCredentials: false
-'@ | Set-Content -Path $configPath -Encoding UTF8
-
-        @'
-security:
-  infrastructure_credentials:
-    idrac:
-      devices:
-        - tplabs-01-n01 (192.168.214.11)
-'@ | Set-Content -Path $variablesPath -Encoding UTF8
-
-        InModuleScope AzureLocalRanger {
+        "environment:`n  name: example`ntargets:`n  cluster:`n    fqdn: example-clus.example.test`n" | Set-Content -Path $configPath -Encoding UTF8
+        "security:`n  infrastructure_credentials:`n    idrac:`n      devices:`n        - n01 (192.0.2.11)`n" | Set-Content -Path (Join-Path $fixtureRoot 'variables.yml') -Encoding UTF8
+        InModuleScope AzureLocalRanger -Parameters @{ Path = $configPath } {
             param($Path)
+            @((Import-RangerConfiguration -ConfigPath $Path).targets.bmc.endpoints).Count | Should -Be 0
+        }
+    }
 
-            $config = Import-RangerConfiguration -ConfigPath $Path
-            @($config.targets.bmc.endpoints).Count | Should -Be 1
-            $config.targets.bmc.endpoints[0].host | Should -Be 'idrac-node-01.azrl.mgmt'
-            $config.targets.bmc.endpoints[0].node | Should -Be 'tplabs-01-n01'
-        } -Parameters @{ Path = $configPath }
+    It 'resolves a Key Vault reference for the BMC account name and password into a credential' {
+        InModuleScope AzureLocalRanger {
+            Mock Get-RangerSecretFromUri { ConvertTo-RangerSecureString -Value $(if ($Uri -match 'username') { 'root' } else { 'secret-value' }) }
+            $block = [ordered]@{ usernameRef = 'keyvault://kv-example/bmc-username'; passwordRef = 'keyvault://kv-example/bmc-password' }
+            $cred = Resolve-RangerCredentialDefinition -Name 'bmc' -CredentialBlock $block -AllowPrompt $false
+            $cred.UserName | Should -Be 'root'
+            $cred.GetNetworkCredential().Password | Should -Be 'secret-value'
+        }
     }
 
         It 'normalizes inline empty YAML lists into empty collections' {

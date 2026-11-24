@@ -478,7 +478,8 @@ function Invoke-RangerDiscoveryRuntime {
         [hashtable]$StructuralOverrides,
         [switch]$AllowInteractiveInput,
         [switch]$Unattended,
-        [string]$BaselineManifestPath
+        [string]$BaselineManifestPath,
+        [string]$InfrastructureFile
     )
 
     # Issue #318: pre-log buffer — captures Write-RangerLog calls during bootstrap (config load →
@@ -488,11 +489,12 @@ function Invoke-RangerDiscoveryRuntime {
     $invokeDesc = @()
     if (-not [string]::IsNullOrWhiteSpace($ConfigPath)) { $invokeDesc += "ConfigPath='$ConfigPath'" }
     if ($StructuralOverrides -and $StructuralOverrides.Count -gt 0) { $invokeDesc += "overrides=[$($StructuralOverrides.Keys -join ', ')]" }
+    if (-not [string]::IsNullOrWhiteSpace($InfrastructureFile)) { $invokeDesc += "InfrastructureFile='$InfrastructureFile'" }
     if ($Unattended) { $invokeDesc += 'Unattended' }
     if ($NoRender)   { $invokeDesc += 'NoRender' }
     Write-RangerLog -Level info -Message "Invoke-AzureLocalRanger: invoked$(if ($invokeDesc) { " — $($invokeDesc -join '; ')" } else { ' — no ConfigPath, no overrides' })"
 
-    $config = Import-RangerConfiguration -ConfigPath $ConfigPath -ConfigObject $ConfigObject
+    $config = Import-RangerConfiguration -ConfigPath $ConfigPath -ConfigObject $ConfigObject -InfrastructureFile $InfrastructureFile
     $config = Set-RangerStructuralOverrides -Config $config -StructuralOverrides $StructuralOverrides
 
     if ($IncludeDomains) {

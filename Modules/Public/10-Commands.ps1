@@ -21,6 +21,14 @@ function Invoke-AzureLocalRanger {
         An in-memory hashtable or PSCustomObject representing configuration. Merged over defaults.
         Useful for pipeline scenarios where config is constructed programmatically.
 
+    .PARAMETER InfrastructureFile
+        Path to the Azure Local infrastructure.yml (the azurelocal-toolkit variables registry, schema 5), or its ranger
+        cut. Ranger resolves the cluster FQDN and nodes (targets.cluster), the BMC endpoints and Key Vault credential
+        references (targets.bmc, credentials.bmc) and the Azure scope (targets.azure) from it, so the file is the one
+        input of the discovery. A value in -ConfigPath / -ConfigObject or a structural override parameter wins over the file.
+        Ranger only reads the file: after the deployment it compares (Compare-RangerDesign, Export-AzureLocalRangerReport
+        -DesignPath) and reports drift; it never writes back to the registry. Replaces the variables.yml companion file.
+
     .PARAMETER OutputPath
         Directory to write the report package. Defaults to config output.rootPath
         (C:\AzureLocalRanger) with a dated sub-folder per run.
@@ -139,6 +147,10 @@ function Invoke-AzureLocalRanger {
         Invoke-AzureLocalRanger -ConfigPath .\ranger.yml
 
     .EXAMPLE
+        # The infrastructure.yml of the instance is the input: nodes, BMC endpoints and Azure scope come from it
+        Invoke-AzureLocalRanger -InfrastructureFile .\infrastructure.yml
+
+    .EXAMPLE
         # Quick one-off run with inline overrides — no config file needed
         Invoke-AzureLocalRanger `
             -ClusterFqdn azlocal-prod.contoso.com `
@@ -165,6 +177,7 @@ function Invoke-AzureLocalRanger {
     param(
         [string]$ConfigPath,
         $ConfigObject,
+        [string]$InfrastructureFile,
         [string]$OutputPath,
         [string[]]$IncludeDomain,
         [string[]]$ExcludeDomain,
@@ -311,7 +324,7 @@ function Invoke-AzureLocalRanger {
     }
 
     try {
-        $runResult = Invoke-RangerDiscoveryRuntime -ConfigPath $ConfigPath -ConfigObject $ConfigObject -OutputPath $OutputPath -CredentialOverrides $credentialOverrides -IncludeDomains $IncludeDomain -ExcludeDomains $ExcludeDomain -NoRender:$NoRender -StructuralOverrides $structuralOverrides -AllowInteractiveInput:(-not $Unattended) -Unattended:$Unattended -BaselineManifestPath $BaselineManifestPath
+        $runResult = Invoke-RangerDiscoveryRuntime -ConfigPath $ConfigPath -ConfigObject $ConfigObject -OutputPath $OutputPath -CredentialOverrides $credentialOverrides -IncludeDomains $IncludeDomain -ExcludeDomains $ExcludeDomain -NoRender:$NoRender -StructuralOverrides $structuralOverrides -AllowInteractiveInput:(-not $Unattended) -Unattended:$Unattended -BaselineManifestPath $BaselineManifestPath -InfrastructureFile $InfrastructureFile
 
         # Issue #330: suppress the raw ordered hashtable from the pipeline — printing the full
         # Config + Manifest objects to the terminal on every unassigned call is noisy and unusable.
@@ -1050,6 +1063,9 @@ function Test-AzureLocalRangerPrerequisites {
     .PARAMETER ConfigObject
         Optional in-memory configuration hashtable to include in the validation pass.
 
+    .PARAMETER InfrastructureFile
+        Optional infrastructure.yml (schema 5) whose targets are resolved into the configuration that is validated.
+
     .PARAMETER InstallPrerequisites
         Automatically install missing RSAT AD and Az PowerShell modules. Requires
         an elevated (Administrator) session.
@@ -1076,6 +1092,7 @@ function Test-AzureLocalRangerPrerequisites {
     param(
         [string]$ConfigPath,
         $ConfigObject,
+        [string]$InfrastructureFile,
         [switch]$InstallPrerequisites
         ,
         [string]$ClusterFqdn,
@@ -1135,12 +1152,12 @@ function Test-AzureLocalRangerPrerequisites {
     }
     $selectedCollectors = @()
 
-    $hasConfigInput = $PSBoundParameters.ContainsKey('ConfigPath') -or $PSBoundParameters.ContainsKey('ConfigObject')
+    $hasConfigInput = $PSBoundParameters.ContainsKey('ConfigPath') -or $PSBoundParameters.ContainsKey('ConfigObject') -or $PSBoundParameters.ContainsKey('InfrastructureFile')
     $shouldBuildConfig = $hasConfigInput -or $structuralOverrides.Count -gt 0
 
     if ($shouldBuildConfig) {
         if ($hasConfigInput) {
-            $config = Import-RangerConfiguration -ConfigPath $ConfigPath -ConfigObject $ConfigObject
+            $config = Import-RangerConfiguration -ConfigPath $ConfigPath -ConfigObject $ConfigObject -InfrastructureFile $InfrastructureFile
         }
         else {
             $config = Get-RangerDefaultConfig
@@ -1276,6 +1293,9 @@ function Test-RangerPermissions {
     .PARAMETER ConfigObject
         Optional in-memory config hashtable. Merged over defaults.
 
+    .PARAMETER InfrastructureFile
+        Optional infrastructure.yml (schema 5): the audit checks the scope it resolves (subscription, resource group, Key Vault references).
+
     .PARAMETER OutputFormat
         console (default) — colour-coded summary printed to host, object returned.
         json              — JSON string returned; nothing printed.
@@ -1291,11 +1311,12 @@ function Test-RangerPermissions {
     param(
         [string]$ConfigPath,
         $ConfigObject,
+        [string]$InfrastructureFile,
         [ValidateSet('console', 'json', 'markdown')]
         [string]$OutputFormat = 'console'
     )
 
-    $config = Import-RangerConfiguration -ConfigPath $ConfigPath -ConfigObject $ConfigObject
+    $config = Import-RangerConfiguration -ConfigPath $ConfigPath -ConfigObject $ConfigObject -InfrastructureFile $InfrastructureFile
     # Silently try auto-discovery so the audit checks the actual resolved scope.
     try { Invoke-RangerAzureAutoDiscovery -Config $config | Out-Null } catch { Write-RangerSwallowedError -Source 'Test-RangerPermissions' -ErrorRecord $_ }
 

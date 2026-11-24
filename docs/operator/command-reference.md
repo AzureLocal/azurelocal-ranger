@@ -13,13 +13,13 @@ AzureLocalRanger exports fourteen public commands:
 - `Publish-RangerRun` — v2.3.0 push a run package to Azure Blob and stream telemetry to Log Analytics
 - `Invoke-AzureLocalRangerEstate` — v2.5.0 run Ranger across a multi-cluster estate config
 - `Import-RangerManualEvidence` — v2.5.0 merge hand-collected evidence into an existing manifest
-- `Compare-RangerDesign` — v2.7.0 compare a manifest with a design record (deploy automation environment file or Trailwright `infrastructure.yml`); see [Design versus as-built](../reference/design-vs-as-built.md)
+- `Compare-RangerDesign` — v2.7.0 compare a manifest with a design record (the toolkit's `infrastructure.yml`, schema 5); see [Design versus as-built](../reference/design-vs-as-built.md)
 - `ConvertTo-RangerAsBuiltSnapshot` — v2.7.0 export a manifest as `as-built-snapshot.v1` (also `-Formats as-built-snapshot`)
 
 ## Input Resolution Precedence
 
 ```text
-Parameter  ->  Config file  ->  Arc auto-discovery  ->  Interactive prompt  ->  Default  ->  Error
+Parameter  ->  Config file  ->  infrastructure.yml  ->  Arc auto-discovery  ->  Interactive prompt  ->  Default  ->  Error
 ```
 
 In interactive sessions, two prompts fire automatically when their values are not already resolved:
@@ -31,8 +31,9 @@ In interactive sessions, two prompts fire automatically when their values are no
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `-ConfigPath` | `string` | One of `ConfigPath` / `ConfigObject` | Path to a YAML or JSON config file |
-| `-ConfigObject` | `hashtable` / object | One of `ConfigPath` / `ConfigObject` | In-memory config for automation or testing |
+| `-ConfigPath` | `string` | No | Path to a YAML or JSON config file (Ranger's own settings: output, behavior, credentials, domains) |
+| `-ConfigObject` | `hashtable` / object | No | In-memory config for automation or testing |
+| `-InfrastructureFile` | `string` | No | The instance's `infrastructure.yml` (schema 5) or its ranger cut. Ranger resolves `targets.cluster` (cluster name and `nodes[].name`, with `identity.active_directory.domain_fqdn` added for an Active Directory instance), `targets.bmc.endpoints` (`nodes[].bmc.ip_address`), `credentials.bmc` (`hardware.bmc.username` / `password` as `keyvault://` references) and `targets.azure` (`azure.subscription_id`, `tenant_id`, `resource_group`) from it. A value from `-ConfigPath` / `-ConfigObject` or a structural parameter below wins over the file. Ranger only reads the file |
 | `-OutputPath` | `string` | No | Override `output.rootPath` |
 | `-IncludeDomain` | `string[]` | No | Restrict to named data domains; not an AD domain filter |
 | `-ExcludeDomain` | `string[]` | No | Exclude named data domains from an otherwise full run |
@@ -195,12 +196,12 @@ Get-RangerRemediation -ManifestPath .\audit-manifest.json -Commit -IncludeDepend
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `-ManifestPath` / `-Manifest` / `-Snapshot` | | One of | The as-built side: a manifest file, a loaded manifest or an `as-built-snapshot.v1` |
-| `-DesignPath` | `string` | Yes | The design record (YAML or JSON) |
-| `-DesignKind` | `string` | No | `auto` (default), `environment`, `infrastructure` or `snapshot` |
+| `-DesignPath` | `string` | Yes | The design record: the instance's `infrastructure.yml` (schema 5), or its ranger cut (YAML or JSON) |
+| `-DesignKind` | `string` | No | `auto` (default), `infrastructure` (schema 5; a schema 4 Trailwright export is still read, with a warning), `environment` (the retired environment file, read with a warning for one more release) or `snapshot` |
 | `-OutputPath` | `string` | No | Folder for `design-comparison.json` and `design-comparison.html` |
 | `-Release` | `string` | No | Deployed release build (for example `12.2609.1003.7`) when the manifest does not carry it |
 
-Returns `design-comparison.v1`: a summary (match, drift, missing, not captured, errors, warnings, coverage) and one finding row per compared item with status, severity and a Learn link. Field mapping: [Design versus as-built](../reference/design-vs-as-built.md).
+Returns `design-comparison.v1`: a summary (match, drift, missing, not captured, not comparable, errors, warnings, coverage) and one finding row per compared item with status, severity and a Learn link. A design record that holds no section Ranger compares (a file cut for another tool) gives one `not-comparable` row and `summary.comparable: false`, not an empty clean table. Ranger is compare-only after the deployment: the comparison is the drift report, and nothing is written back to the file or the registry. Field mapping: [Design versus as-built](../reference/design-vs-as-built.md).
 
 ## Publish-RangerRun
 
@@ -294,6 +295,7 @@ Import-RangerManualEvidence `
 | --- | --- | --- | --- |
 | `-ConfigPath` | `string` | No | Validate a config file as part of the check |
 | `-ConfigObject` | `hashtable` / object | No | Validate an in-memory config |
+| `-InfrastructureFile` | `string` | No | Validate the targets resolved from an `infrastructure.yml` (schema 5) |
 | `-InstallPrerequisites` | `switch` | No | Install missing prerequisites in an elevated session |
 | `-ClusterFqdn` | `string` | No | Structural override for validation |
 | `-ClusterNodes` | `string[]` | No | Structural override for validation |

@@ -37,6 +37,46 @@ Describe 'Azure Local Ranger runtime' {
         $manifest.domains.monitoring.ama.Count | Should -Be 1
     }
 
+    It 'reads the Azure scope from infrastructure.yml in a fixture-backed run (-InfrastructureFile)' {
+        $config = InModuleScope AzureLocalRanger {
+            Get-RangerDefaultConfig
+        }
+
+        $config.output.rootPath = Join-Path $TestDrive 'artifacts-infra'
+        $config.behavior.promptForMissingCredentials = $false
+        $config.behavior.continueToRendering = $false
+        $config.credentials.cluster = $null
+        $config.credentials.domain = $null
+        $config.credentials.bmc = $null
+        $config.domains.hints.fixtures = [ordered]@{
+            'topology-cluster' = (Join-Path $fixtureRoot 'topology-cluster.json')
+            'hardware' = (Join-Path $fixtureRoot 'hardware.json')
+            'storage-networking' = (Join-Path $fixtureRoot 'storage-networking.json')
+            'workload-identity-azure' = (Join-Path $fixtureRoot 'workload-identity-azure.json')
+            'monitoring-observability' = (Join-Path $fixtureRoot 'monitoring-observability.json')
+            'management-performance' = (Join-Path $fixtureRoot 'management-performance.json')
+            'waf-assessment' = (Join-Path $fixtureRoot 'waf-assessment.json')
+        }
+
+        # A file with no machines: nothing is probed (no WinRM, no BMC), the Azure scope still comes from the file.
+        $infra = Join-Path $TestDrive 'azure-scope.yml'
+        @'
+_metadata:
+  schema_version: "5.6.0"
+  scope: ranger
+scenario:
+  identity: local_identity
+azure:
+  location: eastus
+  resource_group: rg-example-01
+'@ | Set-Content -Path $infra -Encoding UTF8
+        Mock -ModuleName AzureLocalRanger Invoke-RangerAzureAutoDiscovery { }
+
+        $result = Invoke-AzureLocalRanger -ConfigObject $config -InfrastructureFile $infra -OutputPath (Join-Path $TestDrive 'output-infra') -NoRender -Unattended
+        $result.Config.targets.azure.resourceGroup | Should -Be 'rg-example-01'
+        Test-Path -Path $result.ManifestPath | Should -BeTrue
+    }
+
     It 'reports selected collectors during prerequisite checks' {
         $config = InModuleScope AzureLocalRanger {
             Get-RangerDefaultConfig

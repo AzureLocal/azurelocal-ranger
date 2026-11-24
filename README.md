@@ -73,6 +73,18 @@ Invoke-AzureLocalRanger -ConfigPath .\ranger.yml
 
 Best for version-controlled configs, CI / scheduled runs, and team-standard deployments.
 
+### Path 2b — The instance's infrastructure.yml (planning to discovery to day 2)
+
+```powershell
+# Discovery: the cluster, nodes, BMC endpoints and Azure scope come from the file
+Invoke-AzureLocalRanger -InfrastructureFile .\infrastructure.yml
+
+# Day 2: compare the run with the same file (the drift report; Ranger never writes to the file)
+Compare-RangerDesign -ManifestPath .\manifest\audit-manifest.json -DesignPath .\infrastructure.yml
+```
+
+`infrastructure.yml` (schema 5) is the one environment file of the [azurelocal-toolkit variables registry](https://github.com/AzureLocal/azurelocal-toolkit/tree/main/config/variables); Ranger reads `cluster`, `nodes[]`, `azure`, `hardware.bmc` and the networking and storage sections it compares. It replaces the `variables.yml` companion file. A value in your Ranger config file or a parameter wins over the file. See [Design versus as-built](docs/reference/design-vs-as-built.md) for the key mapping.
+
 ### Path 3 — Parameters or zero-config
 
 ```powershell

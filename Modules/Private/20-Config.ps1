@@ -400,92 +400,152 @@ function ConvertTo-RangerNormalizedConfiguration {
     return $Config
 }
 
-function Get-RangerCompanionVariablesPath {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$ConfigPath
-    )
+function Import-RangerInfrastructureTargets {
+    <#
+    .SYNOPSIS
+        Reads the targets Ranger needs from the toolkit's infrastructure.yml (schema 5) and returns them as a configuration overlay.
+    .DESCRIPTION
+        The one environment file replaces the variables.yml companion. Keys read (registry used_by ranger):
+        cluster.name, environment.name, nodes[].name, nodes[].bmc.ip_address, azure.subscription_id, tenant_id and resource_group,
+        identity.active_directory.domain_fqdn (node and cluster names get the domain, as the nodes are reached by name),
+        hardware.bmc.username and password (keyvault:// references; a reference that is not keyvault:// is left out and noted).
+        Returns an ordered table: Config (environment, targets and credentials.bmc keys that the file supplies; none for a value it
+        does not hold) and Notes (what was left out and why).
+    .PARAMETER Path
+        The infrastructure.yml (or .json) of the instance, or its ranger cut.
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][string]$Path)
 
-    $configDirectory = Split-Path -Parent $ConfigPath
-    foreach ($candidateName in @('variables.yml', 'variables.yaml')) {
-        $candidatePath = Join-Path -Path $configDirectory -ChildPath $candidateName
-        if (Test-Path -Path $candidatePath) {
-            return $candidatePath
-        }
+    $full = Resolve-RangerPath -Path $Path
+    if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { throw "Infrastructure file not found: $full" }
+    $loaded = if ($full -match '\.(ya?ml)$') { Import-RangerYamlFile -Path $full } else { Get-Content -LiteralPath $full -Raw | ConvertFrom-Json -AsHashtable -Depth 100 }
+    $r = ConvertTo-RangerHashtable -InputObject $loaded
+    if ($r -isnot [System.Collections.IDictionary] -or -not (Test-RangerInfrastructureSchema5 -Record $r)) {
+        throw "'$full' is not an infrastructure.yml of schema 5 (the azurelocal-toolkit variables registry). Ranger no longer reads variables.yml or environment.yml; export or convert the file with the toolkit."
     }
 
-    return $null
+    $notes = New-Object System.Collections.Generic.List[string]
+    $identity = ([string](Get-RangerNested $r 'scenario', 'identity')).ToLowerInvariant()
+    $domain = if ($identity -ne 'local_identity') { [string](Get-RangerNested $r 'identity', 'active_directory', 'domain_fqdn') } else { '' }
+    $qualify = { param($n) $n = [string]$n; if ($n -and $domain -and $n -notmatch '\.') { "$n.$domain" } else { $n } }
+
+    $config = [ordered]@{}
+    $clusterName = [string](Get-RangerNested $r 'cluster', 'name')
+    $environmentName = [string](Get-RangerFirstValue @((Get-RangerNested $r 'environment', 'name'), $clusterName))
+    if ($environmentName -or $clusterName) {
+        $config['environment'] = [ordered]@{}
+        if ($environmentName) { $config['environment']['name'] = $environmentName }
+        if ($clusterName) { $config['environment']['clusterName'] = $clusterName }
+    }
+
+    $nodes = @(@($r['nodes']) | Where-Object { $_ -is [System.Collections.IDictionary] -and $_['name'] })
+    $targets = [ordered]@{}
+    $cluster = [ordered]@{}
+    if ($clusterName) { $cluster['fqdn'] = (& $qualify $clusterName) }
+    if ($nodes.Count) { $cluster['nodes'] = @($nodes | ForEach-Object { & $qualify $_['name'] }) }
+    if ($cluster.Count) { $targets['cluster'] = $cluster }
+
+    $azure = [ordered]@{}
+    if ((Get-RangerNested $r 'azure', 'subscription_id')) { $azure['subscriptionId'] = [string](Get-RangerNested $r 'azure', 'subscription_id') }
+    if ((Get-RangerNested $r 'azure', 'resource_group')) { $azure['resourceGroup'] = [string](Get-RangerNested $r 'azure', 'resource_group') }
+    if ((Get-RangerNested $r 'azure', 'tenant_id')) { $azure['tenantId'] = [string](Get-RangerNested $r 'azure', 'tenant_id') }
+    if ($azure.Count) { $targets['azure'] = $azure }
+
+    $endpoints = @($nodes | Where-Object { (Get-RangerNested $_ 'bmc', 'ip_address') } | ForEach-Object { [ordered]@{ host = [string](Get-RangerNested $_ 'bmc', 'ip_address'); node = [string]$_['name'] } })
+    if ($endpoints.Count) { $targets['bmc'] = [ordered]@{ endpoints = $endpoints } }
+    if ($targets.Count) { $config['targets'] = $targets }
+
+    $bmc = [ordered]@{}
+    $bmcUser = [string](Get-RangerNested $r 'hardware', 'bmc', 'username')
+    $bmcPassword = [string](Get-RangerNested $r 'hardware', 'bmc', 'password')
+    if ($bmcUser) {
+        if (Test-RangerKeyVaultUri -Value $bmcUser) { $bmc['usernameRef'] = $bmcUser }
+        elseif ($bmcUser -notmatch '^[a-z]+://') { $bmc['username'] = $bmcUser }
+        else { $notes.Add('hardware.bmc.username is not a keyvault:// reference or a plain name; it is left out (set credentials.bmc in the Ranger configuration, or pass -BmcCredential).') }
+    }
+    if ($bmcPassword) {
+        if (Test-RangerKeyVaultUri -Value $bmcPassword) { $bmc['passwordRef'] = $bmcPassword }
+        else { $notes.Add('hardware.bmc.password is not a keyvault:// reference; Ranger takes the BMC password from a Key Vault reference only, so it is left out (set credentials.bmc in the Ranger configuration, or pass -BmcCredential).') }
+    }
+    if ($bmc.Count) { $config['credentials'] = [ordered]@{ bmc = $bmc } }
+
+    if ($nodes.Count -eq 0) { $notes.Add('The file has no nodes[]; the cluster and BMC targets are not resolved from it.') }
+    return [ordered]@{ Path = $full; Config = $config; Notes = @($notes) }
 }
 
-function Resolve-RangerBmcEndpointsFromVariablesData {
+function Set-RangerInfrastructureTargets {
+    <#
+    .SYNOPSIS
+        Fills the empty targets of a Ranger configuration from an infrastructure.yml overlay (Import-RangerInfrastructureTargets).
+    .DESCRIPTION
+        Precedence, highest first: the structural override parameters, the Ranger configuration file, the infrastructure.yml.
+        A value the configuration already holds is kept. Ranger is compare-only after the deployment: it reads the file and
+        never writes to it.
+    #>
     param(
-        $VariablesData
+        [Parameter(Mandatory = $true)][System.Collections.IDictionary]$Config,
+        [Parameter(Mandatory = $true)][System.Collections.IDictionary]$Overlay
     )
 
-    if ($null -eq $VariablesData) {
-        return @()
+    $fill = {
+        param([System.Collections.IDictionary]$Section, [string]$Key, $Value, [string]$FieldName)
+        if ($null -eq $Value -or "$Value" -eq '') { return }
+        $current = if ($Section.Contains($Key)) { $Section[$Key] } else { $null }
+        $isEmpty = if ($FieldName) { Test-RangerPlaceholderValue -Value $current -FieldName $FieldName } else { [string]::IsNullOrWhiteSpace([string]$current) }
+        if ($isEmpty) { $Section[$Key] = $Value }
     }
 
-    $variables = ConvertTo-RangerHashtable -InputObject $VariablesData
-    $devices = @()
-
-    if ($variables.security -and $variables.security.infrastructure_credentials -and $variables.security.infrastructure_credentials.idrac) {
-        $devices = @($variables.security.infrastructure_credentials.idrac.devices)
+    $o = $Overlay.Config
+    foreach ($name in 'environment', 'targets', 'credentials') {
+        if (-not ($Config[$name] -is [System.Collections.IDictionary])) { $Config[$name] = [ordered]@{} }
     }
-
-    $endpoints = @(
-        foreach ($device in $devices) {
-            $text = [string]$device
-            if ([string]::IsNullOrWhiteSpace($text)) {
-                continue
-            }
-
-            if ($text -match '^\s*(?<node>[^()]+?)\s*\((?<host>[^()]+)\)\s*$') {
-                [ordered]@{
-                    host = $matches.host.Trim()
-                    node = $matches.node.Trim()
-                }
-                continue
-            }
-
-            [ordered]@{
-                host = $text.Trim()
-                node = $null
-            }
+    if ($o['environment']) {
+        & $fill $Config.environment 'name' $o.environment['name'] 'environment.name'
+        & $fill $Config.environment 'clusterName' $o.environment['clusterName'] ''
+    }
+    if ($o['targets']) {
+        foreach ($name in 'cluster', 'azure', 'bmc') { if (-not ($Config.targets[$name] -is [System.Collections.IDictionary])) { $Config.targets[$name] = [ordered]@{} } }
+        if ($o.targets['cluster']) {
+            & $fill $Config.targets.cluster 'fqdn' $o.targets.cluster['fqdn'] 'targets.cluster.fqdn'
+            if (@($Config.targets.cluster.nodes | Where-Object { $_ }).Count -eq 0 -and $o.targets.cluster['nodes']) { $Config.targets.cluster.nodes = @($o.targets.cluster['nodes']) }
         }
-    )
-
-    return @($endpoints)
-}
-
-function Set-RangerCompanionConfigurationFallbacks {
-    param(
-        [Parameter(Mandatory = $true)]
-        [System.Collections.IDictionary]$Config,
-
-        [Parameter(Mandatory = $true)]
-        [string]$ConfigPath
-    )
-
-    if (@($Config.targets.bmc.endpoints).Count -gt 0) {
-        return $Config
+        if ($o.targets['azure']) {
+            & $fill $Config.targets.azure 'subscriptionId' $o.targets.azure['subscriptionId'] 'targets.azure.subscriptionId'
+            & $fill $Config.targets.azure 'resourceGroup' $o.targets.azure['resourceGroup'] 'targets.azure.resourceGroup'
+            & $fill $Config.targets.azure 'tenantId' $o.targets.azure['tenantId'] 'targets.azure.tenantId'
+        }
+        if (@($Config.targets.bmc.endpoints | Where-Object { $_ }).Count -eq 0 -and $o.targets['bmc']) { $Config.targets.bmc.endpoints = @($o.targets.bmc['endpoints']) }
     }
-
-    $variablesPath = Get-RangerCompanionVariablesPath -ConfigPath $ConfigPath
-    if ([string]::IsNullOrWhiteSpace($variablesPath)) {
-        return $Config
+    if ($o['credentials'] -and $o.credentials['bmc']) {
+        if (-not ($Config.credentials['bmc'] -is [System.Collections.IDictionary])) { $Config.credentials['bmc'] = [ordered]@{} }
+        $b = $Config.credentials.bmc
+        $hasUser = -not [string]::IsNullOrWhiteSpace([string]$b['username']) -or -not [string]::IsNullOrWhiteSpace([string]$b['usernameRef'])
+        $hasPassword = -not [string]::IsNullOrWhiteSpace([string]$b['passwordRef']) -or -not [string]::IsNullOrWhiteSpace([string]$b['password'])
+        if (-not $hasUser) { foreach ($k in 'username', 'usernameRef') { if ($o.credentials.bmc[$k]) { $b[$k] = $o.credentials.bmc[$k] } } }
+        if (-not $hasPassword -and $o.credentials.bmc['passwordRef']) { $b['passwordRef'] = $o.credentials.bmc['passwordRef'] }
     }
-
-    $variablesData = Import-RangerYamlFile -Path $variablesPath
-    $fallbackEndpoints = @(Resolve-RangerBmcEndpointsFromVariablesData -VariablesData $variablesData)
-    if ($fallbackEndpoints.Count -gt 0) {
-        $Config.targets.bmc.endpoints = $fallbackEndpoints
-    }
-
     return $Config
 }
 
 function Import-RangerConfiguration {
+    param(
+        [string]$ConfigPath,
+        $ConfigObject,
+        [string]$InfrastructureFile
+    )
+
+    $config = Import-RangerConfigurationFile -ConfigPath $ConfigPath -ConfigObject $ConfigObject
+    if ($InfrastructureFile) {
+        $overlay = Import-RangerInfrastructureTargets -Path $InfrastructureFile
+        foreach ($note in @($overlay.Notes)) { Write-Warning "Infrastructure file: $note" }
+        $config = Set-RangerInfrastructureTargets -Config $config -Overlay $overlay
+        $config = ConvertTo-RangerNormalizedConfiguration -Config $config
+    }
+    return $config
+}
+
+function Import-RangerConfigurationFile {
     param(
         [string]$ConfigPath,
         $ConfigObject
@@ -529,8 +589,7 @@ function Import-RangerConfiguration {
         }
     }
 
-    $config = ConvertTo-RangerNormalizedConfiguration -Config (Merge-RangerConfiguration -BaseConfig (Get-RangerDefaultConfig) -OverrideConfig (ConvertTo-RangerHashtable -InputObject $loaded))
-    return Set-RangerCompanionConfigurationFallbacks -Config $config -ConfigPath $resolvedConfigPath
+    return ConvertTo-RangerNormalizedConfiguration -Config (Merge-RangerConfiguration -BaseConfig (Get-RangerDefaultConfig) -OverrideConfig (ConvertTo-RangerHashtable -InputObject $loaded))
 }
 
 function Set-RangerStructuralOverrides {
@@ -1293,12 +1352,14 @@ function Test-RangerConfiguration {
 
     foreach ($credentialName in @('cluster', 'domain', 'bmc', 'firewall', 'switch')) {
         $credentialBlock = $Config.credentials[$credentialName]
-        if ($credentialBlock -and $credentialBlock.passwordRef) {
-            try {
-                ConvertFrom-RangerKeyVaultUri -Uri $credentialBlock.passwordRef | Out-Null
-            }
-            catch {
-                $errors.Add("Credential '$credentialName' has an invalid Key Vault reference: $($_.Exception.Message)")
+        foreach ($refName in @('passwordRef', 'usernameRef')) {
+            if ($credentialBlock -and $credentialBlock.$refName) {
+                try {
+                    ConvertFrom-RangerKeyVaultUri -Uri $credentialBlock.$refName | Out-Null
+                }
+                catch {
+                    $errors.Add("Credential '$credentialName' has an invalid Key Vault reference: $($_.Exception.Message)")
+                }
             }
         }
     }
