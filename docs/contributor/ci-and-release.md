@@ -22,16 +22,13 @@ Actions are pinned to full commit SHAs with the release in a comment. Bump them 
 1. Merge conventional commits (`feat`, `fix`, `docs`, `infra`, `chore`, `refactor`, `test`) to `main`.
 2. `.github/workflows/release-please.yml` keeps a release pull request up to date (version, `CHANGELOG.md`, the `ModuleVersion` line marked `x-release-please-version`). The last released version is recorded in `.release-please-manifest.json`.
 3. Merging that pull request creates the tag and the GitHub release.
-4. `.github/workflows/publish-gallery.yml` runs on the published release, checks that the tag equals the module version, stages the module files and runs `Publish-Module`.
+4. In the same run, the `publish-gallery` job of `release-please.yml` calls `.github/workflows/publish-gallery.yml` (`workflow_call`) with the new tag. It checks that the tag equals the module version, stages the module files and runs `Publish-Module`. A release that release-please creates with the `GITHUB_TOKEN` does not trigger `release: published` in another workflow, which is why 2.7.0 and 2.7.1 were tagged but never reached the Gallery (it still has 2.6.6). The release event still publishes a release a person creates by hand.
 
-## PowerShell Gallery secret (placeholder, not configured)
+## PowerShell Gallery key
 
-The publish job is deliberately inert until the repository owner sets it up:
+The publish job runs in the GitHub environment `psgallery` (GitHub creates it on the first run) and reads `PSGALLERY_API_KEY`: the environment secret when one is set, else the repository secret of that name, which release-please passes to the called workflow. To have a person approve each publish, add required reviewers to the `psgallery` environment. The key is a PowerShell Gallery API key scoped to the `AzureLocalRanger` package; the maintainers keep the current one in their Key Vault.
 
-1. Create a GitHub environment named `psgallery` and add required reviewers, so a person approves each publish.
-2. Add the environment secret `PSGALLERY_API_KEY` with a PowerShell Gallery API key scoped to the `AzureLocalRanger` package.
-
-Without the secret the job fails before anything is uploaded. The key is read from the environment only and is never printed. A manual run (`workflow_dispatch`) defaults to a dry run that validates and stages without publishing.
+Without a key the job fails before anything is uploaded. To publish a version that was tagged but not published, run the workflow by hand on that tag with `dry-run` off. The key is read from the environment only and is never printed. A manual run (`workflow_dispatch`) defaults to a dry run that validates and stages without publishing.
 
 ## Documentation site
 

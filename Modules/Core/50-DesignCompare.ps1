@@ -122,7 +122,7 @@ function ConvertTo-RangerAsBuiltSnapshot {
     .PARAMETER Manifest
         A Ranger manifest (ordered dictionary or hashtable).
     .PARAMETER Release
-        The deployed release build (for example 12.2609.1003.7) when the manifest does not carry it.
+        The deployed release build (for example 12.2611.1004.9) when the manifest does not carry it.
     #>
     [CmdletBinding()]
     param(

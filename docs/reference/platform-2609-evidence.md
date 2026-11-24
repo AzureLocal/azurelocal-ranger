@@ -1,6 +1,6 @@
-# Platform evidence for Azure Local 12.2609 (latest)
+# Platform evidence for Azure Local 12.2609 and later (current: 12.2611)
 
-Ranger 2.7.0 reads the items below. Everything is read-only: Azure Resource Manager GETs and read-only cmdlets on the nodes. Secrets are never read. Each item lists where it lands in the manifest and the Microsoft Learn page that defines it. The fixture is `tests/maproom/Fixtures/platform-2609.json` and the tests are `tests/maproom/unit/Platform2609.Tests.ps1`.
+Ranger 2.7.0 reads the items below. They were added or made visible in 12.2609 and are unchanged in 12.2611 (12.2611.1004.9, OS build 26100.33822): its release notes add no evidence source. Everything is read-only: Azure Resource Manager GETs and read-only cmdlets on the nodes. Secrets are never read. Each item lists where it lands in the manifest and the Microsoft Learn page that defines it. The fixture is `tests/maproom/Fixtures/platform-2609.json` and the tests are `tests/maproom/unit/Platform2609.Tests.ps1`.
 
 | Item | Manifest path | How it is read | Learn |
 | --- | --- | --- | --- |

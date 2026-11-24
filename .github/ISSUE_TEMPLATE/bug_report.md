@@ -15,7 +15,7 @@ labels: bug
 
 - AzureLocalRanger version (`(Get-Module AzureLocalRanger).Version`):
 - PowerShell version (`$PSVersionTable.PSVersion`):
-- Azure Local version (for example 12.2609 (latest)):
+- Azure Local version (for example 12.2611.1004.9, the latest):
 - Run mode (current-state or as-built) and transport (WinRM or Arc):
 - Which command or collector failed, and at which step:
 

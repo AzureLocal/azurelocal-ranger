@@ -1032,7 +1032,7 @@ function Invoke-RangerWorkloadIdentityAzureCollector {
         })
     }
 
-    # v2.7.0: Azure Local 12.2609 (latest) platform evidence - Arc gateway, security baseline score, Secure Boot 2023
+    # v2.7.0: Azure Local platform evidence added in 12.2609 (still current in 12.2611) - Arc gateway, security baseline score, Secure Boot 2023
     # certificates, key backup candidates, local identity and private path indicators. Read-only; see 45-Platform2609Evidence.ps1.
     $platform2609 = Invoke-RangerSafeAction -Label 'Azure Local 12.2609 platform evidence' -DefaultValue ([ordered]@{}) -ScriptBlock {
         Invoke-RangerPlatform2609Evidence -Config $Config -CredentialMap $CredentialMap -AzureResources @($azureResources) -ArcMachines @($arcMachines) -IdentitySnapshots @($identitySnapshots)

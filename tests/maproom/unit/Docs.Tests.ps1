@@ -65,7 +65,8 @@ Describe 'Documentation stays in step with the code' {
             $path = Join-Path $script:repoRoot ".github\workflows\$wf"
             Test-Path $path | Should -BeTrue -Because $wf
             $uses = Select-String -Path $path -Pattern '^\s*-?\s*uses:\s*(\S+)' | ForEach-Object { $_.Matches[0].Groups[1].Value }
-            foreach ($u in $uses) { $u | Should -Match '@[0-9a-f]{40}$' -Because "$wf pins $u" }
+            # A workflow of this repository (./.github/workflows/...) is called by path, not pinned.
+            foreach ($u in $uses | Where-Object { $_ -notlike './*' }) { $u | Should -Match '@[0-9a-f]{40}$' -Because "$wf pins $u" }
         }
     }
 
@@ -79,5 +80,18 @@ Describe 'Documentation stays in step with the code' {
         $wf | Should -Match 'environment: psgallery'
         $wf | Should -Match 'secrets\.PSGALLERY_API_KEY'
         $wf | Should -Not -Match 'Write-Host\s+\$env:PSGALLERY_API_KEY'
+    }
+
+    It 'release-please publishes the release it creates (a GITHUB_TOKEN release does not trigger publish-gallery on its own)' {
+        $rp = Get-Content (Join-Path $script:repoRoot '.github\workflows\release-please.yml') -Raw
+        $rp | Should -Match 'uses: \./\.github/workflows/publish-gallery\.yml'
+        $rp | Should -Match "release_created == 'true'"
+        $rp | Should -Match 'tag: \$\{\{ needs\.release-please\.outputs\.tag_name \}\}'
+        $rp | Should -Match 'PSGALLERY_API_KEY: \$\{\{ secrets\.PSGALLERY_API_KEY \}\}'
+        $pg = Get-Content (Join-Path $script:repoRoot '.github\workflows\publish-gallery.yml') -Raw
+        $pg | Should -Match 'workflow_call:'
+        # The tag is passed to the script as data, never pasted into it (a tag may contain a quote).
+        $pg | Should -Match 'RELEASE_TAG: \$\{\{ inputs\.tag \|\| github\.event\.release\.tag_name \}\}'
+        $pg | Should -Not -Match "'\$\{\{ (inputs\.tag|github\.event\.release\.tag_name)"
     }
 }

@@ -683,6 +683,46 @@ behavior:
         }
     }
 
+    It 'keeps reaching nodes by the addresses the configuration gives when discovery returns host names' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $config.targets.cluster.nodes = @('192.0.2.11', '192.0.2.12')
+            # Arc lists three nodes; only two of them answer on a given address.
+            Mock Resolve-RangerClusterArcResource -ModuleName AzureLocalRanger { [pscustomobject]@{ Name = 'clus'; Properties = [pscustomobject]@{ nodes = @('node-a', 'node-b', 'node-c') } } }
+            Mock Resolve-RangerNodeFqdn -ModuleName AzureLocalRanger { $Name }
+            Mock Invoke-RangerRemoteCommand -ModuleName AzureLocalRanger {
+                if ($ComputerName[0] -eq '192.0.2.12') { 'NODE-B' } else { 'NODE-A' }
+            }
+            $inventory = Resolve-RangerNodeInventory -Config $config -ClusterCredential ([pscredential]::new('u', (ConvertTo-SecureString 'x' -AsPlainText -Force)))
+            @($inventory.Nodes) | Should -Be @('192.0.2.11', '192.0.2.12', 'node-c')
+        }
+    }
+
+    It 'leaves host names alone when the configuration gives no addresses' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $config.targets.cluster.nodes = @('node-a.example.com')
+            Mock Resolve-RangerClusterArcResource -ModuleName AzureLocalRanger { [pscustomobject]@{ Name = 'clus'; Properties = [pscustomobject]@{ nodes = @('node-a') } } }
+            Mock Resolve-RangerNodeFqdn -ModuleName AzureLocalRanger { "$Name.example.com" }
+            Mock Invoke-RangerRemoteCommand -ModuleName AzureLocalRanger { 'NODE-A' }
+            @((Resolve-RangerNodeInventory -Config $config).Nodes) | Should -Be @('node-a.example.com')
+        }
+    }
+
+    It 'returns the Arc machines from Resource Graph as an array (no "Argument types do not match" from the list)' {
+        InModuleScope AzureLocalRanger {
+            $config = Get-RangerDefaultConfig
+            $config.targets.azure.subscriptionId = '22222222-2222-2222-2222-222222222222'
+            function Get-AzResource { }
+            Mock Get-RangerArmResourcesByGraph -ModuleName AzureLocalRanger {
+                @{ 'microsoft.hybridcompute/machines' = @([pscustomobject]@{ id = '/subscriptions/x/resourceGroups/rg/providers/Microsoft.HybridCompute/machines/node-a'; name = 'node-a'; resourceGroup = 'rg'; subscriptionId = 'x'; location = 'eastus'; type = 'microsoft.hybridcompute/machines'; properties = @([pscustomobject]@{ status = 'Connected' }) }) }
+            }
+            $arc = Resolve-RangerArcMachinesForCluster -Config $config
+            ($arc.Machines -is [object[]]) | Should -BeTrue
+            $arc.Machines[0].Name | Should -Be 'node-a'
+        }
+    }
+
     It 'default config does not carry structural scaffold placeholders (issue #300)' {
         InModuleScope AzureLocalRanger {
             $config = Get-RangerDefaultConfig

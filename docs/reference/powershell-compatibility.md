@@ -16,4 +16,4 @@ $m.PowerShellVersion       # 7.0
 $m.CompatiblePSEditions    # Core
 ```
 
-The Azure Local nodes themselves run PowerShell 7.6 (12.2609 (latest)); Ranger runs on the operator's workstation or a jump host, not on the nodes.
+The Azure Local nodes themselves run PowerShell 7.6 (7.6.10 on 12.2611 (latest), OS build 26100.33822); Ranger runs on the operator's workstation or a jump host, not on the nodes.

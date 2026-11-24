@@ -1,4 +1,4 @@
-# Azure Local 12.2609 (latest) platform evidence (v2.7.0).
+# Azure Local platform evidence added in 12.2609 and still current in 12.2611 (v2.7.0).
 #
 # Read-only helpers that surface what the Azure Local 12.2609 release added or made visible:
 #   * Arc gateway resources and per-node routing        https://learn.microsoft.com/azure/azure-local/deploy/deployment-azure-arc-gateway-overview
@@ -492,7 +492,7 @@ function Get-RangerClusterAdAware {
 function Invoke-RangerPlatform2609Evidence {
     <#
     .SYNOPSIS
-        Collects every 12.2609 (latest) evidence block for the workload / identity / Azure collector in one call.
+        Collects every 12.2609-and-later evidence block for the workload / identity / Azure collector in one call.
     #>
     [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Credential maps hold PSCredential objects or Key Vault references, never a plain-text secret.')]
     param(

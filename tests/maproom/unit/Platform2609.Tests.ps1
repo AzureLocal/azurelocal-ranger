@@ -119,7 +119,7 @@ Describe 'Azure Local 12.2609 (latest) platform evidence' {
         $m.domains.identitySecurity.localIdentity.dnsServers.Count | Should -BeGreaterThan 0
     }
 
-    It 'the technical reports show the 12.2609 platform posture table' {
+    It 'the technical reports show the platform posture table (12.2609 and later)' {
         $m = Get-Content (Join-Path $script:fixtureRoot 'synthetic-manifest.json') -Raw | ConvertFrom-Json -AsHashtable
         $m.domains.clusterNode.updatePosture.solutionUpdateEnv = $script:fx.solutionUpdateEnv
         $m.domains.clusterNode.updatePosture.pendingSolutionUpdates = $script:fx.solutionUpdates
@@ -131,7 +131,7 @@ Describe 'Azure Local 12.2609 (latest) platform evidence' {
         Export-AzureLocalRangerReport -ManifestPath $path -OutputPath $out -Formats @('markdown') | Out-Null
         $md = (Get-ChildItem (Join-Path $out 'reports') -Filter '*Technical*.md' | Select-Object -First 1)
         $text = Get-Content $md.FullName -Raw
-        $text | Should -Match 'Azure Local 12.2609 platform posture'
+        $text | Should -Match 'Azure Local platform posture \(12\.2609 and later\)'
         $text | Should -Match 'Rack aware cluster'
         $text | Should -Match 'Solution Builder Extension'
         $text | Should -Match '75(\.0)?% average'

@@ -772,7 +772,7 @@ function New-RangerReportPayload {
         }
     }
 
-    # v2.7.0: Azure Local 12.2609 (latest) platform posture (see docs/reference/platform-2609-evidence.md).
+    # v2.7.0: Azure Local platform posture, evidence added in 12.2609 and still current in 12.2611 (see docs/reference/platform-2609-evidence.md).
     if ($Tier -ne 'executive') {
         $p26 = New-Object System.Collections.Generic.List[object]
         $ra = $Manifest.domains.clusterNode.rackAware
@@ -791,7 +791,7 @@ function New-RangerReportPayload {
         if ($ai) { $p26.Add([object[]]@('Disaggregated / SAN indicators', $(if ($ai.likelyDisaggregated) { (@($ai.disaggregatedOrSanIndicators) -join ', ') } else { 'none' }), $ai.reference)) }
         if ($p26.Count -gt 0) {
             [void]$sections.Add([ordered]@{
-                heading = 'Azure Local 12.2609 platform posture'
+                heading = 'Azure Local platform posture (12.2609 and later)'
                 type    = 'table'
                 headers = @('Item', 'Finding', 'Learn')
                 rows    = $p26.ToArray()

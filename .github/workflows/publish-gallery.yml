@@ -1,9 +1,13 @@
-# Publishes AzureLocalRanger to the PowerShell Gallery when a GitHub release is published.
+# Publishes AzureLocalRanger to the PowerShell Gallery.
 #
-# NOT CONFIGURED ON PURPOSE. Before the first release the repository owner must:
-#   1. create a GitHub environment named 'psgallery' (add required reviewers so a person approves each publish);
-#   2. add the environment secret PSGALLERY_API_KEY (a PowerShell Gallery API key scoped to the AzureLocalRanger package).
-# Without the secret the job stops with an error before anything is uploaded. Nothing here stores or prints the key.
+# How it runs: release-please.yml calls this workflow (workflow_call) in the same run that creates the release. A release
+# that release-please creates with the GITHUB_TOKEN does not trigger "release: published" in other workflows, so that event
+# alone never published 2.7.0 or 2.7.1. The release event stays for a release a person publishes by hand, and
+# workflow_dispatch publishes (or, by default, dry-runs) the version on the branch it runs on.
+#
+# The key: the job runs in the GitHub environment 'psgallery' (GitHub creates it on the first run; add required reviewers so
+# a person approves each publish) and reads PSGALLERY_API_KEY, an environment secret or, without one, the repository secret
+# of that name. Without a key the job stops before anything is uploaded. Nothing here stores or prints the key.
 name: publish-gallery
 
 on:
@@ -15,6 +19,19 @@ on:
         description: 'Validate and stage only; do not publish'
         type: boolean
         default: true
+  workflow_call:
+    inputs:
+      tag:
+        description: 'The release tag release-please created, for example v2.7.2'
+        type: string
+        required: true
+      dry-run:
+        description: 'Validate and stage only; do not publish'
+        type: boolean
+        default: false
+    secrets:
+      PSGALLERY_API_KEY:
+        required: false
 
 permissions:
   contents: read
@@ -27,12 +44,17 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # The release tag when called by release-please or run on a release; the dispatched ref otherwise.
+          ref: ${{ inputs.tag || github.ref }}
           persist-credentials: false
       - name: Validate the manifest and that the tag matches it
         shell: pwsh
+        env:
+          # Passed as data, never pasted into the script (a tag may contain a quote).
+          RELEASE_TAG: ${{ inputs.tag || github.event.release.tag_name }}
         run: |
           $m = Test-ModuleManifest -Path ./AzureLocalRanger.psd1
-          $tag = '${{ github.event.release.tag_name }}'
+          $tag = $env:RELEASE_TAG
           if ($tag -and ($tag.TrimStart('v') -ne $m.Version.ToString())) { throw "Release tag '$tag' does not match module version '$($m.Version)'." }
           Write-Host "Module version $($m.Version)"
       - name: Stage the module files
@@ -44,6 +66,7 @@ jobs:
           Test-ModuleManifest -Path (Join-Path $stage 'AzureLocalRanger.psd1') | Out-Null
           "STAGE=$stage" | Out-File -FilePath $env:GITHUB_ENV -Append
       - name: Publish to the PowerShell Gallery
+        # A release event publishes; a dispatch or a call publishes unless dry-run is set.
         if: ${{ github.event_name == 'release' || inputs.dry-run == false }}
         shell: pwsh
         env:

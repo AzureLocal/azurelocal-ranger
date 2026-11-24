@@ -142,3 +142,36 @@ Describe 'Non-fatal errors are logged and mark the collector degraded' {
         }
     }
 }
+
+Describe 'Azure Resource Graph discovery (Get-RangerArmResourcesByGraph)' {
+    It 'reads the rows of the Search-AzGraph response wrapper and groups them by type' {
+        # Az.ResourceGraph 1.x returns one response object with the rows in .Data. A live run against a 12.2611 cluster
+        # failed the topology collector with 'Argument types do not match' because the wrapper itself was grouped.
+        InModuleScope AzureLocalRanger {
+            function Search-AzGraph { param($Query, $Subscription, $ManagementGroup, $First) }
+            Mock Search-AzGraph {
+                $data = [System.Collections.Generic.List[psobject]]::new()
+                $data.Add([pscustomobject]@{ name = 'example-azl-01'; type = 'Microsoft.AzureStackHCI/clusters' })
+                $data.Add([pscustomobject]@{ name = 'node1'; type = 'microsoft.hybridcompute/machines' })
+                $data.Add([pscustomobject]@{ name = 'node2'; type = 'microsoft.hybridcompute/machines' })
+                [pscustomobject]@{ Data = $data; SkipToken = $null }
+            }
+            $r = Get-RangerArmResourcesByGraph -ResourceTypes @('microsoft.azurestackhci/clusters', 'microsoft.hybridcompute/machines') -SubscriptionId '00000000-0000-0000-0000-000000000000'
+            @($r['microsoft.azurestackhci/clusters']).name | Should -Be 'example-azl-01'
+            @($r['microsoft.hybridcompute/machines']).Count | Should -Be 2
+            Should -Invoke Search-AzGraph -Times 1 -ParameterFilter { $First -eq 1000 -and $Subscription -is [string[]] }
+        }
+    }
+}
+
+Describe 'Azure Resource Graph discovery paging' {
+    It 'follows SkipToken so rows beyond the first page are kept' {
+        InModuleScope AzureLocalRanger {
+            function Search-AzGraph { param($Query, $Subscription, $ManagementGroup, $First, $SkipToken) }
+            Mock Search-AzGraph -ParameterFilter { -not $SkipToken } { [pscustomobject]@{ Data = @([pscustomobject]@{ name = 'm1'; type = 'microsoft.hybridcompute/machines' }); SkipToken = 'page2' } }
+            Mock Search-AzGraph -ParameterFilter { $SkipToken -eq 'page2' } { [pscustomobject]@{ Data = @([pscustomobject]@{ name = 'm2'; type = 'microsoft.hybridcompute/machines' }); SkipToken = $null } }
+            $r = Get-RangerArmResourcesByGraph -ResourceTypes @('microsoft.hybridcompute/machines')
+            @($r['microsoft.hybridcompute/machines']).name | Should -Be @('m1', 'm2')
+        }
+    }
+}

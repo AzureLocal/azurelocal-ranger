@@ -46,7 +46,7 @@ The mapping was built from the collectors' code and the fixtures. Manifest paths
 | Snapshot field | Manifest path | Environment file key | infrastructure.yml key | Rule |
 | --- | --- | --- | --- | --- |
 | `cluster.name` | `domains.clusterNode.cluster.name`, else `target.clusterName` | `cluster_name` | `azure_platform.instance_name`, else `_metadata.environment_name` | case-insensitive equal |
-| `cluster.release` | `domains.clusterNode.updatePosture.solutionUpdateEnv.CurrentVersion` or `.Version`; `-Release` overrides | `release.azure_local_version` | `_metadata.azure_local_release` (`2609`) | full version equal; a four-digit train matches `12.<train>.*` |
+| `cluster.release` | `domains.clusterNode.updatePosture.solutionUpdateEnv.CurrentVersion` or `.Version`; `-Release` overrides | `release.azure_local_version` | `_metadata.azure_local_release` (`2611`) | full version equal; a four-digit train matches `12.<train>.*` |
 | `cluster.sbeVersion` | `domains.clusterNode.solutionUpdateDetail.currentSbeVersion`, else `solutionUpdateEnv.CurrentSbeVersion` / `SbeVersion` | `release.sbe_version`, else `sbe.version` | none | equal |
 | `azure.subscriptionId` | `target.subscriptionId` | `subscription_id` | `azure_platform.subscriptions.sub_azure_local_id` | equal (error on drift) |
 | `azure.resourceGroup` | `target.resourceGroup` | none | `azure_platform.resource_groups.rg_azurelocal_cluster` | equal |
@@ -92,7 +92,7 @@ The mapping was built from the collectors' code and the fixtures. Manifest paths
   "schema": "as-built-snapshot.v1",
   "capturedAt": "2026-10-15T09:20:00.0000000Z",
   "source": { "tool": "ranger", "version": "2.7.0", "note": "manifest schema 1.1.0-draft" },
-  "cluster": { "name": "example-azl-01", "release": "12.2609.1003.7", "sbeVersion": "4.1.2312.5" },
+  "cluster": { "name": "example-azl-01", "release": "12.2611.1004.9", "sbeVersion": "4.1.2312.5" },
   "identity": { "model": "active-directory", "domain": "lab.example.com" },
   "witness": { "type": "cloud" },
   "nodes": [ { "name": "node1", "serial": "EXAMPLE-0001", "managementIp": "192.0.2.11", "bmcType": "idrac" } ],

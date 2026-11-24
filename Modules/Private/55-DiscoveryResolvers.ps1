@@ -252,7 +252,7 @@ function Get-RangerArmResourcesByGraph {
         '| project id, name, type, location, resourceGroup, subscriptionId, properties, tags'
     ) -join "`n"
 
-    $queryArgs = @{ Query = $kql; ErrorAction = 'Stop' }
+    $queryArgs = @{ Query = $kql; First = 1000; ErrorAction = 'Stop' }
     if (-not [string]::IsNullOrWhiteSpace($SubscriptionId)) {
         # Issue #BUG6 — explicitly cast to [string[]] so Search-AzGraph receives the correct
         # parameter type. Passing @($SubscriptionId) produces object[] which causes
@@ -264,7 +264,25 @@ function Get-RangerArmResourcesByGraph {
     }
 
     try {
-        $rows = @(Search-AzGraph @queryArgs)
+        # Az.ResourceGraph 1.x returns one PSResourceGraphResponse wrapper (rows in .Data, paging in .SkipToken), not the
+        # rows themselves; wrapping that object in an array made the grouping below throw 'Argument types do not match'.
+        # Pages of 1000 rows, followed by SkipToken, so a large estate is not cut off silently (at most 50 pages).
+        $rowList = New-Object System.Collections.Generic.List[object]
+        $page = 0
+        do {
+            $response = Search-AzGraph @queryArgs
+            $skipToken = $null
+            foreach ($item in @($response)) {
+                if ($null -ne $item -and $item.PSObject.Properties['Data']) {
+                    foreach ($dataRow in @($item.Data)) { $rowList.Add($dataRow) }
+                    if ($item.PSObject.Properties['SkipToken']) { $skipToken = [string]$item.SkipToken }
+                }
+                elseif ($null -ne $item) { $rowList.Add($item) }
+            }
+            if ($skipToken) { $queryArgs.SkipToken = $skipToken }
+            $page++
+        } while ($skipToken -and $page -lt 50)
+        $rows = $rowList.ToArray()
     } catch {
         # Classify and record the skip for partial-discovery tracking (#206).
         try {
@@ -287,7 +305,7 @@ function Get-RangerArmResourcesByGraph {
 
     # Materialise to arrays for easier downstream consumption.
     $result = @{}
-    foreach ($k in $grouped.Keys) { $result[$k] = @($grouped[$k]) }
+    foreach ($k in $grouped.Keys) { $result[$k] = $grouped[$k].ToArray() }
     return $result
 }
 
@@ -350,7 +368,9 @@ function Resolve-RangerArcMachinesForCluster {
                 Write-RangerLog -Level warn -Message ("Resolve-RangerArcMachinesForCluster: node '{0}' found in resource group '{1}' — not in cluster RG '{2}'." -f $wrapped.Name, $wrapped.ResourceGroupName, $clusterRg)
             }
         }
-        $result.Machines = @($merged)
+        # ToArray, not @(): enumerating the List with @() throws "Argument types do not match" when the items carry
+        # Search-AzGraph properties (seen live on Az.ResourceGraph 1.3.0, PowerShell 7).
+        $result.Machines = $merged.ToArray()
         Write-RangerLog -Level debug -Message "Resolve-RangerArcMachinesForCluster: Resource Graph returned $($merged.Count) machine(s)"
         return $result
     }
@@ -399,7 +419,7 @@ function Resolve-RangerArcMachinesForCluster {
         }
     }
 
-    $result.Machines = @($merged)
+    $result.Machines = $merged.ToArray()
     return $result
 }
 
@@ -533,6 +553,33 @@ function Resolve-RangerNodeInventory {
             Write-RangerLog -Level warn -Message "Resolve-RangerNodeInventory: using static config node list ($($configNodes.Count) nodes) — Arc and direct scan were unavailable"
         } else {
             Write-RangerLog -Level warn -Message "Resolve-RangerNodeInventory: no node source succeeded; node list is empty"
+        }
+    }
+
+    # Node targets given as IP addresses (a management host outside the nodes' DNS, for example a jump host that is not
+    # domain-joined): keep reaching each node by the address the operator gave. Arc and the direct scan return host names
+    # that such a host cannot resolve, so each given address is asked for its computer name and a discovered name that
+    # matches is replaced by that address. A discovered node no address answers for keeps its name.
+    $configAddresses = @($Config.targets.cluster.nodes | Where-Object { ([string]$_) -match '^\d{1,3}(\.\d{1,3}){3}$' } | ForEach-Object { [string]$_ })
+    if ($result.Nodes.Count -gt 0 -and $configAddresses.Count -gt 0) {
+        $nameRetry = if ($Config.behavior -and $Config.behavior.retryCount -gt 0) { [int]$Config.behavior.retryCount } else { 1 }
+        $nameTimeout = if ($Config.behavior -and $Config.behavior.timeoutSeconds -gt 0) { [int]$Config.behavior.timeoutSeconds } else { 0 }
+        $addressByName = @{}
+        foreach ($address in $configAddresses) {
+            try {
+                $computerName = @(Invoke-RangerRemoteCommand -ComputerName @($address) -Credential $ClusterCredential -RetryCount $nameRetry -TimeoutSeconds $nameTimeout -ScriptBlock { $env:COMPUTERNAME }) | Select-Object -First 1
+                if (-not [string]::IsNullOrWhiteSpace([string]$computerName)) { $addressByName[([string]$computerName).Trim().ToUpperInvariant()] = $address }
+            }
+            catch {
+                Write-RangerLog -Level debug -Message "Resolve-RangerNodeInventory: could not read the computer name at $address — $($_.Exception.Message)"
+            }
+        }
+        if ($addressByName.Count -gt 0) {
+            $result.Nodes = @($result.Nodes | ForEach-Object {
+                $short = ([string]$_).Split('.')[0].ToUpperInvariant()
+                if ($addressByName.ContainsKey($short)) { $addressByName[$short] } else { $_ }
+            })
+            Write-RangerLog -Level info -Message "Resolve-RangerNodeInventory: reaching $($addressByName.Count) node(s) by the addresses in the configuration"
         }
     }
 
