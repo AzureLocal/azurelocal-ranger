@@ -6,6 +6,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and 
 
 Pre-release versions start at `0.5.0`. The first stable PSGallery release will be `1.0.0` once live-estate validation is complete.
 
+## [2.8.0](https://github.com/AzureLocal/azurelocal-ranger/compare/v2.7.1...v2.8.0) (2026-11-26)
+
+
+### Features
+
+* **design-compare:** read the schema 5 infrastructure.yml as the design record AB[#0](https://github.com/AzureLocal/azurelocal-ranger/issues/0) ([954cc0e](https://github.com/AzureLocal/azurelocal-ranger/commit/954cc0e557d0a6ab2b7a90cf41230fbc15d616d5))
+* **discovery:** -InfrastructureFile resolves the cluster, nodes, BMC endpoints and Azure scope; variables.yml companion retired AB[#0](https://github.com/AzureLocal/azurelocal-ranger/issues/0) ([a9e494c](https://github.com/AzureLocal/azurelocal-ranger/commit/a9e494cb493c30247458acae2d999c4e391460fe))
+
+
+### Bug Fixes
+
+* **collectors:** fail fast on Azure tenant mismatch, per-call limits in workload-identity-azure, null-safe storage analysis AB[#0](https://github.com/AzureLocal/azurelocal-ranger/issues/0) ([2ea84c0](https://github.com/AzureLocal/azurelocal-ranger/commit/2ea84c0ce778de8144dd5d67446ab58f01c9bc5e))
+* **discovery:** read Search-AzGraph rows from the response, publish releases to the Gallery, Azure Local 12.2611 AB[#0](https://github.com/AzureLocal/azurelocal-ranger/issues/0) ([b7fa1e7](https://github.com/AzureLocal/azurelocal-ranger/commit/b7fa1e7f8140984f8115a986e9091627aa60a6a7))
+* **security:** remove real lab data from public repo AB[#0](https://github.com/AzureLocal/azurelocal-ranger/issues/0) ([93d3bbc](https://github.com/AzureLocal/azurelocal-ranger/commit/93d3bbc53325ad1b85f8bfe2b244db636fe27dbf))
+
 ## [2.7.1](https://github.com/AzureLocal/azurelocal-ranger/compare/v2.7.0...v2.7.1) (2026-11-04)
 
 
