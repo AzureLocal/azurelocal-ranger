@@ -99,7 +99,7 @@ At the end it prints a full review screen with the resulting YAML config. Press 
 Invoke-AzureLocalRanger -Wizard
 
 # Pre-fill the save path
-Invoke-AzureLocalRanger -Wizard -OutputConfigPath C:\ranger\tplabs.yml
+Invoke-AzureLocalRanger -Wizard -OutputConfigPath C:\ranger\iic.yml
 
 # Save only, no run
 Invoke-AzureLocalRanger -Wizard -SkipRun
@@ -219,7 +219,7 @@ v2.3.0 (#244). Push an already-written Ranger run package to Azure Blob Storage 
 
 ```powershell
 # Publish the most recent run
-Publish-RangerRun -PackagePath C:\AzureLocalRanger\tplabs-current-state-20260417T044502Z -StorageAccount saranger01
+Publish-RangerRun -PackagePath C:\AzureLocalRanger\iic-current-state-20260417T044502Z -StorageAccount saranger01
 ```
 
 ## Invoke-AzureLocalRangerEstate
@@ -250,10 +250,10 @@ Estate config structure:
 estate:
   name: contoso-production
   clusters:
-    - name: tplabs-clus01
-      configPath: C:\ranger\tplabs-clus01.yml
-    - name: tplabs-clus02
-      configPath: C:\ranger\tplabs-clus02.yml
+    - name: iic-clus01
+      configPath: C:\ranger\iic-clus01.yml
+    - name: iic-clus02
+      configPath: C:\ranger\iic-clus02.yml
 output:
   rootPath: C:\AzureLocalRanger\estate
 ```
@@ -323,36 +323,36 @@ Complete, copy-paste examples for the most frequent use cases.
 
 ```powershell
 Invoke-AzureLocalRanger `
-  -ClusterFqdn tplabs-clus01.contoso.com `
+  -ClusterFqdn iic-clus01.contoso.com `
   -SubscriptionId 00000000-0000-0000-0000-000000000000 `
   -TenantId 11111111-1111-1111-1111-111111111111 `
   -ResourceGroup rg-azlocal-prod-01 `
-  -EnvironmentName tplabs-prod-01
+  -EnvironmentName iic-prod-01
 ```
 
 ### Run from a saved config file
 
 ```powershell
-Invoke-AzureLocalRanger -ConfigPath C:\ranger\tplabs.yml
+Invoke-AzureLocalRanger -ConfigPath C:\ranger\iic.yml
 ```
 
 ### Override a single config value at runtime
 
 ```powershell
-Invoke-AzureLocalRanger -ConfigPath C:\ranger\tplabs.yml -OutputPath D:\ranger-archive
+Invoke-AzureLocalRanger -ConfigPath C:\ranger\iic.yml -OutputPath D:\ranger-archive
 ```
 
 ### Collect specific domains only (focused run)
 
 ```powershell
-Invoke-AzureLocalRanger -ConfigPath C:\ranger\tplabs.yml `
+Invoke-AzureLocalRanger -ConfigPath C:\ranger\iic.yml `
   -IncludeDomain cluster,storage-networking,azure-integration
 ```
 
 ### Skip specific domains (broad run minus slow collectors)
 
 ```powershell
-Invoke-AzureLocalRanger -ConfigPath C:\ranger\tplabs.yml `
+Invoke-AzureLocalRanger -ConfigPath C:\ranger\iic.yml `
   -ExcludeDomain hardware,management-performance
 ```
 
@@ -360,7 +360,7 @@ Invoke-AzureLocalRanger -ConfigPath C:\ranger\tplabs.yml `
 
 ```powershell
 Invoke-AzureLocalRanger `
-  -ConfigPath C:\ranger\tplabs.yml `
+  -ConfigPath C:\ranger\iic.yml `
   -Unattended `
   -OutputPath \\fileserver\AzureLocalRanger `
   -BaselineManifestPath C:\ranger\baseline\audit-manifest.json
@@ -369,7 +369,7 @@ Invoke-AzureLocalRanger `
 ### Collect only — skip report rendering
 
 ```powershell
-Invoke-AzureLocalRanger -ConfigPath C:\ranger\tplabs.yml -NoRender
+Invoke-AzureLocalRanger -ConfigPath C:\ranger\iic.yml -NoRender
 ```
 
 Useful when you want to inspect the raw manifest before rendering or when rendering will be done later.
@@ -378,7 +378,7 @@ Useful when you want to inspect the raw manifest before rendering or when render
 
 ```powershell
 Export-AzureLocalRangerReport `
-  -ManifestPath C:\AzureLocalRanger\tplabs-current-state-20260416T044502Z\manifest\audit-manifest.json `
+  -ManifestPath C:\AzureLocalRanger\iic-current-state-20260416T044502Z\manifest\audit-manifest.json `
   -Formats html,docx,xlsx,pdf,svg
 ```
 
@@ -409,7 +409,7 @@ $clusterCred = Get-Credential -Message "Cluster WinRM credential"
 $bmcCred     = Get-Credential -Message "iDRAC credential"
 
 Invoke-AzureLocalRanger `
-  -ConfigPath C:\ranger\tplabs.yml `
+  -ConfigPath C:\ranger\iic.yml `
   -ClusterCredential $clusterCred `
   -BmcCredential $bmcCred
 ```

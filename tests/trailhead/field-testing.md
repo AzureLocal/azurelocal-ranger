@@ -48,7 +48,7 @@ in one command:
 cd E:\git\azurelocal-ranger
 .\tests\trailhead\scripts\New-RangerFieldTestCycle.ps1 `
     -Version "0.6.0" `
-    -Environment "tplabs-clus01 (4-node Dell, TierPoint Labs)" `
+    -Environment "iic-clus01 (4-node Dell)" `
     -DueDate "2026-06-30"
 ```
 
@@ -87,7 +87,7 @@ See `docs/prerequisites.md` (issue #79) when that document is complete.
 ## IIC Canonical Data Standard
 
 All **Pester unit and integration tests** use the IIC (Infinite Improbability Corp) fictional company
-as test data. Do not use tplabs, Contoso, or real environment data in Pester tests.
+as test data. Use the `iic` sample names in Pester tests, never real environment data.
 
 Field testing (TRAILHEAD) uses **real environment data** and is never committed to the repository.
 

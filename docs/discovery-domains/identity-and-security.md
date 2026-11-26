@@ -101,13 +101,13 @@ A successful collect produces entries like this:
       },
       "bitLocker": {
         "volumes": [
-          { "node": "tplabs-01-n01", "driveLetter": "C:", "encryptionMethod": "XtsAes256",
+          { "node": "iic-01-n01", "driveLetter": "C:", "encryptionMethod": "XtsAes256",
             "protectionStatus": "On", "keyBackedToAD": true }
         ]
       },
       "defender": {
         "nodes": [
-          { "host": "tplabs-01-n01", "amRunning": true, "rtpEnabled": true,
+          { "host": "iic-01-n01", "amRunning": true, "rtpEnabled": true,
             "signatureAge": 0, "exclusionCount": 4 }
         ]
       }

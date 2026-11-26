@@ -16,7 +16,7 @@
     The module version being tested (e.g. "0.6.0").  Used in the milestone title and all issue bodies.
 
 .PARAMETER Environment
-    Short human-readable description of the test environment (e.g. "tplabs-clus01 (4-node Dell, tplabs)").
+    Short human-readable description of the test environment (e.g. "iic-clus01 (4-node Dell, iic)").
     Inserted into every issue body so the context is clear when reviewing issues later.
 
 .PARAMETER DueDate
@@ -26,7 +26,7 @@
     Print what would be created without actually calling the GitHub API.
 
 .EXAMPLE
-    .\New-RangerFieldTestCycle.ps1 -Version "0.6.0" -Environment "tplabs-clus01 (4-node Dell)"
+    .\New-RangerFieldTestCycle.ps1 -Version "0.6.0" -Environment "iic-clus01 (4-node Dell)"
 
 .EXAMPLE
     .\New-RangerFieldTestCycle.ps1 -Version "1.0.0" -Environment "customer-clus01 (Contoso)" -DueDate "2026-08-01"

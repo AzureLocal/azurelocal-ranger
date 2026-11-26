@@ -18,8 +18,8 @@ For the practical how-to, see [Configuration](configuration.md). For the formal 
 
 ```yaml
 environment:
-  name: tplabs-prod-01
-  clusterName: tplabs-prod-01
+  name: iic-prod-01
+  clusterName: iic-prod-01
   description: "4-node Dell AX-760 production cluster"
 ```
 
@@ -35,10 +35,10 @@ environment:
 ```yaml
 targets:
   cluster:
-    fqdn: tplabs-clus01.contoso.com
+    fqdn: iic-clus01.contoso.com
     nodes:
-      - tplabs-01-n01.contoso.com
-      - tplabs-01-n02.contoso.com
+      - iic-01-n01.contoso.com
+      - iic-01-n02.contoso.com
 ```
 
 If both are omitted, Ranger attempts to resolve nodes from Azure Arc resource properties. This requires an active Az context and valid Azure target metadata.

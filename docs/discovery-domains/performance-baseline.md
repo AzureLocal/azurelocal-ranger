@@ -80,9 +80,9 @@ A successful collect produces entries like this:
   "domains": {
     "performance": {
       "nodes": [
-        { "host": "tplabs-01-n01", "cpuUsagePercent": 12.4, "memoryUsedGB": 148,
+        { "host": "iic-01-n01", "cpuUsagePercent": 12.4, "memoryUsedGB": 148,
           "memoryTotalGB": 256, "uptimeDays": 14 },
-        { "host": "tplabs-01-n02", "cpuUsagePercent": 8.1, "memoryUsedGB": 132,
+        { "host": "iic-01-n02", "cpuUsagePercent": 8.1, "memoryUsedGB": 132,
           "memoryTotalGB": 256, "uptimeDays": 14 }
       ],
       "storage": {

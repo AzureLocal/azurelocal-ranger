@@ -111,7 +111,7 @@ A successful collect produces entries like this:
       ],
       "clusterNetworks": [
         { "name": "Cluster Network 1", "role": "ClusterAndClient", "addressFamily": "IPv4",
-          "address": "192.168.211.0", "prefixLength": 24 }
+          "address": "10.0.0.0", "prefixLength": 24 }
       ],
       "summary": { "nodeCount": 4, "vSwitchCount": 1, "intentCount": 1, "dnsServerCount": 2 }
     }

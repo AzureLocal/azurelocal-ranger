@@ -10,7 +10,7 @@ Describe 'Azure Local Ranger workload collector' {
         }
 
         $config.targets.azure.subscriptionId = '11111111-1111-1111-1111-111111111111'
-        $config.targets.azure.resourceGroup = 'rg-tplabs'
+        $config.targets.azure.resourceGroup = 'rg-iic'
         $config.targets.azure.tenantId = '22222222-2222-2222-2222-222222222222'
         $definition = [pscustomobject]@{ Id = 'workload-identity-azure' }
         $credentialMap = [ordered]@{
@@ -89,7 +89,7 @@ Describe 'Azure Local Ranger workload collector' {
                             OsVersion          = '10.0.17763'
                             ProvisioningState  = 'Succeeded'
                             LastStatusChange   = (Get-Date)
-                            ResourceId         = '/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-tplabs/providers/Microsoft.HybridCompute/machines/vm-arc-ip'
+                            ResourceId         = '/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-iic/providers/Microsoft.HybridCompute/machines/vm-arc-ip'
                             NetworkIpAddresses = @('10.25.30.40')
                             NetworkProfile     = [ordered]@{ ipAddresses = @('10.25.30.40') }
                         })
@@ -119,7 +119,7 @@ Describe 'Azure Local Ranger workload collector' {
         }
 
         $config.targets.azure.subscriptionId = '11111111-1111-1111-1111-111111111111'
-        $config.targets.azure.resourceGroup = 'rg-tplabs'
+        $config.targets.azure.resourceGroup = 'rg-iic'
         $config.targets.azure.tenantId = '22222222-2222-2222-2222-222222222222'
         $definition = [pscustomobject]@{ Id = 'workload-identity-azure' }
         $credentialMap = [ordered]@{
@@ -181,9 +181,9 @@ Describe 'Azure Local Ranger workload collector' {
                     }
                     'Arc Connected Machine detail' {
                         return @(
-                            [ordered]@{ Name = 'vm-2016'; Status = 'Connected'; AgentVersion = '1.0.0'; OsName = 'Windows Server 2016 Datacenter'; OsVersion = '10.0.14393'; ProvisioningState = 'Succeeded'; LastStatusChange = (Get-Date); ResourceId = '/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-tplabs/providers/Microsoft.HybridCompute/machines/vm-2016'; NetworkIpAddresses = @('10.0.0.10') },
-                            [ordered]@{ Name = 'vm-2019'; Status = 'Connected'; AgentVersion = '1.0.0'; OsName = 'Windows Server 2019 Datacenter'; OsVersion = '10.0.17763'; ProvisioningState = 'Succeeded'; LastStatusChange = (Get-Date); ResourceId = '/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-tplabs/providers/Microsoft.HybridCompute/machines/vm-2019'; NetworkIpAddresses = @('10.0.0.11') },
-                            [ordered]@{ Name = 'vm-2022'; Status = 'Connected'; AgentVersion = '1.0.0'; OsName = 'Windows Server 2022 Datacenter'; OsVersion = '10.0.20348'; ProvisioningState = 'Succeeded'; LastStatusChange = (Get-Date); ResourceId = '/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-tplabs/providers/Microsoft.HybridCompute/machines/vm-2022'; NetworkIpAddresses = @('10.0.0.12') }
+                            [ordered]@{ Name = 'vm-2016'; Status = 'Connected'; AgentVersion = '1.0.0'; OsName = 'Windows Server 2016 Datacenter'; OsVersion = '10.0.14393'; ProvisioningState = 'Succeeded'; LastStatusChange = (Get-Date); ResourceId = '/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-iic/providers/Microsoft.HybridCompute/machines/vm-2016'; NetworkIpAddresses = @('10.0.0.10') },
+                            [ordered]@{ Name = 'vm-2019'; Status = 'Connected'; AgentVersion = '1.0.0'; OsName = 'Windows Server 2019 Datacenter'; OsVersion = '10.0.17763'; ProvisioningState = 'Succeeded'; LastStatusChange = (Get-Date); ResourceId = '/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-iic/providers/Microsoft.HybridCompute/machines/vm-2019'; NetworkIpAddresses = @('10.0.0.11') },
+                            [ordered]@{ Name = 'vm-2022'; Status = 'Connected'; AgentVersion = '1.0.0'; OsName = 'Windows Server 2022 Datacenter'; OsVersion = '10.0.20348'; ProvisioningState = 'Succeeded'; LastStatusChange = (Get-Date); ResourceId = '/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-iic/providers/Microsoft.HybridCompute/machines/vm-2022'; NetworkIpAddresses = @('10.0.0.12') }
                         )
                     }
                     'Arc ESU license profile' {

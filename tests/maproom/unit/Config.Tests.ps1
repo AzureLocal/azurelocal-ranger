@@ -165,15 +165,15 @@ Describe 'Azure Local Ranger configuration helpers' {
                 $path = Join-Path $TestDrive 'inline-empty-config.yml'
                 @'
 environment:
-    name: tplabs-lab
+    name: iic-lab
 targets:
     cluster:
-        fqdn: tplabs-clus01.contoso.com
+        fqdn: iic-clus01.contoso.com
         nodes:
-            - tplabs-01-n01.contoso.com
+            - iic-01-n01.contoso.com
     azure:
         subscriptionId: 22222222-2222-2222-2222-222222222222
-        resourceGroup: rg-tplabs
+        resourceGroup: rg-iic
         tenantId: 33333333-3333-3333-3333-333333333333
     bmc:
         endpoints: []
@@ -319,8 +319,8 @@ behavior:
             Get-RangerDefaultConfig
         }
 
-        $config.targets.cluster.fqdn = 'tplabs-clus01.contoso.com'
-        $config.targets.cluster.nodes = @('tplabs-01-n01.contoso.com', 'tplabs-01-n02.contoso.com')
+        $config.targets.cluster.fqdn = 'iic-clus01.contoso.com'
+        $config.targets.cluster.nodes = @('iic-01-n01.contoso.com', 'iic-01-n02.contoso.com')
         $credential = [pscredential]::new('CONTOSO\ranger-read', (ConvertTo-SecureString 'placeholder-password' -AsPlainText -Force))
 
         InModuleScope AzureLocalRanger {
@@ -353,18 +353,18 @@ behavior:
 
             $config = [ordered]@{
                 environment = [ordered]@{
-                    name        = 'tplabs-wizard'
-                    clusterName = 'tplabs-clus01'
+                    name        = 'iic-wizard'
+                    clusterName = 'iic-clus01'
                     description = 'wizard-generated'
                 }
                 targets = [ordered]@{
                     cluster = [ordered]@{
-                        fqdn  = 'tplabs-clus01.azrl.mgmt'
-                        nodes = @('tplabs-01-n01.azrl.mgmt', 'tplabs-01-n02.azrl.mgmt')
+                        fqdn  = 'iic-clus01.iic.local'
+                        nodes = @('iic-01-n01.iic.local', 'iic-01-n02.iic.local')
                     }
                     azure = [ordered]@{
                         subscriptionId = '22222222-2222-2222-2222-222222222222'
-                        resourceGroup  = 'rg-tplabs'
+                        resourceGroup  = 'rg-iic'
                         tenantId       = '33333333-3333-3333-3333-333333333333'
                     }
                     bmc = [ordered]@{ endpoints = @() }
@@ -382,9 +382,9 @@ behavior:
 
             # Reload and verify round-trip
             $loaded = Import-RangerConfiguration -ConfigPath $Path
-            $loaded.environment.name                  | Should -Be 'tplabs-wizard'
-            $loaded.environment.clusterName           | Should -Be 'tplabs-clus01'
-            $loaded.targets.cluster.fqdn              | Should -Be 'tplabs-clus01.azrl.mgmt'
+            $loaded.environment.name                  | Should -Be 'iic-wizard'
+            $loaded.environment.clusterName           | Should -Be 'iic-clus01'
+            $loaded.targets.cluster.fqdn              | Should -Be 'iic-clus01.iic.local'
             $loaded.credentials.azure.method          | Should -Be 'device-code'
             $loaded.output.mode                       | Should -Be 'as-built'
             @($loaded.domains.include).Count          | Should -Be 2
@@ -415,7 +415,7 @@ behavior:
         InModuleScope AzureLocalRanger {
             $config = Get-RangerDefaultConfig
             $config.targets.bmc.endpoints = @(
-                [ordered]@{ host = '192.168.214.11'; node = 'n01' }
+                [ordered]@{ host = '10.0.10.11'; node = 'n01' }
             )
             $config.domains.include = @('hardware')
             $bmcSecure = ConvertTo-SecureString 'idrac-pass' -AsPlainText -Force
@@ -578,11 +578,11 @@ behavior:
             $overrides = @{
                 SubscriptionId = '22222222-2222-2222-2222-222222222222'
                 TenantId       = '33333333-3333-3333-3333-333333333333'
-                ClusterName    = 'tplabs-clus01'
+                ClusterName    = 'iic-clus01'
             }
             $config = Set-RangerStructuralOverrides -Config $config -StructuralOverrides $overrides
-            $config.environment.name        | Should -Be 'tplabs-clus01'
-            $config.environment.clusterName | Should -Be 'tplabs-clus01'
+            $config.environment.name        | Should -Be 'iic-clus01'
+            $config.environment.clusterName | Should -Be 'iic-clus01'
             $config.targets.azure.subscriptionId | Should -Be '22222222-2222-2222-2222-222222222222'
             $config.targets.azure.tenantId       | Should -Be '33333333-3333-3333-3333-333333333333'
         }
@@ -592,36 +592,36 @@ behavior:
         InModuleScope AzureLocalRanger {
             $config = Get-RangerDefaultConfig
             $overrides = @{
-                ClusterName     = 'tplabs-clus01'
-                EnvironmentName = 'tplabs-preprod'
+                ClusterName     = 'iic-clus01'
+                EnvironmentName = 'iic-preprod'
             }
             $config = Set-RangerStructuralOverrides -Config $config -StructuralOverrides $overrides
-            $config.environment.name        | Should -Be 'tplabs-preprod'
-            $config.environment.clusterName | Should -Be 'tplabs-clus01'
+            $config.environment.name        | Should -Be 'iic-preprod'
+            $config.environment.clusterName | Should -Be 'iic-clus01'
         }
     }
 
     It 'auto-discovers cluster nodes from Arc cluster properties.nodes when config leaves them empty (issue #294)' {
         InModuleScope AzureLocalRanger {
             $config = Get-RangerDefaultConfig
-            $config.environment.clusterName            = 'tplabs-clus01'
+            $config.environment.clusterName            = 'iic-clus01'
             $config.targets.azure.subscriptionId       = '22222222-2222-2222-2222-222222222222'
             $config.targets.azure.tenantId             = '33333333-3333-3333-3333-333333333333'
-            $config.targets.azure.resourceGroup        = 'rg-tplabs'
-            $config.targets.cluster.fqdn               = 'tplabs-clus01.azrl.mgmt'
+            $config.targets.azure.resourceGroup        = 'rg-iic'
+            $config.targets.cluster.fqdn               = 'iic-clus01.iic.local'
             $config.targets.cluster.nodes              = @()
 
             Mock Resolve-RangerClusterArcResource -ModuleName AzureLocalRanger {
                 [pscustomobject]@{
-                    Name              = 'tplabs-clus01'
-                    ResourceGroupName = 'rg-tplabs'
+                    Name              = 'iic-clus01'
+                    ResourceGroupName = 'rg-iic'
                     Properties        = [pscustomobject]@{
-                        domainName = 'azrl.mgmt'
+                        domainName = 'iic.local'
                         nodes      = @(
-                            [pscustomobject]@{ name = 'tplabs-01-n01' },
-                            [pscustomobject]@{ name = 'tplabs-01-n02' },
-                            [pscustomobject]@{ name = 'tplabs-01-n03' },
-                            [pscustomobject]@{ name = 'tplabs-01-n04' }
+                            [pscustomobject]@{ name = 'iic-01-n01' },
+                            [pscustomobject]@{ name = 'iic-01-n02' },
+                            [pscustomobject]@{ name = 'iic-01-n03' },
+                            [pscustomobject]@{ name = 'iic-01-n04' }
                         )
                     }
                 }
@@ -631,34 +631,34 @@ behavior:
             $result | Should -BeTrue
 
             @($config.targets.cluster.nodes).Count | Should -Be 4
-            $config.targets.cluster.nodes | Should -Contain 'tplabs-01-n01.azrl.mgmt'
-            $config.targets.cluster.nodes | Should -Contain 'tplabs-01-n04.azrl.mgmt'
+            $config.targets.cluster.nodes | Should -Contain 'iic-01-n01.iic.local'
+            $config.targets.cluster.nodes | Should -Contain 'iic-01-n04.iic.local'
         }
     }
 
     It 'falls back to subscription Arc machines when cluster properties do not surface nodes (issue #294)' {
         InModuleScope AzureLocalRanger {
             $config = Get-RangerDefaultConfig
-            $config.environment.clusterName            = 'tplabs-clus01'
+            $config.environment.clusterName            = 'iic-clus01'
             $config.targets.azure.subscriptionId       = '22222222-2222-2222-2222-222222222222'
             $config.targets.azure.tenantId             = '33333333-3333-3333-3333-333333333333'
-            $config.targets.azure.resourceGroup        = 'rg-tplabs'
-            $config.targets.cluster.fqdn               = 'tplabs-clus01.azrl.mgmt'
+            $config.targets.azure.resourceGroup        = 'rg-iic'
+            $config.targets.cluster.fqdn               = 'iic-clus01.iic.local'
             $config.targets.cluster.nodes              = @()
 
             Mock Resolve-RangerClusterArcResource -ModuleName AzureLocalRanger {
                 [pscustomobject]@{
-                    Name              = 'tplabs-clus01'
-                    ResourceGroupName = 'rg-tplabs'
-                    Properties        = [pscustomobject]@{ domainName = 'azrl.mgmt' }
+                    Name              = 'iic-clus01'
+                    ResourceGroupName = 'rg-iic'
+                    Properties        = [pscustomobject]@{ domainName = 'iic.local' }
                 }
             }
 
             Mock Resolve-RangerArcMachinesForCluster -ModuleName AzureLocalRanger {
                 [ordered]@{
                     Machines = @(
-                        [pscustomobject]@{ Name = 'tplabs-01-n01' },
-                        [pscustomobject]@{ Name = 'tplabs-01-n02' }
+                        [pscustomobject]@{ Name = 'iic-01-n01' },
+                        [pscustomobject]@{ Name = 'iic-01-n02' }
                     )
                     CrossRg  = @()
                 }
@@ -666,7 +666,7 @@ behavior:
 
             $null = Invoke-RangerAzureAutoDiscovery -Config $config
             @($config.targets.cluster.nodes).Count | Should -Be 2
-            $config.targets.cluster.nodes | Should -Contain 'tplabs-01-n01.azrl.mgmt'
+            $config.targets.cluster.nodes | Should -Contain 'iic-01-n01.iic.local'
         }
     }
 
@@ -748,7 +748,7 @@ behavior:
             $config = Get-RangerDefaultConfig
             $config.targets.azure.subscriptionId = '22222222-2222-2222-2222-222222222222'
             $config.targets.azure.tenantId       = '33333333-3333-3333-3333-333333333333'
-            $config.environment.clusterName      = 'tplabs-clus01'
+            $config.environment.clusterName      = 'iic-clus01'
 
             $missing = Get-RangerMissingRequiredInputs -Config $config
             # Should prompt for resourceGroup (not known) and environment.name (not derived yet)

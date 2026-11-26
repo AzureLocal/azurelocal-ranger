@@ -85,12 +85,12 @@ A successful collect produces entries like this:
     "virtualMachines": {
       "inventory": [
         { "name": "vm-avd-01", "state": "Running", "generation": 2, "vCPU": 4,
-          "memoryGB": 8, "host": "tplabs-01-n01", "replicationState": "None" },
+          "memoryGB": 8, "host": "iic-01-n01", "replicationState": "None" },
         { "name": "vm-sql-01", "state": "Running", "generation": 2, "vCPU": 8,
-          "memoryGB": 32, "host": "tplabs-01-n02" }
+          "memoryGB": 32, "host": "iic-01-n02" }
       ],
       "workloadFamilies": {
-        "avd": { "detected": true, "hostPoolName": "hp-tplabs-prod" },
+        "avd": { "detected": true, "hostPoolName": "hp-iic-prod" },
         "arcVms": { "detected": false },
         "aks": { "detected": false }
       },

@@ -87,7 +87,7 @@ A successful collect produces entries like this:
   "domains": {
     "azureIntegration": {
       "arcCluster": {
-        "resourceId": "/subscriptions/00000000.../resourceGroups/rg-azlocal-prod-01/providers/Microsoft.AzureStackHCI/clusters/tplabs-clus01",
+        "resourceId": "/subscriptions/00000000.../resourceGroups/rg-azlocal-prod-01/providers/Microsoft.AzureStackHCI/clusters/iic-clus01",
         "region": "eastus",
         "connectedAgentVersion": "1.38.0",
         "registrationState": "Registered"
@@ -100,7 +100,7 @@ A successful collect produces entries like this:
       ],
       "monitoring": {
         "amaDeployed": true,
-        "logAnalyticsWorkspaceId": "/subscriptions/.../workspaces/law-tplabs"
+        "logAnalyticsWorkspaceId": "/subscriptions/.../workspaces/law-iic"
       },
       "updateManager": { "policyAssigned": true, "complianceState": "Compliant" }
     }

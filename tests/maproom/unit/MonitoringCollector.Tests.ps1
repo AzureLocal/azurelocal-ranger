@@ -10,7 +10,7 @@ Describe 'Azure Local Ranger monitoring collector' {
         }
 
         $config.targets.azure.subscriptionId = '11111111-1111-1111-1111-111111111111'
-        $config.targets.azure.resourceGroup = 'rg-tplabs'
+        $config.targets.azure.resourceGroup = 'rg-iic'
         $definition = [pscustomobject]@{ Id = 'monitoring-observability' }
         $credentialMap = [ordered]@{
             cluster = $null
@@ -22,7 +22,7 @@ Describe 'Azure Local Ranger monitoring collector' {
 
             Mock Get-RangerCollectorFixtureData { $null }
             Mock Get-RangerAzureResources {
-                @([ordered]@{ ResourceType = 'Microsoft.AzureStackHCI/clusters'; Name = 'tplabs-clus01'; ResourceId = '/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-tplabs/providers/Microsoft.AzureStackHCI/clusters/tplabs-clus01' })
+                @([ordered]@{ ResourceType = 'Microsoft.AzureStackHCI/clusters'; Name = 'iic-clus01'; ResourceId = '/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-iic/providers/Microsoft.AzureStackHCI/clusters/iic-clus01' })
             }
             Mock Invoke-RangerSafeAction {
                 param($Label, $DefaultValue, $ScriptBlock)

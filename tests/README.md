@@ -24,7 +24,7 @@ It holds:
 
 - live test-cycle documentation
 - run scripts
-- committed run logs
+- local run logs (gitignored)
 - milestone-close execution evidence
 
 ### `MAPROOM`
@@ -61,7 +61,7 @@ tests/
 ## Folder Summary
 
 - `tests/trailhead/scripts/` holds live TRAILHEAD workflow helpers.
-- `tests/trailhead/logs/` holds committed TRAILHEAD run logs.
+- `tests/trailhead/logs/` holds local TRAILHEAD run logs. They are gitignored because they hold real environment data.
 - `tests/trailhead/docs/` holds detailed TRAILHEAD documentation.
 - `tests/trailhead/field-testing.md` defines the live field-testing methodology.
 - `tests/maproom/Fixtures/` holds committed fixture data used by offline tests.

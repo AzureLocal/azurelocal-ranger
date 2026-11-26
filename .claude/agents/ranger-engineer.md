@@ -19,7 +19,7 @@ Key architecture:
 - Modules/Public/ — exported cmdlets (Invoke-AzureLocalRanger, New-AzureLocalRangerConfig, Invoke-RangerWizard, etc.)
 - Modules/Private/ — internal helpers
 - tests/maproom/ — Pester unit tests (synthetic manifests + schema tests)
-- tests/trailhead/ — field test scripts against real clusters (tplabs-clus01)
+- tests/trailhead/ — field test scripts against real clusters (iic-clus01)
 - docs/ — MkDocs discovery domain docs
 
 Conventions:
@@ -30,4 +30,4 @@ Conventions:
 - PSScriptAnalyzer must pass; Pester tests must pass before merge
 - Error messages follow the RANGER-* catalog (actionable: what failed, why, what to do)
 
-Test environment: tplabs-clus01.azrl.mgmt (4-node Dell AX-760, Raleigh NC). Field test scripts live in tests/trailhead/.
+Test environment: iic-clus01.iic.local (4-node Dell AX-760). Field test scripts live in tests/trailhead/.

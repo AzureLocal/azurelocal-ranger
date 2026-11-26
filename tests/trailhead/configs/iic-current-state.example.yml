@@ -1,7 +1,7 @@
 # =============================================================================
 # AzureLocalRanger — TRAILHEAD Test Config
 # Mode     : current-state (live discovery)
-# Target   : tplabs-clus01 (4-node Dell AX-760, TierPoint Labs, Raleigh NC)
+# Target   : iic-clus01 (4-node Dell AX-760)
 # Used for : Operation TRAILHEAD v1.4.2 field validation — Scenarios A-G
 #
 # WARNING : Never store plaintext secrets here.
@@ -9,32 +9,32 @@
 # =============================================================================
 
 environment:
-  name: tplabs
+  name: iic
 
 targets:
   cluster:
-    fqdn: tplabs-clus01.azrl.mgmt
+    fqdn: iic-clus01.iic.local
     nodes:
-      - tplabs-01-n01.azrl.mgmt
-      - tplabs-01-n02.azrl.mgmt
-      - tplabs-01-n03.azrl.mgmt
-      - tplabs-01-n04.azrl.mgmt
+      - iic-01-n01.iic.local
+      - iic-01-n02.iic.local
+      - iic-01-n03.iic.local
+      - iic-01-n04.iic.local
 
   azure:
-    subscriptionId: 2caa0b8a-a1d6-4f0c-8c03-861787b8315c
+    subscriptionId: 00000000-0000-0000-0000-000000000000
     resourceGroup: rg-c01-azl-eus-01
-    tenantId: a9b67171-3fbb-45bf-8394-eb56d02a86e4
+    tenantId: 00000000-0000-0000-0000-000000000000
 
   bmc:
     endpoints:
-      - host: 192.168.214.11
-        node: tplabs-01-n01
-      - host: 192.168.214.12
-        node: tplabs-01-n02
-      - host: 192.168.214.13
-        node: tplabs-01-n03
-      - host: 192.168.214.14
-        node: tplabs-01-n04
+      - host: 10.0.10.11
+        node: iic-01-n01
+      - host: 10.0.10.12
+        node: iic-01-n02
+      - host: 10.0.10.13
+        node: iic-01-n03
+      - host: 10.0.10.14
+        node: iic-01-n04
 
 credentials:
   azure:
@@ -42,16 +42,16 @@ credentials:
     useAzureCliFallback: true
 
   cluster:
-    username: MGMT\svc.azl.local
-    passwordRef: keyvault://kv-tplabs-platform/domain-admin-password
+    username: IIC\svc.azl.local
+    passwordRef: keyvault://kv-iic-platform/domain-admin-password
 
   domain:
-    username: MGMT\svc.azl.local
-    passwordRef: keyvault://kv-tplabs-platform/domain-admin-password
+    username: IIC\svc.azl.local
+    passwordRef: keyvault://kv-iic-platform/domain-admin-password
 
   bmc:
     username: idrac_azl_admin
-    passwordRef: keyvault://kv-tplabs-platform/idrac-password
+    passwordRef: keyvault://kv-iic-platform/idrac-password
 
 domains:
   include: []

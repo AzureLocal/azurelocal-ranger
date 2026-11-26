@@ -103,15 +103,15 @@ A successful collect produces entries like this in `manifest.collectors`:
   "domains": {
     "clusterNode": {
       "cluster": {
-        "name": "tplabs-clus01",
-        "fqdn": "tplabs-clus01.contoso.com",
+        "name": "iic-clus01",
+        "fqdn": "iic-clus01.contoso.com",
         "domain": "contoso.com",
         "osVersion": "10.0.26200",
         "registrationState": "Registered"
       },
       "nodes": [
-        { "name": "tplabs-01-n01", "state": "Up", "uptimeDays": 14, "osVersion": "10.0.26200" },
-        { "name": "tplabs-01-n02", "state": "Up", "uptimeDays": 14, "osVersion": "10.0.26200" }
+        { "name": "iic-01-n01", "state": "Up", "uptimeDays": 14, "osVersion": "10.0.26200" },
+        { "name": "iic-01-n02", "state": "Up", "uptimeDays": 14, "osVersion": "10.0.26200" }
       ],
       "quorum": { "type": "NodeAndFileShareMajority", "witnessPath": "\\\\dc01\\quorum" },
       "healthSummary": { "nodesUp": 4, "nodesDown": 0, "overallState": "Normal" }

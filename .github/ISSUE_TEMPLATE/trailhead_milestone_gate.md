@@ -15,10 +15,10 @@ Do not close the release milestone until this issue is closed or explicitly waiv
 
 - Release milestone: `vX.Y.Z — <name>`
 - Target version: `vX.Y.Z`
-- Test environment: `<tplabs-clus01 or other environment>`
+- Test environment: `<iic-clus01 or other environment>`
 - Planned validation date: `YYYY-MM-DD`
 - Related TRAILHEAD milestone: `Operation TRAILHEAD — vX.Y.Z Field Validation` or `N/A`
-- TRAILHEAD run log: `tests/trailhead/logs/run-YYYYMMDD-HHMM.md`
+- TRAILHEAD run log: local only (`tests/trailhead/logs/run-YYYYMMDD-HHMM.md`, gitignored); summarize results here without environment data
 
 ## Entry Criteria
 

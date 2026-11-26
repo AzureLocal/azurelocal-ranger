@@ -105,14 +105,14 @@ Start-Service WinRM
 Set-Service WinRM -StartupType Automatic
 
 # Add cluster node IPs and cluster VIP to TrustedHosts (adjust IPs for the target environment)
-Set-Item WSMan:\localhost\Client\TrustedHosts -Value "192.168.211.11,192.168.211.12,192.168.211.13,192.168.211.14,192.168.211.20" -Force
+Set-Item WSMan:\localhost\Client\TrustedHosts -Value "10.0.0.11,10.0.0.12,10.0.0.13,10.0.0.14,10.0.0.20" -Force
 ```
 
 To append to existing entries rather than overwriting:
 
 ```powershell
 $existing = (Get-Item WSMan:\localhost\Client\TrustedHosts).Value
-$new = if ($existing) { "$existing,192.168.211.11,192.168.211.12,192.168.211.13,192.168.211.14,192.168.211.20" } else { "192.168.211.11,192.168.211.12,192.168.211.13,192.168.211.14,192.168.211.20" }
+$new = if ($existing) { "$existing,10.0.0.11,10.0.0.12,10.0.0.13,10.0.0.14,10.0.0.20" } else { "10.0.0.11,10.0.0.12,10.0.0.13,10.0.0.14,10.0.0.20" }
 Set-Item WSMan:\localhost\Client\TrustedHosts -Value $new -Force
 ```
 

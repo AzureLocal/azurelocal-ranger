@@ -89,7 +89,7 @@ Targets v2.7.0. The module version in `AzureLocalRanger.psd1` is already 2.7.0; 
 
 ## [2.6.5] — Credential UX & Discovery Hardening (2026-04-18)
 
-19 first-run friction and reliability issues, all found during live tplabs validation.
+19 first-run friction and reliability issues, all found during live lab validation.
 
 ### Fixed
 
@@ -317,14 +317,14 @@ surfaces in the pre-run audit.
 
 ### Fixed
 
-- **TRAILHEAD test configs** — Added `credentials.domain` section to both `tests/trailhead/configs/tplabs-current-state.yml` and `tplabs-as-built.yml`. Without this section the module fell back to `keyvault://kv-ranger/domain-read`, which does not exist in the tplabs environment.
-- **TRAILHEAD test configs** — Added `svg` and `drawio` to `output.formats` in both tplabs configs. `Invoke-RangerOutputGeneration` only calls `Invoke-RangerDiagramGeneration` when `svg` or `drawio` appears in the normalised formats list; omitting them silently skipped all diagram output.
+- **TRAILHEAD test configs** — Added `credentials.domain` section to both `tests/trailhead/configs/iic-current-state.yml` and `iic-as-built.yml`. Without this section the module fell back to `keyvault://kv-ranger/domain-read`, which does not exist in the lab environment.
+- **TRAILHEAD test configs** — Added `svg` and `drawio` to `output.formats` in both iic configs. `Invoke-RangerOutputGeneration` only calls `Invoke-RangerDiagramGeneration` when `svg` or `drawio` appears in the normalised formats list; omitting them silently skipped all diagram output.
 - **New-RangerFieldTestCycle.ps1** — Removed `SupportsShouldProcess` from `[CmdletBinding()]` to eliminate parameter conflict with previously explicit `[switch]$WhatIf`.
 - **deploy-docs.yml** — Removed `release: [published]` trigger. GitHub Pages environment protection allows deployments only from `main`; release-tag triggers always failed the environment protection check.
 
 ### Validated
 
-- **Operation TRAILHEAD v1.4.2** — Full 8-phase (P0-P7) field validation cycle completed against live tplabs-clus01 (4-node Dell AX-760, TierPoint Labs, Raleigh NC). All 7 collectors succeeded (hardware partial due to firmware Redfish limitation, gracefully handled). All output formats generated: HTML, Markdown, JSON, XLSX, PDF, 13×SVG, 13×draw.io (33 files total). as-built vs current-state differentiation confirmed. Wizard (`Invoke-RangerWizard`) guided config + run confirmed. Pester 76/76 passing. WAF Assessment rule engine scored 48% overall ("At Risk"), 11/23 rules passing.
+- **Operation TRAILHEAD v1.4.2** — Full 8-phase (P0-P7) field validation cycle completed against a live lab cluster (4-node Dell AX-760). All 7 collectors succeeded (hardware partial due to firmware Redfish limitation, gracefully handled). All output formats generated: HTML, Markdown, JSON, XLSX, PDF, 13×SVG, 13×draw.io (33 files total). as-built vs current-state differentiation confirmed. Wizard (`Invoke-RangerWizard`) guided config + run confirmed. Pester 76/76 passing. WAF Assessment rule engine scored 48% overall ("At Risk"), 11/23 rules passing.
 
 ## [1.4.1] — 2026-04-16
 
@@ -379,7 +379,7 @@ surfaces in the pre-run audit.
 
 ### Added
 
-- **Issues #166 and #167** — 20 Pester unit tests added at `tests/maproom/unit/Execution.Tests.ps1` covering all 9 v1.1.2 regression bugs (#157–#165). Trailhead field validation run against live tplabs cluster (4-node Dell AX-760, Raleigh NC) confirmed all 6 collectors succeeded with zero auth retries, schema valid, `toolVersion=1.1.2`.
+- **Issues #166 and #167** — 20 Pester unit tests added at `tests/maproom/unit/Execution.Tests.ps1` covering all 9 v1.1.2 regression bugs (#157–#165). Trailhead field validation run against a live lab cluster (4-node Dell AX-760) confirmed all 6 collectors succeeded with zero auth retries, schema valid, `toolVersion=1.1.2`.
 
 ## [1.1.1] — 2026-04-16
 
@@ -407,7 +407,7 @@ surfaces in the pre-run audit.
 - **Issue #105** — Workload/identity/Azure collector: Changed `Select-Object -ExpandProperty hostNode` to `ForEach-Object { $_['hostNode'] }` and `Group-Object -Property hostNode` to `Group-Object -Property { $_['hostNode'] }` to fix hashtable VM inventory property access producing incorrect `avgVmsPerNode` and always-empty `highestDensityNode`.
 - **Issue #107** — Diagram generation: `Get-RangerSafeName` now accepts null/empty input (returns `'unnamed'`), SVG layout loop skips nodes with null/empty id, SVG edge loop skips edges with null/empty source or target. Prevents storage-architecture diagram crash when storage pool/CSV has no friendly name.
 - **Issue #108** — `Test-RangerTargetConfigured`: Fixed `@($null).Count -gt 0` returning true when `targets.cluster` is absent; added explicit null check before testing for fqdn/nodes; node and endpoint lists filtered for null/empty entries before count check.
-- **Issue #121** — v1.1.0 milestone-close validation: live `tplabs` validation now succeeds from the standard config path, including automatic BMC endpoint hydration from sibling `variables.yml` when `targets.bmc.endpoints` is omitted, and collectors now preserve actionable findings without downgrading an otherwise complete collection to `partial`.
+- **Issue #121** — v1.1.0 milestone-close validation: live `iic` validation now succeeds from the standard config path, including automatic BMC endpoint hydration from sibling `variables.yml` when `targets.bmc.endpoints` is omitted, and collectors now preserve actionable findings without downgrading an otherwise complete collection to `partial`.
 
 ### Changed
 

@@ -140,7 +140,7 @@ Drops the required-input floor to tenantId + subscriptionId, fills in the rest v
 | Scope-gated device credential prompting | `Resolve-RangerCredentialMap` only prompts for BMC / switch / firewall credentials when the relevant collector is in scope AND a target list is populated; explicit overrides still honored | [#295](https://github.com/AzureLocal/azurelocal-ranger/issues/295) |
 | Wizard overhaul | `Invoke-RangerWizard` covers all six Azure auth methods, inline GUID validation, optional BMC section, run-mode toggle, review screen, overwrite guard, and a proper YAML serializer (fixes prior JSON-in-.yml bug) | [#291](https://github.com/AzureLocal/azurelocal-ranger/issues/291) |
 | kv-ranger credential leak fix | `Get-RangerDefaultConfig` no longer ships placeholder `keyvault://kv-ranger/*` password references; missing creds fall through to the prompt instead of failing the pre-check against a vault the operator never configured | [#292](https://github.com/AzureLocal/azurelocal-ranger/issues/292) |
-| tplabs test config matrix | 13 scenario configs + parameter runbook at `demo-repository/config/env/tplabs/ranger/` covering every auth method, transport, mode, scope, and behavior combination | [#293](https://github.com/AzureLocal/azurelocal-ranger/issues/293) |
+| iic test config matrix | 13 scenario configs + parameter runbook at `a private environment repository` covering every auth method, transport, mode, scope, and behavior combination | [#293](https://github.com/AzureLocal/azurelocal-ranger/issues/293) |
 
 ## Shipped — v2.6.2 — TRAILHEAD Bug Fixes P7 (2026-04-17)
 
@@ -306,14 +306,14 @@ Stabilisation milestone. Fixed broken report output, crashes, and incorrect defa
 
 ## Current Release — v1.4.2
 
-Released April 2026. TRAILHEAD field validation patch — test config fixes for tplabs environment and docs deploy trigger correction.
+Released April 2026. TRAILHEAD field validation patch — test config fixes for lab environment and docs deploy trigger correction.
 
 | Area | What shipped |
 | --- | --- |
-| TRAILHEAD test configs | Added `credentials.domain` section and `svg`/`drawio` output formats to `tplabs-current-state.yml` and `tplabs-as-built.yml` test configs |
+| TRAILHEAD test configs | Added `credentials.domain` section and `svg`/`drawio` output formats to `iic-current-state.yml` and `iic-as-built.yml` test configs |
 | Field test cycle script | Removed `SupportsShouldProcess` from `New-RangerFieldTestCycle.ps1` to eliminate `-WhatIf` parameter conflict |
 | Docs deploy workflow | Removed `release: [published]` trigger — GitHub Pages environment protection only allows deployments from `main` |
-| Operation TRAILHEAD v1.4.2 | Full 8-phase field validation against live tplabs-clus01 (4-node Dell AX-760). All 7 collectors succeeded; all output formats generated (HTML, Markdown, JSON, XLSX, PDF, 13×SVG, 13×draw.io). Pester 76/76 passing. |
+| Operation TRAILHEAD v1.4.2 | Full 8-phase field validation against a live lab cluster (4-node Dell AX-760). All 7 collectors succeeded; all output formats generated (HTML, Markdown, JSON, XLSX, PDF, 13×SVG, 13×draw.io). Pester 76/76 passing. |
 
 ## Previous Release — v1.4.1
 
@@ -372,7 +372,7 @@ Released April 2026. UX & Transport milestone delivering Arc Run Command transpo
 
 ## Previous Release — v1.1.2
 
-Released April 2026. Patch release fixing 6 runtime regressions introduced in v1.1.0/v1.1.1, plus 20 new Pester unit tests and live Trailhead field validation on the tplabs cluster.
+Released April 2026. Patch release fixing 6 runtime regressions introduced in v1.1.0/v1.1.1, plus 20 new Pester unit tests and live Trailhead field validation on the iic cluster.
 
 | Area | What shipped |
 | --- | --- |
@@ -383,7 +383,7 @@ Released April 2026. Patch release fixing 6 runtime regressions introduced in v1
 | Null message filtering | Null entries stripped from collector message arrays before manifest and report assembly |
 | Credential ordering | Domain credential probed before cluster credential — eliminates redundant WinRM auth retries |
 | Unit test coverage | 20 Pester tests in `tests/maproom/unit/Execution.Tests.ps1` covering all 9 regression bugs (#157–#165) |
-| Field validation | Trailhead OPORD-1.1.2 closed on live tplabs (4-node Dell AX-760): all 6 collectors succeeded, zero auth retries, schema valid |
+| Field validation | Trailhead OPORD-1.1.2 closed on live iic (4-node Dell AX-760): all 6 collectors succeeded, zero auth retries, schema valid |
 
 ## Previous Release — v1.1.1
 
@@ -400,7 +400,7 @@ Released April 2026. Post-release patch for the no-config prerequisite-check reg
 | Authentication | Five methods: existing context, managed identity, device-code, service principal, Azure CLI fallback |
 | Key Vault credential refs | `keyvault://` URI pattern resolved at runtime — no secrets in config files |
 | `-OutputPath` parameter | User-controlled export destination overrides the config default |
-| Testing | Focused milestone-close suite passing on final code plus live tplabs validation with all 6 collectors successful |
+| Testing | Focused milestone-close suite passing on final code plus live lab validation with all 6 collectors successful |
 | Simulation framework | Full output pipeline validated without live connections via `New-RangerSyntheticManifest.ps1` and committed fixture |
 | Public documentation | Product, architecture, operator, discovery domain, output, and contributor docs under `docs/` |
 | Patch hardening | `Test-AzureLocalRangerPrerequisites` no longer throws when run without a config object or path |

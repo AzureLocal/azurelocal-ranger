@@ -89,7 +89,7 @@ Discovery-scoping and authentication-ordering hardening on top of v2.6.5.
 
 ## v2.6.5 — Credential UX & Discovery Hardening
 
-24 first-run friction and reliability issues found during live tplabs validation.
+24 first-run friction and reliability issues found during live lab validation.
 
 ### Fixed
 - **Credential prompt clarity (#302)** — prompts name the target system and expected account format.

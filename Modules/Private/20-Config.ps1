@@ -850,7 +850,7 @@ function Get-RangerMissingRequiredInputs {
     # may have already derived it from clusterName (see the tail of
     # Invoke-RangerAzureAutoDiscovery and Set-RangerStructuralOverrides).
     if (Test-RangerPlaceholderValue -Value $Config.environment.name -FieldName 'environment.name') {
-        [void]$missing.Add([ordered]@{ Path = 'environment.name'; Prompt = 'Environment name'; Example = 'tplabs-prod-01'; Description = 'Short identifier used in output file names' })
+        [void]$missing.Add([ordered]@{ Path = 'environment.name'; Prompt = 'Environment name'; Example = 'iic-prod-01'; Description = 'Short identifier used in output file names' })
     }
 
     return @($missing)

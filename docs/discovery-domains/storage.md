@@ -86,7 +86,7 @@ A successful collect produces entries like this:
   "domains": {
     "storage": {
       "pools": [
-        { "name": "S2D on tplabs-clus01", "health": "Healthy", "operationalStatus": "OK",
+        { "name": "S2D on iic-clus01", "health": "Healthy", "operationalStatus": "OK",
           "size": 43980465111040, "allocated": 21474836480 }
       ],
       "physicalDisks": [

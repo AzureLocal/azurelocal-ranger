@@ -53,7 +53,7 @@ Describe 'Resolve-RangerRemoteExecutionCredential — auth probe retry count' {
                 throw [System.Management.Automation.Remoting.PSRemotingTransportException]::new('Access is denied.')
             }
             Mock Get-RangerRemoteCredentialCandidates {
-                @([ordered]@{ Name = 'domain'; Credential = $null; UserName = 'MGMT\svc.azl.local' })
+                @([ordered]@{ Name = 'domain'; Credential = $null; UserName = 'IIC\svc.azl.local' })
             }
             Mock Get-RangerExecutionHostContext { [ordered]@{ ComputerName = 'runner'; Domain = $null; IsDomainJoined = $null } }
 
@@ -349,8 +349,8 @@ Describe 'Get-RangerRemoteCredentialCandidates — ordering' {
 
     It 'returns domain credential as first candidate when both are provided (#165)' {
         InModuleScope AzureLocalRanger {
-            $domainCred  = [PSCredential]::new('MGMT\svc.azl.local', (ConvertTo-SecureString 'pw' -AsPlainText -Force))
-            $clusterCred = [PSCredential]::new('lcm-tplabs-clus01',  (ConvertTo-SecureString 'pw' -AsPlainText -Force))
+            $domainCred  = [PSCredential]::new('IIC\svc.azl.local', (ConvertTo-SecureString 'pw' -AsPlainText -Force))
+            $clusterCred = [PSCredential]::new('lcm-iic-clus01',  (ConvertTo-SecureString 'pw' -AsPlainText -Force))
 
             $candidates = Get-RangerRemoteCredentialCandidates -DomainCredential $domainCred -ClusterCredential $clusterCred
 
@@ -362,7 +362,7 @@ Describe 'Get-RangerRemoteCredentialCandidates — ordering' {
 
     It 'includes cluster candidate and excludes domain when domain credential is absent (#165)' {
         InModuleScope AzureLocalRanger {
-            $clusterCred = [PSCredential]::new('lcm-tplabs-clus01', (ConvertTo-SecureString 'pw' -AsPlainText -Force))
+            $clusterCred = [PSCredential]::new('lcm-iic-clus01', (ConvertTo-SecureString 'pw' -AsPlainText -Force))
             # Candidates are [ordered]@{} dicts; use ForEach-Object not Select-Object -ExpandProperty
             $names = @(Get-RangerRemoteCredentialCandidates -ClusterCredential $clusterCred) | ForEach-Object { [string]$_.Name }
 
@@ -384,7 +384,7 @@ Describe 'Get-RangerRemoteCredentialCandidates — ordering' {
 
     It 'deduplicates when cluster and domain resolve to the same username (#165)' {
         InModuleScope AzureLocalRanger {
-            $cred = [PSCredential]::new('MGMT\svc.azl.local', (ConvertTo-SecureString 'pw' -AsPlainText -Force))
+            $cred = [PSCredential]::new('IIC\svc.azl.local', (ConvertTo-SecureString 'pw' -AsPlainText -Force))
             $candidates = @(Get-RangerRemoteCredentialCandidates -DomainCredential $cred -ClusterCredential $cred)
 
             $uniqueNames = ($candidates | Group-Object UserName).Count

@@ -142,8 +142,8 @@ $clusterCred = Get-Credential
 Invoke-AzureLocalRanger \
   -ConfigPath .\ranger.yml \
   -ClusterCredential $clusterCred \
-  -ClusterFqdn tplabs-clus01.contoso.com \
-  -ClusterNodes tplabs-01-n01,tplabs-01-n02
+  -ClusterFqdn iic-clus01.contoso.com \
+  -ClusterNodes iic-01-n01,iic-01-n02
 ```
 
 ## Domain Filters

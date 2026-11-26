@@ -39,8 +39,8 @@ The generated YAML is annotated and marks mandatory values. Best for version-con
 ```powershell
 Invoke-AzureLocalRanger `
   -ConfigPath .\ranger.yml `
-  -ClusterFqdn tplabs-clus01.contoso.com `
-  -EnvironmentName tplabs-prod-01 `
+  -ClusterFqdn iic-clus01.contoso.com `
+  -EnvironmentName iic-prod-01 `
   -ShowProgress
 ```
 

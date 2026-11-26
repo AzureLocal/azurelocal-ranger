@@ -10,7 +10,7 @@ TRAILHEAD provides one place for:
 
 - live test-cycle methodology
 - run scripts
-- committed run logs
+- local run logs (gitignored)
 - milestone-close validation evidence
 
 TRAILHEAD is intentionally separate from `MAPROOM`, which is the offline synthetic and post-discovery testing solution under `tests/maproom/`.
@@ -54,7 +54,7 @@ These scripts support the live testing workflow, including:
 
 ### `logs/`
 
-Purpose: committed run logs from live validation.
+Purpose: local run logs from live validation. The folder is gitignored: logs hold real environment data and are never committed. Record the summary result (pass or fail per phase, no environment data) on the TRAILHEAD gate issue.
 
 This folder should contain logs. Nothing more. No general docs, no helper notes, no planning content.
 
@@ -218,7 +218,7 @@ Example:
 ```powershell
 .\tests\trailhead\scripts\New-RangerFieldTestCycle.ps1 `
   -Version "1.0.0" `
-  -Environment "tplabs-clus01 (4-node Dell, TierPoint Labs)"
+  -Environment "iic-clus01 (4-node Dell)"
 ```
 
 ### `tests/trailhead/scripts/Start-TrailheadRun.ps1`
@@ -228,7 +228,7 @@ Purpose: start a live run and create the markdown run log plus live GitHub issue
 Example:
 
 ```powershell
-.\tests\trailhead\scripts\Start-TrailheadRun.ps1 -Version "1.0.0" -Environment "tplabs" -Phase 0
+.\tests\trailhead\scripts\Start-TrailheadRun.ps1 -Version "1.0.0" -Environment "iic" -Phase 0
 ```
 
 ### `tests/trailhead/scripts/TrailheadLog-Helpers.ps1`

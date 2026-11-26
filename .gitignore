@@ -28,9 +28,10 @@ testResults.xml
 *.log
 logs/
 
-# Keep committed TRAILHEAD run logs (evidence artifacts)
-!tests/trailhead/logs/
-!tests/trailhead/logs/**
+# TRAILHEAD run logs and real environment configs hold real lab data: keep them local, never commit
+tests/trailhead/logs/
+tests/trailhead/configs/*.yml
+!tests/trailhead/configs/*.example.yml
 
 # Editor and OS files
 .DS_Store

@@ -23,9 +23,9 @@ Discovery-scoping and authentication-ordering hardening on top of v2.6.5.
 
 ## v2.6.5 — Credential UX & Discovery Hardening
 
-15 first-run friction issues closed after live tplabs validation. Milestone: [#32](https://github.com/AzureLocal/azurelocal-ranger/milestone/32).
+15 first-run friction issues closed after live lab validation. Milestone: [#32](https://github.com/AzureLocal/azurelocal-ranger/milestone/32).
 
-- **Credential prompt clarity (#302)** — `Get-Credential` title and message now name the target system (`tplabs-clus01 cluster WinRM`) and the expected account format (`DOMAIN\user` or `user@domain.com`). Same treatment for BMC, switch, and firewall paths.
+- **Credential prompt clarity (#302)** — `Get-Credential` title and message now name the target system (`iic-clus01 cluster WinRM`) and the expected account format (`DOMAIN\user` or `user@domain.com`). Same treatment for BMC, switch, and firewall paths.
 - **WinRM silent-start preflight (#303)** — `Invoke-RangerEnsureWinRmRunning` starts the WinRM service silently at the start of every run, preventing Windows from throwing an interactive service-start consent dialog mid-collection.
 - **Cluster / domain credential reuse (#304)** — when `credentials.domain` is unconfigured, Ranger reuses the cluster credential automatically. No second prompt for the same account.
 - **Node FQDN resolver (#306)** — `Resolve-RangerNodeFqdn` implements a 4-step chain (pass-through → cluster-suffix → DNS → short-name fallback) for nodes whose FQDN is not provided by Arc.
@@ -154,10 +154,10 @@ Patch release that completes v2.6.3's First-Run UX work. The v2.6.3 drop shipped
 
 ## v1.4.2 Highlights
 
-- **TRAILHEAD test configs** — added `credentials.domain` section and `svg`/`drawio` output formats to tplabs config files so the field test cycle produces diagram output
+- **TRAILHEAD test configs** — added `credentials.domain` section and `svg`/`drawio` output formats to iic config files so the field test cycle produces diagram output
 - **Field test cycle script** — removed `SupportsShouldProcess` from `New-RangerFieldTestCycle.ps1` to eliminate `-WhatIf` parameter conflict
 - **Docs deploy workflow** — removed `release: [published]` trigger; GitHub Pages environment protection only permits deployments from `main`
-- **Operation TRAILHEAD v1.4.2** — full 8-phase field validation against live tplabs-clus01 (4-node Dell AX-760) closed successfully; 76/76 Pester tests passing
+- **Operation TRAILHEAD v1.4.2** — full 8-phase field validation against a live lab cluster (4-node Dell AX-760) closed successfully; 76/76 Pester tests passing
 
 ## v1.4.1 Highlights
 
@@ -202,7 +202,7 @@ Patch release that completes v2.6.3's First-Run UX work. The v2.6.3 drop shipped
 - `DebugPreference` no longer set to `Continue` at debug log level — eliminates MSAL/Az SDK debug flood
 - null entries filtered from collector message arrays — no more `null` in manifest or report output
 - domain credential tried before cluster credential — eliminates redundant WinRM auth retries
-- 20 Pester unit tests added covering all 9 regression bugs; Trailhead field validation closed on live tplabs
+- 20 Pester unit tests added covering all 9 regression bugs; Trailhead field validation closed on live iic
 
 ## v1.1.1 Highlights
 
@@ -215,7 +215,7 @@ Patch release that completes v2.6.3's First-Run UX work. The v2.6.3 drop shipped
 - Key Vault credential fallback via Azure CLI when Az PowerShell secret resolution is unavailable
 - automatic BMC endpoint hydration from sibling `variables.yml`
 - collector status semantics aligned so advisory findings do not downgrade successful collection to `partial`
-- live v1.1.0 milestone validation closed on `tplabs` with all 6 collectors successful
+- live v1.1.0 milestone validation closed on `iic` with all 6 collectors successful
 
 ## Root Changelog
 

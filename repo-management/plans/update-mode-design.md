@@ -107,8 +107,8 @@ Primary command surface:
 Invoke-AzureLocalRanger \
     -ConfigPath .\ranger-config.yml \
     -UpdateMode \
-    -TargetPackagePath C:\AzureLocalRanger\tplabs-current-state \
-    -BaselineManifestPath C:\AzureLocalRanger\tplabs-current-state\manifest\audit-manifest.json
+    -TargetPackagePath C:\AzureLocalRanger\iic-current-state \
+    -BaselineManifestPath C:\AzureLocalRanger\iic-current-state\manifest\audit-manifest.json
 ```
 
 Secondary render-only path:
@@ -116,7 +116,7 @@ Secondary render-only path:
 ```powershell
 Update-AzureLocalRangerPackage \
     -ManifestPath .\new-audit-manifest.json \
-    -PackagePath C:\AzureLocalRanger\tplabs-current-state \
+    -PackagePath C:\AzureLocalRanger\iic-current-state \
     -WhatChanged
 ```
 
@@ -128,7 +128,7 @@ output:
   mode: current-state
   update:
     enabled: false
-    targetPackagePath: C:\AzureLocalRanger\tplabs-current-state
+    targetPackagePath: C:\AzureLocalRanger\iic-current-state
     preserveOverrides: true
     createPreUpdateArchive: true
     archiveRootPath: C:\AzureLocalRanger\archive

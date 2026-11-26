@@ -33,7 +33,7 @@ All synthetic test data follows the mandatory IIC (Infinite Improbability Corp) 
 | Subscription ID | `33333333-3333-3333-3333-333333333333` |
 | Resource group (compute) | `rg-iic-compute-01` |
 
-Do not use tplabs, Contoso, or any other fictional company name in test data. All test data must use IIC values.
+Do not use iic, Contoso, or any other fictional company name in test data. All test data must use IIC values.
 
 ## Synthetic Manifest
 

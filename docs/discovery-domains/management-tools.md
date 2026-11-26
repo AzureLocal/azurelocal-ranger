@@ -78,9 +78,9 @@ A successful collect produces entries like this:
         { "name": "SCOM", "detected": false }
       ],
       "agents": [
-        { "node": "tplabs-01-n01", "name": "Microsoft Monitoring Agent", "version": "10.20.18053",
+        { "node": "iic-01-n01", "name": "Microsoft Monitoring Agent", "version": "10.20.18053",
           "state": "Running" },
-        { "node": "tplabs-01-n01", "name": "Azure Monitor Agent", "version": "1.22.0",
+        { "node": "iic-01-n01", "name": "Azure Monitor Agent", "version": "1.22.0",
           "state": "Running" }
       ],
       "summary": { "managementServicesDetected": 1, "totalAgentsDetected": 8 }

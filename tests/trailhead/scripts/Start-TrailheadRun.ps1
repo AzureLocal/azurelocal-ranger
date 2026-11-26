@@ -26,7 +26,7 @@
     Ranger version under test (default: read from AzureLocalRanger.psd1).
 
 .PARAMETER Environment
-    Target environment label (default: tplabs).
+    Target environment label (default: iic).
 
 .PARAMETER Phase
     Which phase to start at (0–7). Purely informational in the log header.
@@ -42,7 +42,7 @@
 [CmdletBinding()]
 param(
     [string]$Version,
-    [string]$Environment = "tplabs",
+    [string]$Environment = "iic",
     [ValidateRange(0,7)]
     [int]$Phase = 0,
     [string]$RepoRoot

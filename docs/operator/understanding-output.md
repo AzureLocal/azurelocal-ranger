@@ -10,7 +10,7 @@ Every run creates a new folder under `output.rootPath` (default: `C:\AzureLocalR
 
 ```text
 C:\AzureLocalRanger\
-  tplabs-prod-01-current-state-20260416T044502Z\
+  iic-prod-01-current-state-20260416T044502Z\
     manifest\
       audit-manifest.json              ← raw discovery data — source of truth
       <runId>-evidence.json            ← if json-evidence in formats (v2.0.0)
@@ -55,7 +55,7 @@ C:\AzureLocalRanger\
 
 The folder name format is `<environment-name>-<mode>-<timestamp>` in UTC ISO 8601:
 ```
-tplabs-prod-01-current-state-20260416T044502Z
+iic-prod-01-current-state-20260416T044502Z
 ```
 
 ---

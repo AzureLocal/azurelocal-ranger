@@ -90,7 +90,7 @@ A successful collect produces entries like this:
     "hardware": {
       "nodes": [
         {
-          "host": "tplabs-01-n01",
+          "host": "iic-01-n01",
           "manufacturer": "Dell Inc.",
           "model": "PowerEdge AX-760",
           "serialNumber": "ABC1234",

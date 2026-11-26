@@ -183,7 +183,7 @@ Since v2.6.5 (#318), `ranger.log` begins with a `# bootstrap phase` section that
 [2026-04-17T10:32:02][INFO ] Invoke-RangerAzureAutoDiscovery: tenantId '...' sourced from active Az session
 ...
 # run phase
-[2026-04-17T10:32:05][INFO ] AzureLocalRanger run started — package: tplabs-current-state-20260417T103201Z
+[2026-04-17T10:32:05][INFO ] AzureLocalRanger run started — package: iic-current-state-20260417T103201Z
 ```
 
 If the run failed before a package root could be created (e.g., the output path is invalid), there will still be no log file — look at the PowerShell error output in that case. For everything else, the bootstrap section tells you exactly what Ranger saw when it started.

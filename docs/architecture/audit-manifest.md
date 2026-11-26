@@ -173,8 +173,8 @@ The `run.connectivity` section records the pre-run transport probe results. Rend
     "reachable": true,
     "transport": "winrm",
     "targets": [
-      { "host": "192.168.211.11", "port": 5985, "reachable": true },
-      { "host": "192.168.211.12", "port": 5985, "reachable": true }
+      { "host": "10.0.0.11", "port": 5985, "reachable": true },
+      { "host": "10.0.0.12", "port": 5985, "reachable": true }
     ]
   },
   "azure": {

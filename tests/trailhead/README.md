@@ -6,7 +6,7 @@ This directory contains the AzureLocalRanger live field-validation solution.
 
 - `field-testing.md` — the Operation TRAILHEAD live-validation methodology and phase model
 - `scripts/` — helpers for starting runs and creating GitHub phase cycles
-- `logs/` — committed run logs from live validation sessions
+- `logs/` — local run logs from live validation sessions (gitignored: they hold real environment data)
 - `docs/` — detailed TRAILHEAD documentation
 
 ## Scope
